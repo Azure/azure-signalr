@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR.Internal;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -25,6 +27,8 @@ namespace Microsoft.Azure.SignalR.Tests
         public TestConnectionFactory ConnectionFactory { get; }
 
         public IClientConnectionManager ClientConnectionManager { get; }
+
+        public IClientInvocationManager ClientInvocationManager { get; }
 
         public IServiceConnectionContainer ServiceConnectionContainer { get; }
 
@@ -55,6 +59,11 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             ConnectionFactory = connectionFactoryCallback?.Invoke(ConnectionFactoryCallbackAsync) ?? new TestConnectionFactory(ConnectionFactoryCallbackAsync);
             ClientConnectionManager = new ClientConnectionManager();
+            ClientInvocationManager = new ClientInvocationManager(new DefaultHubProtocolResolver(new IHubProtocol[]
+                {
+                    new JsonHubProtocol(),
+                    new MessagePackHubProtocol(),
+                }, NullLogger<DefaultHubProtocolResolver>.Instance));
             _clientPipeOptions = clientPipeOptions;
             ConnectionDelegateCallback = callback ?? OnConnectionAsync;
 
@@ -81,7 +90,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 endpoint,
                 serviceMessageHandler,
                 null,
-                null,
+                ClientInvocationManager,
                 type);
             ServiceConnections.TryAdd(connectionId, connection);
             return connection;

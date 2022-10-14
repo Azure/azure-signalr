@@ -19,8 +19,6 @@ namespace Microsoft.Azure.SignalR
         private const string MarkerNotConfiguredError =
             "'AddAzureSignalR(...)' was called without a matching call to 'IApplicationBuilder.UseAzureSignalR(...)'.";
 
-        private readonly IClientConnectionManager _clientConnectionManager;
-
         public ServiceLifetimeManager(
             IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
@@ -49,8 +47,6 @@ namespace Microsoft.Azure.SignalR
                 throw new InvalidOperationException(MarkerNotConfiguredError);
             }
 #endif
-            _clientConnectionManager = clientConnectionManager;
-
             if (hubOptions.Value.SupportedProtocols != null && hubOptions.Value.SupportedProtocols.Any(x => x.Equals(Constants.Protocol.BlazorPack, StringComparison.OrdinalIgnoreCase)))
             {
                 blazorDetector?.TrySetBlazor(typeof(THub).Name, true);
@@ -80,7 +76,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var serviceConnectionContext))
+            if (ClientConnectionManager.ClientConnections.TryGetValue(connectionId, out var serviceConnectionContext))
             {
                 var message = CreateMessage(connectionId, methodName, args, serviceConnectionContext);
                 var messageWithTracingId = (IMessageWithTracingId)message;

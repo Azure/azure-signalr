@@ -39,7 +39,8 @@ namespace Microsoft.Azure.SignalR.Tests
         public async Task TestOpenConnectionMessageWithMigrateIn()
         {
             var clientConnectionFactory = new TestClientConnectionFactory();
-            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory);
+            var clientInvocationManager = new DefaultClientInvocationManager();
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout();
 
@@ -73,8 +74,9 @@ namespace Microsoft.Azure.SignalR.Tests
         public async Task TestCloseConnectionMessageWithMigrateOut()
         {
             var clientConnectionFactory = new TestClientConnectionFactory();
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
-            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"));
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"), clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -113,8 +115,9 @@ namespace Microsoft.Azure.SignalR.Tests
         public async Task TestCloseConnectionMessage()
         {
             var clientConnectionFactory = new TestClientConnectionFactory();
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
-            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"));
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"), clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -167,8 +170,9 @@ namespace Microsoft.Azure.SignalR.Tests
             var endpoint = MockServiceEndpoint(keyType.Name);
             Assert.IsAssignableFrom(keyType, endpoint.AccessKey);
             var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
-            var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint);
+            var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint, clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -191,8 +195,9 @@ namespace Microsoft.Azure.SignalR.Tests
             var endpoint = MockServiceEndpoint(keyType.Name);
             Assert.IsAssignableFrom(keyType, endpoint.AccessKey);
             var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
-            var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint);
+            var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint, clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -239,7 +244,9 @@ namespace Microsoft.Azure.SignalR.Tests
                     field.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(minutesElapsed));
                 }
 
-                var connection = CreateServiceConnection(loggerFactory: loggerFactory, hubServiceEndpoint: endpoint);
+                var clientInvocationManager = new DefaultClientInvocationManager();
+
+                var connection = CreateServiceConnection(loggerFactory: loggerFactory, hubServiceEndpoint: endpoint, clientInvocationManager: clientInvocationManager);
                 var connectionTask = connection.StartAsync();
                 await connection.ConnectionInitializedTask.OrTimeout(1000);
 

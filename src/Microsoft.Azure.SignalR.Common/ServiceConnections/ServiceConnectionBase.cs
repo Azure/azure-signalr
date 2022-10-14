@@ -134,7 +134,7 @@ namespace Microsoft.Azure.SignalR
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _serviceMessageHandler = serviceMessageHandler;
             _serviceEventHandler = serviceEventHandler;
-            ClientInvocationManager = clientInvocationManager;
+            ClientInvocationManager = clientInvocationManager ?? throw new ArgumentNullException(nameof(clientInvocationManager));
         }
 
         /// <summary>
@@ -316,7 +316,6 @@ namespace Microsoft.Azure.SignalR
             return _serviceMessageHandler.HandlePingAsync(pingMessage);
         }
 
-#if NET7_0_OR_GREATER
         private Task OnClientInvocationAsync(ClientInvocationMessage message)
         {
             ClientInvocationManager.Router.AddInvocation(message.ConnectionId, message.InvocationId, message.CallerServerId, default);
@@ -340,7 +339,6 @@ namespace Microsoft.Azure.SignalR
             ClientInvocationManager.Caller.TryCompleteResult(errorCompletionMessage.ConnectionId, errorCompletionMessage);
             return Task.CompletedTask;
         }
-#endif
 
         protected Task OnAckMessageAsync(AckMessage ackMessage)
         {
@@ -594,12 +592,10 @@ namespace Microsoft.Azure.SignalR
                 AckMessage ackMessage => OnAckMessageAsync(ackMessage),
                 ServiceEventMessage eventMessage => OnEventMessageAsync(eventMessage),
                 AccessKeyResponseMessage keyMessage => OnAccessKeyMessageAsync(keyMessage),
-#if NET7_0_OR_GREATER
                 ClientInvocationMessage clientInvocationMessage => OnClientInvocationAsync(clientInvocationMessage),
                 ServiceMappingMessage serviceMappingMessage => OnServiceMappingAsync(serviceMappingMessage),
                 ClientCompletionMessage clientCompletionMessage => OnClientCompletionAsync(clientCompletionMessage),
                 ErrorCompletionMessage errorCompletionMessage => OnErrorCompletionAsync(errorCompletionMessage),
-#endif
                 _ => Task.CompletedTask,
             };
         }

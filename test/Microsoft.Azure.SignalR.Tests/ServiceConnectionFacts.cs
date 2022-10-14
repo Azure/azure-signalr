@@ -513,7 +513,7 @@ namespace Microsoft.Azure.SignalR.Tests
             try
             {
                 SynchronizationContext.SetSynchronizationContext(null);
-                var conn = new TestServiceConnection();
+                var conn = new TestServiceConnection(clientInvocationManager: new DefaultClientInvocationManager());
                 var initTask = conn.StartAsync();
                 await conn.ConnectionInitializedTask;
                 conn.Stop();

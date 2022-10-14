@@ -19,14 +19,13 @@ namespace Microsoft.Azure.SignalR
         protected const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
         protected const string TtlOutOfRangeErrorMessage = "Ttl cannot be less than 0.";
         protected readonly IServiceConnectionManager<THub> ServiceConnectionContainer;
+        protected readonly IClientInvocationManager ClientInvocationManager;
+        protected readonly IClientConnectionManager ClientConnectionManager;
         protected ILogger Logger { get; set; }
 
         private readonly DefaultHubMessageSerializer _messageSerializer;
         private readonly IServerNameProvider _nameProvider;
         private readonly string _callerId;  
-
-        private readonly IClientInvocationManager _clientInvocationManager;
-        private readonly IClientConnectionManager _clientConnectionManager;
 
         // TODO: use DependencyInjection for ClientInvocationManager and then sort parameter order 
         public ServiceLifetimeManagerBase(
@@ -46,8 +45,8 @@ namespace Microsoft.Azure.SignalR
             _nameProvider = nameProvider ?? throw new ArgumentNullException(nameof(nameProvider));
             _callerId = _nameProvider.GetName();
 
-            _clientInvocationManager = clientInvocationManager;
-            _clientConnectionManager = clientConnectionManager;
+            ClientInvocationManager = clientInvocationManager ?? throw new ArgumentNullException(nameof(clientInvocationManager));
+            ClientConnectionManager = clientConnectionManager ?? throw new ArgumentNullException(nameof(clientConnectionManager));
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
@@ -300,18 +299,17 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
-            // globally distinct invocationId
-            // $"{connectionId}{_callerId}{_clientResults.GetNewInvocation()}";
-            var invocationId = _clientInvocationManager.Caller.GenerateInvocationId(connectionId);
-            
+
+            var invocationId = ClientInvocationManager.Caller.GenerateInvocationId(connectionId);
+
             try
             {
                 var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, invocationId)));
                 await WriteAsync(message);
-                if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var clientConnectionContext))
+                if (ClientConnectionManager.ClientConnections.TryGetValue(connectionId, out var clientConnectionContext))
                 {
                     var instanceId = clientConnectionContext.InstanceId;
-                    var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, instanceId, cancellationToken);
+                    var task = ClientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, instanceId, cancellationToken);
                     return await task;
                 }
                 else
@@ -332,35 +330,39 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
             }
-            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var clientConnectionContext))
+            if (ClientConnectionManager.ClientConnections.TryGetValue(connectionId, out var clientConnectionContext))
             {
-                // Current server is a route server.
-                // In order to inform original Caller server with the completion result, send a ClientCompletionMessage to service and the service will route ClientCompletionMessage to the original Caller server.
-                if (_clientInvocationManager.Router.ContainsInvocation(result.InvocationId))
+                // Determine which manager (Caller / Router) the `result` belongs to.
+                // `TryCompletionResult` returns false when the corresponding invocation is not existing.
+                IClientResultsManager clientResultsManager = null;
+                if (ClientInvocationManager.Caller.TryCompleteResult(connectionId, result))
+                {
+                    clientResultsManager = ClientInvocationManager.Caller;
+                }
+                if (ClientInvocationManager.Router.TryCompleteResult(connectionId, result))
+                {
+                    clientResultsManager = ClientInvocationManager.Router;
+                }
+
+                // Block unknown `results` which belongs to neither Caller nor Router
+                if (clientResultsManager != null)
                 {
                     var protocol = clientConnectionContext.Protocol;
                     var message = AppendMessageTracingId(new ClientCompletionMessage(result.InvocationId, connectionId, _callerId, protocol, SerializeCompletionMessage(result, protocol)));
                     await WriteAsync(message);
-
-                    _clientInvocationManager.Router.TryCompleteResult(connectionId, result);
-                }
-                else
-                // Current server is the original Caller server. Complete the corresponding client invocation locally.
-                {
-                    _clientInvocationManager.Caller.TryCompleteResult(connectionId, result);
                 }
             }
         }
 
         public override bool TryGetReturnType(string invocationId, [NotNullWhen(true)] out Type type)
         {
-            if (_clientInvocationManager.Router.ContainsInvocation(invocationId))
+            if (ClientInvocationManager.Router.ContainsInvocation(invocationId))
             {
-                return _clientInvocationManager.Router.TryGetInvocationReturnType(invocationId, out type);
+                return ClientInvocationManager.Router.TryGetInvocationReturnType(invocationId, out type);
             }
             else
             {
-                return _clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out type);
+                return ClientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out type);
             }
         }
 #endif
