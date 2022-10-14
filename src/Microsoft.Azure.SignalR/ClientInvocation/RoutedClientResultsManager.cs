@@ -14,14 +14,13 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly ConcurrentDictionary<string, RoutedInvocation> _routedInvocations = new();
 
-        public void AddInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, CancellationToken cancellationToken)
+        public void AddInvocation(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken)
         {
             cancellationToken.Register(() => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
 
-            var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId) { RouterInstanceId = null });
+            var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId));
             Debug.Assert(result);
 
-            AddServiceMapping(new ServiceMappingMessage(invocationId, connectionId, instanceId));
         }
 
         public bool TryCompleteResult(string connectionId, CompletionMessage message)
@@ -46,30 +45,11 @@ namespace Microsoft.Azure.SignalR
             return _routedInvocations.TryGetValue(invocationId, out _);
         }
 
-        public void AddServiceMapping(ServiceMappingMessage serviceMappingMessage)
-        {
-            if (_routedInvocations.TryGetValue(serviceMappingMessage.InvocationId, out var invocation))
-            {
-                if (invocation.RouterInstanceId == null)
-                {
-                    invocation.RouterInstanceId = serviceMappingMessage.InstanceId;
-                }
-                else
-                {
-                    // do nothing
-                }
-            }
-            else
-            {
-                // do nothing
-            }
-        }
-
-        public void CleanupInvocations(string instanceId)
+        public void CleanupInvocationsByConnection(string connectionId)
         {
             foreach (var (invocationId, invocation) in _routedInvocations)
             {
-                if (invocation.RouterInstanceId == instanceId)
+                if (invocation.ConnectionId == connectionId)
                 {
                     _routedInvocations.TryRemove(invocationId, out _);
                 }
@@ -90,7 +70,6 @@ namespace Microsoft.Azure.SignalR
 
         private record RoutedInvocation(string ConnectionId, string CallerServerId)
         {
-            public string RouterInstanceId { get; set; }
         }
     }
 }

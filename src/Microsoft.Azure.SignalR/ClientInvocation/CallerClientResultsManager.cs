@@ -81,7 +81,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public void CleanupInvocations(string instanceId)
+        public void CleanupInvocationsByInstance(string instanceId)
         {
             foreach (var (invocationId, invocation) in _pendingInvocations)
             {
@@ -140,8 +140,7 @@ namespace Microsoft.Azure.SignalR
                 }
                 else
                 {
-                     var errorMessage = $"The payload of ClientCompletionMessage whose type is {hubMessage.GetType().Name} cannot be parsed into CompletionMessage correctly.";
-                    return TryCompleteResult(connectionId, new CompletionMessage(message.InvocationId, errorMessage, null, false));
+                    throw new InvalidOperationException($"The payload of ClientCompletionMessage whose type is {hubMessage.GetType().Name} cannot be parsed into CompletionMessage correctly.");
                 }
             }
             return false;

@@ -7,8 +7,10 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IRoutedClientResultsManager : IClientResultsManager
     {
-        void AddInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, CancellationToken cancellationToken);
+        void AddInvocation(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken);
 
         bool ContainsInvocation(string invocationId);
+
+        void CleanupInvocationsByConnection(string connectionId);
     }
 }

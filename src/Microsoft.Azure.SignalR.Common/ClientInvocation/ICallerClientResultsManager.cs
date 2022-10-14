@@ -22,6 +22,10 @@ namespace Microsoft.Azure.SignalR
         /// <returns></returns>
         Task<T> AddInvocation<T>(string connectionId, string invocationId, string instanceId, CancellationToken cancellationToken);
 
+        void AddServiceMapping(ServiceMappingMessage serviceMappingMessage);
+
+        void CleanupInvocationsByInstance(string instanceId);
+
         bool TryCompleteResult(string connectionId, ClientCompletionMessage message);
     }
 }

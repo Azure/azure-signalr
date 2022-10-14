@@ -12,9 +12,5 @@ namespace Microsoft.Azure.SignalR
         bool TryCompleteResult(string connectionId, CompletionMessage message);
 
         bool TryGetInvocationReturnType(string invocationId, out Type type);
-
-        void AddServiceMapping(ServiceMappingMessage serviceMappingMessage);
-
-        void CleanupInvocations(string instanceId);
     }
 }
