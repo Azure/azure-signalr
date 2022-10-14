@@ -146,6 +146,12 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
+        public bool TryCompleteResult(string connectionId, ErrorCompletionMessage message)
+        {
+            var errorMessage = new CompletionMessage(message.InvocationId, message.Error, null, false);
+            return TryCompleteResult(connectionId, errorMessage);
+        }
+
         // Implemented for interface IInvocationBinder
         public Type GetReturnType(string invocationId)
         {
