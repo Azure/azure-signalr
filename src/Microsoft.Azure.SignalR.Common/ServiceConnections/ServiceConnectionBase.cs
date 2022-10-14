@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
@@ -50,8 +49,6 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IServiceEventHandler _serviceEventHandler;
 
-        private readonly IClientInvocationManager _clientInvocationManager;
-
         private readonly object _statusLock = new object();
 
         private volatile string _errorMessage;
@@ -75,6 +72,8 @@ namespace Microsoft.Azure.SignalR
         protected ILogger Logger { get; }
 
         protected IServiceProtocol ServiceProtocol { get; }
+
+        protected IClientInvocationManager ClientInvocationManager { get;  }
 
         private ConnectionContext _connectionContext;
 
@@ -135,7 +134,7 @@ namespace Microsoft.Azure.SignalR
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _serviceMessageHandler = serviceMessageHandler;
             _serviceEventHandler = serviceEventHandler;
-            _clientInvocationManager = clientInvocationManager;
+            ClientInvocationManager = clientInvocationManager;
         }
 
         /// <summary>
@@ -305,7 +304,7 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
 #if NET7_0_OR_GREATER
-                _clientInvocationManager?.Caller.CleanupInvocations(instanceId);
+                ClientInvocationManager.Caller.CleanupInvocationsByInstance(instanceId);
 #endif
                 return CleanupClientConnections(instanceId);
             }
@@ -320,26 +319,25 @@ namespace Microsoft.Azure.SignalR
 #if NET7_0_OR_GREATER
         private Task OnClientInvocationAsync(ClientInvocationMessage message)
         {
-            // TODO: finding a way to get InstanceId
-            _clientInvocationManager.Router.AddInvocation(message.ConnectionId, message.InvocationId, message.CallerServerId, "instanceId", default);
+            ClientInvocationManager.Router.AddInvocation(message.ConnectionId, message.InvocationId, message.CallerServerId, default);
             return Task.CompletedTask;
         }
 
         private Task OnServiceMappingAsync(ServiceMappingMessage message)
         {
-            _clientInvocationManager.Caller.AddServiceMappingMessage(message);
+            ClientInvocationManager.Caller.AddServiceMapping(message);
             return Task.CompletedTask;
         }
 
         private Task OnClientCompletionAsync(ClientCompletionMessage clientCompletionMessage)
         {
-            _clientInvocationManager.Caller.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage);
+            ClientInvocationManager.Caller.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage);
             return Task.CompletedTask;
         }
 
         private Task OnErrorCompletionAsync(ErrorCompletionMessage errorCompletionMessage)
         {
-            // TODO: add behaviours for ErrorCompletionMessage
+            ClientInvocationManager.Caller.TryCompleteResult(errorCompletionMessage.ConnectionId, errorCompletionMessage);
             return Task.CompletedTask;
         }
 #endif

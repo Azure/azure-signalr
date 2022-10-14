@@ -88,6 +88,8 @@ namespace Microsoft.Azure.SignalR
                     continue;
                 }
 
+                ClientInvocationManager.Router.CleanupInvocationsByConnection(connection.Key);
+
                 // We should not wait until all the clients' lifetime ends to restart another service connection
                 _ = PerformDisconnectAsyncCore(connection.Key);
             }
