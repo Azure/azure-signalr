@@ -27,7 +27,6 @@ namespace Microsoft.Azure.SignalR
         private readonly IServerNameProvider _nameProvider;
         private readonly string _callerId;  
 
-        // TODO: use DependencyInjection for ClientInvocationManager and then sort parameter order 
         public ServiceLifetimeManagerBase(
             IServiceConnectionManager<THub> serviceConnectionManager,
             IHubProtocolResolver protocolResolver,
