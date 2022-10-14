@@ -27,5 +27,7 @@ namespace Microsoft.Azure.SignalR
         void CleanupInvocationsByInstance(string instanceId);
 
         bool TryCompleteResult(string connectionId, ClientCompletionMessage message);
+
+        bool TryCompleteResult(string connectionId, ErrorCompletionMessage message);
     }
 }
