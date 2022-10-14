@@ -74,7 +74,11 @@ namespace Microsoft.Azure.SignalR
 
         public static new void SetException(IEnumerable<Exception> exceptions) => Debug.Assert(false);
         public static new void SetCanceled() => Debug.Assert(false);
-        public static new void TrySetCanceled(CancellationToken cancellationToken) => Debug.Assert(false);
+        public static new bool TrySetCanceled(CancellationToken cancellationToken)
+        {
+            Debug.Assert(false);
+            return false;
+        }
         public static new bool TrySetException(IEnumerable<Exception> exceptions)
         {
             Debug.Assert(false);
