@@ -24,7 +24,6 @@ namespace Microsoft.Azure.SignalR
         protected ILogger Logger { get; set; }
 
         private readonly DefaultHubMessageSerializer _messageSerializer;
-        private readonly IServerNameProvider _nameProvider;
         private readonly string _callerId;  
 
         public ServiceLifetimeManagerBase(
@@ -41,8 +40,11 @@ namespace Microsoft.Azure.SignalR
             ServiceConnectionContainer = serviceConnectionManager;
             _messageSerializer = new DefaultHubMessageSerializer(protocolResolver, globalHubOptions.Value.SupportedProtocols, hubOptions.Value.SupportedProtocols);
 
-            _nameProvider = nameProvider ?? throw new ArgumentNullException(nameof(nameProvider));
-            _callerId = _nameProvider.GetName();
+            if (nameProvider == null)
+            {
+                throw new ArgumentNullException(nameof(nameProvider));
+            }
+            _callerId = nameProvider.GetName();
 
             ClientInvocationManager = clientInvocationManager ?? throw new ArgumentNullException(nameof(clientInvocationManager));
             ClientConnectionManager = clientConnectionManager ?? throw new ArgumentNullException(nameof(clientConnectionManager));
