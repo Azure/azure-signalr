@@ -11,9 +11,9 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.Common.Tests
+namespace Microsoft.Azure.SignalR
 {
-    public class ClientInvocationManagerTest
+    public class ClientInvocationManagerTests
     {
         private static readonly IHubProtocolResolver HubProtocolResolver =
             new DefaultHubProtocolResolver(new IHubProtocol[]

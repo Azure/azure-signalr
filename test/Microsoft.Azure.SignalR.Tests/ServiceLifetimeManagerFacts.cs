@@ -289,6 +289,141 @@ namespace Microsoft.Azure.SignalR.Tests
             );
         }
 
+#if NET7_0_OR_GREATER
+        private static ServiceLifetimeManager<TestHub> GetTestClientInvocationServiceLifetimeManager(
+            ServiceConnectionBase serviceConnection, 
+            IServiceConnectionManager<TestHub> serviceConnectionManager, 
+            ClientConnectionManager clientConnectionManager, 
+            ClientInvocationManager clientInvocationManager = null,
+            ClientConnectionContext clientConnectionContext = null,
+            string protocol = "json"
+            )
+        {
+            // Add a client to ClientConnectionManager
+            if (clientConnectionContext != null)
+            {
+                clientConnectionContext.ServiceConnection = serviceConnection;
+                clientConnectionManager.TryAddClientConnection(clientConnectionContext);
+            }
+
+            // Create ServiceLifetimeManager
+            return new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+                clientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, null, new DefaultServerNameProvider(), clientInvocationManager ?? new ClientInvocationManager(HubProtocolResolver));
+        }
+
+        private static ClientConnectionContext GetClientConnectionContextWithConnection(string connectionId = null, string protocol = null)
+        {
+            var connectMessage = new OpenConnectionMessage(connectionId, new Claim[] { });
+            connectMessage.Protocol = protocol;
+            return new ClientConnectionContext(connectMessage);
+        }
+
+
+        [Theory]
+        [InlineData("json")]
+        [InlineData("messagepack")]
+        public async void TestClientInvocationOneServiceNormal(string protocol)
+        {
+            var serviceConnection = new TestServiceConnection();
+            var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
+            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
+            var clientConnectionContext = GetClientConnectionContextWithConnection(TestConnectionIds[1], protocol);
+            var serviceLifetimeManager = GetTestClientInvocationServiceLifetimeManager(serviceConnection, serviceConnectionManager, new ClientConnectionManager(), clientInvocationManager, clientConnectionContext, protocol);
+
+            // Invoke the client 
+            var task = serviceLifetimeManager.InvokeConnectionAsync<string>(TestConnectionIds[1], "InvokedMethod", Array.Empty<object>(), default);
+
+            // Check if the caller server sent a ClientInvocationMessage
+            Assert.IsType<ClientInvocationMessage>(serviceConnectionManager.ServiceMessage);
+            var invocation = (ClientInvocationMessage)serviceConnectionManager.ServiceMessage;
+
+            // Check if the caller server added the invocation
+            Assert.True(clientInvocationManager.Caller.TryGetInvocationReturnType(invocation.InvocationId, out _));
+
+            // Complete the invocation by SerivceLifetimeManager
+            var completionMessage = CompletionMessage.WithResult(invocation.InvocationId, "CorrectResult");
+            await serviceLifetimeManager.SetConnectionResultAsync(invocation.ConnectionId, completionMessage);
+            // Check if the caller server sent a ClientCompletionMessage
+            Assert.IsType<ClientCompletionMessage>(serviceConnectionManager.ServiceMessage);
+
+            // Check if the invocation result is correct
+            await task;
+            Assert.Equal("CorrectResult", task.Result);
+        }
+
+        [Theory]
+        [InlineData("json")]
+        [InlineData("messagepack")]
+        public async void TestClientInvocationOneServiceWithError(string protocol)
+        {
+            var serviceConnection = new TestServiceConnection();
+            var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
+            var clientConnectionContext = GetClientConnectionContextWithConnection(TestConnectionIds[1], protocol);
+            var serviceLifetimeManager = GetTestClientInvocationServiceLifetimeManager(serviceConnection, serviceConnectionManager, new ClientConnectionManager(), null, clientConnectionContext, protocol);
+
+            // Invoke the client
+            var task = serviceLifetimeManager.InvokeConnectionAsync<string>(TestConnectionIds[1], "InvokedMethod", Array.Empty<object>(), default);
+
+            // Get the ClientInvocationMessage which was sent by server
+            var invocation = (ClientInvocationMessage)serviceConnectionManager.ServiceMessage;
+            var completionMessage = CompletionMessage.WithError(invocation.InvocationId, "ErrorMessage");
+            await serviceLifetimeManager.SetConnectionResultAsync(invocation.ConnectionId, completionMessage);
+
+            try
+            {
+                await task;
+                Assert.True(false);
+            }
+            catch (Exception e)
+            {
+                Assert.Equal("ErrorMessage", e.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData("json")]
+        [InlineData("messagepack")]
+        public async void TestMultiClientInvocationsMultipleService(string protocol)
+        {
+            var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
+            var clientInvocationManagers = new List<ClientInvocationManager>() { 
+                new ClientInvocationManager(HubProtocolResolver), 
+                new ClientInvocationManager(HubProtocolResolver) 
+            };
+            var clientConnectionContext = GetClientConnectionContextWithConnection(TestConnectionIds[1], protocol);
+            var clientConnectionManager = new ClientConnectionManager();
+            var serviceLifetimeManagers = new List<ServiceLifetimeManager<TestHub>>() {
+                GetTestClientInvocationServiceLifetimeManager( new TestServiceConnection(), serviceConnectionManager, clientConnectionManager, clientInvocationManagers[0], null, protocol),
+                GetTestClientInvocationServiceLifetimeManager( new TestServiceConnection(), serviceConnectionManager, clientConnectionManager, clientInvocationManagers[1], clientConnectionContext, protocol)
+            };
+            
+            // Invoke a client
+            var task = serviceLifetimeManagers[0].InvokeConnectionAsync<string>(TestConnectionIds[1], "InvokedMethod", Array.Empty<object>());
+            var invocation = (ClientInvocationMessage)serviceConnectionManager.ServiceMessage;
+            // Check if the invocation was added to caller server
+            Assert.True(clientInvocationManagers[0].Caller.TryGetInvocationReturnType(invocation.InvocationId, out _));
+
+            // Route server adds invocation
+            clientInvocationManagers[1].Router.AddInvocation(TestConnectionIds[1], invocation.InvocationId, "server-0", default);
+            // check if the invocation was adder to route server
+            Assert.True(clientInvocationManagers[1].Router.TryGetInvocationReturnType(invocation.InvocationId, out _));
+
+            // The route server receives CompletionMessage
+            var completionMessage = CompletionMessage.WithResult(invocation.InvocationId, "CorrectResult");
+            await serviceLifetimeManagers[1].SetConnectionResultAsync(invocation.ConnectionId, completionMessage);
+
+            // Check if the router server sent ClientCompletionMessage
+            Assert.IsType<ClientCompletionMessage>(serviceConnectionManager.ServiceMessage);
+            var clientCompletionMessage = (ClientCompletionMessage)serviceConnectionManager.ServiceMessage;
+
+            clientInvocationManagers[0].Caller.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage);
+            await task;
+
+            // Check if the invocation result is correct
+            Assert.Equal("CorrectResult", task.Result);
+        }
+#endif
+
         private static async Task InvokeMethod(HubLifetimeManager<TestHub> serviceLifetimeManager, string methodName)
         {
             switch (methodName)
