@@ -2,7 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #if NET7_0_OR_GREATER
 using System;
+using System.Collections.Generic;
 using System.Dynamic;
+using System.Linq;
 using System.Threading;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
@@ -24,7 +26,13 @@ namespace Microsoft.Azure.SignalR
             NullLogger<DefaultHubProtocolResolver>.Instance
         );
 
-        [Fact]
+        private static readonly List<string> TestConnectionIds = new() { "conn0", "conn1" };
+        private static readonly List<string> TestInstanceIds = new() { "instance0", "instance1" };
+        private static readonly List<string> TestServerIds = new() { "server1", "server2" };
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         /*
          * Client 1 <-->  ---------
          *                | Pod 1 | <--> Server A
@@ -32,72 +40,114 @@ namespace Microsoft.Azure.SignalR
          * 
          * Note: Client 1 and Client 2 are both managed by Server A
          */
-        public async void TestNormalCompleteWithoutRouterServer()
+        public async void TestCompleteWithoutRouterServer(bool isCompletionWithResult)
         {
-            var connectionId = "Connection-0";
-            var invocationResult = "invocation-success-result";
-            var targetClientInstanceId = "Instance 1";
-            ClientInvocationManager clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
+            var connectionId = TestConnectionIds[0];
+            var targetClientInstanceId = TestInstanceIds[0];
+            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
             var invocationId = clientInvocationManager.Caller.GenerateInvocationId(connectionId);
+            var invocationResult = "invocation-correct-result";
 
             CancellationToken cancellationToken = new CancellationToken();
-            // Server A knows the InstanceId of Client 2, so `instaceId` in `AddInvocation` is `targetClientInstanceId` ("Instance 1")
+            // Server A knows the InstanceId of Client 2, so `instaceId` in `AddInvocation` is `targetClientInstanceId` 
             var task = clientInvocationManager.Caller.AddInvocation<string>(connectionId, invocationId, targetClientInstanceId, cancellationToken);
 
-            var ret = clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out Type T);
+            var ret = clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out var t);
 
             Assert.True(ret);
-            Assert.Equal(typeof(string), T);
+            Assert.Equal(typeof(string), t);
 
-            var completionMessage = new CompletionMessage(invocationId, null, invocationResult, true);
+            var completionMessage = isCompletionWithResult
+                ? CompletionMessage.WithResult(invocationId, invocationResult)
+                : CompletionMessage.WithError(invocationId, invocationResult);
+
             ret = clientInvocationManager.Caller.TryCompleteResult(connectionId, completionMessage);
             Assert.True(ret);
 
-            await task;
-            Assert.Equal(invocationResult, task.Result);
+            try
+            {
+                await task;
+                Assert.True(isCompletionWithResult);
+                Assert.Equal(invocationResult, task.Result);
+            }
+            catch (Exception e)
+            {
+                Assert.False(isCompletionWithResult);
+                Assert.Equal(invocationResult, e.Message);
+            }
         }
 
         [Theory]
-        [InlineData("json")]
-        [InlineData("messagepack")]
+        [InlineData("json", true)]
+        [InlineData("json", false)]
+        [InlineData("messagepack", true)]
+        [InlineData("messagepack", false)]
         /*                           ---------  <--> Client 2
          * Server 1 <--> Pod 1 <-->  | Pod 2 |
          *                           ---------  <--> Server 2       
          * 
          * Note: Server 2 manages Client 2.
          */
-        public async void TestNormalCompleteWithRouterServer(string protocol)
+        public async void TestCompleteWithRouterServer(string protocol, bool isCompletionWithResult)
         {
-            var instanceIds = new string[] { "Instance-0", "Instance-1" };
-            var serverIds = new string[] { "Server-0", "Server-1" };
-            var connectionIds = new string[] { "Connection-0", "Connection-1" };
-            var invocationResult = "invocation-success-result";
+            var serverIds = new string[] { TestServerIds[0], TestServerIds[1] };
+            var invocationResult = "invocation-correct-result";
             var ciManagers = new ClientInvocationManager[]
             {
                 new ClientInvocationManager(HubProtocolResolver),
                 new ClientInvocationManager(HubProtocolResolver),
             };
-            var invocationId = ciManagers[0].Caller.GenerateInvocationId(connectionIds[0]);
-            var completionMessage = new CompletionMessage(invocationId, null, invocationResult, true);
+            var invocationId = ciManagers[0].Caller.GenerateInvocationId(TestConnectionIds[0]);
 
             CancellationToken cancellationToken = new CancellationToken();
             // Server 1 doesn't know the InstanceId of Client 2, so `instaceId` is null for `AddInvocation`
-            var task = ciManagers[0].Caller.AddInvocation<string>(connectionIds[0], invocationId, null, cancellationToken);
-            ciManagers[0].Caller.AddServiceMapping(new ServiceMappingMessage(invocationId, connectionIds[1], instanceIds[1]));
-            ciManagers[1].Router.AddInvocation(connectionIds[1], invocationId, serverIds[0], new CancellationToken());
+            var task = ciManagers[0].Caller.AddInvocation<string>(TestConnectionIds[0], invocationId, null, cancellationToken);
+            ciManagers[0].Caller.AddServiceMapping(new ServiceMappingMessage(invocationId, TestConnectionIds[1], TestInstanceIds[1]));
+            ciManagers[1].Router.AddInvocation(TestConnectionIds[1], invocationId, serverIds[0], new CancellationToken());
 
-            var ret = ciManagers[1].Router.TryCompleteResult(connectionIds[1], completionMessage);
+            var completionMessage = isCompletionWithResult
+                                ? CompletionMessage.WithResult(invocationId, invocationResult)
+                                : CompletionMessage.WithError(invocationId, invocationResult);
+
+            var ret = ciManagers[1].Router.TryCompleteResult(TestConnectionIds[1], completionMessage);
             Assert.True(ret);
 
             var payload = GetBytes(protocol, completionMessage);
-            var clientCompletionMessage = new ClientCompletionMessage(invocationId, connectionIds[0], serverIds[1], protocol, payload);
+            var clientCompletionMessage = new ClientCompletionMessage(invocationId, TestConnectionIds[0], serverIds[1], protocol, payload);
 
             ret = ciManagers[0].Caller.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage);
             Assert.True(ret);
 
-            await task;
+            try
+            {
+                await task;
+                Assert.True(isCompletionWithResult);
+                Assert.Equal(invocationResult, task.Result);
+            }
+            catch (Exception e)
+            {
+                Assert.False(isCompletionWithResult);
+                Assert.Equal(invocationResult, e.Message);
+            }
+        }
 
-            Assert.Equal(invocationResult, task.Result);
+        [Fact]
+        public void TestCallerManagerCancellation()
+        {
+            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
+            var invocationId = clientInvocationManager.Caller.GenerateInvocationId(TestConnectionIds[0]);
+            var cts = new CancellationTokenSource();
+            var task = clientInvocationManager.Caller.AddInvocation<string>(TestConnectionIds[0], invocationId, TestInstanceIds[0], cts.Token);
+
+            // Check if the invocation is existing
+            Assert.True(clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out _));
+            // Cancel the invocation by CancellationToken
+            cts.Cancel(true);
+            // Check if the invocation task has the information
+            Assert.Equal("One or more errors occurred. (Canceled)", task.Exception.Message);
+            Assert.True(task.IsFaulted);
+            // Check if the invocation was removed
+            Assert.False(clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out _));
         }
 
         internal static ReadOnlyMemory<byte> GetBytes(string proto, HubMessage message)

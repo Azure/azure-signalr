@@ -320,15 +320,21 @@ namespace Microsoft.Azure.SignalR.Tests
 
 
         [Theory]
-        [InlineData("json")]
-        [InlineData("messagepack")]
-        public async void TestClientInvocationOneServiceNormal(string protocol)
+        [InlineData("json", true)]
+        [InlineData("json", false)]
+        [InlineData("messagepack", true)]
+        [InlineData("messagepack", false)]
+        public async void TestClientInvocationOneService(string protocol, bool isCompletionWithResult)
         {
             var serviceConnection = new TestServiceConnection();
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
+
             var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
             var clientConnectionContext = GetClientConnectionContextWithConnection(TestConnectionIds[1], protocol);
+
             var serviceLifetimeManager = GetTestClientInvocationServiceLifetimeManager(serviceConnection, serviceConnectionManager, new ClientConnectionManager(), clientInvocationManager, clientConnectionContext, protocol);
+
+            var invocationResult = "invocation-correct-result";
 
             // Invoke the client 
             var task = serviceLifetimeManager.InvokeConnectionAsync<string>(TestConnectionIds[1], "InvokedMethod", Array.Empty<object>(), default);
@@ -341,62 +347,51 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.True(clientInvocationManager.Caller.TryGetInvocationReturnType(invocation.InvocationId, out _));
 
             // Complete the invocation by SerivceLifetimeManager
-            var completionMessage = CompletionMessage.WithResult(invocation.InvocationId, "CorrectResult");
+            var completionMessage = isCompletionWithResult
+                ? CompletionMessage.WithResult(invocation.InvocationId, invocationResult)
+                : CompletionMessage.WithError(invocation.InvocationId, invocationResult);
+
             await serviceLifetimeManager.SetConnectionResultAsync(invocation.ConnectionId, completionMessage);
             // Check if the caller server sent a ClientCompletionMessage
             Assert.IsType<ClientCompletionMessage>(serviceConnectionManager.ServiceMessage);
 
             // Check if the invocation result is correct
-            await task;
-            Assert.Equal("CorrectResult", task.Result);
-        }
-
-        [Theory]
-        [InlineData("json")]
-        [InlineData("messagepack")]
-        public async void TestClientInvocationOneServiceWithError(string protocol)
-        {
-            var serviceConnection = new TestServiceConnection();
-            var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
-            var clientConnectionContext = GetClientConnectionContextWithConnection(TestConnectionIds[1], protocol);
-            var serviceLifetimeManager = GetTestClientInvocationServiceLifetimeManager(serviceConnection, serviceConnectionManager, new ClientConnectionManager(), null, clientConnectionContext, protocol);
-
-            // Invoke the client
-            var task = serviceLifetimeManager.InvokeConnectionAsync<string>(TestConnectionIds[1], "InvokedMethod", Array.Empty<object>(), default);
-
-            // Get the ClientInvocationMessage which was sent by server
-            var invocation = (ClientInvocationMessage)serviceConnectionManager.ServiceMessage;
-            var completionMessage = CompletionMessage.WithError(invocation.InvocationId, "ErrorMessage");
-            await serviceLifetimeManager.SetConnectionResultAsync(invocation.ConnectionId, completionMessage);
-
             try
             {
                 await task;
-                Assert.True(false);
+                Assert.True(isCompletionWithResult);
+                Assert.Equal(invocationResult, task.Result);
             }
             catch (Exception e)
             {
-                Assert.Equal("ErrorMessage", e.Message);
+                Assert.False(isCompletionWithResult);
+                Assert.Equal(invocationResult, e.Message);
             }
         }
 
         [Theory]
-        [InlineData("json")]
-        [InlineData("messagepack")]
-        public async void TestMultiClientInvocationsMultipleService(string protocol)
+        [InlineData("json", true)]
+        [InlineData("json", false)]
+        [InlineData("messagepack", true)]
+        [InlineData("messagepack", false)]
+        public async void TestMultiClientInvocationsMultipleService(string protocol, bool isCompletionWithResult)
         {
-            var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
-            var clientInvocationManagers = new List<ClientInvocationManager>() { 
-                new ClientInvocationManager(HubProtocolResolver), 
-                new ClientInvocationManager(HubProtocolResolver) 
-            };
             var clientConnectionContext = GetClientConnectionContextWithConnection(TestConnectionIds[1], protocol);
             var clientConnectionManager = new ClientConnectionManager();
+
+            var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
+            var clientInvocationManagers = new List<ClientInvocationManager>() {
+                new ClientInvocationManager(HubProtocolResolver),
+                new ClientInvocationManager(HubProtocolResolver)
+            };
+
             var serviceLifetimeManagers = new List<ServiceLifetimeManager<TestHub>>() {
                 GetTestClientInvocationServiceLifetimeManager( new TestServiceConnection(), serviceConnectionManager, clientConnectionManager, clientInvocationManagers[0], null, protocol),
                 GetTestClientInvocationServiceLifetimeManager( new TestServiceConnection(), serviceConnectionManager, clientConnectionManager, clientInvocationManagers[1], clientConnectionContext, protocol)
             };
-            
+
+            var invocationResult = "invocation-correct-result";
+
             // Invoke a client
             var task = serviceLifetimeManagers[0].InvokeConnectionAsync<string>(TestConnectionIds[1], "InvokedMethod", Array.Empty<object>());
             var invocation = (ClientInvocationMessage)serviceConnectionManager.ServiceMessage;
@@ -409,7 +404,9 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.True(clientInvocationManagers[1].Router.TryGetInvocationReturnType(invocation.InvocationId, out _));
 
             // The route server receives CompletionMessage
-            var completionMessage = CompletionMessage.WithResult(invocation.InvocationId, "CorrectResult");
+            var completionMessage = isCompletionWithResult
+                ? CompletionMessage.WithResult(invocation.InvocationId, invocationResult) 
+                : CompletionMessage.WithError(invocation.InvocationId, invocationResult);
             await serviceLifetimeManagers[1].SetConnectionResultAsync(invocation.ConnectionId, completionMessage);
 
             // Check if the router server sent ClientCompletionMessage
@@ -417,10 +414,18 @@ namespace Microsoft.Azure.SignalR.Tests
             var clientCompletionMessage = (ClientCompletionMessage)serviceConnectionManager.ServiceMessage;
 
             clientInvocationManagers[0].Caller.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage);
-            await task;
 
-            // Check if the invocation result is correct
-            Assert.Equal("CorrectResult", task.Result);
+            try
+            {
+                await task;
+                Assert.True(isCompletionWithResult);
+                Assert.Equal(invocationResult, task.Result);
+            }
+            catch (Exception e)
+            {
+                Assert.False(isCompletionWithResult);
+                Assert.Equal(invocationResult, e.Message);
+            }
         }
 #endif
 
