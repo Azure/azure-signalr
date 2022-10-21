@@ -136,24 +136,24 @@ namespace Microsoft.Azure.SignalR
             {
                 var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, invocationId)));
                 await WriteAsync(message);
+
+                string instanceId = null;
                 if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var clientConnectionContext))
                 {
-                    var instanceId = clientConnectionContext.InstanceId;
-                    var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, instanceId, cancellationToken);
-                    return await task;
+                    instanceId = clientConnectionContext.InstanceId;
                 }
+                var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, instanceId, cancellationToken);
+                return await task;
             }
-            catch
+            catch(Exception e)
             {
-                // Use `TryCompleteResult` to remove the failed invoation.
+                // Use `TryCompleteResult` to remove the failed invocation.
                 // If the invocation was not added by caller, it will be ignored.
                 // The content of error message is useless and will not be exposed to client.
-                _clientInvocationManager.Caller.TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Invocation Failed"));
+                _clientInvocationManager.Caller.TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, ""));
+                Log.FailedToInvokeClient(Logger, connectionId, methodName, invocationId, e);
                 throw;
             }
-
-            // when condition `_clientConnectionManager.ClientConnections.TryGetValue` is false
-            throw new InvalidOperationException($"ConnectionId {connectionId} is invalid.");
         }
 
         // Only route server will reach here
@@ -165,17 +165,29 @@ namespace Microsoft.Azure.SignalR
             }
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var clientConnectionContext))
             {
-                // Block unknown `results` which belongs to neither Caller nor Router
+                // Determine which manager (Caller / Router) the `result` belongs to.
                 // `TryCompletionResult` returns false when the corresponding invocation is not existing.
-                if (!_clientInvocationManager.Caller.TryCompleteResult(connectionId, result) 
-                    && !_clientInvocationManager.Router.TryCompleteResult(connectionId, result))
+                IClientResultsManager clientResultsManager = null;
+                if (_clientInvocationManager.Caller.TryCompleteResult(connectionId, result))
                 {
-                    return; 
+                    clientResultsManager = _clientInvocationManager.Caller;
+                }
+                if (_clientInvocationManager.Router.TryCompleteResult(connectionId, result))
+                {
+                    clientResultsManager = _clientInvocationManager.Router;
                 }
 
-                var protocol = clientConnectionContext.Protocol;
-                var message = AppendMessageTracingId(new ClientCompletionMessage(result.InvocationId, connectionId, _callerId, protocol, SerializeCompletionMessage(result, protocol)));
-                await WriteAsync(message);
+                // Block unknown `results` which belongs to neither Caller nor Router
+                if (clientResultsManager != null)
+                {
+                    var protocol = clientConnectionContext.Protocol;
+                    var payload = clientResultsManager == _clientInvocationManager.Router
+                                ? SerializeCompletionMessage(result, protocol)
+                                : Array.Empty<byte>();
+
+                    var message = AppendMessageTracingId(new ClientCompletionMessage(result.InvocationId, connectionId, _callerId, protocol, payload));
+                    await WriteAsync(message);
+                }
             }
         }
 
@@ -216,6 +228,20 @@ namespace Microsoft.Azure.SignalR
                 MessageLog.StartToSendMessageToConnections(Logger, message);
             }
             return message;
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, string, string, string, string, Exception> _failedToInvokeClient =
+                LoggerMessage.Define<string, string, string, string>(
+                    LogLevel.Warning, 
+                    new EventId(0, "FailedToInvokeClient"), 
+                    "Failed to invoke client {connectionId} with MethodName {methodName} and InvocationId {invocationId}. Detailed exception message is {exception}.");
+
+            public static void FailedToInvokeClient(ILogger logger, string connectionId, string methodName, string invocationId, Exception e)
+            {
+                _failedToInvokeClient(logger, connectionId, methodName, invocationId, e.Message, e);
+            }
         }
     }
 }
