@@ -558,6 +558,7 @@ namespace Microsoft.Azure.SignalR
                 CloseConnectionMessage closeConnectionMessage => OnClientDisconnectedAsync(closeConnectionMessage),
                 ConnectionDataMessage connectionDataMessage => OnClientMessageAsync(connectionDataMessage),
                 ServiceErrorMessage serviceErrorMessage => OnServiceErrorAsync(serviceErrorMessage),
+                PingMessage pingMessage => OnPingMessageAsync(pingMessage),
                 AckMessage ackMessage => OnAckMessageAsync(ackMessage),
                 ServiceEventMessage eventMessage => OnEventMessageAsync(eventMessage),
                 AccessKeyResponseMessage keyMessage => OnAccessKeyMessageAsync(keyMessage),
