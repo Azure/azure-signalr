@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IOptions<ServiceManagerOptions> _serviceManagerOptions;
 
         public WebSocketsHubLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver,
-            IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, IClientInvocationManager clientInvocationManager, IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, IOptions<ServiceManagerOptions> serviceManagerOptions) :
+            IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILoggerFactory loggerFactory, IOptions<ServiceManagerOptions> serviceManagerOptions) :
             base(serviceConnectionManager, protocolResolver, globalHubOptions, hubOptions, loggerFactory?.CreateLogger(nameof(WebSocketsHubLifetimeManager<Hub>)))
         {
             _serviceManagerOptions = serviceManagerOptions ?? throw new ArgumentNullException(nameof(serviceManagerOptions));
