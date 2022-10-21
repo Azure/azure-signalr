@@ -27,16 +27,18 @@ namespace Microsoft.Azure.SignalR
         private static readonly string DefaultRoleClaimType = DefaultClaimsIdentity.RoleClaimType;
 
         public static IEnumerable<Claim> BuildJwtClaims(
-            ClaimsPrincipal user, 
-            string userId, 
-            Func<IEnumerable<Claim>> claimsProvider, 
-            string serverName = null, 
-            ServerStickyMode mode = ServerStickyMode.Disabled, 
-            bool enableDetailedErrors = false, 
+            ClaimsPrincipal user,
+            string userId,
+            Func<IEnumerable<Claim>> claimsProvider,
+            string serverName = null,
+            ServerStickyMode mode = ServerStickyMode.Disabled,
+            bool enableDetailedErrors = false,
             int endpointsCount = 1,
             int? maxPollInterval = null,
             bool isDiagnosticClient = false, int handshakeTimeout = Constants.Periods.DefaultHandshakeTimeout,
-            HttpTransportType? httpTransportType = null)
+            HttpTransportType? httpTransportType = null,
+            bool closeOnAuthenticationExpiration = false, DateTimeOffset? authenticationExpiresOn = default
+            )
         {
             if (userId != null)
             {
@@ -104,6 +106,12 @@ namespace Microsoft.Azure.SignalR
             if (httpTransportType.HasValue)
             {
                 yield return new Claim(Constants.ClaimType.HttpTransportType, ((int)httpTransportType).ToString());
+            }
+
+            if (closeOnAuthenticationExpiration && authenticationExpiresOn != null && authenticationExpiresOn.HasValue)
+            {
+                yield return new Claim(Constants.ClaimType.CloseOnAuthExpiration, "true");
+                yield return new Claim(Constants.ClaimType.AuthExpiresOn, authenticationExpiresOn.Value.ToUnixTimeSeconds().ToString());
             }
 
             // return customer's claims
