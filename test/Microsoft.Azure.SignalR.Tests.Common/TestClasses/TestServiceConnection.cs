@@ -41,7 +41,6 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             serviceMessageHandler,
             serviceEventHandler,
             ServiceConnectionType.Default,
-            clientInvocationManager ?? new DummyClientInvocationManager(),
             logger ?? NullLogger.Instance
         )
         {

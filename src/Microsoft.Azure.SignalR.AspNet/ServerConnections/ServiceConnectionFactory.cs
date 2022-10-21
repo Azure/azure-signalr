@@ -41,7 +41,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                 _logger,
                 serviceMessageHandler,
                 _serviceEventHandler,
-                null,
                 type);
         }
     }

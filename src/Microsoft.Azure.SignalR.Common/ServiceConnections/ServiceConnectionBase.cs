@@ -73,8 +73,6 @@ namespace Microsoft.Azure.SignalR
 
         protected IServiceProtocol ServiceProtocol { get; }
 
-        protected IClientInvocationManager ClientInvocationManager { get;  }
-
         private ConnectionContext _connectionContext;
 
         public event Action<StatusChange> ConnectionStatusChanged;
@@ -112,7 +110,6 @@ namespace Microsoft.Azure.SignalR
             IServiceMessageHandler serviceMessageHandler,
             IServiceEventHandler serviceEventHandler,
             ServiceConnectionType connectionType,
-            IClientInvocationManager clientInvocationManager,
             ILogger logger,
             GracefulShutdownMode mode = GracefulShutdownMode.Off)
         {
@@ -134,7 +131,6 @@ namespace Microsoft.Azure.SignalR
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _serviceMessageHandler = serviceMessageHandler;
             _serviceEventHandler = serviceEventHandler;
-            ClientInvocationManager = clientInvocationManager ?? throw new ArgumentNullException(nameof(clientInvocationManager));
         }
 
         /// <summary>
@@ -298,14 +294,11 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        protected Task OnPingMessageAsync(PingMessage pingMessage)
+        protected virtual Task OnPingMessageAsync(PingMessage pingMessage)
         {
             if (RuntimeServicePingMessage.TryGetOffline(pingMessage, out var instanceId))
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
-#if NET7_0_OR_GREATER
-                ClientInvocationManager.Caller.CleanupInvocationsByInstance(instanceId);
-#endif
                 return CleanupClientConnections(instanceId);
             }
             if (RuntimeServicePingMessage.IsFinAck(pingMessage))
@@ -314,30 +307,6 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
             return _serviceMessageHandler.HandlePingAsync(pingMessage);
-        }
-
-        private Task OnClientInvocationAsync(ClientInvocationMessage message)
-        {
-            ClientInvocationManager.Router.AddInvocation(message.ConnectionId, message.InvocationId, message.CallerServerId, default);
-            return Task.CompletedTask;
-        }
-
-        private Task OnServiceMappingAsync(ServiceMappingMessage message)
-        {
-            ClientInvocationManager.Caller.AddServiceMapping(message);
-            return Task.CompletedTask;
-        }
-
-        private Task OnClientCompletionAsync(ClientCompletionMessage clientCompletionMessage)
-        {
-            ClientInvocationManager.Caller.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage);
-            return Task.CompletedTask;
-        }
-
-        private Task OnErrorCompletionAsync(ErrorCompletionMessage errorCompletionMessage)
-        {
-            ClientInvocationManager.Caller.TryCompleteResult(errorCompletionMessage.ConnectionId, errorCompletionMessage);
-            return Task.CompletedTask;
         }
 
         protected Task OnAckMessageAsync(AckMessage ackMessage)
@@ -580,7 +549,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private Task DispatchMessageAsync(ServiceMessage message)
+        protected virtual Task DispatchMessageAsync(ServiceMessage message)
         {
             return message switch
             {
@@ -588,14 +557,9 @@ namespace Microsoft.Azure.SignalR
                 CloseConnectionMessage closeConnectionMessage => OnClientDisconnectedAsync(closeConnectionMessage),
                 ConnectionDataMessage connectionDataMessage => OnClientMessageAsync(connectionDataMessage),
                 ServiceErrorMessage serviceErrorMessage => OnServiceErrorAsync(serviceErrorMessage),
-                PingMessage pingMessage => OnPingMessageAsync(pingMessage),
                 AckMessage ackMessage => OnAckMessageAsync(ackMessage),
                 ServiceEventMessage eventMessage => OnEventMessageAsync(eventMessage),
                 AccessKeyResponseMessage keyMessage => OnAccessKeyMessageAsync(keyMessage),
-                ClientInvocationMessage clientInvocationMessage => OnClientInvocationAsync(clientInvocationMessage),
-                ServiceMappingMessage serviceMappingMessage => OnServiceMappingAsync(serviceMappingMessage),
-                ClientCompletionMessage clientCompletionMessage => OnClientCompletionAsync(clientCompletionMessage),
-                ErrorCompletionMessage errorCompletionMessage => OnErrorCompletionAsync(errorCompletionMessage),
                 _ => Task.CompletedTask,
             };
         }

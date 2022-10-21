@@ -41,6 +41,8 @@ namespace Microsoft.Azure.SignalR
 
         private readonly ConnectionDelegate _connectionDelegate;
 
+        private readonly IClientInvocationManager _clientInvocationManager;
+
         public Action<HttpContext> ConfigureContext { get; set; }
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
@@ -54,17 +56,18 @@ namespace Microsoft.Azure.SignalR
                                  HubServiceEndpoint endpoint,
                                  IServiceMessageHandler serviceMessageHandler,
                                  IServiceEventHandler serviceEventHandler,
-                                 IClientInvocationManager clientInvocationManager,  
+                                 IClientInvocationManager clientInvocationManager,
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
                                  GracefulShutdownMode mode = GracefulShutdownMode.Off,
                                  int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds
-            ) : base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, clientInvocationManager, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
+            ) : base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
             _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
+            _clientInvocationManager = clientInvocationManager;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -189,7 +192,31 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task ProcessClientConnectionAsync(ClientConnectionContext connection)
+        protected override Task DispatchMessageAsync(ServiceMessage message)
+        {
+            return message switch
+            {
+                PingMessage pingMessage => OnPingMessageAsync(pingMessage),
+                ClientInvocationMessage clientInvocationMessage => OnClientInvocationAsync(clientInvocationMessage),
+                ServiceMappingMessage serviceMappingMessage => OnServiceMappingAsync(serviceMappingMessage),
+                ClientCompletionMessage clientCompletionMessage => OnClientCompletionAsync(clientCompletionMessage),
+                ErrorCompletionMessage errorCompletionMessage => OnErrorCompletionAsync(errorCompletionMessage),
+                _ => base.DispatchMessageAsync(message)
+            };
+        }
+
+        protected override Task OnPingMessageAsync(PingMessage pingMessage)
+        {
+#if NET7_0_OR_GREATER
+            if (RuntimeServicePingMessage.TryGetOffline(pingMessage, out var instanceId))
+            {
+                _clientInvocationManager.Caller.CleanupInvocationsByInstance(instanceId);
+            }
+#endif
+            return base.OnPingMessageAsync(pingMessage);
+        }
+
+    private async Task ProcessClientConnectionAsync(ClientConnectionContext connection)
         {
             try
             {
@@ -436,9 +463,33 @@ namespace Microsoft.Azure.SignalR
             _connectionIds.TryRemove(connectionId, out _);
             _clientConnectionManager.TryRemoveClientConnection(connectionId, out var connection);
 #if NET7_0_OR_GREATER
-            ClientInvocationManager.Router.CleanupInvocationsByConnection(connectionId);
+            _clientInvocationManager.Router.CleanupInvocationsByConnection(connectionId);
 #endif
             return connection;
+        }
+
+        private Task OnClientInvocationAsync(ClientInvocationMessage message)
+        {
+            _clientInvocationManager.Router.AddInvocation(message.ConnectionId, message.InvocationId, message.CallerServerId, default);
+            return Task.CompletedTask;
+        }
+
+        private Task OnServiceMappingAsync(ServiceMappingMessage message)
+        {
+            _clientInvocationManager.Caller.AddServiceMapping(message);
+            return Task.CompletedTask;
+        }
+
+        private Task OnClientCompletionAsync(ClientCompletionMessage clientCompletionMessage)
+        {
+            _clientInvocationManager.Caller.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage);
+            return Task.CompletedTask;
+        }
+
+        private Task OnErrorCompletionAsync(ErrorCompletionMessage errorCompletionMessage)
+        {
+            _clientInvocationManager.Caller.TryCompleteResult(errorCompletionMessage.ConnectionId, errorCompletionMessage);
+            return Task.CompletedTask;
         }
     }
 }
