@@ -70,14 +70,6 @@ namespace Microsoft.Azure.SignalR
                 {
                     invocation.RouterInstanceId = serviceMappingMessage.InstanceId;
                 }
-                else
-                {
-                    // do nothing
-                }
-            }
-            else
-            {
-                // do nothing
             }
         }
 
