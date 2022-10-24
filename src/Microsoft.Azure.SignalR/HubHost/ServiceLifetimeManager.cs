@@ -126,13 +126,13 @@ namespace Microsoft.Azure.SignalR
             }
 
             var invocationId = _clientInvocationManager.Caller.GenerateInvocationId(connectionId);
+            var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, invocationId)));
+            await WriteAsync(message);
             var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, cancellationToken);
 
             // Exception handling follows https://source.dot.net/#Microsoft.AspNetCore.SignalR.Core/DefaultHubLifetimeManager.cs,349
             try
             {
-                var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, invocationId)));
-                await WriteAsync(message);
                 return await task;
             }
             catch
