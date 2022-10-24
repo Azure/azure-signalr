@@ -153,25 +153,23 @@ namespace Microsoft.Azure.SignalR
                 // Determine which manager (Caller / Router) the `result` belongs to.
                 // `TryCompletionResult` returns false when the corresponding invocation is not existing.
                 IClientResultsManager clientResultsManager = null;
+                var payload = new ReadOnlyMemory<byte>();
                 if (_clientInvocationManager.Caller.TryCompleteResult(connectionId, result))
                 {
                     clientResultsManager = _clientInvocationManager.Caller;
+                    // For caller server, the only purpose of sending ClientCompletionMessage is to inform service to cleanup the invocation, which means only InvocationId and ConnectionId make sense. To avoid serialization for useless payload, we keep payload as empty bytes.
                 }
                 if (_clientInvocationManager.Router.TryCompleteResult(connectionId, result))
                 {
                     clientResultsManager = _clientInvocationManager.Router;
+                    // For router server, it should send a ClientCompletionMessage with accurate payload content, which is necessary for the caller server.
+                    payload = SerializeCompletionMessage(result, clientConnectionContext.Protocol);
                 }
 
                 // Block unknown `results` which belongs to neither Caller nor Router
                 if (clientResultsManager != null)
                 {
                     var protocol = clientConnectionContext.Protocol;
-                    // For router server, it should send a ClientCompletionMessage with accurate payload content, which is necessary for the caller server.
-                    // For caller server, the only purpose of sending ClientCompletionMessage is to inform service to cleanup the invocation, which means only InvocationId and ConnectionId make sense. To avoid serialization for useless payload, we assign payload with empty bytes.
-                    var payload = clientResultsManager == _clientInvocationManager.Router
-                                ? SerializeCompletionMessage(result, protocol)
-                                : Array.Empty<byte>();
-
                     var message = AppendMessageTracingId(new ClientCompletionMessage(result.InvocationId, connectionId, _callerId, protocol, payload));
                     await WriteAsync(message);
                 }
@@ -180,14 +178,11 @@ namespace Microsoft.Azure.SignalR
 
         public override bool TryGetReturnType(string invocationId, [NotNullWhen(true)] out Type type)
         {
-            if (_clientInvocationManager.Router.ContainsInvocation(invocationId))
+            if (_clientInvocationManager.Router.TryGetInvocationReturnType(invocationId, out type))
             {
-                return _clientInvocationManager.Router.TryGetInvocationReturnType(invocationId, out type);
+                return true;
             }
-            else
-            {
-                return _clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out type);
-            }
+            return _clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out type);
         }
 #endif
 

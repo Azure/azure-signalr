@@ -40,11 +40,6 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public bool ContainsInvocation(string invocationId)
-        {
-            return _routedInvocations.TryGetValue(invocationId, out _);
-        }
-
         public void CleanupInvocationsByConnection(string connectionId)
         {
             foreach (var (invocationId, invocation) in _routedInvocations)

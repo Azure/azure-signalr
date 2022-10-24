@@ -9,8 +9,6 @@ namespace Microsoft.Azure.SignalR
     {
         void AddInvocation(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken);
 
-        bool ContainsInvocation(string invocationId);
-
         void CleanupInvocationsByConnection(string connectionId);
     }
 }
