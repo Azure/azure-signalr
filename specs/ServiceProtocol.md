@@ -50,6 +50,10 @@ MultiGroupBroadcastData | Server | Sent from Server to Service. Payloads in the 
 JoinGroupWithAck | Server | Sent by server to ask Service adding the target connection to the target group. Server will wait for the ack to continue.
 LeaveGroupWithAck | Server | Sent by server to ask Service removing the target connection from the target group. Server will wait for the ack to continue.
 Ack | Service | Sent from Service to Server to return the operation result of JoinGroupWithAck and LeaveGroupWithAck
+ClientInvocationMessage | Server | Sent from Server to Service. Payloads in the message will be sent to client for client invocation. <br/> Sent from Server to Server. When global routed, it's a register message to router server to handle client invocation results.
+ClientCompletionMessage | Server | Sent from Server to Service with success client invocation results to let service do clean-up. <br/> Sent from Server to Server when global routed.
+ErrorCompletionMessage | Server/Service | Sent from Service to Server with error like client drops or timeout in client invocation. <br/> Sent from Server to Server when global routed.
+ServiceMappingMessage | Service | Sent from Service to aware client invocation mapped instance.
 
 ## Communication Model
 
