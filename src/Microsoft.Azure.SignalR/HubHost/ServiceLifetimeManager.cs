@@ -54,11 +54,7 @@ namespace Microsoft.Azure.SignalR
                 blazorDetector?.TrySetBlazor(typeof(THub).Name, true);
             }
 
-            if (nameProvider == null)
-            {
-                throw new ArgumentNullException(nameof(nameProvider));
-            }
-            _callerId = nameProvider.GetName();
+            _callerId = nameProvider?.GetName() ?? throw new ArgumentNullException(nameof(nameProvider));
 
             _clientInvocationManager = clientInvocationManager ?? throw new ArgumentNullException(nameof(clientInvocationManager));
             _clientConnectionManager = clientConnectionManager ?? throw new ArgumentNullException(nameof(clientConnectionManager));

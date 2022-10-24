@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR
                         {
                             tcs.TrySetException(new Exception(completionMessage.Error));
                         }
-                    }) { RouterInstanceId = null }
+                    })
             );
             Debug.Assert(result);
 
@@ -166,7 +166,10 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
-        public bool RemoveInvocation(string invocationId) => _pendingInvocations.TryRemove(invocationId, out _);
+        public void RemoveInvocation(string invocationId)
+        {
+            _pendingInvocations.TryRemove(invocationId, out _);
+        }
 
         // Unused, here to honor the IInvocationBinder interface but should never be called
         public IReadOnlyList<Type> GetParameterTypes(string methodName) => throw new NotImplementedException();
