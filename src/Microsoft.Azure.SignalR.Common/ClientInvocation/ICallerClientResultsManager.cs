@@ -29,5 +29,7 @@ namespace Microsoft.Azure.SignalR
         bool TryCompleteResult(string connectionId, ClientCompletionMessage message);
 
         bool TryCompleteResult(string connectionId, ErrorCompletionMessage message);
+
+        bool RemoveInvocation(string invocationId);
     }
 }

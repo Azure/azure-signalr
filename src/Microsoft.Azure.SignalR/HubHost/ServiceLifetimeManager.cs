@@ -130,33 +130,27 @@ namespace Microsoft.Azure.SignalR
             }
 
             var invocationId = _clientInvocationManager.Caller.GenerateInvocationId(connectionId);
+            string instanceId = null;
+            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var clientConnectionContext))
+            {
+                instanceId = clientConnectionContext.InstanceId;
+            }
+            var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, instanceId, cancellationToken);
 
             // Exception handling follows https://source.dot.net/#Microsoft.AspNetCore.SignalR.Core/DefaultHubLifetimeManager.cs,349
             try
             {
                 var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, invocationId)));
                 await WriteAsync(message);
-
-                string instanceId = null;
-                if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var clientConnectionContext))
-                {
-                    instanceId = clientConnectionContext.InstanceId;
-                }
-                var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, instanceId, cancellationToken);
                 return await task;
             }
-            catch(Exception e)
+            catch
             {
-                // Use `TryCompleteResult` to remove the failed invocation.
-                // If the invocation was not added by caller, it will be ignored.
-                // The content of error message is useless and will not be exposed to client.
-                _clientInvocationManager.Caller.TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, ""));
-                Log.FailedToInvokeClient(Logger, connectionId, methodName, invocationId, e);
+                _clientInvocationManager.Caller.RemoveInvocation(invocationId);
                 throw;
             }
         }
 
-        // Only route server will reach here
         public override async Task SetConnectionResultAsync(string connectionId, CompletionMessage result)
         {
             if (IsInvalidArgument(connectionId))
@@ -181,6 +175,8 @@ namespace Microsoft.Azure.SignalR
                 if (clientResultsManager != null)
                 {
                     var protocol = clientConnectionContext.Protocol;
+                    // For router server, it should send a ClientCompletionMessage with accurate payload content, which is necessary for the caller server.
+                    // For caller server, the only purpose of sending ClientCompletionMessage is to inform service to cleanup the invocation, which means only InvocationId and ConnectionId make sense. To avoid serialization for useless payload, we assign payload with empty bytes.
                     var payload = clientResultsManager == _clientInvocationManager.Router
                                 ? SerializeCompletionMessage(result, protocol)
                                 : Array.Empty<byte>();
@@ -228,20 +224,6 @@ namespace Microsoft.Azure.SignalR
                 MessageLog.StartToSendMessageToConnections(Logger, message);
             }
             return message;
-        }
-
-        private static class Log
-        {
-            private static readonly Action<ILogger, string, string, string, string, Exception> _failedToInvokeClient =
-                LoggerMessage.Define<string, string, string, string>(
-                    LogLevel.Warning, 
-                    new EventId(0, "FailedToInvokeClient"), 
-                    "Failed to invoke client {connectionId} with MethodName {methodName} and InvocationId {invocationId}. Detailed exception message is {exception}.");
-
-            public static void FailedToInvokeClient(ILogger logger, string connectionId, string methodName, string invocationId, Exception e)
-            {
-                _failedToInvokeClient(logger, connectionId, methodName, invocationId, e.Message, e);
-            }
         }
     }
 }

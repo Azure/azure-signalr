@@ -211,6 +211,8 @@ namespace Microsoft.Azure.SignalR
             if (RuntimeServicePingMessage.TryGetOffline(pingMessage, out var instanceId))
             {
                 _clientInvocationManager.Caller.CleanupInvocationsByInstance(instanceId);
+                // Router invocations will be cleanup by its `CleanupInvocationsByConnection`, which is called by `RemoveClientConnection`.
+                // In `base.OnPingMessageAsync`, `CleanupClientConnections(instanceId)` will finally execute `RemoveClientConnection` for each ConnectionId. 
             }
 #endif
             return base.OnPingMessageAsync(pingMessage);

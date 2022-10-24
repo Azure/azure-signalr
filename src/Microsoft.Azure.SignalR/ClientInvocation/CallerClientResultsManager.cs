@@ -166,6 +166,8 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
+        public bool RemoveInvocation(string invocationId) => _pendingInvocations.TryRemove(invocationId, out _);
+
         // Unused, here to honor the IInvocationBinder interface but should never be called
         public IReadOnlyList<Type> GetParameterTypes(string methodName) => throw new NotImplementedException();
 
