@@ -49,7 +49,7 @@ Name|Direction|Usage
 --|--|--
 ClientInvocationMessage|Server -> Service <br/> Service -> Server|Wrapped `ClientInvocation` <br/> Register the invocation in router server to make it able to handle returns
 ClientCompletionMessage|Server -> Service <br/> Server -> Server|Wrapped `CompletionMessage` in __Success__ case to let service cleanups <br/> Notify original invoker server when is global routed
-ErrorCompletionMessage|Server -> Service <br/> Server -> Server|Wrapped `CompletionMessage` in __Error__ case to let service cleanups <br/> Notify original invoker server when is global routed
+ErrorCompletionMessage|Server -> Service <br/> Server/Service -> Server|Wrapped `CompletionMessage` in __Error__ case to let service cleanups <br/> Notify original invoker server when is global routed
 ServiceMappingMessage| Service -> Server | Notify server the client mapping instance, and server would be able to clean-up when it's global routed and service instance reloads or crashes
 
 ## * Serverless (NOT Supported in initial version)
