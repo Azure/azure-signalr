@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR
             return $"{connectionId}-{_clientResultManagerId}-{Interlocked.Increment(ref _lastInvocationId)}";
         }
 
-        public Task<T> AddInvocation<T>(string connectionId, string invocationId, string instanceId, CancellationToken cancellationToken)
+        public Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken)
         {
             var tcs = new TaskCompletionSourceWithCancellation<T>(
                 cancellationToken,
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR
                         {
                             tcs.TrySetException(new Exception(completionMessage.Error));
                         }
-                    }) { RouterInstanceId = instanceId }
+                    })
             );
             Debug.Assert(result);
 
@@ -66,18 +66,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (_pendingInvocations.TryGetValue(serviceMappingMessage.InvocationId, out var invocation))
             {
-                if (invocation.RouterInstanceId == null)
-                {
-                    invocation.RouterInstanceId = serviceMappingMessage.InstanceId;
-                }
-                else
-                {
-                    // do nothing
-                }
-            }
-            else
-            {
-                // do nothing
+                invocation.RouterInstanceId = serviceMappingMessage.InstanceId;
             }
         }
 
@@ -172,6 +161,11 @@ namespace Microsoft.Azure.SignalR
             }
             type = null;
             return false;
+        }
+
+        public void RemoveInvocation(string invocationId)
+        {
+            _pendingInvocations.TryRemove(invocationId, out _);
         }
 
         // Unused, here to honor the IInvocationBinder interface but should never be called
