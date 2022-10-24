@@ -130,12 +130,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             var invocationId = _clientInvocationManager.Caller.GenerateInvocationId(connectionId);
-            string instanceId = null;
-            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var clientConnectionContext))
-            {
-                instanceId = clientConnectionContext.InstanceId;
-            }
-            var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, instanceId, cancellationToken);
+            var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, cancellationToken);
 
             // Exception handling follows https://source.dot.net/#Microsoft.AspNetCore.SignalR.Core/DefaultHubLifetimeManager.cs,349
             try

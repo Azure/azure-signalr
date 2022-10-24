@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR
             return $"{connectionId}-{_clientResultManagerId}-{Interlocked.Increment(ref _lastInvocationId)}";
         }
 
-        public Task<T> AddInvocation<T>(string connectionId, string invocationId, string instanceId, CancellationToken cancellationToken)
+        public Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken)
         {
             var tcs = new TaskCompletionSourceWithCancellation<T>(
                 cancellationToken,
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR
                         {
                             tcs.TrySetException(new Exception(completionMessage.Error));
                         }
-                    }) { RouterInstanceId = instanceId }
+                    }) { RouterInstanceId = null }
             );
             Debug.Assert(result);
 

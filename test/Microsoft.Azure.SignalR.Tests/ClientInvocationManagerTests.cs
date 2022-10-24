@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR
 
             CancellationToken cancellationToken = new CancellationToken();
             // Server A knows the InstanceId of Client 2, so `instaceId` in `AddInvocation` is `targetClientInstanceId` 
-            var task = clientInvocationManager.Caller.AddInvocation<string>(connectionId, invocationId, targetClientInstanceId, cancellationToken);
+            var task = clientInvocationManager.Caller.AddInvocation<string>(connectionId, invocationId, cancellationToken);
 
             var ret = clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out var t);
 
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.SignalR
 
             CancellationToken cancellationToken = new CancellationToken();
             // Server 1 doesn't know the InstanceId of Client 2, so `instaceId` is null for `AddInvocation`
-            var task = ciManagers[0].Caller.AddInvocation<string>(TestConnectionIds[0], invocationId, null, cancellationToken);
+            var task = ciManagers[0].Caller.AddInvocation<string>(TestConnectionIds[0], invocationId, cancellationToken);
             ciManagers[0].Caller.AddServiceMapping(new ServiceMappingMessage(invocationId, TestConnectionIds[1], TestInstanceIds[1]));
             ciManagers[1].Router.AddInvocation(TestConnectionIds[1], invocationId, serverIds[0], new CancellationToken());
 
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.SignalR
             var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
             var invocationId = clientInvocationManager.Caller.GenerateInvocationId(TestConnectionIds[0]);
             var cts = new CancellationTokenSource();
-            var task = clientInvocationManager.Caller.AddInvocation<string>(TestConnectionIds[0], invocationId, TestInstanceIds[0], cts.Token);
+            var task = clientInvocationManager.Caller.AddInvocation<string>(TestConnectionIds[0], invocationId,  cts.Token);
 
             // Check if the invocation is existing
             Assert.True(clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out _));

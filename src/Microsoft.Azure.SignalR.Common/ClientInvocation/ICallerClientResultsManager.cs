@@ -17,10 +17,9 @@ namespace Microsoft.Azure.SignalR
         /// <typeparam name="T"></typeparam>
         /// <param name="connectionId"></param>
         /// <param name="invocationId"></param>
-        /// <param name="instanceId"> The InstanceId of target client the caller server knows when this method is called. If the target client is managed by the caller server, the caller server knows the InstanceId of target client and this parameter is not null. Otherwise, this parameter is null. </param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<T> AddInvocation<T>(string connectionId, string invocationId, string instanceId, CancellationToken cancellationToken);
+        Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken);
 
         void AddServiceMapping(ServiceMappingMessage serviceMappingMessage);
 
