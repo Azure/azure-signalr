@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -14,5 +13,9 @@ namespace Microsoft.Azure.SignalR
         public DummyClientInvocationManager()
         {
         }
+
+        public void CleanupInvocationsByConnection(string connectionId) => throw new NotSupportedException();
+
+        public bool TryGetInvocationReturnType(string invocationId, out Type type) => throw new NotSupportedException();
     }
 }

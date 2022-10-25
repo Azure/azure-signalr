@@ -3,7 +3,6 @@
 
 using System;
 using Microsoft.AspNetCore.SignalR.Protocol;
-using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -12,5 +11,7 @@ namespace Microsoft.Azure.SignalR
         bool TryCompleteResult(string connectionId, CompletionMessage message);
 
         bool TryGetInvocationReturnType(string invocationId, out Type type);
+
+        void CleanupInvocationsByConnection(string connectionId);
     }
 }
