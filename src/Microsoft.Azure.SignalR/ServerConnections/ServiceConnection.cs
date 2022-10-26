@@ -465,7 +465,7 @@ namespace Microsoft.Azure.SignalR
             _connectionIds.TryRemove(connectionId, out _);
             _clientConnectionManager.TryRemoveClientConnection(connectionId, out var connection);
 #if NET7_0_OR_GREATER
-            _clientInvocationManager.Router.CleanupInvocationsByConnection(connectionId);
+            _clientInvocationManager.CleanupInvocationsByConnection(connectionId);
 #endif
             return connection;
         }

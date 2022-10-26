@@ -16,6 +16,21 @@ namespace Microsoft.Azure.SignalR
             Caller = new CallerClientResultsManager(hubProtocolResolver ?? throw new ArgumentNullException(nameof(hubProtocolResolver)));
             Router = new RoutedClientResultsManager();
         }
+
+        public void CleanupInvocationsByConnection(string connectionId)
+        {
+            Caller.CleanupInvocationsByConnection(connectionId);
+            Router.CleanupInvocationsByConnection(connectionId);
+        }
+
+        public bool TryGetInvocationReturnType(string invocationId, out Type type)
+        {
+            if (Router.TryGetInvocationReturnType(invocationId, out type))
+            {
+                return true;
+            }
+            return Caller.TryGetInvocationReturnType(invocationId, out type);
+        }
     }
 }
 #endif

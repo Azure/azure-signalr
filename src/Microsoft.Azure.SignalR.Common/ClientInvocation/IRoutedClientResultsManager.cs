@@ -8,7 +8,5 @@ namespace Microsoft.Azure.SignalR
     internal interface IRoutedClientResultsManager : IClientResultsManager
     {
         void AddInvocation(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken);
-
-        void CleanupInvocationsByConnection(string connectionId);
     }
 }
