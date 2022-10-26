@@ -12,6 +12,6 @@ namespace Microsoft.Azure.SignalR
 
         bool TryGetInvocationReturnType(string invocationId, out Type type);
 
-        public void CleanupInvocationsByConnection(string connectionId);
+        void CleanupInvocationsByConnection(string connectionId);
     }
 }
