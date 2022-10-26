@@ -156,10 +156,11 @@ namespace Microsoft.Azure.SignalR
                 var payload = new ReadOnlyMemory<byte>();
                 if (_clientInvocationManager.Caller.TryCompleteResult(connectionId, result))
                 {
+                    // For caller server, the only purpose of sending ClientCompletionMessage is to inform service to cleanup the invocation, which means only InvocationId and ConnectionId make sense.
+                    // To avoid serialization for useless payload, we keep payload as empty bytes.
                     clientResultsManager = _clientInvocationManager.Caller;
-                    // For caller server, the only purpose of sending ClientCompletionMessage is to inform service to cleanup the invocation, which means only InvocationId and ConnectionId make sense. To avoid serialization for useless payload, we keep payload as empty bytes.
                 }
-                if (_clientInvocationManager.Router.TryCompleteResult(connectionId, result))
+                else if (_clientInvocationManager.Router.TryCompleteResult(connectionId, result))
                 {
                     clientResultsManager = _clientInvocationManager.Router;
                     // For router server, it should send a ClientCompletionMessage with accurate payload content, which is necessary for the caller server.
@@ -178,11 +179,7 @@ namespace Microsoft.Azure.SignalR
 
         public override bool TryGetReturnType(string invocationId, [NotNullWhen(true)] out Type type)
         {
-            if (_clientInvocationManager.Router.TryGetInvocationReturnType(invocationId, out type))
-            {
-                return true;
-            }
-            return _clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out type);
+            return _clientInvocationManager.TryGetInvocationReturnType(invocationId, out type);
         }
 #endif
 
