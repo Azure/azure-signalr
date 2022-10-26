@@ -8,7 +8,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddSignalR(o =>
 {
     o.MaximumParallelInvocationsPerClient = 2;
-}); //.AddAzureSignalR("");
+}).AddAzureSignalR("");
 
 var app = builder.Build();
 
