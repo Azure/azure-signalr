@@ -8,7 +8,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddSignalR(o =>
 {
     o.MaximumParallelInvocationsPerClient = 2;
-}).AddAzureSignalR("");
+}); //.AddAzureSignalR("");
 
 var app = builder.Build();
 
@@ -27,10 +27,10 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-app.MapHub<ChatHub>("/chat");
+app.MapHub<ClientResultHub>("/chat");
 app.MapRazorPages();
 
-app.MapGet("/get/{id}", async (string id, IHubContext<ChatHub> hubContext) =>
+app.MapGet("/get/{id}", async (string id, IHubContext<ClientResultHub> hubContext) =>
 {
     return await hubContext.Clients.Client(id).InvokeAsync<string>("GetMessage", default);
 });

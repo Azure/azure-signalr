@@ -17,6 +17,7 @@ F5 (ctrl-F5) to launch the server and get the URL for the app endpoint.
 6. Press 'Send Message' to return the message to the server which will return it to the original client that asked for a result
 
 #### Multiple server cases
+
 1. Run `dotnet run` to start default profile
 2. Run `dotnet run --launch-profile Server1` to start another server
 3. Open default server under `https://localhost:7243`.

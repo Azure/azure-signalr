@@ -2,7 +2,7 @@
 
 namespace ClientResultSample
 {
-    public class ChatHub : Hub
+    public class ClientResultHub : Hub
     {
         public override Task OnConnectedAsync()
         {
