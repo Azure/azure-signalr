@@ -22,6 +22,11 @@ namespace ClientResultSample
             }
         }
 
+        public async Task Broadcast(string message)
+        {
+            await Clients.All.SendAsync("Broadcast", $"Broadcast from '{Context.ConnectionId}': {message}");
+        }
+
         public override Task OnDisconnectedAsync(Exception? exception)
         {
             return Clients.All.SendAsync("Connect", $"Connection '{Context.ConnectionId}' is disconnected.");
