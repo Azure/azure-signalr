@@ -247,3 +247,6 @@ dotnet_diagnostic.IDE0058.severity = none
 
 # IDE0022: Use block body for methods
 dotnet_diagnostic.IDE0022.severity = none
+
+# IDE0090: Use 'new(...)'
+dotnet_diagnostic.IDE0090.severity = silent
