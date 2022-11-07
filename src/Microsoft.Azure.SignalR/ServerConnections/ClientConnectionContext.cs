@@ -81,6 +81,8 @@ namespace Microsoft.Azure.SignalR
 
         public string Protocol { get; }
 
+        public string InstanceId { get; }
+
         // Send "Abort" to service on close except that Service asks SDK to close
         public bool AbortOnClose
         {
@@ -119,6 +121,7 @@ namespace Microsoft.Azure.SignalR
             ConnectionId = serviceMessage.ConnectionId;
             Protocol = serviceMessage.Protocol;
             User = serviceMessage.GetUserPrincipal();
+            InstanceId = GetInstanceId(serviceMessage.Headers);
 
             // Create the Duplix Pipeline for the virtual connection
             transportPipeOptions = transportPipeOptions ?? DefaultPipeOptions;
@@ -131,7 +134,7 @@ namespace Microsoft.Azure.SignalR
             HttpContext = BuildHttpContext(serviceMessage);
             configureContext?.Invoke(HttpContext);
 
-            Features = BuildFeatures();
+            Features = BuildFeatures(serviceMessage);
 
             if (serviceMessage.Headers.TryGetValue(Constants.AsrsMigrateFrom, out _))
             {
@@ -234,7 +237,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private FeatureCollection BuildFeatures()
+        private FeatureCollection BuildFeatures(OpenConnectionMessage serviceMessage)
         {
             var features = new FeatureCollection();
             features.Set<IConnectionHeartbeatFeature>(this);
@@ -244,6 +247,12 @@ namespace Microsoft.Azure.SignalR
             features.Set<IConnectionTransportFeature>(this);
             features.Set<IHttpContextFeature>(this);
             features.Set<IConnectionStatFeature>(this);
+
+            var userIdClaim = serviceMessage.Claims?.FirstOrDefault(c => c.Type == Constants.ClaimType.UserId);
+            if (userIdClaim != default)
+            {
+                features.Set(new ServiceUserIdFeature(userIdClaim.Value));
+            }
             return features;
         }
 
@@ -292,6 +301,15 @@ namespace Microsoft.Azure.SignalR
             }
 
             return new DefaultHttpContext(httpContextFeatures);
+        }
+
+        private string GetInstanceId(IDictionary<string, StringValues> header)
+        {
+            if (header.TryGetValue(Constants.AsrsInstanceId, out var instanceId))
+            {
+                return instanceId;
+            }
+            return string.Empty;
         }
 
         internal static bool TryGetRemoteIpAddress(IHeaderDictionary headers, out IPAddress address)

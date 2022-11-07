@@ -6,9 +6,11 @@ using System.Collections.Generic;
 using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -33,6 +35,9 @@ namespace Microsoft.Azure.SignalR
         private readonly string _hubName;
         private readonly ILogger<NegotiateHandler<THub>> _logger;
         private readonly Func<HttpContext, HttpTransportType> _transportTypeDetector;
+#if NET6_0_OR_GREATER
+        private readonly HttpConnectionDispatcherOptions _dispatcherOptions;
+#endif
 
         public NegotiateHandler(
             IOptions<HubOptions> globalHubOptions,
@@ -44,6 +49,9 @@ namespace Microsoft.Azure.SignalR
             IConnectionRequestIdProvider connectionRequestIdProvider,
             IOptions<ServiceOptions> options,
             IBlazorDetector blazorDetector,
+#if NET6_0_OR_GREATER
+            EndpointDataSource endpointDataSource,
+#endif
             ILogger<NegotiateHandler<THub>> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -62,6 +70,9 @@ namespace Microsoft.Azure.SignalR
             _transportTypeDetector = options.Value.TransportTypeDetector;
             _customHandshakeTimeout = GetCustomHandshakeTimeout(hubOptions.Value.HandshakeTimeout ?? globalHubOptions.Value.HandshakeTimeout);
             _hubName = typeof(THub).Name;
+#if NET6_0_OR_GREATER
+            _dispatcherOptions = GetDispatcherOptions(endpointDataSource, typeof(THub));
+#endif
         }
 
         public async Task<NegotiationResponse> Process(HttpContext context)
@@ -113,7 +124,17 @@ namespace Microsoft.Azure.SignalR
             var mode = _blazorDetector.IsBlazor(_hubName) ? ServerStickyMode.Required : _mode;
             var userId = _userIdProvider.GetUserId(new ServiceHubConnectionContext(context));
             var httpTransportType = _transportTypeDetector?.Invoke(context);
-            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(context), _customHandshakeTimeout, httpTransportType);
+            var closeOnAuthenticationExpiration = false;
+            var authenticationExpiresOn = default(DateTimeOffset?);
+#if NET6_0_OR_GREATER
+            closeOnAuthenticationExpiration = _dispatcherOptions.CloseOnAuthenticationExpiration;
+            var authResultFeature = context.Features.Get<IAuthenticateResultFeature>();
+            if (authResultFeature != null && authResultFeature.AuthenticateResult.Succeeded)
+            {
+                authenticationExpiresOn = authResultFeature.AuthenticateResult.Properties.ExpiresUtc;
+            }
+#endif
+            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(context), _customHandshakeTimeout, httpTransportType, closeOnAuthenticationExpiration, authenticationExpiresOn);
         }
 
         private Func<IEnumerable<Claim>> GetClaimsProvider(HttpContext context)
@@ -167,6 +188,26 @@ namespace Microsoft.Azure.SignalR
                 ? path.Substring(0, path.Length - Constants.Path.Negotiate.Length)
                 : string.Empty;
         }
+
+#if NET6_0_OR_GREATER
+        private static HttpConnectionDispatcherOptions GetDispatcherOptions(EndpointDataSource source, Type hubType)
+        {
+            foreach (var endpoint in source.Endpoints)
+            {
+                var metaData = endpoint.Metadata;
+                if (metaData.GetMetadata<HubMetadata>()?.HubType == hubType)
+                {
+                    var options = metaData.GetMetadata<HttpConnectionDispatcherOptions>();
+                    if (options != null)
+                    {
+                        return options;
+                    }
+                }
+            }
+            // It's not expected to go here in production environment. Return a value for test.
+            return new();
+        }
+#endif
 
         private static class Log
         {
