@@ -6,7 +6,7 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     internal class TestServiceConnectionForCloseAsync : TestServiceConnection
     {
-        public TestServiceConnectionForCloseAsync() : base(ServiceConnectionStatus.Connected, false)
+        public TestServiceConnectionForCloseAsync() : base(ServiceConnectionStatus.Connected, false, clientInvocationManager: new DefaultClientInvocationManager())
         {
         }
 

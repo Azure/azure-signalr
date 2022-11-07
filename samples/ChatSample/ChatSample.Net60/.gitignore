@@ -1,0 +1,6 @@
+*.min.css
+*.rtl.css
+*.esm.js
+*.js.map
+*.bundle.js
+*.map

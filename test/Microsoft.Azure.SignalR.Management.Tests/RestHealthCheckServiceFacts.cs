@@ -64,13 +64,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway))
                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway))
                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway));
-            
+
             var checkInterval = TimeSpan.FromSeconds(3);
             var retryInterval = TimeSpan.FromSeconds(0.5);
             using var _ = StartLog(out var loggerFactory);
             var services = new ServiceCollection()
-                .AddHttpClient(Options.DefaultName).ConfigurePrimaryHttpMessageHandler(() => handlerMock.Object).Services
                 .AddSignalRServiceManager()
+                .AddHttpClient(Options.DefaultName).ConfigurePrimaryHttpMessageHandler(() => handlerMock.Object).Services
                 .Configure<HealthCheckOption>(o =>
                 {
                     o.CheckInterval = checkInterval;
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .CreateHubContextAsync(HubName, default);
 
             var endpoint = (serviceHubContext as ServiceHubContextImpl).ServiceProvider.GetRequiredService<IServiceEndpointManager>().GetEndpoints(HubName).First();
-            
+
             //The first health check is OK
             Assert.True(endpoint.Online);
 
