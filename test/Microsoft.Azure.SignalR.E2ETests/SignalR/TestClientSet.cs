@@ -14,6 +14,7 @@ namespace Microsoft.Azure.SignalR.Tests
     internal class TestClientSet : ITestClientSet
     {
         private readonly IList<HubConnection> _connections;
+
         private ITestOutputHelper _output;
 
         public int Count => _connections?.Count ?? 0;
