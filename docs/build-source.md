@@ -7,9 +7,9 @@ Building Azure SignalR Service SDK from source allows you tweak and customize th
 
 Building Azure SignalR Service SDK requires:
 
-* Latest Visual Studio. <https://visualstudio.com>
+* Latest Visual Studio (include pre-release). <https://visualstudio.com>
 * Git. <https://git-scm.org>
-* AspNetCore 3.0 SDK (Version >= 3.0.0). <https://dotnet.microsoft.com/download/dotnet-core/3.0>	
+* .NET SDK (Version >= 7.0.0-preview.7). <https://dotnet.microsoft.com/download/dotnet>	
 
 ## Clone the source code
 
@@ -25,34 +25,14 @@ git submodule update --init --recursive
 
 ## Building on command-line
 
-You can build the entire project on command line with the `build.cmd`/`.sh` scripts.
+You can build the entire project on command line with the [`dotnet` command](https://docs.microsoft.com/dotnet/core/tools/dotnet). Run command below in the repo's root folder.
 
-On Windows:
 ```
-.\build.cmd
-```
-
-On macOS/Linux:
-```
-./build.sh
+dotnet build
 ```
 
 ## Building in Visual Studio
 
-Before opening our .sln files in Visual Studio or VS Code, it is suggested to run `.\build.cmd` to make sure all the dependencies are restored correctly.
+Before opening our .sln files in Visual Studio or VS Code, it is suggested to run `dotnet restore` to make sure all the dependencies are restored correctly.
 
 The solution file is **AzureSignalR.sln** in the root.
-
-## Build properties
-
-Additional properties can be added as an argument in the form `/property:$name=$value`, or `/p:$name=$value` for short. For example:
-```
-.\build.cmd /p:Configuration=Release
-```
-
-Common properties include:
-
-Property                 | Description
--------------------------|-------------------------------------------------------------------------------------------------------------
-BuildNumber              | (string). A specific build number, typically from a CI counter, which is appended to the preview1 label.
-Configuration            | `Debug` or `Release`. Default = `Debug`.

@@ -454,8 +454,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // now that the only connection left is on demand one verify that we still receive pings
             var pingMsgTask = proxy.WaitForApplicationMessageAsync(typeof(PingMessage));
-            await Task.Delay(TimeSpan.FromSeconds(20));
-            await pingMsgTask.OrTimeout();
+            await pingMsgTask.OrTimeout(60000);
         }
 
         /// <summary>
@@ -514,7 +513,7 @@ namespace Microsoft.Azure.SignalR.Tests
             try
             {
                 SynchronizationContext.SetSynchronizationContext(null);
-                var conn = new TestServiceConnection();
+                var conn = new TestServiceConnection(clientInvocationManager: new DefaultClientInvocationManager());
                 var initTask = conn.StartAsync();
                 await conn.ConnectionInitializedTask;
                 conn.Stop();

@@ -7,11 +7,11 @@ using System.Collections.Generic;
 namespace Microsoft.Azure.SignalR.Protocol
 {
     /// <summary>
-    /// Base class for multicast data messages between Azure SignalR Service and SDK.
+    /// Base class for multiple subprotocol data messages between Azure SignalR Service and SDK.
     /// </summary>
-    public abstract class MulticastDataMessage : ExtensibleServiceMessage, IMessageWithTracingId
+    public abstract class MultiPayloadDataMessage : ExtensibleServiceMessage, IMessageWithTracingId
     {
-        protected MulticastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null)
+        protected MultiPayloadDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null)
         {
             Payloads = payloads;
             TracingId = tracingId;
@@ -26,6 +26,22 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the tracing Id
         /// </summary>
         public ulong? TracingId { get; set; }
+    }
+
+    /// <summary>
+    /// Base class for multicast data messages between Azure SignalR Service and SDK.
+    /// </summary>
+    public abstract class MulticastDataMessage : MultiPayloadDataMessage, IHasSubscriberFilter
+    {
+        protected MulticastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null)
+            :base (payloads, tracingId)
+        {
+        }
+
+        /// <summary>
+        /// Filter out the subscribers to send messages to
+        /// </summary>
+        public string Filter { get; set; }
     }
 
     /// <summary>
@@ -202,7 +218,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A data message to indicate a client invocation request.
     /// </summary>
-    public class ClientInvocationMessage : MulticastDataMessage
+    public class ClientInvocationMessage : MultiPayloadDataMessage
     {
         /// <summary>
         /// Initialize a new instance of <see cref="ClientInvocationMessage"/> class.

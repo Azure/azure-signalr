@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ConcurrentDictionary<ServiceEndpoint, object> _endpoints = new ConcurrentDictionary<ServiceEndpoint, object>(ReferenceEqualityComparer.Instance);
 
         private readonly ILoggerFactory _factory;
-        private readonly TimerAwaitable _timer = new TimerAwaitable(TimeSpan.Zero, TimeSpan.FromMinutes(5));
+        private readonly TimerAwaitable _timer = new TimerAwaitable(TimeSpan.Zero, TimeSpan.FromMinutes(1));
 
         public AccessKeySynchronizer(
             ILoggerFactory loggerFactory

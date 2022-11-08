@@ -20,15 +20,29 @@ jobs:
           src:
           - 'src/**'
           - 'test/**'
+          - 'build/**'
+          - 'samples/**'
           - '*.cmd'
           - '*.ps1'
-          - '*.props'
-          - '*.targets'
+          - '**.props'
+          - '**.csproj'
+          - '**.targets'
           - '*.sh'
           - '*.sln'
     - name: Update SubModules
       run: git submodule update --init --recursive
       if: steps.filter.outputs.src == 'true'
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: |
+          7.0.x
+          6.0.x
+          5.0.x
+        include-prerelease: true
     - name: Build with dotnet
-      run:  "./build.sh --ci /p:DisableNet461Tests=true"
+      run:  "dotnet build AzureSignalR.sln /p:DisableNet461Tests=true"
+      if: steps.filter.outputs.src == 'true'
+    - name: Test
+      run:  "dotnet test --no-build"
       if: steps.filter.outputs.src == 'true'

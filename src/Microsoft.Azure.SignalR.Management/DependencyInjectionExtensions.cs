@@ -123,7 +123,8 @@ namespace Microsoft.Azure.SignalR.Management
         }
 
         private static IServiceCollection AddRestClientFactory(this IServiceCollection services) => services
-            .AddHttpClient()
+            .AddHttpClient(Options.DefaultName)
+            .ConfigurePrimaryHttpMessageHandler(sp => new HttpClientHandler() { Proxy = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.Proxy }).Services
             .AddSingleton(sp =>
             {
                 var options = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value;

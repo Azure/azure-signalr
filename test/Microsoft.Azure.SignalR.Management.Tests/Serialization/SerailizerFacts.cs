@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
 using Microsoft.AspNetCore.SignalR;
@@ -26,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             get
             {
-                yield return new object[] { new JsonObjectSerializer(new() { IgnoreNullValues = true }) };
+                yield return new object[] { new JsonObjectSerializer(new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull }) };
                 yield return new object[] { new NewtonsoftJsonObjectSerializer(new() { NullValueHandling = NullValueHandling.Ignore }) };
             }
         }
