@@ -4,7 +4,6 @@
   </PropertyGroup>
   <PropertyGroup Label="Package Versions">
     <!-- Azure ASP.NET Core SignalR -->
-    <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion>1.0.4</MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackage3_0Version>3.0.0</MicrosoftAspNetCoreHttpConnectionsCommonPackage3_0Version>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackage3_1Version>3.1.9</MicrosoftAspNetCoreHttpConnectionsCommonPackage3_1Version>
@@ -77,6 +76,7 @@
     <EmulatorMicrosoftPackageVersion>6.0.9</EmulatorMicrosoftPackageVersion>
 
     <!--Testing -->
+    <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
     <MessagePackPackage3_1Version>1.9.11</MessagePackPackage3_1Version>
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>3.1.24</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
     <MicrosoftNETTestSdkPackageVersion>15.6.1</MicrosoftNETTestSdkPackageVersion>
