@@ -568,6 +568,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Fact]
+        [Obsolete]
         public void TestRunAzureSignalRWithOptions()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
@@ -582,6 +583,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
                     Assert.Equal(ConnectionString, options.Value.ConnectionString);
                     Assert.Equal(-1, options.Value.ConnectionCount);
+                    Assert.Equal(-1, options.Value.InitialHubServerConnectionCount);
                 }
             }
         }

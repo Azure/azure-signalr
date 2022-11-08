@@ -14,14 +14,18 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -400,8 +404,10 @@ namespace Microsoft.Azure.SignalR.Tests
             };
 
             var responseFeature = new HttpResponseFeature();
+            var responseBodyFeature = new StreamResponseBodyFeature(responseFeature.Body);
             features.Set<IHttpRequestFeature>(requestFeature);
             features.Set<IHttpResponseFeature>(responseFeature);
+            features.Set<IHttpResponseBodyFeature>(responseBodyFeature);
             httpContext = new DefaultHttpContext(features);
 
             handler = serviceProvider.GetRequiredService<NegotiateHandler<Chat>>();
@@ -419,8 +425,10 @@ namespace Microsoft.Azure.SignalR.Tests
             };
 
             responseFeature = new HttpResponseFeature();
+            responseBodyFeature = new StreamResponseBodyFeature(responseFeature.Body);
             features.Set<IHttpRequestFeature>(requestFeature);
             features.Set<IHttpResponseFeature>(responseFeature);
+            features.Set<IHttpResponseBodyFeature>(responseBodyFeature);
             httpContext = new DefaultHttpContext(features);
 
             handler = serviceProvider.GetRequiredService<NegotiateHandler<Chat>>();
@@ -524,6 +532,73 @@ namespace Microsoft.Azure.SignalR.Tests
 
             Assert.Contains(tokens.Claims, x => x.Type == Constants.ClaimType.MaxPollInterval && x.Value == maxPollInterval.ToString());
         }
+
+#if NET6_0_OR_GREATER
+        [Fact]
+        public async Task TestNegotiateHandlerReturnCloseOnAuthExpClaims()
+        {
+            using var app = await CreateSignalRServerAppWithCloseOnAuthExpAsync(true);
+            var httpContext = new DefaultHttpContext();
+            var expireUtc = DateTimeOffset.FromUnixTimeSeconds(0);
+            httpContext.Features.Set(Mock.Of<IAuthenticateResultFeature>(f => f.AuthenticateResult == AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(), new AuthenticationProperties { ExpiresUtc = expireUtc }, "schema"))));
+            var handler = app.Services.GetRequiredService<NegotiateHandler<Chat>>();
+            var negotiateResponse = await handler.Process(httpContext);
+            var tokens = JwtTokenHelper.JwtHandler.ReadJwtToken(negotiateResponse.AccessToken);
+            Assert.Contains(tokens.Claims, c => c.Type == "asrs.s.coae" && c.Value == "true");
+            Assert.Contains(tokens.Claims, c => c.Type == "asrs.s.aeo" && c.Value == "0");
+            await app.StopAsync();
+        }
+
+        [Fact]
+        public async Task TestNegotiateHandlerNotReturnCloseOnAuthExpClaimsWhenOptionIsFalse()
+        {
+            using var app = await CreateSignalRServerAppWithCloseOnAuthExpAsync(false);
+            var httpContext = new DefaultHttpContext();
+            var expireUtc = DateTimeOffset.FromUnixTimeSeconds(0);
+            httpContext.Features.Set(Mock.Of<IAuthenticateResultFeature>(f => f.AuthenticateResult == AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(), new AuthenticationProperties { ExpiresUtc = expireUtc }, "schema"))));
+            var handler = app.Services.GetRequiredService<NegotiateHandler<Chat>>();
+            var negotiateResponse = await handler.Process(httpContext);
+            var tokens = JwtTokenHelper.JwtHandler.ReadJwtToken(negotiateResponse.AccessToken);
+
+            Assert.DoesNotContain(tokens.Claims, c => c.Type == "asrs.s.coae");
+            Assert.DoesNotContain(tokens.Claims, c => c.Type == "asrs.s.aeo");
+            await app.StopAsync();
+
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHttpContxtWithoutSuccessfulAuthExp))]
+        public async Task TestNegotiateHandlerNotReturnCloseOnAuthExpClaimsWithoutAuthExp(HttpContext httpContext)
+        {
+            using var app = await CreateSignalRServerAppWithCloseOnAuthExpAsync(true);
+            var expireUtc = DateTimeOffset.FromUnixTimeSeconds(0);
+            var handler = app.Services.GetRequiredService<NegotiateHandler<Chat>>();
+            var negotiateResponse = await handler.Process(httpContext);
+            var tokens = JwtTokenHelper.JwtHandler.ReadJwtToken(negotiateResponse.AccessToken);
+
+            Assert.DoesNotContain(tokens.Claims, c => c.Type == "asrs.s.coae");
+            Assert.DoesNotContain(tokens.Claims, c => c.Type == "asrs.s.aeo");
+            await app.StopAsync();
+
+        }
+
+        public static IEnumerable<object[]> GetHttpContxtWithoutSuccessfulAuthExp()
+        {
+            yield return new object[] { new DefaultHttpContext() };
+
+            var authSucceededWithoutExp = new DefaultHttpContext();
+            authSucceededWithoutExp.Features.Set(Mock.Of<IAuthenticateResultFeature>(f => f.AuthenticateResult == AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(), "schema"))));
+            yield return new object[] { authSucceededWithoutExp };
+
+            var authFailedWithExp = new DefaultHttpContext();
+            authFailedWithExp.Features.Set(Mock.Of<IAuthenticateResultFeature>(f => f.AuthenticateResult == AuthenticateResult.Fail("fail", new() { ExpiresUtc = DateTimeOffset.UtcNow })));
+            yield return new object[] { authFailedWithExp };
+
+            var authNoResult = new DefaultHttpContext();
+            authNoResult.Features.Set(Mock.Of<IAuthenticateResultFeature>(f => f.AuthenticateResult == AuthenticateResult.NoResult()));
+            yield return new object[] { authNoResult };
+        }
+#endif
 
         [Theory]
         [InlineData(true)]
@@ -651,6 +726,18 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private sealed class Chat : Hub
         {
+        }
+
+        private static async Task<WebApplication> CreateSignalRServerAppWithCloseOnAuthExpAsync(bool closeOnAuthExp)
+        {
+            var builder = WebApplication.CreateBuilder();
+            builder.Services.AddSignalR().AddAzureSignalR("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;");
+            builder.Services.AddSingleton(sp => Mock.Of<IEndpointRouter>(r => r.GetNegotiateEndpoint(It.IsAny<HttpContext>(), It.IsAny<IEnumerable<ServiceEndpoint>>()) == sp.GetService<IServiceEndpointManager>().Endpoints.First().Value));
+            builder.Services.AddSingleton<IServiceConnectionFactory>(new TestServiceConnectionFactory());
+            var app = builder.Build();
+            app.MapHub<Chat>("/chat", o => o.CloseOnAuthenticationExpiration = closeOnAuthExp);
+            await app.StartAsync();
+            return app;
         }
     }
 }

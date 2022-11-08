@@ -24,9 +24,11 @@ namespace Microsoft.Azure.SignalR
 
         private const string DefaultScope = "https://signalr.azure.com/.default";
 
-        private static readonly TokenRequestContext _defaultRequestContext = new TokenRequestContext(new string[] { DefaultScope });
-
         private static readonly TimeSpan AuthorizeInterval = TimeSpan.FromMinutes(AuthorizeIntervalInMinute);
+
+        private static readonly TokenRequestContext DefaultRequestContext = new TokenRequestContext(new string[] { DefaultScope });
+
+        private static readonly TimeSpan AuthorizeIntervalWhenFailed = TimeSpan.FromMinutes(5);
 
         private static readonly TimeSpan AuthorizeRetryInterval = TimeSpan.FromSeconds(AuthorizeRetryIntervalInSec);
 
@@ -38,11 +40,22 @@ namespace Microsoft.Azure.SignalR
 
         private DateTime _lastUpdatedTime = DateTime.MinValue;
 
-        public bool Authorized => InitializedTask.IsCompleted && _isAuthorized;
+        public bool Authorized
+        {
+            get => _isAuthorized;
+            private set
+            {
+                _lastUpdatedTime = DateTime.UtcNow;
+                _isAuthorized = value;
+                _initializedTcs.TrySetResult(null);
+            }
+        }
 
         public TokenCredential TokenCredential { get; }
 
         internal string AuthorizeUrl { get; }
+
+        internal bool HasExpired => DateTime.UtcNow - _lastUpdatedTime > TimeSpan.FromMinutes(AuthorizeIntervalInMinute * 2);
 
         private Task<object> InitializedTask => _initializedTcs.Task;
 
@@ -59,7 +72,7 @@ namespace Microsoft.Azure.SignalR
 
         public virtual async Task<string> GenerateAadTokenAsync(CancellationToken ctoken = default)
         {
-            var token = await TokenCredential.GetTokenAsync(_defaultRequestContext, ctoken);
+            var token = await TokenCredential.GetTokenAsync(DefaultRequestContext, ctoken);
             return token.Token;
         }
 
@@ -93,28 +106,40 @@ namespace Microsoft.Azure.SignalR
         internal void UpdateAccessKey(string kid, string accessKey)
         {
             Key = new Tuple<string, string>(kid, accessKey);
-            _lastUpdatedTime = DateTime.UtcNow;
-            _isAuthorized = true;
-            _initializedTcs.TrySetResult(null);
+            Authorized = true;
         }
 
-        internal bool HasExpired => DateTime.UtcNow - _lastUpdatedTime > TimeSpan.FromMinutes(AuthorizeIntervalInMinute * 2);
-
-        internal async Task UpdateAccessKeyAsync()
+        internal async Task UpdateAccessKeyAsync(CancellationToken token = default)
         {
-            if (DateTime.UtcNow - _lastUpdatedTime < AuthorizeInterval)
+            var delta = DateTime.UtcNow - _lastUpdatedTime;
+            if (Authorized && delta < AuthorizeInterval)
             {
                 return;
             }
+            else if (!Authorized && delta < AuthorizeIntervalWhenFailed)
+            {
+                return;
+            }
+            await AuthorizeWithRetryAsync(token);
+        }
 
+        private async Task AuthorizeWithRetryAsync(CancellationToken token)
+        {
             Exception latest = null;
-            for (int i = 0; i < AuthorizeMaxRetryTimes; i++)
+            for (var i = 0; i < AuthorizeMaxRetryTimes; i++)
             {
                 var source = new CancellationTokenSource(AuthorizeTimeout);
+                var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(source.Token, token);
                 try
                 {
-                    await AuthorizeAsync(source.Token);
+                    var aadToken = await GenerateAadTokenAsync(linkedSource.Token);
+                    await AuthorizeWithTokenAsync(aadToken, linkedSource.Token);
                     return;
+                }
+                catch (OperationCanceledException e)
+                {
+                    latest = e;
+                    break;
                 }
                 catch (Exception e)
                 {
@@ -123,15 +148,8 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
-            _isAuthorized = false;
-            _initializedTcs.TrySetResult(null);
+            Authorized = false;
             throw latest;
-        }
-
-        private async Task AuthorizeAsync(CancellationToken ctoken = default)
-        {
-            var aadToken = await GenerateAadTokenAsync(ctoken);
-            await AuthorizeWithTokenAsync(aadToken, ctoken);
         }
 
         private async Task AuthorizeWithTokenAsync(string accessToken, CancellationToken token = default)

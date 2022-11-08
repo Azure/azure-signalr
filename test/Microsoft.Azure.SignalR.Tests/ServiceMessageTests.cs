@@ -39,14 +39,15 @@ namespace Microsoft.Azure.SignalR.Tests
         public async Task TestOpenConnectionMessageWithMigrateIn()
         {
             var clientConnectionFactory = new TestClientConnectionFactory();
-            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory);
+            var clientInvocationManager = new DefaultClientInvocationManager();
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
-            await connection.ConnectionInitializedTask.OrTimeout(1000);
+            await connection.ConnectionInitializedTask.OrTimeout();
 
             var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>());
             openConnectionMessage.Headers.Add(Constants.AsrsMigrateFrom, "another-server");
             _ = connection.WriteFromServiceAsync(openConnectionMessage);
-            await connection.ClientConnectedTask;
+            await connection.ClientConnectedTask.OrTimeout();
 
             Assert.Equal(1, clientConnectionFactory.Connections.Count);
             var clientConnection = clientConnectionFactory.Connections[0];
@@ -73,8 +74,9 @@ namespace Microsoft.Azure.SignalR.Tests
         public async Task TestCloseConnectionMessageWithMigrateOut()
         {
             var clientConnectionFactory = new TestClientConnectionFactory();
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
-            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"));
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"), clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -91,20 +93,16 @@ namespace Microsoft.Azure.SignalR.Tests
             SignalRProtocol.HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
             await clientConnection.Transport.Output.FlushAsync();
 
+            // expect a handshake response message.
+            await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout();
+
             // write a close connection message with migration header
             var closeMessage = new CloseConnectionMessage(clientConnection.ConnectionId);
             closeMessage.Headers.Add(Constants.AsrsMigrateTo, "another-server");
             await connection.WriteFromServiceAsync(closeMessage);
 
             // wait until app task completed.
-            await Assert.ThrowsAsync<TimeoutException>(async () => await clientConnection.LifetimeTask.OrTimeout(1000));
-            await clientConnection.LifetimeTask.OrTimeout(3000);
-
-            // expect a handshake response message.
-            await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout(3000);
-
-            // signalr close message should be skipped.
-            await Assert.ThrowsAsync<TimeoutException>(async () => await connection.ExpectSignalRMessage(SignalRProtocol.CloseMessage.Empty).OrTimeout(1000));
+            await clientConnection.LifetimeTask.OrTimeout();
 
             var feature = clientConnection.Features.Get<IConnectionMigrationFeature>();
             Assert.NotNull(feature);
@@ -117,8 +115,9 @@ namespace Microsoft.Azure.SignalR.Tests
         public async Task TestCloseConnectionMessage()
         {
             var clientConnectionFactory = new TestClientConnectionFactory();
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
-            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"));
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"), clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -171,8 +170,9 @@ namespace Microsoft.Azure.SignalR.Tests
             var endpoint = MockServiceEndpoint(keyType.Name);
             Assert.IsAssignableFrom(keyType, endpoint.AccessKey);
             var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
-            var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint);
+            var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint, clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -195,8 +195,9 @@ namespace Microsoft.Azure.SignalR.Tests
             var endpoint = MockServiceEndpoint(keyType.Name);
             Assert.IsAssignableFrom(keyType, endpoint.AccessKey);
             var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
-            var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint);
+            var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint, clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -243,7 +244,9 @@ namespace Microsoft.Azure.SignalR.Tests
                     field.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(minutesElapsed));
                 }
 
-                var connection = CreateServiceConnection(loggerFactory: loggerFactory, hubServiceEndpoint: endpoint);
+                var clientInvocationManager = new DefaultClientInvocationManager();
+
+                var connection = CreateServiceConnection(loggerFactory: loggerFactory, hubServiceEndpoint: endpoint, clientInvocationManager: clientInvocationManager);
                 var connectionTask = connection.StartAsync();
                 await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -279,6 +282,7 @@ namespace Microsoft.Azure.SignalR.Tests
                                                                      IServiceMessageHandler messageHandler = null,
                                                                      IServiceEventHandler eventHandler = null,
                                                                      IClientConnectionFactory clientConnectionFactory = null,
+                                                                     IClientInvocationManager clientInvocationManager = null,
                                                                      HubServiceEndpoint hubServiceEndpoint = null,
                                                                      ILoggerFactory loggerFactory = null)
         {
@@ -313,6 +317,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 hubServiceEndpoint ?? new TestHubServiceEndpoint(),
                 messageHandler ?? new TestServiceMessageHandler(),
                 eventHandler ?? new TestServiceEventHandler(),
+                clientInvocationManager,
                 mode: mode ?? GracefulShutdownMode.Off
             );
         }
@@ -439,6 +444,7 @@ namespace Microsoft.Azure.SignalR.Tests
                                          HubServiceEndpoint endpoint,
                                          IServiceMessageHandler serviceMessageHandler,
                                          IServiceEventHandler serviceEventHandler,
+                                         IClientInvocationManager clientInvocationManager,
                                          ServiceConnectionType connectionType = ServiceConnectionType.Default,
                                          GracefulShutdownMode mode = GracefulShutdownMode.Off,
                                          int closeTimeOutMilliseconds = 10000) : base(
@@ -453,6 +459,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     endpoint,
                     serviceMessageHandler,
                     serviceEventHandler,
+                    clientInvocationManager,
                     connectionType: connectionType,
                     mode: mode,
                     closeTimeOutMilliseconds: closeTimeOutMilliseconds)

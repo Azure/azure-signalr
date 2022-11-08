@@ -1,8 +1,13 @@
 name: Gated-OSX
-on:
+on: 
  push:
    branches: 
-    - disable
+    - master
+    - dev
+ pull_request:
+   branches: 
+    - master
+    - dev
 jobs:
   build_osx:
     runs-on: macOS-latest
@@ -15,17 +20,30 @@ jobs:
           src:
           - 'src/**'
           - 'test/**'
+          - 'build/**'
+          - 'samples/**'
           - '*.cmd'
           - '*.ps1'
-          - '*.props'
-          - '*.targets'
+          - '**.props'
+          - '**.csproj'
+          - '**.targets'
           - '*.sh'
           - '*.sln'
 
     - name: Update SubModules
       if: steps.filter.outputs.src == 'true'
       run: git submodule update --init --recursive
-    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: |
+          7.0.x
+          6.0.x
+          5.0.x
+        include-prerelease: true
     - name: Build with dotnet
+      run:  "dotnet build AzureSignalR.sln /p:DisableNet461Tests=true"
       if: steps.filter.outputs.src == 'true'
-      run:  "./build.sh --ci /p:DisableNet461Tests=true"
+    - name: Test
+      run:  "dotnet test --no-build"
+      if: steps.filter.outputs.src == 'true'

@@ -31,7 +31,8 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false,
             ILogger logger = null,
             IServiceMessageHandler serviceMessageHandler = null,
-            IServiceEventHandler serviceEventHandler = null
+            IServiceEventHandler serviceEventHandler = null,
+            IClientInvocationManager clientInvocationManager = null
             ) : base(
             new ServiceProtocol(),
             "serverId",
