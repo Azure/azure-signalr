@@ -59,23 +59,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
-        public Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
-        {
-            if (_accessKey is AadAccessKey key)
-            {
-                return key.GenerateAadTokenAsync();
-            }
-
-            if (string.IsNullOrEmpty(hubName))
-            {
-                throw new ArgumentNullException(nameof(hubName));
-            }
-
-            var audience = $"{_audienceBaseUrl}{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
-            var claims = userId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, userId) } : null;
-            return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
-        }
-
         public string GetClientEndpoint(string hubName = null, string originalPath = null, string queryString = null)
         {
             var queryBuilder = new StringBuilder();
@@ -108,6 +91,24 @@ namespace Microsoft.Azure.SignalR.AspNet
         public string GetServerEndpoint(string hubName)
         {
             return $"{_serverEndpoint}{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
+        }
+
+        public IAccessTokenProvider GetServerAccessTokenProvider(string hubName, string serverId)
+        {
+            if (_accessKey is AadAccessKey aadAccessKey)
+            {
+                return new AadTokenProvider(aadAccessKey);
+            }
+            else if (_accessKey is not null)
+            {
+                var audience = $"{_audienceBaseUrl}{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
+                var claims = serverId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, serverId) } : null;
+                return new LocalTokenProvider(_accessKey, audience, claims, _algorithm, _accessTokenLifetime);
+            }
+            else
+            {
+                throw new ArgumentNullException(nameof(AccessKey));
+            }
         }
 
         private string GetPrefixedHubName(string applicationName, string hubName)

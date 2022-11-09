@@ -20,6 +20,11 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             throw new NotImplementedException();
         }
 
+        public IAccessTokenProvider GetServerAccessTokenProvider(string hubName, string serverId)
+        {
+            throw new NotImplementedException();
+        }
+
         public string GetClientEndpoint(string hubName, string originalPath, string queryString)
         {
             throw new NotImplementedException();

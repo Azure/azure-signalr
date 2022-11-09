@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR
 
         public WebSocketConnectionContext(WebSocketConnectionOptions httpConnectionOptions,
                                           ILoggerFactory loggerFactory,
-                                          Func<Task<string>> accessTokenProvider)
+                                          IAccessTokenProvider accessTokenProvider)
         {
             Transport = _websocketTransport = new WebSocketsTransport(httpConnectionOptions, loggerFactory, accessTokenProvider);
             ConnectionId = "sc_" + Guid.NewGuid();
