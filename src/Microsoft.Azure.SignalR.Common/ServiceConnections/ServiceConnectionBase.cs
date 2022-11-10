@@ -295,7 +295,7 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        protected Task OnPingMessageAsync(PingMessage pingMessage)
+        protected virtual Task OnPingMessageAsync(PingMessage pingMessage)
         {
             if (RuntimeServicePingMessage.TryGetOffline(pingMessage, out var instanceId))
             {
@@ -550,7 +550,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private Task DispatchMessageAsync(ServiceMessage message)
+        protected virtual Task DispatchMessageAsync(ServiceMessage message)
         {
             return message switch
             {
