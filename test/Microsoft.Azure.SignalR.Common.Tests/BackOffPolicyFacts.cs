@@ -161,7 +161,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 
                 Func<Task> testFunc = async () =>
                 {
-                    NextInt
                     try
                     {
                         // This delay effectively defines the order of the calls
