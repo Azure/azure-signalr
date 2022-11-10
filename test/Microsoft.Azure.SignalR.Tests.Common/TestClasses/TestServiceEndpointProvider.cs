@@ -15,12 +15,12 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             throw new NotImplementedException();
         }
 
-        public Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
+        public string GetClientEndpoint(string hubName, string originalPath, string queryString)
         {
             throw new NotImplementedException();
         }
 
-        public string GetClientEndpoint(string hubName, string originalPath, string queryString)
+        public AccessTokenProvider GetServerAccessTokenProvider(string hubName, string userId, TimeSpan? lifetime = null)
         {
             throw new NotImplementedException();
         }

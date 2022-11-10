@@ -31,7 +31,9 @@ namespace Microsoft.Azure.SignalR
         {
             var provider = hubServiceEndpoint.Provider;
             var hubName = hubServiceEndpoint.Hub;
-            Task<string> accessTokenProvider() => provider.GenerateServerAccessTokenAsync(hubName, _serverId);
+
+            var accessTokenProvider = provider.GetServerAccessTokenProvider(hubName, _serverId);
+
             var url = GetServiceUrl(provider, hubName, connectionId, target);
 
             headers ??= new Dictionary<string, string>();

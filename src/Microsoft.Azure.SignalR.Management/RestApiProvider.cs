@@ -16,27 +16,26 @@ namespace Microsoft.Azure.SignalR.Management
 
         private readonly RestApiAccessTokenGenerator _restApiAccessTokenGenerator;
 
-        private readonly string _audienceBaseUrl;
-        private readonly string _serverEndpoint;
+        private readonly ServiceEndpoint _serviceEndpoint;
+
+        private string AudienceBaseUrl => _serviceEndpoint.AudienceBaseUrl;
+
+        private AuthType AuthType => _serviceEndpoint.AccessKey.AuthType;
+
+        private string ServerEndpoint => _serviceEndpoint.ServerEndpoint.AbsoluteUri;
 
         public RestApiProvider(ServiceEndpoint endpoint)
         {
-            _audienceBaseUrl = endpoint.AudienceBaseUrl;
-            _serverEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
+            _serviceEndpoint = endpoint;
             _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(endpoint.AccessKey);
-        }
-
-        private string GetPrefixedHubName(string applicationName, string hubName)
-        {
-            return string.IsNullOrEmpty(applicationName) ? hubName.ToLowerInvariant() : $"{applicationName.ToLowerInvariant()}_{hubName.ToLowerInvariant()}";
         }
 
         public async Task<RestApiEndpoint> GetServiceHealthEndpointAsync()
         {
-            var url = $"{_serverEndpoint}api/health?api-version={Version}";
-            var audience = $"{_audienceBaseUrl}api/health?api-version={Version}";
+            var url = $"{ServerEndpoint}api/health?api-version={Version}";
+            var audience = $"{AudienceBaseUrl}api/health?api-version={Version}";
             var token = await _restApiAccessTokenGenerator.Generate(audience);
-            return new RestApiEndpoint(url, token);
+            return new RestApiEndpoint(url, token, AuthType);
         }
 
         public Task<RestApiEndpoint> GetBroadcastEndpointAsync(string appName, string hubName, TimeSpan? lifetime = null, IReadOnlyList<string> excluded = null)
@@ -102,21 +101,25 @@ namespace Microsoft.Azure.SignalR.Management
             return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{Uri.EscapeDataString(group)}");
         }
 
-        private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
-        { 
-            var requestPrefixWithHub = $"{_serverEndpoint}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
-            if (string.IsNullOrEmpty(appName))
-            {
-                pathAfterHub = $"{pathAfterHub}?api-version={Version}";
-            }
-            else
-            {
-                pathAfterHub = $"{pathAfterHub}?application={Uri.EscapeDataString(appName.ToLowerInvariant())}&api-version={Version}";
-            }
+        private string GetPrefixedHubName(string applicationName, string hubName)
+        {
+            return string.IsNullOrEmpty(applicationName) ? hubName.ToLowerInvariant() : $"{applicationName.ToLowerInvariant()}_{hubName.ToLowerInvariant()}";
+        }
+
+        private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName,
+                                                                         string hubName,
+                                                                         string pathAfterHub,
+                                                                         TimeSpan? lifetime = null,
+                                                                         IDictionary<string, StringValues> queries = null)
+        {
+            var requestPrefixWithHub = $"{ServerEndpoint}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
+            pathAfterHub = string.IsNullOrEmpty(appName)
+                ? $"{pathAfterHub}?api-version={Version}"
+                : $"{pathAfterHub}?application={Uri.EscapeDataString(appName.ToLowerInvariant())}&api-version={Version}";
             // todo: should be same with `requestPrefixWithHub`, need to confirm with emulator.
-            var audiencePrefixWithHub = $"{_audienceBaseUrl}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
+            var audiencePrefixWithHub = $"{AudienceBaseUrl}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
             var token = await _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);
-            return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token) { Query = queries };
+            return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token, AuthType) { Query = queries };
         }
     }
 }

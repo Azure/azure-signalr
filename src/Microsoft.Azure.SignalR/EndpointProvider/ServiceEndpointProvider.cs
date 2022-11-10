@@ -52,23 +52,6 @@ namespace Microsoft.Azure.SignalR
             return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
-        public Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
-        {
-            if (_accessKey is AadAccessKey key)
-            {
-                return key.GenerateAadTokenAsync();
-            }
-
-            if (string.IsNullOrEmpty(hubName))
-            {
-                throw new ArgumentNullException(nameof(hubName));
-            }
-
-            var audience = _generator.GetServerAudience(hubName, _appName);
-            var claims = userId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, userId) } : null;
-            return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
-        }
-
         public string GetClientEndpoint(string hubName, string originalPath, string queryString)
         {
             return string.IsNullOrEmpty(hubName)
@@ -81,6 +64,20 @@ namespace Microsoft.Azure.SignalR
             return string.IsNullOrEmpty(hubName)
                 ? throw new ArgumentNullException(nameof(hubName))
                 : _generator.GetServerEndpoint(hubName, _appName);
+        }
+
+        public AccessTokenProvider GetServerAccessTokenProvider(string hubName, string userId, TimeSpan? lifetime = null)
+        {
+            if (_accessKey is AadAccessKey aad)
+            {
+                return new AccessTokenProvider(aad);
+            }
+            else
+            {
+                var audience = _generator.GetServerAudience(hubName, _appName);
+                var claims = userId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, userId) } : null;
+                return new AccessTokenProvider(_accessKey, audience, claims, _accessTokenLifetime, _algorithm);
+            }
         }
     }
 }

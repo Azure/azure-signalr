@@ -22,11 +22,17 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
         public static PipeOptions DefaultOptions = new PipeOptions(writerScheduler: PipeScheduler.ThreadPool, readerScheduler: PipeScheduler.ThreadPool, useSynchronizationContext: false, pauseWriterThreshold: 0, resumeWriterThreshold: 0);
 
         private readonly WebSocketMessageType _webSocketMessageType = WebSocketMessageType.Binary;
+
         private readonly ClientWebSocket _webSocket;
-        private readonly Func<Task<string>> _accessTokenProvider;
+
+        private readonly AccessTokenProvider _accessTokenProvider;
+
         private IDuplexPipe _application;
+
         private readonly ILogger _logger;
+
         private readonly TimeSpan _closeTimeout;
+
         private volatile bool _aborted;
 
         private IDuplexPipe _transport;
@@ -37,7 +43,9 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
 
         public PipeWriter Output => _transport.Output;
 
-        public WebSocketsTransport(WebSocketConnectionOptions connectionOptions, ILoggerFactory loggerFactory, Func<Task<string>> accessTokenProvider)
+        public WebSocketsTransport(WebSocketConnectionOptions connectionOptions,
+                                   ILoggerFactory loggerFactory,
+                                   AccessTokenProvider accessTokenProvider)
         {
             _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<WebSocketsTransport>();
             _webSocket = new ClientWebSocket();
@@ -105,7 +113,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
             // We don't need to capture to a local because we never change this delegate.
             if (_accessTokenProvider != null)
             {
-                var accessToken = await _accessTokenProvider();
+                var accessToken = await _accessTokenProvider.ProvideAsync();
                 if (!string.IsNullOrEmpty(accessToken))
                 {
                     _webSocket.Options.SetRequestHeader("Authorization", $"Bearer {accessToken}");
@@ -121,7 +129,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
             catch (Exception e)
             {
                 _webSocket.Dispose();
-                throw e.WrapAsAzureSignalRException();
+                throw e.WrapAsAzureSignalRException(_accessTokenProvider.AuthType);
             }
 
             Log.StartedTransport(_logger);

@@ -18,7 +18,9 @@ namespace Microsoft.Azure.SignalR
     internal class RestClient
     {
         private readonly IHttpClientFactory _httpClientFactory;
+
         private readonly ObjectSerializer _objectSerializer;
+
         private readonly bool _enableMessageTracing;
 
         public RestClient(IHttpClientFactory httpClientFactory, ObjectSerializer objectSerializer, bool enableMessageTracing)
@@ -67,13 +69,13 @@ namespace Microsoft.Azure.SignalR
                 response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 if (handleExpectedResponseAsync == null)
                 {
-                    await ThrowExceptionOnResponseFailureAsync(response);
+                    await ThrowExceptionOnResponseFailureAsync(response, api.AuthType);
                 }
                 else
                 {
                     if (!await handleExpectedResponseAsync(response))
                     {
-                        await ThrowExceptionOnResponseFailureAsync(response);
+                        await ThrowExceptionOnResponseFailureAsync(response, api.AuthType);
                     }
                 }
             }
@@ -87,13 +89,12 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public async Task ThrowExceptionOnResponseFailureAsync(HttpResponseMessage response)
+        public async Task ThrowExceptionOnResponseFailureAsync(HttpResponseMessage response, AuthType authType)
         {
             if (response.IsSuccessStatusCode)
             {
                 return;
             }
-
             var detail = await response.Content.ReadAsStringAsync();
 
 #if NET5_0_OR_GREATER
@@ -106,7 +107,7 @@ namespace Microsoft.Azure.SignalR
             throw response.StatusCode switch
             {
                 HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(response.RequestMessage.RequestUri.ToString(), innerException, detail),
-                HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(response.RequestMessage.RequestUri.ToString(), innerException),
+                HttpStatusCode.Unauthorized => AzureSignalRUnauthorizedException.Wraps(authType, response.RequestMessage.RequestUri, innerException),
                 HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(response.RequestMessage.RequestUri.ToString(), innerException),
                 _ => new AzureSignalRRuntimeException(response.RequestMessage.RequestUri.ToString(), innerException),
             };

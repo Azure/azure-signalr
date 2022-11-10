@@ -15,7 +15,10 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly string _userAgent;
 
-        public SignalRServiceRestClient(string userAgent, ServiceClientCredentials credentials, HttpClient httpClient, bool disposeHttpClient) : this(credentials, httpClient, disposeHttpClient)
+        public SignalRServiceRestClient(string userAgent,
+                                        ServiceClientCredentials credentials,
+                                        HttpClient httpClient,
+                                        bool disposeHttpClient) : this(credentials, httpClient, disposeHttpClient)
         {
             if (string.IsNullOrWhiteSpace(userAgent))
             {
@@ -44,7 +47,11 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
-                throw ex.WrapAsAzureSignalRException(BaseUri);
+                if (Credentials is JwtTokenCredentials jwt)
+                {
+                    throw ex.WrapAsAzureSignalRException(BaseUri, jwt.AuthType);
+                }
+                throw;
             }
         }
     }
