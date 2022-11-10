@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [Fact]
         public async Task AllProbesSuccessfulTest()
         {
-            await RunProbeTests(new TestData()
+            await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
             {
                 Params = new ProbeParam[] {
                     new ProbeParam() {Result = true, Duration = _1s, Throws = false },
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                     _1s, _1s    // the following 2 will be called right after the duration of the first one
                 },
                 BkOffFunc = (i) => DefaultBackOff
-            });
+            }));
         }
 
         [Fact]
@@ -161,6 +161,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 
                 Func<Task> testFunc = async () =>
                 {
+                    NextInt
                     try
                     {
                         // This delay effectively defines the order of the calls
@@ -199,7 +200,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         }
 
         // To avoid very repetitive code we parametrize a generic test
-        // with different inputs and different expected results
+        // with different inputs and different expNextIntected results
         public class ProbeParam
         {
             // delay before calling the probe (to control the order of calls)
