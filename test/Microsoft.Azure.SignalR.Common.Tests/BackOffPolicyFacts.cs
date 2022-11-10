@@ -4,51 +4,39 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Common.Tests
 {
-    public class BackOffPolicyFacts
+    public class BackOffPolicyFacts : VerifiableLoggedTest
     {
-        // To avoid very repetitive code we parametrize a generic test 
-        // with different inputs and different expected results
-        public class ProbeParam
-        {
-            // delay before calling the probe (to control the order of calls)
-            public TimeSpan InitialDelay = TimeSpan.Zero;   
-            public bool Result;
-            public TimeSpan Duration;
-            public bool Throws;
-        }
+        private static TimeSpan _overrunLeeway = TimeSpan.FromMilliseconds(250);
 
-        public class ProbeResult
-        {
-            public bool ActualResult;
-            public Exception ActualException;
-            public int ActualCallOrder;
-            public int ActualNumberOfCalls;
-            public TimeSpan ActualCallTime;
-        }
+        private static TimeSpan _underrunLeeway = TimeSpan.FromMilliseconds(50);
 
-        public class TestData
-        {
-            public ProbeParam[] Params;
-            public Func<int, TimeSpan> BkOffFunc;
-            public TimeSpan[] ExpectedCallTimes;
-            public ProbeResult[] Results;
-        }
+        private static TimeSpan DefaultBackOff = TimeSpan.FromSeconds(2);
+
+        private static Func<int, TimeSpan> DefaultBackOffFunc = (i) => DefaultBackOff;
+
+        private static TimeSpan _1stBackOff = TimeSpan.FromSeconds(1.5);
+
+        private static TimeSpan _2ndBackOff = TimeSpan.FromSeconds(2.5);
+
+        private static TimeSpan _nxtBackOff = TimeSpan.FromSeconds(4.5);
 
         private TimeSpan _0s = TimeSpan.FromSeconds(0);
+
         private TimeSpan _1s = TimeSpan.FromSeconds(1);
+
         private TimeSpan _2s = TimeSpan.FromSeconds(2);
+
         private TimeSpan _10s = TimeSpan.FromSeconds(10);
-        private static TimeSpan _overrunLeeway = TimeSpan.FromMilliseconds(250);
-        private static TimeSpan _underrunLeeway = TimeSpan.FromMilliseconds(50);
-        private static TimeSpan DefaultBackOff = TimeSpan.FromSeconds(2);
-        private static Func<int, TimeSpan> DefaultBackOffFunc = (i) => DefaultBackOff;
-        private static TimeSpan _1stBackOff = TimeSpan.FromSeconds(1.5);
-        private static TimeSpan _2ndBackOff = TimeSpan.FromSeconds(2.5);
-        private static TimeSpan _nxtBackOff = TimeSpan.FromSeconds(4.5);
+
+        public BackOffPolicyFacts(ITestOutputHelper output) : base(output)
+        {
+        }
 
         [Fact]
         public async Task AllProbesSuccessfulTest()
@@ -71,7 +59,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [Fact]
         public async Task First2ProbesUnsuccessfulTest()
         {
-            await RunProbeTests(new TestData()
+            await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
             {
                 Params = new ProbeParam[] {
                     new ProbeParam() {                              Result = false, Duration = _1s, Throws = false },
@@ -81,9 +69,9 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                     new ProbeParam() {InitialDelay = _2ndBackOff,   Result = true, Duration = _0s, Throws = false }
                 },
                 ExpectedCallTimes = new TimeSpan[] {
-                    _0s,                            // these first 2 compete to get called right away, 
+                    _0s,                            // these first 2 compete to get called right away,
                                                     // whoever wins returns false and induces 1st back off
-                    _1stBackOff,                    // the 2nd one is called after the 1st failed back off, 
+                    _1stBackOff,                    // the 2nd one is called after the 1st failed back off,
                                                     // return false, induces the 2nd back off
 
                     _1stBackOff + _2ndBackOff,      // called after 1st + 2nd back offs, succeeds after 0 s
@@ -91,13 +79,13 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                     _1stBackOff + _2ndBackOff + _0s // 1st + 2nd back offs + duration of 1st successful one (0 s)
                 },
                 BkOffFunc = (i) => i == 0 ? _1stBackOff : i == 1 ? _2ndBackOff : _nxtBackOff,
-            });
+            }));
         }
 
         [Fact]
         public async Task FirstProbeThrowsTest()
         {
-            await RunProbeTests(new TestData()
+            await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
             {
                 Params = new ProbeParam[] {
                     new ProbeParam() {                              Result = false, Duration = _0s, Throws=true },
@@ -105,7 +93,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                     new ProbeParam() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false },
                     new ProbeParam() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false },
                     new ProbeParam() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false }
-
                 },
                 ExpectedCallTimes = new TimeSpan[] {
                     _0s,                            // called right away, throws and induces first back off
@@ -115,7 +102,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                     _1stBackOff + _2ndBackOff + _1s // 1st + 2nd back offs + duration of 1st successful one (1s)
                 },
                 BkOffFunc = (i) => i == 0 ? _1stBackOff : i == 1 ? _2ndBackOff : _nxtBackOff,
-            });
+            }));
         }
 
         [Fact]
@@ -203,12 +190,50 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 
                 // knowing the actual order of the func call we can compare it with the expected time
                 // ActualCallOrder starts with 1
-                var expectedTime = testData.ExpectedCallTimes[result.ActualCallOrder - 1]; 
+                var expectedTime = testData.ExpectedCallTimes[result.ActualCallOrder - 1];
 
                 Assert.False(
                     result.ActualCallTime < expectedTime - _underrunLeeway ||        // too early
                     result.ActualCallTime > expectedTime + _overrunLeeway);          // too late
             }
+        }
+
+        // To avoid very repetitive code we parametrize a generic test
+        // with different inputs and different expected results
+        public class ProbeParam
+        {
+            // delay before calling the probe (to control the order of calls)
+            public TimeSpan InitialDelay = TimeSpan.Zero;
+
+            public bool Result;
+
+            public TimeSpan Duration;
+
+            public bool Throws;
+        }
+
+        public class ProbeResult
+        {
+            public bool ActualResult;
+
+            public Exception ActualException;
+
+            public int ActualCallOrder;
+
+            public int ActualNumberOfCalls;
+
+            public TimeSpan ActualCallTime;
+        }
+
+        public class TestData
+        {
+            public ProbeParam[] Params;
+
+            public Func<int, TimeSpan> BkOffFunc;
+
+            public TimeSpan[] ExpectedCallTimes;
+
+            public ProbeResult[] Results;
         }
     }
 }
