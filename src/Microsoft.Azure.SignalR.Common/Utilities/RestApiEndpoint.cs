@@ -13,12 +13,15 @@ namespace Microsoft.Azure.SignalR
 
         public string Token { get; }
 
+        public AuthType AuthType { get; }
+
         public IDictionary<string, StringValues> Query { get; set; }
 
-        public RestApiEndpoint(string endpoint, string token)
+        public RestApiEndpoint(string endpoint, string token, AuthType authType)
         {
             Audience = endpoint;
             Token = token;
+            AuthType = authType;
         }
     }
 }

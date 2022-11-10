@@ -20,11 +20,14 @@ namespace Microsoft.Azure.SignalR.Management
 
         private readonly string _serverEndpoint;
 
+        private readonly AuthType _authType;
+
         public RestApiProvider(ServiceEndpoint endpoint)
         {
             _audienceBaseUrl = endpoint.AudienceBaseUrl;
             _serverEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
             _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(endpoint.AccessKey);
+            _authType = endpoint.AccessKey.AuthType;
         }
 
         public async Task<RestApiEndpoint> GetServiceHealthEndpointAsync()
@@ -32,7 +35,7 @@ namespace Microsoft.Azure.SignalR.Management
             var url = $"{_serverEndpoint}api/health?api-version={Version}";
             var audience = $"{_audienceBaseUrl}api/health?api-version={Version}";
             var token = await _restApiAccessTokenGenerator.Generate(audience);
-            return new RestApiEndpoint(url, token);
+            return new RestApiEndpoint(url, token, _authType);
         }
 
         public Task<RestApiEndpoint> GetBroadcastEndpointAsync(string appName, string hubName, TimeSpan? lifetime = null, IReadOnlyList<string> excluded = null)
@@ -98,7 +101,11 @@ namespace Microsoft.Azure.SignalR.Management
             return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{Uri.EscapeDataString(group)}");
         }
 
-        private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
+        private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName,
+                                                                         string hubName,
+                                                                         string pathAfterHub,
+                                                                         TimeSpan? lifetime = null,
+                                                                         IDictionary<string, StringValues> queries = null)
         {
             var requestPrefixWithHub = $"{_serverEndpoint}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
             pathAfterHub = string.IsNullOrEmpty(appName)
@@ -107,7 +114,7 @@ namespace Microsoft.Azure.SignalR.Management
             // todo: should be same with `requestPrefixWithHub`, need to confirm with emulator.
             var audiencePrefixWithHub = $"{_audienceBaseUrl}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
             var token = await _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);
-            return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token) { Query = queries };
+            return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token, _authType) { Query = queries };
         }
     }
 }

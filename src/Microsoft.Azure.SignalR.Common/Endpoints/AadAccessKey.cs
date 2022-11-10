@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Azure.Core;
 
 using Microsoft.Azure.SignalR.Common;
-
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.SignalR
@@ -39,6 +38,8 @@ namespace Microsoft.Azure.SignalR
         private volatile bool _isAuthorized = false;
 
         private DateTime _lastUpdatedTime = DateTime.MinValue;
+
+        public override AuthType AuthType => AuthType.AzureAD;
 
         public bool Authorized
         {
@@ -154,7 +155,7 @@ namespace Microsoft.Azure.SignalR
 
         private async Task AuthorizeWithTokenAsync(string accessToken, CancellationToken token = default)
         {
-            var api = new RestApiEndpoint(AuthorizeUrl, accessToken);
+            var api = new RestApiEndpoint(AuthorizeUrl, accessToken, AuthType);
 
             await new RestClient().SendAsync(
                 api,

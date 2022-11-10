@@ -47,7 +47,11 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
-                throw ex.WrapAsAzureSignalRException(BaseUri);
+                if (Credentials is JwtTokenCredentials jwt)
+                {
+                    throw ex.WrapAsAzureSignalRException(BaseUri, jwt.AuthType);
+                }
+                throw;
             }
         }
     }

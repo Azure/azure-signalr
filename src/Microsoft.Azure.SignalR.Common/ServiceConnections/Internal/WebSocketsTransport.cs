@@ -22,11 +22,15 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
         public static PipeOptions DefaultOptions = new PipeOptions(writerScheduler: PipeScheduler.ThreadPool, readerScheduler: PipeScheduler.ThreadPool, useSynchronizationContext: false, pauseWriterThreshold: 0, resumeWriterThreshold: 0);
 
         private readonly WebSocketMessageType _webSocketMessageType = WebSocketMessageType.Binary;
+
         private readonly ClientWebSocket _webSocket;
         private readonly IAccessTokenProvider _accessTokenProvider;
         private IDuplexPipe _application;
+
         private readonly ILogger _logger;
+
         private readonly TimeSpan _closeTimeout;
+
         private volatile bool _aborted;
 
         private IDuplexPipe _transport;
@@ -123,7 +127,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
             catch (Exception e)
             {
                 _webSocket.Dispose();
-                throw e.WrapAsAzureSignalRException();
+                throw e.WrapAsAzureSignalRException(_accessTokenProvider.AuthType);
             }
 
             Log.StartedTransport(_logger);

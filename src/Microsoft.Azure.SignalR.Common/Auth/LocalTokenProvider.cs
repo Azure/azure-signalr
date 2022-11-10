@@ -34,6 +34,8 @@ namespace Microsoft.Azure.SignalR
             _tokenLifetime = tokenLifetime ?? Constants.Periods.DefaultAccessTokenLifetime;
         }
 
+        public AuthType AuthType => AuthType.Local;
+
         public Task<string> ProvideAsync() => _accessKey.GenerateAccessTokenAsync(_audience, _claims, _tokenLifetime, _algorithm);
     }
 }

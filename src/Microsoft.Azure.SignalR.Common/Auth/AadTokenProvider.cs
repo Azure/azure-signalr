@@ -15,6 +15,8 @@ namespace Microsoft.Azure.SignalR
             _accessKey = accessKey ?? throw new ArgumentNullException(nameof(accessKey));
         }
 
+        public AuthType AuthType => AuthType.AzureAD;
+
         public Task<string> ProvideAsync() => _accessKey.GenerateAadTokenAsync();
     }
 }

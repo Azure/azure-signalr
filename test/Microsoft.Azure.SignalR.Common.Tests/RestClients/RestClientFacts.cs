@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
                 .AddHttpClient("").ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(HttpStatusCode.InsufficientStorage)).Services
                 .BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
             var client = new RestClient(httpClientFactory, new JsonObjectSerializer(), true);
-            var apiEndpoint = new RestApiEndpoint("https://localhost.test.com", "token");
+            var apiEndpoint = new RestApiEndpoint("https://localhost.test.com", "token", AuthType.Local);
             var exception = await Assert.ThrowsAsync<AzureSignalRRuntimeException>(() =>
             {
                 return client.SendAsync(apiEndpoint, HttpMethod.Get, "", handleExpectedResponse: null);

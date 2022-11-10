@@ -13,9 +13,9 @@ namespace Microsoft.Azure.SignalR
     {
         Task<string> GenerateClientAccessTokenAsync(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null);
 
-        string GetClientEndpoint(string hubName, string originalPath, string queryString);
-
         IAccessTokenProvider GetServerAccessTokenProvider(string hubName, string serverId);
+
+        string GetClientEndpoint(string hubName, string originalPath, string queryString);
 
         string GetServerEndpoint(string hubName);
 

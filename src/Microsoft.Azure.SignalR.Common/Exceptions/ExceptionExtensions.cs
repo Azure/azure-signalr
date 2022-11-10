@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR.Common
 {
     internal static class ExceptionExtensions
     {
-        internal static Exception WrapAsAzureSignalRException(this Exception e, Uri baseUri)
+        internal static Exception WrapAsAzureSignalRException(this Exception e, Uri baseUri, AuthType authType)
         {
             switch (e)
             {
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Common
                     return response.StatusCode switch
                     {
                         HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(request.RequestUri.ToString(), innerException, detail),
-                        HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(request.RequestUri.ToString(), innerException),
+                        HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(authType, request.RequestUri, innerException),
                         HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), innerException),
                         _ => new AzureSignalRRuntimeException(baseUri.ToString(), innerException),
                     };
@@ -38,14 +38,14 @@ namespace Microsoft.Azure.SignalR.Common
             }
         }
 
-        internal static Exception WrapAsAzureSignalRException(this Exception e)
+        internal static Exception WrapAsAzureSignalRException(this Exception e, AuthType authType)
         {
             switch (e)
             {
                 case WebSocketException webSocketException:
                     if (e.Message.StartsWith("The server returned status code \"401\""))
                     {
-                        return new AzureSignalRUnauthorizedException(webSocketException);
+                        return new AzureSignalRUnauthorizedException(authType, webSocketException);
                     }
                     return e;
                 default: return e;
