@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR
         {
             var provider = hubServiceEndpoint.Provider;
             var hubName = hubServiceEndpoint.Hub;
-            Task<string> accessTokenGenerater() => provider.GenerateServerAccessTokenAsync(hubName, _serverId);
+            Task<string> accessTokenProvider() => provider.GenerateServerAccessTokenAsync(hubName, _serverId);
             var url = GetServiceUrl(provider, hubName, connectionId, target);
 
             headers ??= new Dictionary<string, string>();
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR
                 Headers = headers,
                 Proxy = provider.Proxy,
             };
-            var connection = new WebSocketConnectionContext(connectionOptions, _loggerFactory, accessTokenGenerater);
+            var connection = new WebSocketConnectionContext(connectionOptions, _loggerFactory, accessTokenProvider);
             try
             {
                 await connection.StartAsync(url, cancellationToken);
