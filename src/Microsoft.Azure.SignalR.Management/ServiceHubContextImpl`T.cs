@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR.Management
             _negotiateProcessor = negotiateProcessor;
             ServiceProvider = serviceProvider;
             Clients = typedHubContext.Clients;
-            Groups = new GroupManagerAdapter(typedHubContext.Groups);
+            Groups = new GroupManagerAdapter(lifetimeManager);
             UserGroups = new UserGroupsManagerAdapter(lifetimeManager);
             ClientManager = new ClientManagerAdapter(lifetimeManager);
         }
