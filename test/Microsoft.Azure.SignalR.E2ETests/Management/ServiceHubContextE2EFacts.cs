@@ -354,7 +354,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     await Task.Delay(_timeout);
                     await sendTaskFunc();
                     await Task.Delay(_timeout);
-                    await ConnectionRemoveFromAllGroupsAsync(serviceHubContext, connectionGroupDict);
+                    await ConnectionRemoveFromAllGroupsAsync((ServiceHubContext)serviceHubContext, connectionGroupDict);
                     await Task.Delay(_timeout);
                     await sendTaskFunc();
                     await Task.Delay(_timeout);
@@ -383,10 +383,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        private static Task ConnectionRemoveFromAllGroupsAsync(IServiceHubContext serviceHubContext, IDictionary<string, List<string>> connectionGroupDict)
+        private static Task ConnectionRemoveFromAllGroupsAsync(ServiceHubContext serviceHubContext, IDictionary<string, List<string>> connectionGroupDict)
         {
             return Task.WhenAll(from connection in connectionGroupDict.Keys
-                                select serviceHubContext.Groups.RemoveFromGroupAsync(connection, null));
+                                select serviceHubContext.Groups.RemoveFromAllGroupsAsync(connection, default));
         }
 
         private static Task AddConnectionToGroupAsync(IServiceHubContext serviceHubContext, IDictionary<string, List<string>> connectionGroupDict)

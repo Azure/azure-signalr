@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _hubName = hubName;
             _hubContext = hubContext;
-            Groups = new GroupManagerAdapter(_hubContext.Groups);
+            Groups = new GroupManagerAdapter(_hubContext.Groups, lifetimeManager);
             UserGroups = new UserGroupsManagerAdapter(lifetimeManager);
             ClientManager = new ClientManagerAdapter(lifetimeManager);
             ServiceProvider = serviceProvider;
