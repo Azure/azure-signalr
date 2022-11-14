@@ -22,26 +22,6 @@ namespace Microsoft.Azure.SignalR.Management
             _serviceManagerOptions = serviceManagerOptions ?? throw new ArgumentNullException(nameof(serviceManagerOptions));
         }
 
-        public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
-        {
-            if (IsInvalidArgument(connectionId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
-            }
-
-            if (IsInvalidArgument(groupName))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
-            }
-
-            var message = AppendMessageTracingId(new LeaveGroupWithAckMessage(connectionId, groupName));
-            if (message.TracingId != null)
-            {
-                MessageLog.StartToRemoveConnectionFromGroup(Logger, message);
-            }
-            return WriteAckableMessageAsync(message, cancellationToken);
-        }
-
         public Task RemoveFromAllGroupsAsync(string connectionId, CancellationToken cancellationToken = default)
         {
             if (IsInvalidArgument(connectionId))

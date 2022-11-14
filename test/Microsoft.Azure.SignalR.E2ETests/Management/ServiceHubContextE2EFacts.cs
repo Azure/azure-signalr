@@ -322,7 +322,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        [ConditionalTheory(Skip = "wait for fixing bug")]
+        [ConditionalTheory(Skip = "wait for fixing bug of JWT token")]
         [SkipIfConnectionStringNotPresent]
         [MemberData(nameof(TestData))]
         internal async Task RemoveConnectionFromAllGroupsTest(ServiceTransportType serviceTransportType, string appName)
