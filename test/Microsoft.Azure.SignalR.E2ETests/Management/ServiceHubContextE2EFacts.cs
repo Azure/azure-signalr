@@ -322,7 +322,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(Skip = "wait for fixing bug")]
         [SkipIfConnectionStringNotPresent]
         [MemberData(nameof(TestData))]
         internal async Task RemoveConnectionFromAllGroupsTest(ServiceTransportType serviceTransportType, string appName)

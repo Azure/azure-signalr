@@ -17,16 +17,18 @@ namespace Microsoft.Azure.SignalR
             "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
         private readonly AccessKey _accessKey;
+
         private readonly string _appName;
+
         private readonly TimeSpan _accessTokenLifetime;
+
         private readonly IServiceEndpointGenerator _generator;
+
         private readonly AccessTokenAlgorithm _algorithm;
 
         public IWebProxy Proxy { get; }
 
-        public ServiceEndpointProvider(
-            ServiceEndpoint endpoint,
-            ServiceOptions serviceOptions)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions serviceOptions)
         {
             _accessTokenLifetime = serviceOptions.AccessTokenLifetime;
             _accessKey = endpoint.AccessKey;
@@ -64,28 +66,21 @@ namespace Microsoft.Azure.SignalR
 
             var audience = _generator.GetServerAudience(hubName, _appName);
             var claims = userId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, userId) } : null;
-
             return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
         public string GetClientEndpoint(string hubName, string originalPath, string queryString)
         {
-            if (string.IsNullOrEmpty(hubName))
-            {
-                throw new ArgumentNullException(nameof(hubName));
-            }
-
-            return _generator.GetClientEndpoint(hubName, _appName, originalPath, queryString);
+            return string.IsNullOrEmpty(hubName)
+                ? throw new ArgumentNullException(nameof(hubName))
+                : _generator.GetClientEndpoint(hubName, _appName, originalPath, queryString);
         }
 
         public string GetServerEndpoint(string hubName)
         {
-            if (string.IsNullOrEmpty(hubName))
-            {
-                throw new ArgumentNullException(nameof(hubName));
-            }
-
-            return _generator.GetServerEndpoint(hubName, _appName);
+            return string.IsNullOrEmpty(hubName)
+                ? throw new ArgumentNullException(nameof(hubName))
+                : _generator.GetServerEndpoint(hubName, _appName);
         }
     }
 }

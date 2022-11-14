@@ -24,10 +24,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public void Configure(IApplicationBuilder app)
         {
-            app.UseEndpoints(configure =>
-            {
-                configure.MapHub<TestHub>($"/{nameof(TestHub)}");
-            });
+            app.UseRouting();
+            app.UseEndpoints(configure => configure.MapHub<TestHub>($"/{nameof(TestHub)}"));
             app.UseMvc();
         }
 
