@@ -122,7 +122,7 @@ namespace Microsoft.Azure.SignalR
 
             _connectionType = connectionType;
             HubEndpoint = endpoint;
-            _endpointName = HubEndpoint.ToString();
+            _endpointName = HubEndpoint?.ToString() ?? string.Empty;
             if (serviceProtocol != null)
             {
                 _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
