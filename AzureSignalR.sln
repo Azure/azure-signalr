@@ -82,7 +82,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChatSample.Net60", "samples
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChatSample.Net70", "samples\ChatSample\ChatSample.Net70\ChatSample.Net70.csproj", "{49634EE4-A0F4-4672-A8B3-B994CF81C9AB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManagementPublisher", "samples\ChatSample\ChatSample.ManagementPublisher\ConsoleApp1\ManagementPublisher.csproj", "{0F32E624-7AC8-4CA7-8ED9-E1A877442020}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManagementPublisher", "samples\ChatSample\ChatSample.ManagementPublisher\ManagementPublisher.csproj", "{0F32E624-7AC8-4CA7-8ED9-E1A877442020}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
