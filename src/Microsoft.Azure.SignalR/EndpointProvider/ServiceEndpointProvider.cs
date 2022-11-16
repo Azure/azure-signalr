@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR
             }
             else
             {
-                throw new NotSupportedException("Unsupported auth type.");
+                throw new NotSupportedException("Access key cannot be null.");
             }
         }
 

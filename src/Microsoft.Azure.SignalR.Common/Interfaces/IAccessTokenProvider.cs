@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
-    public interface IAccessTokenProvider
+    internal interface IAccessTokenProvider
     {
         Task<string> ProvideAsync();
     }

@@ -24,11 +24,11 @@ namespace Microsoft.Azure.SignalR
             AccessKey accessKey,
             string audience,
             IEnumerable<Claim> claims,
-            AccessTokenAlgorithm? algorithm = null,
+            AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256,
             TimeSpan? tokenLifetime = null)
         {
             _accessKey = accessKey ?? throw new ArgumentNullException(nameof(accessKey));
-            _algorithm = algorithm ?? AccessTokenAlgorithm.HS256;
+            _algorithm = algorithm;
             _audience = audience;
             _claims = claims;
             _tokenLifetime = tokenLifetime ?? Constants.Periods.DefaultAccessTokenLifetime;
