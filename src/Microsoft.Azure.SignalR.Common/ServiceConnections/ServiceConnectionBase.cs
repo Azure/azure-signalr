@@ -630,6 +630,10 @@ namespace Microsoft.Azure.SignalR
         private static class Log
         {
             // Category: ServiceConnection
+            // Debug: message related info
+            // Information: connection related info
+            // Warning: customer to aware
+            // Error: application error
             private static readonly Action<ILogger, ulong?, string, string, Exception> _failedToWrite =
                 LoggerMessage.Define<ulong?, string, string>(LogLevel.Error, new EventId(1, "FailedToWrite"), "Failed to send message {TracingId} to the service. Error detail: {Error}. Id: {ServiceConnectionId}");
 
@@ -643,7 +647,7 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define<string, string, string>(LogLevel.Information, new EventId(4, "ConnectionDropped"), "Connection to '{Endpoint}' was dropped, probably caused by network instability or service restart. Will reconnect after the back off period. Error detail: {Error}. Id: {ServiceConnectionId}.");
 
             private static readonly Action<ILogger, string, Exception> _serviceConnectionClosed =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(14, "serviceConnectionClose"), "Service connection {ServiceConnectionId} closed.");
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(14, "ServiceConnectionClose"), "Service connection {ServiceConnectionId} closed.");
 
             private static readonly Action<ILogger, string, Exception> _readingCancelled =
                 LoggerMessage.Define<string>(LogLevel.Trace, new EventId(15, "ReadingCancelled"), "Reading from service connection {ServiceConnectionId} cancelled.");
@@ -658,7 +662,7 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define<string, double, string>(LogLevel.Information, new EventId(18, "ServiceTimeout"), "Connection to service '{Endpoint}' timeout. {ServiceTimeout:0.00}ms elapsed without receiving a message from service. Id: {ServiceConnectionId}");
 
             private static readonly Action<ILogger, string, Exception> _serviceConnectionConnected =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(20, "ServiceConnectionConnected"), "Service connection {ServiceConnectionId} connected.");
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(20, "ServiceConnectionConnected"), "Service connection {ServiceConnectionId} connected.");
 
             private static readonly Action<ILogger, Exception> _sendingHandshakeRequest =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(21, "SendingHandshakeRequest"), "Sending Handshake request to service.");
@@ -667,7 +671,7 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define(LogLevel.Debug, new EventId(22, "HandshakeComplete"), "Handshake with service completes.");
 
             private static readonly Action<ILogger, string, string, string, Exception> _handshakeError =
-                LoggerMessage.Define<string, string, string>(LogLevel.Information, new EventId(24, "HandshakeError"), "Connection to service '{Endpoint}' returned handshake error, probably caused by network instability or service restart. Will retry after the back off period. Error detail: {Error}. Id: {ServiceConnectionId}");
+                LoggerMessage.Define<string, string, string>(LogLevel.Information, new EventId(24, "HandshakeError"), "Connection to service '{Endpoint}' handshake failed, probably caused by network instability or service restart. Will retry after the back off period. Error detail: {Error}. Id: {ServiceConnectionId}");
 
             private static readonly Action<ILogger, Exception> _sentPing =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(25, "SentPing"), "Sent a ping message to service.");
