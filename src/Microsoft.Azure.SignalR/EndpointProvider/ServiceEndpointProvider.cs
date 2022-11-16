@@ -17,16 +17,18 @@ namespace Microsoft.Azure.SignalR
             "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
         private readonly AccessKey _accessKey;
+
         private readonly string _appName;
+
         private readonly TimeSpan _accessTokenLifetime;
+
         private readonly IServiceEndpointGenerator _generator;
+
         private readonly AccessTokenAlgorithm _algorithm;
 
         public IWebProxy Proxy { get; }
 
-        public ServiceEndpointProvider(
-            ServiceEndpoint endpoint,
-            ServiceOptions serviceOptions)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions serviceOptions)
         {
             _accessTokenLifetime = serviceOptions.AccessTokenLifetime;
             _accessKey = endpoint.AccessKey;
@@ -50,42 +52,36 @@ namespace Microsoft.Azure.SignalR
             return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
-        public Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
-        {
-            if (_accessKey is AadAccessKey key)
-            {
-                return key.GenerateAadTokenAsync();
-            }
-
-            if (string.IsNullOrEmpty(hubName))
-            {
-                throw new ArgumentNullException(nameof(hubName));
-            }
-
-            var audience = _generator.GetServerAudience(hubName, _appName);
-            var claims = userId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, userId) } : null;
-
-            return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
-        }
-
         public string GetClientEndpoint(string hubName, string originalPath, string queryString)
         {
-            if (string.IsNullOrEmpty(hubName))
-            {
-                throw new ArgumentNullException(nameof(hubName));
-            }
+            return string.IsNullOrEmpty(hubName)
+                ? throw new ArgumentNullException(nameof(hubName))
+                : _generator.GetClientEndpoint(hubName, _appName, originalPath, queryString);
+        }
 
-            return _generator.GetClientEndpoint(hubName, _appName, originalPath, queryString);
+        public IAccessTokenProvider GetServerAccessTokenProvider(string hubName, string serverId)
+        {
+            if (_accessKey is AadAccessKey aadAccessKey)
+            {
+                return new AadTokenProvider(aadAccessKey);
+            }
+            else if (_accessKey is not null)
+            {
+                var audience = _generator.GetServerAudience(hubName, _appName);
+                var claims = serverId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, serverId) } : null;
+                return new LocalTokenProvider(_accessKey, audience, claims, _algorithm, _accessTokenLifetime);
+            }
+            else
+            {
+                throw new NotSupportedException("Access key cannot be null.");
+            }
         }
 
         public string GetServerEndpoint(string hubName)
         {
-            if (string.IsNullOrEmpty(hubName))
-            {
-                throw new ArgumentNullException(nameof(hubName));
-            }
-
-            return _generator.GetServerEndpoint(hubName, _appName);
+            return string.IsNullOrEmpty(hubName)
+                ? throw new ArgumentNullException(nameof(hubName))
+                : _generator.GetServerEndpoint(hubName, _appName);
         }
     }
 }

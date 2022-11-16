@@ -84,6 +84,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChatSample.Net70", "samples
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.E2ETests.AzureAD", "test\Microsoft.Azure.SignalR.E2ETests.AzureAD\Microsoft.Azure.SignalR.E2ETests.AzureAD.csproj", "{BE72A894-4D6C-4E15-8F55-96BED97DA89E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManagementPublisher", "samples\ChatSample\ChatSample.ManagementPublisher\ManagementPublisher.csproj", "{0F32E624-7AC8-4CA7-8ED9-E1A877442020}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -202,6 +204,10 @@ Global
 		{BE72A894-4D6C-4E15-8F55-96BED97DA89E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE72A894-4D6C-4E15-8F55-96BED97DA89E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE72A894-4D6C-4E15-8F55-96BED97DA89E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F32E624-7AC8-4CA7-8ED9-E1A877442020}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F32E624-7AC8-4CA7-8ED9-E1A877442020}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F32E624-7AC8-4CA7-8ED9-E1A877442020}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F32E624-7AC8-4CA7-8ED9-E1A877442020}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -237,6 +243,7 @@ Global
 		{594EC59A-7305-4A36-8BE6-4A928FBFD71B} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
 		{49634EE4-A0F4-4672-A8B3-B994CF81C9AB} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
 		{BE72A894-4D6C-4E15-8F55-96BED97DA89E} = {2429FBD8-1FCE-4C42-AA28-DF32F7249E77}
+		{0F32E624-7AC8-4CA7-8ED9-E1A877442020} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7945A4E4-ACDB-4F6E-95CA-6AC6E7C2CD59}
