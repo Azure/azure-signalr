@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
 
         private readonly WebSocketMessageType _webSocketMessageType = WebSocketMessageType.Binary;
         private readonly ClientWebSocket _webSocket;
-        private readonly Func<Task<string>> _accessTokenProvider;
+        private readonly IAccessTokenProvider _accessTokenProvider;
         private IDuplexPipe _application;
         private readonly ILogger _logger;
         private readonly TimeSpan _closeTimeout;
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
 
         public PipeWriter Output => _transport.Output;
 
-        public WebSocketsTransport(WebSocketConnectionOptions connectionOptions, ILoggerFactory loggerFactory, Func<Task<string>> accessTokenProvider)
+        public WebSocketsTransport(WebSocketConnectionOptions connectionOptions, ILoggerFactory loggerFactory, IAccessTokenProvider accessTokenProvider)
         {
             _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<WebSocketsTransport>();
             _webSocket = new ClientWebSocket();
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
             // We don't need to capture to a local because we never change this delegate.
             if (_accessTokenProvider != null)
             {
-                var accessToken = await _accessTokenProvider();
+                var accessToken = await _accessTokenProvider.ProvideAsync();
                 if (!string.IsNullOrEmpty(accessToken))
                 {
                     _webSocket.Options.SetRequestHeader("Authorization", $"Bearer {accessToken}");
