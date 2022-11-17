@@ -16,22 +16,21 @@ namespace Microsoft.Azure.SignalR.Management
 
         private readonly RestApiAccessTokenGenerator _restApiAccessTokenGenerator;
 
-        private readonly ServiceEndpoint _serviceEndpoint;
+        private readonly string _audienceBaseUrl;
 
-        private string AudienceBaseUrl => _serviceEndpoint.AudienceBaseUrl;
-
-        private string ServerEndpoint => _serviceEndpoint.ServerEndpoint.AbsoluteUri;
+        private readonly string _serverEndpoint;
 
         public RestApiProvider(ServiceEndpoint endpoint)
         {
-            _serviceEndpoint = endpoint;
+            _audienceBaseUrl = endpoint.AudienceBaseUrl;
+            _serverEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
             _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(endpoint.AccessKey);
         }
 
         public async Task<RestApiEndpoint> GetServiceHealthEndpointAsync()
         {
-            var url = $"{ServerEndpoint}api/health?api-version={Version}";
-            var audience = $"{AudienceBaseUrl}api/health?api-version={Version}";
+            var url = $"{_serverEndpoint}api/health?api-version={Version}";
+            var audience = $"{_audienceBaseUrl}api/health?api-version={Version}";
             var token = await _restApiAccessTokenGenerator.Generate(audience);
             return new RestApiEndpoint(url, token);
         }
@@ -101,17 +100,12 @@ namespace Microsoft.Azure.SignalR.Management
 
         private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
         {
-            var requestPrefixWithHub = $"{ServerEndpoint}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
-            if (string.IsNullOrEmpty(appName))
-            {
-                pathAfterHub = $"{pathAfterHub}?api-version={Version}";
-            }
-            else
-            {
-                pathAfterHub = $"{pathAfterHub}?application={Uri.EscapeDataString(appName.ToLowerInvariant())}&api-version={Version}";
-            }
+            var requestPrefixWithHub = $"{_serverEndpoint}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
+            pathAfterHub = string.IsNullOrEmpty(appName)
+                ? $"{pathAfterHub}?api-version={Version}"
+                : $"{pathAfterHub}?application={Uri.EscapeDataString(appName.ToLowerInvariant())}&api-version={Version}";
             // todo: should be same with `requestPrefixWithHub`, need to confirm with emulator.
-            var audiencePrefixWithHub = $"{AudienceBaseUrl}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
+            var audiencePrefixWithHub = $"{_audienceBaseUrl}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
             var token = await _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);
             return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token) { Query = queries };
         }
