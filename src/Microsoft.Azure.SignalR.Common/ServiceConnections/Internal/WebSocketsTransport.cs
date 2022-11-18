@@ -37,7 +37,9 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
 
         public PipeWriter Output => _transport.Output;
 
-        public WebSocketsTransport(WebSocketConnectionOptions connectionOptions, ILoggerFactory loggerFactory, IAccessTokenProvider accessTokenProvider)
+        public WebSocketsTransport(WebSocketConnectionOptions connectionOptions,
+                                   ILoggerFactory loggerFactory,
+                                   IAccessTokenProvider accessTokenProvider)
         {
             _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<WebSocketsTransport>();
             _webSocket = new ClientWebSocket();
