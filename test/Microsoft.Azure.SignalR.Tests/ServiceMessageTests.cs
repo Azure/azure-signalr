@@ -231,7 +231,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     Assert.Equal(expectedLogCount, logs.Count);
                     if (logs.Count > 0)
                     {
-                        Assert.StartsWith("Service returned 401 unauthorized:", logs[0].Write.Message);
+                        Assert.Equal("Service '(Primary)https://localhost(hub=foo)' returned 401 unauthorized. Authorization failed. Please check your role assignments. Note: New role assignments will take up to 30 minutes to take effect. Error detail: This is a error messsage.", logs[0].Write.Message);
                     }
                     return true;
                 }))
