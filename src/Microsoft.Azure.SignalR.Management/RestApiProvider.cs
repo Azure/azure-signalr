@@ -17,6 +17,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly RestApiAccessTokenGenerator _restApiAccessTokenGenerator;
 
         private readonly string _audienceBaseUrl;
+
         private readonly string _serverEndpoint;
 
         public RestApiProvider(ServiceEndpoint endpoint)
@@ -24,11 +25,6 @@ namespace Microsoft.Azure.SignalR.Management
             _audienceBaseUrl = endpoint.AudienceBaseUrl;
             _serverEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
             _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(endpoint.AccessKey);
-        }
-
-        private string GetPrefixedHubName(string applicationName, string hubName)
-        {
-            return string.IsNullOrEmpty(applicationName) ? hubName.ToLowerInvariant() : $"{applicationName.ToLowerInvariant()}_{hubName.ToLowerInvariant()}";
         }
 
         public async Task<RestApiEndpoint> GetServiceHealthEndpointAsync()
@@ -103,16 +99,11 @@ namespace Microsoft.Azure.SignalR.Management
         }
 
         private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
-        { 
+        {
             var requestPrefixWithHub = $"{_serverEndpoint}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
-            if (string.IsNullOrEmpty(appName))
-            {
-                pathAfterHub = $"{pathAfterHub}?api-version={Version}";
-            }
-            else
-            {
-                pathAfterHub = $"{pathAfterHub}?application={Uri.EscapeDataString(appName.ToLowerInvariant())}&api-version={Version}";
-            }
+            pathAfterHub = string.IsNullOrEmpty(appName)
+                ? $"{pathAfterHub}?api-version={Version}"
+                : $"{pathAfterHub}?application={Uri.EscapeDataString(appName.ToLowerInvariant())}&api-version={Version}";
             // todo: should be same with `requestPrefixWithHub`, need to confirm with emulator.
             var audiencePrefixWithHub = $"{_audienceBaseUrl}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
             var token = await _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);

@@ -21,6 +21,8 @@ namespace Microsoft.Azure.SignalR.Management
 
         Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default);
 
+        Task RemoveFromAllGroupsAsync(string connectionId, CancellationToken cancellationToken = default);
+
         Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default);
 
         Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default);

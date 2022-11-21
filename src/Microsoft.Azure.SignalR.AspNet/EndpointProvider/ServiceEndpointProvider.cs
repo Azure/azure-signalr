@@ -18,22 +18,26 @@ namespace Microsoft.Azure.SignalR.AspNet
             "or explicitly pass one using IAppBuilder.RunAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
         private const string ClientPath = "aspnetclient";
+
         private const string ServerPath = "aspnetserver";
 
         private readonly string _audienceBaseUrl;
+
         private readonly string _clientEndpoint;
+
         private readonly string _serverEndpoint;
 
         private readonly AccessKey _accessKey;
+
         private readonly string _appName;
+
         private readonly TimeSpan _accessTokenLifetime;
+
         private readonly AccessTokenAlgorithm _algorithm;
 
         public IWebProxy Proxy { get; }
 
-        public ServiceEndpointProvider(
-            ServiceEndpoint endpoint,
-            ServiceOptions options)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions options)
         {
             _accessTokenLifetime = options.AccessTokenLifetime;
 
@@ -48,35 +52,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             Proxy = options.Proxy;
         }
 
-        private string GetPrefixedHubName(string applicationName, string hubName)
-        {
-            return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
-        }
-
         public Task<string> GenerateClientAccessTokenAsync(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
         {
             var audience = $"{_audienceBaseUrl}{ClientPath}";
-
-            return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
-        }
-
-        public Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
-        {
-            if (_accessKey is AadAccessKey key)
-            {
-                return key.GenerateAadTokenAsync();
-            }
-
-            IEnumerable<Claim> claims = null;
-            if (userId != null)
-            {
-                claims = new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, userId)
-                };
-            }
-
-            var audience = $"{_audienceBaseUrl}{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
 
             return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
@@ -113,6 +91,29 @@ namespace Microsoft.Azure.SignalR.AspNet
         public string GetServerEndpoint(string hubName)
         {
             return $"{_serverEndpoint}{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
+        }
+
+        public IAccessTokenProvider GetServerAccessTokenProvider(string hubName, string serverId)
+        {
+            if (_accessKey is AadAccessKey aadAccessKey)
+            {
+                return new AadTokenProvider(aadAccessKey);
+            }
+            else if (_accessKey is not null)
+            {
+                var audience = $"{_audienceBaseUrl}{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
+                var claims = serverId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, serverId) } : null;
+                return new LocalTokenProvider(_accessKey, audience, claims, _algorithm, _accessTokenLifetime);
+            }
+            else
+            {
+                throw new ArgumentNullException(nameof(AccessKey));
+            }
+        }
+
+        private string GetPrefixedHubName(string applicationName, string hubName)
+        {
+            return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
         }
     }
 }
