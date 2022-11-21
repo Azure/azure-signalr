@@ -68,7 +68,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
-            var serverToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
+            var serverToken = await provider.GetServerAccessTokenProvider("hub1", "user1").ProvideAsync();
 
             var handler = new JwtSecurityTokenHandler();
             var principal = handler.ValidateToken(serverToken, new TokenValidationParameters
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
 
-            var serverToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
+            var serverToken = await provider.GetServerAccessTokenProvider("hub1", "user1").ProvideAsync();
 
             var handler = new JwtSecurityTokenHandler();
             var principal = handler.ValidateToken(serverToken, new TokenValidationParameters
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             var connectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
-            var serverToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
+            var serverToken = await provider.GetServerAccessTokenProvider("hub1", "user1").ProvideAsync();
 
             var handler = new JwtSecurityTokenHandler();
             var token = handler.ReadJwtToken(serverToken);
@@ -162,10 +162,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var tokens = new List<string>();
 
             var count = 1000;
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 tokens.Add(await sep.GenerateClientAccessTokenAsync());
-                tokens.Add(await sep.GenerateServerAccessTokenAsync("test1", userId));
+                tokens.Add(await sep.GetServerAccessTokenProvider("test1", userId).ProvideAsync());
             }
 
             var distinct = tokens.Distinct();

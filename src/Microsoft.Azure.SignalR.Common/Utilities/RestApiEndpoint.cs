@@ -10,7 +10,9 @@ namespace Microsoft.Azure.SignalR
     internal class RestApiEndpoint
     {
         public string Audience { get; }
+
         public string Token { get; }
+
         public IDictionary<string, StringValues> Query { get; set; }
 
         public RestApiEndpoint(string endpoint, string token)
