@@ -15,13 +15,20 @@ namespace Microsoft.Azure.SignalR.Tests
     internal class TestServer : TestServerBase
     {
         private IWebHost _host;
+
         private IServiceConnectionManager<TestHub> _scm;
 
         public override TestHubConnectionManager HubConnectionManager { get; }
 
-        public TestServer(ITestOutputHelper output): base(output)
+        public TestServer(ITestOutputHelper output) : base(output)
         {
             HubConnectionManager = new TestHubConnectionManager();
+        }
+
+        public override async Task StopAsync()
+        {
+            await _host.StopAsync();
+            await _scm.StopAsync();
         }
 
         protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output, Dictionary<string, string> configuration)
@@ -32,7 +39,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     services.AddSingleton<TestHubConnectionManager>(HubConnectionManager);
                 })
                 .ConfigureLogging(logging => logging.AddXunit(output))
-                .ConfigureAppConfiguration(builder =>  builder.AddInMemoryCollection(configuration))
+                .ConfigureAppConfiguration(builder => builder.AddInMemoryCollection(configuration))
                 .UseStartup<TestStartup>()
                 .UseUrls(serverUrl)
                 .UseKestrel()
@@ -41,12 +48,6 @@ namespace Microsoft.Azure.SignalR.Tests
             _scm = _host.Services.GetRequiredService<IServiceConnectionManager<TestHub>>();
 
             return _host.StartAsync();
-        }
-
-        public override async Task StopAsync()
-        {
-            await _host.StopAsync();
-            await _scm.StopAsync();
         }
     }
 }
