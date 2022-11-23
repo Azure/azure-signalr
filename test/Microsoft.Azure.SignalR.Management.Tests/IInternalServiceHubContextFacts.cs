@@ -46,7 +46,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             services.AddSingleton<IReadOnlyCollection<ServiceDescriptor>>(services.ToList());
             var serviceManager = services.BuildServiceProvider().GetRequiredService<IServiceManager>();
 
-            var hubContext = (await serviceManager.CreateHubContextAsync(Hub) as IInternalServiceHubContext)
+            var hubContext = (await serviceManager.CreateHubContextAsync(Hub) as ServiceHubContext)
                 .WithEndpoints(targetEndpoints);
             var serviceProvider = (hubContext as ServiceHubContextImpl).ServiceProvider;
             var container = serviceProvider.GetRequiredService<IServiceConnectionContainer>() as MultiEndpointMessageWriter;
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             for (var i = 0; i < 5; i++)
             {
                 var randomEndpoint = ServiceEndpoints[StaticRandom.Next(0, Count)];
-                var negotiationResponse = await (hubContext as IInternalServiceHubContext)
+                var negotiationResponse = await hubContext
                     .WithEndpoints(new ServiceEndpoint[] { randomEndpoint })
                     .NegotiateAsync();
 
