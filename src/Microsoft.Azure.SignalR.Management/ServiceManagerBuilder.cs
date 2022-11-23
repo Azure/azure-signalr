@@ -95,6 +95,13 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public ServiceManagerBuilder WithAdditionalProductInfo(IEnumerable<KeyValuePair<string, string>> additionalProperties)
+        {
+            _services.AddAdditionalProductInfo(additionalProperties);
+            return this;
+        }
+
         internal ServiceManagerBuilder ConfigureServices(Action<IServiceCollection> configureAction)
         {
             _configureAction = configureAction;

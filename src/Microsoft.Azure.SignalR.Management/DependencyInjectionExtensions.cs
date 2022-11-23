@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-using System.ComponentModel;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
@@ -108,11 +109,45 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Adds product info to <see cref="ServiceManagerOptions"/>
         /// </summary>
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IServiceCollection WithAssembly(this IServiceCollection services, Assembly assembly)
         {
             var productInfo = ProductInfo.GetProductInfo(assembly);
             return services.Configure<ServiceManagerOptions>(o => o.ProductInfo = productInfo);
+        }
+
+        /// <summary>
+        /// Allows functions extensions to add additional product info.
+        /// </summary>
+        public static IServiceCollection AddAdditionalProductInfo(this IServiceCollection services, IEnumerable<KeyValuePair<string, string>> additionalProperties)
+        {
+            foreach (var property in additionalProperties ?? throw new ArgumentNullException(nameof(additionalProperties)))
+            {
+                if (property.Key == null || property.Value == null)
+                {
+                    throw new ArgumentException("Properties contain null key or null value");
+                }
+                foreach (var c in property.Key)
+                {
+                    if (c == '[' || c == ']' || c == '=')
+                    {
+                        throw new ArgumentException($"Property key '{property.Key}' contains invalid char '[', ']' or '='");
+                    }
+                }
+                foreach (var c in property.Value)
+                {
+                    if (c == '[' || c == ']' || c == '=')
+                    {
+                        throw new ArgumentException($"Property value '{property.Value}' contains invalid char '[', ']' or '='");
+                    }
+                }
+            }
+            return services.PostConfigure<ServiceManagerOptions>(o =>
+            {
+                foreach (var property in additionalProperties)
+                {
+                    o.ProductInfo += $" [{property.Key}={property.Value}]";
+                }
+            });
         }
 
         private static IServiceCollection TrySetProductInfo(this IServiceCollection services)

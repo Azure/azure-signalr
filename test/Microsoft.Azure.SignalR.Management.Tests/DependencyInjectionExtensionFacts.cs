@@ -120,6 +120,34 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
+        public void WithAdditionalProductInfoFact()
+        {
+            var services = new ServiceCollection()
+                .AddSignalRServiceManager()
+                .Configure<ServiceManagerOptions>(o =>
+                {
+                    o.ConnectionString = TestConnectionString;
+                })
+                .AddAdditionalProductInfo(new KeyValuePair<string, string>[] { new("key1", "value1"), new("key2", "value2") });
+            using var serviceProvider = services.BuildServiceProvider();
+            var productInfo = serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ProductInfo;
+            Assert.EndsWith(" [key1=value1] [key2=value2]", productInfo);
+        }
+
+        [Fact]
+        public void WithInvalidAddtionalProductInfoFact()
+        {
+            var exp = Assert.Throws<ArgumentException>(() => new ServiceCollection()
+                .AddSignalRServiceManager()
+                .Configure<ServiceManagerOptions>(o =>
+                {
+                    o.ConnectionString = TestConnectionString;
+                })
+                .AddAdditionalProductInfo(new KeyValuePair<string, string>[] { new("k[", "value") }));
+            Assert.Contains("k[", exp.Message);
+        }
+
+        [Fact]
         public void ConfigureByDelegateFact()
         {
             var services = new ServiceCollection()
