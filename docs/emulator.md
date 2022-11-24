@@ -19,11 +19,11 @@ cd azure-functions-signalrservice-extension/samples/bidirectional-chat
 
 2. Install the emulator
 ```
-dotnet tool install  -g Microsoft.Azure.SignalR.Emulator --version 1.0.0-preview1-10809
+dotnet tool install  -g Microsoft.Azure.SignalR.Emulator
 ```
 Or update the emulator to the latest preview version if it is already installed:
 ```
-dotnet tool update -g Microsoft.Azure.SignalR.Emulator --version 1.0.0-preview1-10809
+dotnet tool update -g Microsoft.Azure.SignalR.Emulator
 ```
 
 3. Run the emulator `asrs-emulator` to list all the available commands:
