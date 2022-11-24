@@ -120,6 +120,21 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
+        public void AddUserAgent()
+        {
+            var services = new ServiceCollection()
+                .AddSignalRServiceManager()
+                .Configure<ServiceManagerOptions>(o =>
+                {
+                    o.ConnectionString = TestConnectionString;
+                })
+                .AddUserAgent(" [key=value]");
+            using var serviceProvider = services.BuildServiceProvider();
+            var productInfo = serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ProductInfo;
+            Assert.EndsWith(" [key=value]", productInfo);
+        }
+
+        [Fact]
         public void ConfigureByDelegateFact()
         {
             var services = new ServiceCollection()
