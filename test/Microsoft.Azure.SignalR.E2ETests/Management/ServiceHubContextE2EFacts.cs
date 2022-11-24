@@ -717,7 +717,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     });
                 }
 
-                var subHubContext = (hubContext as IInternalServiceHubContext).WithEndpoints(endpoints.Take(1));
+                var subHubContext = (hubContext as ServiceHubContext).WithEndpoints(endpoints.Take(1));
                 await subHubContext.Clients.All.SendAsync(MethodName, Message);
                 await Task.Delay(TimeSpan.FromSeconds(10));
 
