@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http.Connections;
@@ -41,11 +42,13 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Get the service endpoints of the hub.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual IEnumerable<ServiceEndpoint> GetServiceEndpoints() => throw new NotImplementedException();
 
         /// <summary>
         /// Creates and gets a new service hub context instance with specified endpoints. In the new service hub context instance, the router is disabled and all the traffic is sent to the specified endpoints.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual ServiceHubContext WithEndpoints(IEnumerable<ServiceEndpoint> endpoints) => throw new NotImplementedException();
     }
 }

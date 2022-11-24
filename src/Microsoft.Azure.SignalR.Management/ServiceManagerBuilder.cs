@@ -96,9 +96,9 @@ namespace Microsoft.Azure.SignalR.Management
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public ServiceManagerBuilder WithAdditionalProductInfo(IEnumerable<KeyValuePair<string, string>> additionalProperties)
+        public ServiceManagerBuilder AddUserAgent(string userAgent)
         {
-            _services.AddAdditionalProductInfo(additionalProperties);
+            _services.AddUserAgent(userAgent);
             return this;
         }
 
