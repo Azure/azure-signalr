@@ -2,19 +2,26 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Pipelines;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Controllers.Common;
 using Microsoft.Azure.SignalR.Emulator.HubEmulator;
 using Microsoft.Extensions.Logging;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Microsoft.Azure.SignalR.Emulator.Controllers
 {
+    [ApiController]
     internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
     {
         private const string HubPattern = "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$";
@@ -28,14 +35,22 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             this._logger = _logger;
         }
 
-        public override async Task<IActionResult> Broadcast([RegularExpression(HubPattern)] string hub, [FromBody] PayloadMessage message, [FromQuery(Name = "excluded")] IReadOnlyList<string> excluded)
+        public override async Task<IActionResult> Broadcast(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub,
+            [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)]
+            [Required(ErrorMessage = ErrorMessages.Validation.MessageRequired)]
+            PayloadMessage message,
+            [FromQuery(Name = "excluded")] IReadOnlyList<string> excluded,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest();
             }
 
-            if (_store.TryGetLifetimeContext(hub, out var c))
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
             {
                 var clients = c.ClientManager;
                 var arguments = SafeConvertToObjectArray(message);
@@ -46,14 +61,21 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Accepted();
         }
 
-        public override async Task<IActionResult> SendToUser([RegularExpression(HubPattern)] string hub, string user, [FromBody] PayloadMessage message)
+        public override async Task<IActionResult> SendToUser(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub, string user,
+            [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)]
+            [Required(ErrorMessage = ErrorMessages.Validation.MessageRequired)]
+            PayloadMessage message,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest();
             }
 
-            if (_store.TryGetLifetimeContext(hub, out var c))
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
             {
                 var clients = c.ClientManager;
                 var arguments = SafeConvertToObjectArray(message);
@@ -64,148 +86,195 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Accepted();
         }
 
-        public override Task<IActionResult> CheckConnectionExistence([RegularExpression(HubPattern)] string hub, string connectionId)
-        {
-            if (!ModelState.IsValid)
-            {
-                return Task.FromResult(BadRequest() as IActionResult);
-            }
-
-            if (_store.TryGetLifetimeContext(hub, out var c))
-            {
-                var lifetime = c.LifetimeManager;
-                var connection = lifetime.Connections[connectionId];
-                if (connection != null)
-                {
-                    return Task.FromResult(Ok() as IActionResult);
-                }
-            }
-
-            return Task.FromResult(NotFound() as IActionResult);
-        }
-
-        public override Task<IActionResult> CheckGroupExistence([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group)
-        {
-            if (!ModelState.IsValid)
-            {
-                return Task.FromResult(BadRequest() as IActionResult);
-            }
-
-            if (_store.TryGetLifetimeContext(hub, out var c))
-            {
-                if (c.UserGroupManager.GroupContainsConnections(group))
-                {
-                    return Task.FromResult(Ok() as IActionResult);
-                }
-            }
-
-            return Task.FromResult(NotFound() as IActionResult);
-        }
-
-        public override Task<IActionResult> CheckUserExistence([RegularExpression(HubPattern)] string hub, string user)
-        {
-            if (!ModelState.IsValid)
-            {
-                return Task.FromResult(BadRequest() as IActionResult);
-            }
-
-            if (_store.TryGetLifetimeContext(hub, out var c))
-            {
-                foreach (var conn in c.LifetimeManager.Connections)
-                {
-                    if (string.Equals(conn.UserIdentifier, user, StringComparison.Ordinal))
-                    {
-                        return Task.FromResult(Ok() as IActionResult);
-                    }
-                }
-            }
-
-            return Task.FromResult(NotFound() as IActionResult);
-        }
-
-        public override Task<IActionResult> CloseClientConnection([RegularExpression(HubPattern)] string hub, string connectionId, [FromQuery] string reason)
-        {
-            if (!ModelState.IsValid)
-            {
-                return Task.FromResult(BadRequest() as IActionResult);
-            }
-
-            if (_store.TryGetLifetimeContext(hub, out var c))
-            {
-                var lifetime = c.LifetimeManager;
-                var connection = lifetime.Connections[connectionId];
-                if (connection != null)
-                {
-                    connection.Abort();
-                }
-            }
-
-            return Task.FromResult(Accepted() as IActionResult);
-        }
-
-        public override Task<IActionResult> RemoveConnectionFromGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string connectionId)
-        {
-            if (!ModelState.IsValid)
-            {
-                return Task.FromResult(BadRequest() as IActionResult);
-            }
-
-            if (_store.TryGetLifetimeContext(hub, out var c))
-            {
-                if (c.UserGroupManager.RemoveConnectionFromGroup(connectionId, group))
-                {
-                    return Task.FromResult(Ok() as IActionResult);
-                }
-            }
-
-            return Task.FromResult(NotFound() as IActionResult);
-        }
-
-        public override Task<IActionResult> RemoveConnectionFromAllGroups([RegularExpression(HubPattern)] string hub, string connection)
-        {
-            if (!ModelState.IsValid)
-            {
-                return Task.FromResult(BadRequest() as IActionResult);
-            }
-
-            if (_store.TryGetLifetimeContext(hub, out var c))
-            { 
-                c.UserGroupManager.RemoveConnectionFromAllGroups(connection);
-                return Task.FromResult(Ok() as IActionResult);
-            }
-
-            return Task.FromResult(Accepted() as IActionResult);
-        }
-
-        public override Task<IActionResult> AddConnectionToGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string connectionId)
-        {
-            if (!ModelState.IsValid)
-            {
-                return Task.FromResult(BadRequest() as IActionResult);
-            }
-
-            if (_store.TryGetLifetimeContext(hub, out var c))
-            {
-                var lifetime = c.LifetimeManager;
-                var connection = lifetime.Connections[connectionId];
-                if (connection != null)
-                {
-                    c.UserGroupManager.AddConnectionIntoGroup(connectionId, group);
-                    return Task.FromResult(Ok() as IActionResult);
-                }
-            }
-
-            return Task.FromResult(NotFound() as IActionResult);
-        }
-
-        public override async Task<IActionResult> GroupBroadcast([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, [FromBody] PayloadMessage message, [FromQuery(Name = "excluded")] IReadOnlyList<string> excluded)
+        public override IActionResult CheckConnectionExistence(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub, string connectionId,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest();
             }
 
-            if (_store.TryGetLifetimeContext(hub, out var c))
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
+            {
+                var lifetime = c.LifetimeManager;
+                var connection = lifetime.Connections[connectionId];
+                if (connection != null)
+                {
+                    return Ok();
+                }
+            }
+
+            return NotFound();
+        }
+
+        public override IActionResult CheckGroupExistence(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub,
+            [StringLength(1024, MinimumLength = 1, ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            [RegularExpression(ParameterValidator.NotWhitespacePattern , ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            string group,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
+            {
+                if (c.UserGroupManager.GroupContainsConnections(group))
+                {
+                    return Ok();
+                }
+            }
+
+            return NotFound();
+        }
+
+        public override IActionResult CheckUserExistence(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub, string user,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
+            {
+                foreach (var conn in c.LifetimeManager.Connections)
+                {
+                    if (string.Equals(conn.UserIdentifier, user, StringComparison.Ordinal))
+                    {
+                        return Ok();
+                    }
+                }
+            }
+
+            return NotFound();
+        }
+
+        public override async Task<IActionResult> CloseClientConnection(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub, string connectionId, [FromQuery] string reason,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
+            {
+                var lifetime = c.LifetimeManager;
+                var connection = lifetime.Connections[connectionId];
+                if (connection != null)
+                {
+                    await SendCloseAsync(connection, reason);
+                }
+            }
+
+            return Ok();
+        }
+
+        public override IActionResult RemoveConnectionFromGroup(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub,
+            [StringLength(1024, MinimumLength = 1, ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            [RegularExpression(ParameterValidator.NotWhitespacePattern , ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            string group, string connectionId,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
+            {
+                if (c.UserGroupManager.RemoveConnectionFromGroup(connectionId, group))
+                {
+                    return Ok();
+                }
+            }
+
+            return NotFound();
+        }
+
+        public override IActionResult RemoveConnectionFromAllGroups(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)] string hub,
+            [MinLength(1, ErrorMessage = ErrorMessages.Validation.InvalidConnectionId)] string connectionId,
+            [FromQuery(Name = ApplicationName), RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)] string application = null)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
+            { 
+                c.UserGroupManager.RemoveConnectionFromAllGroups(connectionId);
+                return Ok();
+            }
+
+            return Ok();
+        }
+
+        public override IActionResult AddConnectionToGroup(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub,
+            [StringLength(1024, MinimumLength = 1, ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            [RegularExpression(ParameterValidator.NotWhitespacePattern , ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            string group, string connectionId,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
+            {
+                var lifetime = c.LifetimeManager;
+                var connection = lifetime.Connections[connectionId];
+                if (connection != null)
+                {
+                    c.UserGroupManager.AddConnectionIntoGroup(connectionId, group);
+                    return Ok();
+                }
+            }
+
+            return NotFound();
+        }
+
+        public override async Task<IActionResult> GroupBroadcast(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub,
+            [StringLength(1024, MinimumLength = 1, ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            [RegularExpression(ParameterValidator.NotWhitespacePattern , ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            string group,
+            [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)]
+            [Required(ErrorMessage = ErrorMessages.Validation.MessageRequired)]
+            PayloadMessage message,
+            [FromQuery(Name = "excluded")] IReadOnlyList<string> excluded,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
             {
                 var clients = c.ClientManager;
                 var arguments = SafeConvertToObjectArray(message);
@@ -221,14 +290,21 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Accepted();
         }
 
-        public override async Task<IActionResult> SendToConnection([RegularExpression(HubPattern)] string hub, string connectionId, [FromBody] PayloadMessage message)
+        public override async Task<IActionResult> SendToConnection(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub, string connectionId,
+            [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)]
+            [Required(ErrorMessage = ErrorMessages.Validation.MessageRequired)]
+            PayloadMessage message,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest();
             }
 
-            if (_store.TryGetLifetimeContext(hub, out var c))
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
             {
                 var clients = c.ClientManager;
                 var arguments = SafeConvertToObjectArray(message);
@@ -239,73 +315,195 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Accepted();
         }
 
-        public override Task<IActionResult> CheckUserExistenceInGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string user)
+        public override IActionResult CheckUserExistenceInGroup(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub,
+            [StringLength(1024, MinimumLength = 1, ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            [RegularExpression(ParameterValidator.NotWhitespacePattern , ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            string group, string user,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
         {
             if (!ModelState.IsValid)
             {
-                return Task.FromResult(BadRequest() as IActionResult);
+                return BadRequest();
             }
 
-            if (_store.TryGetLifetimeContext(hub, out var c))
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
             {
-                if (c.UserGroupManager.GroupContainsUser(user, group))
+                if (c.UserGroupManager.GroupContainsUser(group, user))
                 {
-                    return Task.FromResult(Ok() as IActionResult);
+                    return Ok();
                 }
             }
 
-            return Task.FromResult(NotFound() as IActionResult);
+            return NotFound();
         }
 
-        public override Task<IActionResult> AddUserToGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string user, int? ttl = null)
+        public override IActionResult AddUserToGroup(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub,
+            [StringLength(1024, MinimumLength = 1, ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            [RegularExpression(ParameterValidator.NotWhitespacePattern , ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            string group, string user, int? ttl = null,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
         {
             if (!ModelState.IsValid)
             {
-                return Task.FromResult(BadRequest() as IActionResult);
+                return BadRequest();
             }
 
-            if (_store.TryGetLifetimeContext(hub, out var c))
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
             {
                 c.UserGroupManager.AddUserToGroup(user, group, ttl == null ? DateTimeOffset.MaxValue : DateTimeOffset.Now.AddSeconds(ttl.Value));
             }
 
-            return Task.FromResult(Accepted() as IActionResult);
+            return Accepted();
         }
 
-        public override Task<IActionResult> RemoveUserFromAllGroups([RegularExpression(HubPattern)] string hub, string user)
+        public override IActionResult RemoveUserFromAllGroups(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub, string user,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
         {
             if (!ModelState.IsValid)
             {
-                return Task.FromResult(BadRequest() as IActionResult);
+                return BadRequest();
             }
 
-            if (_store.TryGetLifetimeContext(hub, out var c))
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
             {
                 c.UserGroupManager.RemoveUserFromAllGroups(user);
-                return Task.FromResult(Ok() as IActionResult);
             }
 
-            return Task.FromResult(Accepted() as IActionResult);
+            return Ok();
         }
 
-        public override Task<IActionResult> RemoveUserFromGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string user)
+        public override IActionResult RemoveUserFromGroup(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub,
+            [StringLength(1024, MinimumLength = 1, ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            [RegularExpression(ParameterValidator.NotWhitespacePattern , ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            string group, string user,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null)
         {
             if (!ModelState.IsValid)
             {
-                return Task.FromResult(BadRequest() as IActionResult);
+                return BadRequest();
             }
 
-            if (_store.TryGetLifetimeContext(hub, out var c))
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
             {
                 c.UserGroupManager.RemoveUserFromGroup(user, group);
             }
 
-            return Task.FromResult(Accepted() as IActionResult);
+            return Accepted();
         }
 
-        public override Task<IActionResult> GetHealthStatus()
+        public override async Task<IActionResult> CloseConnections(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub,
+            [FromQuery(Name = ApplicationName)]
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null,
+            [FromQuery(Name = ExcludedName)]
+            IReadOnlyList<string> excluded = null,
+            [FromQuery(Name = ReasonName)]
+            string reason = null)
         {
-            return Task.FromResult(Ok() as IActionResult);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
+            {
+                var lifetime = c.LifetimeManager;
+                foreach (var cc in lifetime.Connections)
+                {
+                    if (cc != null)
+                    {
+                        await SendCloseAsync(cc, reason);
+                    }
+                }
+            }
+
+            return NoContent();
+        }
+
+        public override async Task<IActionResult> CloseGroupConnections(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub,
+            [StringLength(1024, MinimumLength = 1, ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            [RegularExpression(ParameterValidator.NotWhitespacePattern , ErrorMessage = ErrorMessages.Validation.InvalidGroupName)]
+            string group,
+            [FromQuery(Name = ApplicationName)]
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null,
+            [FromQuery(Name = ExcludedName)]
+            IReadOnlyList<string> excluded = null,
+            [FromQuery(Name = ReasonName)]
+            string reason = null)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
+            {
+                foreach(var cc in c.UserGroupManager.GetConnectionsForGroup(group).Value)
+                {
+                    var lifetime = c.LifetimeManager;
+                    var connection = lifetime.Connections[cc];
+
+                    if (connection != null)
+                    {
+                        await SendCloseAsync(connection, reason);
+                    }
+                }
+            }
+
+            return NoContent();
+        }
+
+        public override async Task<IActionResult> CloseUserConnections(
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidHubNameInPath)]
+            string hub,
+            [StringLength(1024, MinimumLength = 1)]
+            string user,
+            [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
+            string application = null,
+            [FromQuery(Name = ExcludedName)]
+            IReadOnlyList<string> excluded = null,
+            [FromQuery(Name = ReasonName)]
+            string reason = null)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            if (_store.TryGetLifetimeContext(GetInternalHubName(application, hub), out var c))
+            {
+                foreach (var cc in c.UserGroupManager.GetConnectionsForUser(user).Value)
+                {
+                    if (cc != null)
+                    {
+                        await SendCloseAsync(cc, reason);
+                    }
+                }
+            }
+
+            return NoContent();
+        }
+
+        public override IActionResult GetHealthStatus()
+        {
+            return Ok();
         }
 
         private Task SendAsync(IClientProxy client, string method, object[] arguments, CancellationToken cancellationToken = default)
@@ -427,6 +625,26 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
                 _logger.LogError("Failed to parse argument", ex);
                 return null;
             }
+        }
+
+        private readonly ConcurrentDictionary<(string hub, string application), string> _hubs = new();
+
+        private string GetInternalHubName(string application, string hub)
+        {
+            if (_hubs.TryGetValue((hub, application), out var result))
+            {
+                return result;
+            }
+            if (string.IsNullOrEmpty(application))
+            {
+                return _hubs.GetOrAdd((hub, application), hub.ToLower());
+            }
+            return _hubs.GetOrAdd((hub, application), application.ToLower() + "_" + hub.ToLower());
+        }
+
+        private ValueTask SendCloseAsync(HubConnectionContext connection, string message)
+        {
+            return connection.WriteAsync(new CloseMessage(message, true));
         }
     }
 }
