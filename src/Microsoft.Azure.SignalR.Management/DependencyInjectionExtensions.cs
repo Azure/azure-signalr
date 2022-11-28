@@ -130,7 +130,7 @@ namespace Microsoft.Azure.SignalR.Management
                 {
                     throw new InvalidOperationException("Product info is null");
                 }
-                o.ProductInfo += o.ProductInfo + userAgent;
+                o.ProductInfo += userAgent;
             });
         }
 
