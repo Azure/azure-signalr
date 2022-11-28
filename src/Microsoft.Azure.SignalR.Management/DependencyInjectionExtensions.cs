@@ -124,7 +124,14 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentNullException(nameof(userAgent));
             }
 
-            return services.PostConfigure<ServiceManagerOptions>(o => o.ProductInfo += userAgent);
+            return services.PostConfigure<ServiceManagerOptions>(o =>
+            {
+                if (o.ProductInfo == null)
+                {
+                    throw new InvalidOperationException("Product info is null");
+                }
+                o.ProductInfo += userAgent;
+            });
         }
 
         private static IServiceCollection TrySetProductInfo(this IServiceCollection services)
