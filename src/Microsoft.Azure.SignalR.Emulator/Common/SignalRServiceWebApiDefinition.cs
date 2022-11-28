@@ -11,6 +11,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
 {
     [Authorize]
     [Route("api/v1")]
+    [Route("api")]
     [Consumes("application/json")]
     internal abstract class SignalRServiceWebApiDefinition : ControllerBase
     {
