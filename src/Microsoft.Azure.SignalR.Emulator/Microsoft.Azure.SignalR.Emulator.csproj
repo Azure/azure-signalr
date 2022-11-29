@@ -8,7 +8,7 @@
     <ToolCommandName>asrs-emulator</ToolCommandName>
     <PackageOutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\build</PackageOutputPath>
     <IsPackable>true</IsPackable>
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionPrefix>1.1.0</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
