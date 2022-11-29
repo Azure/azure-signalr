@@ -1,7 +1,12 @@
 <Project>
   <PropertyGroup>
+    <!-- major.minor.patch[.build] -->
     <VersionPrefix>1.19.2</VersionPrefix>
+    <VersionPrefix Condition="'$(MSBuildProjectName)' == 'Microsoft.Azure.SignalR.Emulator'">1.1.0</VersionPrefix>
+    <VersionPrefix Condition="'$(MSBuildProjectName)' == 'Microsoft.Azure.SignalR.Serverless.Protocols'">1.9.0</VersionPrefix>
+    <!-- Alphanumberic(+hyphen) string for PackageVersion and InformationalVersion-->
     <VersionSuffix>preview1</VersionSuffix>
+    <!-- Version = VersionPrefix-VersionSuffix, for PackageVersion and AssemblyVersion -->
     <PackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' == 'rtm' ">$(VersionPrefix)</PackageVersion>
     <PackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' != 'rtm' ">$(VersionPrefix)-$(VersionSuffix)-final</PackageVersion>
     <BuildNumber Condition="'$(BuildNumber)' == ''">t000</BuildNumber>
