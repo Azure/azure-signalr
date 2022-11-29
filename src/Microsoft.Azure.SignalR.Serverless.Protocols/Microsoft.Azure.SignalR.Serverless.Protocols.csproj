@@ -4,9 +4,6 @@
     <Description>.NET Standard SDK for Azure SignalR Service serverless protocol.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Microsoft.Azure.SignalR.Serverless.Protocols</RootNamespace>
-    <!--Override the global version prefix-->
-    <VersionPrefix>1.9.0</VersionPrefix>
-    <PackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' == 'rtm' ">$(VersionPrefix)</PackageVersion>
   </PropertyGroup>
   
   <ItemGroup>
