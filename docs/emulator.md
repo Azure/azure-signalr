@@ -10,7 +10,7 @@ Features available
 
 Walkthrough
 ----------------
-Take this serverless sample for example https://github.com/Azure/azure-functions-signalrservice-extension/tree/master/samples/bidirectional-chat 
+Take this serverless sample for example https://github.com/Azure/azure-functions-signalrservice-extension/tree/3e87c3ce277265866ca9d0bf51bb9c7ecea39e14/samples/bidirectional-chat 
 1. Clone the sample repo to local
 ```
 git clone https://github.com/Azure/azure-functions-signalrservice-extension.git
