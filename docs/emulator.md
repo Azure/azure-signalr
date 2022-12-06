@@ -10,7 +10,7 @@ Features available
 
 Walkthrough
 ----------------
-Take this serverless sample for example https://github.com/Azure/azure-functions-signalrservice-extension/tree/master/samples/bidirectional-chat 
+Take this serverless sample for example https://github.com/Azure/azure-functions-signalrservice-extension/tree/3e87c3ce277265866ca9d0bf51bb9c7ecea39e14/samples/bidirectional-chat 
 1. Clone the sample repo to local
 ```
 git clone https://github.com/Azure/azure-functions-signalrservice-extension.git
@@ -19,11 +19,11 @@ cd azure-functions-signalrservice-extension/samples/bidirectional-chat
 
 2. Install the emulator
 ```
-dotnet tool install  -g Microsoft.Azure.SignalR.Emulator --version 1.0.0-preview1-10809
+dotnet tool install  -g Microsoft.Azure.SignalR.Emulator
 ```
 Or update the emulator to the latest preview version if it is already installed:
 ```
-dotnet tool update -g Microsoft.Azure.SignalR.Emulator --version 1.0.0-preview1-10809
+dotnet tool update -g Microsoft.Azure.SignalR.Emulator
 ```
 
 3. Run the emulator `asrs-emulator` to list all the available commands:

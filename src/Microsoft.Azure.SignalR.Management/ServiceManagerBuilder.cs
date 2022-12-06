@@ -95,6 +95,13 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public ServiceManagerBuilder AddUserAgent(string userAgent)
+        {
+            _services.AddUserAgent(userAgent);
+            return this;
+        }
+
         internal ServiceManagerBuilder ConfigureServices(Action<IServiceCollection> configureAction)
         {
             _configureAction = configureAction;

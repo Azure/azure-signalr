@@ -113,6 +113,8 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             }
             finally
             {
+                InvokeCleanup(connectionContext);
+
                 Log.ConnectedEnding(_logger);
                 await _lifetimeManager.OnDisconnectedAsync(connectionContext);
             }
@@ -135,8 +137,14 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
         private static readonly PropertyInfo _hubConnectionContext_Input =
             typeof(HubConnectionContext).GetProperty("Input", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private static readonly MethodInfo _hubConnectionContext_ResetClientTimeout =
-            typeof(HubConnectionContext).GetMethod("ResetClientTimeout", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly MethodInfo _hubConnectionContext_BeginClientTimeout =
+            typeof(HubConnectionContext).GetMethod("BeginClientTimeout", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        private static readonly MethodInfo _hubConnectionContext_StopClientTimeout =
+            typeof(HubConnectionContext).GetMethod("StopClientTimeout", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        private static readonly MethodInfo _hubConnectionContext_Cleanup =
+            typeof(HubConnectionContext).GetMethod("Cleanup", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private Task<bool> InvokeHandshakeAsync(TimeSpan handshakeTimeout, HubConnectionContext connectionContext, IReadOnlyList<string> resolvedSupportedProtocols)
         {
@@ -165,9 +173,19 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             return (PipeReader)_hubConnectionContext_Input.GetValue(connection);
         }
 
-        private void InvokeResetClientTimeout(HubConnectionContext connection)
+        private void InvokeStopClientTimeout(HubConnectionContext connection)
         {
-            _hubConnectionContext_ResetClientTimeout.Invoke(connection, Array.Empty<object>());
+            _hubConnectionContext_StopClientTimeout.Invoke(connection, Array.Empty<object>());
+        }
+
+        private void InvokeBeginClientTimeout(HubConnectionContext connection)
+        {
+            _hubConnectionContext_BeginClientTimeout.Invoke(connection, Array.Empty<object>());
+        }
+
+        private void InvokeCleanup(HubConnectionContext connection)
+        {
+            _hubConnectionContext_Cleanup.Invoke(connection, Array.Empty<object>());
         }
 
         #endregion
@@ -238,6 +256,8 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             var input = GetInput(connection);
             var protocol = connection.Protocol;
 
+            InvokeBeginClientTimeout(connection);
+            
             var binder = InvocationBinder.Instance;
 
             while (true)
@@ -254,11 +274,13 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 
                     if (!buffer.IsEmpty)
                     {
-                        InvokeResetClientTimeout(connection);
+                        bool messageReceived = false;
 
                         // No message limit, just parse and dispatch
                         while (TryParse(protocol, binder, ref buffer, out var message))
                         {
+                            InvokeStopClientTimeout(connection);
+                            messageReceived = true;
                             if (message is InvocationMessage invocationMessage && TryGetPayload(protocol, invocationMessage, out var payload))
                             {
                                 var invocation = new ServerlessProtocol.InvocationMessage(payload, invocationMessage.Target, invocationMessage.InvocationId);
@@ -268,6 +290,11 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
                                     await ((EmulatorHubConnectionContext)connection).ConnectionContext.Transport.Output.WriteAsync(response.First);
                                 }
                             }
+                        }
+
+                        if (messageReceived)
+                        {
+                            InvokeBeginClientTimeout(connection);
                         }
                     }
 
