@@ -864,9 +864,6 @@
               "$ref": "#/definitions/ServiceResponse"
             }
           },
-          "404": {
-            "description": "Not Found"
-          },
           "default": {
             "description": "Error response",
             "schema": {

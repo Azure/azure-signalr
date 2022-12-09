@@ -1,6 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-using System.ComponentModel;
+using System;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
@@ -108,11 +108,30 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Adds product info to <see cref="ServiceManagerOptions"/>
         /// </summary>
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IServiceCollection WithAssembly(this IServiceCollection services, Assembly assembly)
         {
             var productInfo = ProductInfo.GetProductInfo(assembly);
             return services.Configure<ServiceManagerOptions>(o => o.ProductInfo = productInfo);
+        }
+
+        /// <summary>
+        /// Allows functions extensions to add additional product info.
+        /// </summary>
+        public static IServiceCollection AddUserAgent(this IServiceCollection services, string userAgent)
+        {
+            if (userAgent is null)
+            {
+                throw new ArgumentNullException(nameof(userAgent));
+            }
+
+            return services.PostConfigure<ServiceManagerOptions>(o =>
+            {
+                if (o.ProductInfo == null)
+                {
+                    throw new InvalidOperationException("Product info is null");
+                }
+                o.ProductInfo += userAgent;
+            });
         }
 
         private static IServiceCollection TrySetProductInfo(this IServiceCollection services)
