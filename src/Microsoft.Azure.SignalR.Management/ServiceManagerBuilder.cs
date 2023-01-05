@@ -95,7 +95,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <para>Calling this method clears the default hub protocol.</para></remarks>
         /// <param name="hubProtocols">Only the protocols named "json" or "messagepack" are allowed.</param>
         /// <returns>The <see cref="ServiceHubContextBuilder"/> instance itself.</returns>
-        public ServiceManagerBuilder WithHubProtocols(IEnumerable<IHubProtocol> hubProtocols)
+        public ServiceManagerBuilder WithHubProtocols(params IHubProtocol[] hubProtocols)
         {
             if (hubProtocols == null)
             {
@@ -105,6 +105,10 @@ namespace Microsoft.Azure.SignalR.Management
             _services.RemoveAll<IHubProtocol>();
             foreach (var hubProtocol in hubProtocols)
             {
+                if (hubProtocol == null)
+                {
+                    throw new ArgumentNullException(nameof(hubProtocols), $"Null hub protocol is not allowed.");
+                }
                 if (!hubProtocol.Name.Equals(Constants.Protocol.Json, StringComparison.OrdinalIgnoreCase) && !hubProtocol.Name.Equals(Constants.Protocol.MessagePack, StringComparison.OrdinalIgnoreCase))
                 {
                     throw new ArgumentException($"The name '{hubProtocol.Name}' of the hub protocol is not supported. Only '{Constants.Protocol.Json}' or '{Constants.Protocol.MessagePack}' is allowed.");
