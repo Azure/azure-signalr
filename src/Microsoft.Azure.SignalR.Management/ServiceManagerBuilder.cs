@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -79,12 +80,38 @@ namespace Microsoft.Azure.SignalR.Management
         }
 
         /// <summary>
-        /// Uses Newtonsoft.Json library to serialize messages sent to SignalR.
+        /// Uses Newtonsoft.Json library to serialize messages sent to SignalR clients.
         /// </summary>
         /// <returns>The <see cref="ServiceHubContextBuilder"/> instance itself.</returns>
         public ServiceManagerBuilder WithNewtonsoftJson()
         {
             return WithNewtonsoftJson(o => { });
+        }
+
+        /// <summary>
+        /// Sets the SignalR hub protocols to serialize messages sent to SignalR clients.
+        /// </summary>
+        /// <remarks><para>Currently it only works for <b>persistent</b> mode. The support for <b>transiet(default)</b> mode is to be done. </para> 
+        /// <para>Calling this method clears the default hub protocol.</para></remarks>
+        /// <param name="hubProtocols">Only the protocols named "json" or "messagepack" are allowed.</param>
+        /// <returns>The <see cref="ServiceHubContextBuilder"/> instance itself.</returns>
+        public ServiceManagerBuilder WithHubProtocol(IEnumerable<IHubProtocol> hubProtocols)
+        {
+            if (hubProtocols == null)
+            {
+                throw new ArgumentNullException(nameof(hubProtocols));
+            }
+            // Allows the user to use MessagePack only.
+            _services.RemoveAll<IHubProtocol>();
+            foreach (var hubProtocol in hubProtocols)
+            {
+                if (!hubProtocol.Name.Equals(Constants.Protocol.Json, StringComparison.OrdinalIgnoreCase) && !hubProtocol.Name.Equals(Constants.Protocol.MessagePack, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new ArgumentException($"The name '{hubProtocol.Name}' of the hub protocol is not supported. Only '{Constants.Protocol.Json}' or '{Constants.Protocol.MessagePack}' is allowed.");
+                }
+                _services.TryAddEnumerable(ServiceDescriptor.Singleton(hubProtocol));
+            }
+            return this;
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]

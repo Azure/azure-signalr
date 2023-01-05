@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using Azure.Core.Serialization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -36,6 +37,7 @@ namespace Microsoft.Azure.SignalR.Management
                     }
                 case ServiceTransportType.Transient:
                     {
+                        CheckHubProtocols();
 #pragma warning disable CS0618 // Type or member is obsolete
                         var payloadSerializerSettings = _options.JsonSerializerSettings;
 #pragma warning restore CS0618 // Type or member is obsolete
@@ -52,6 +54,15 @@ namespace Microsoft.Azure.SignalR.Management
                         return new RestHubLifetimeManager<THub>(hubName, serviceEndpoint, _options.ProductInfo, _options.ApplicationName, restClient);
                     }
                 default: throw new InvalidEnumArgumentException(nameof(ServiceManagerOptions.ServiceTransportType), (int)_options.ServiceTransportType, typeof(ServiceTransportType));
+            }
+        }
+
+        private void CheckHubProtocols()
+        {
+            var protocols = _serviceProvider.GetServices<IHubProtocol>().ToArray();
+            if (protocols.Length > 1 || protocols.Where(p => p.Name.Equals(Constants.Protocol.MessagePack)).Any())
+            {
+                throw new InvalidOperationException("ServiceManagerBuilder.WithHubProtocols method is not supported for transient(default) mode yet.");
             }
         }
     }
