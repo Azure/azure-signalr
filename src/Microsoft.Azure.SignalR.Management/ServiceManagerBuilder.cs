@@ -95,7 +95,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <para>Calling this method clears the default hub protocol.</para></remarks>
         /// <param name="hubProtocols">Only the protocols named "json" or "messagepack" are allowed.</param>
         /// <returns>The <see cref="ServiceHubContextBuilder"/> instance itself.</returns>
-        public ServiceManagerBuilder WithHubProtocol(IEnumerable<IHubProtocol> hubProtocols)
+        public ServiceManagerBuilder WithHubProtocols(IEnumerable<IHubProtocol> hubProtocols)
         {
             if (hubProtocols == null)
             {

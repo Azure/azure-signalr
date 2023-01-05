@@ -51,7 +51,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                         o.ConnectionString = "Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;";
                         o.ServiceTransportType = ServiceTransportType.Persistent;
                     })
-                    .WithHubProtocol(hubProtocols)
+                    .WithHubProtocols(hubProtocols)
                     .ConfigureServices(services => services.AddSingleton(mockConnectionContainer.Object))
                     .BuildServiceManager()
                     .CreateHubContextAsync("hub", default);
