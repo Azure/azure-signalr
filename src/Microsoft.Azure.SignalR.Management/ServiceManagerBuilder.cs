@@ -92,7 +92,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// Sets the SignalR hub protocols to serialize messages sent to SignalR clients.
         /// </summary>
         /// <remarks><para>Currently it only works for <b>persistent</b> mode. The support for <b>transiet(default)</b> mode is to be done. </para> 
-        /// <para>Calling this method clears the default hub protocol.</para></remarks>
+        /// <para>Calling this method first clears the existing hub protocols, then adds the new protocols.</para></remarks>
         /// <param name="hubProtocols">Only the protocols named "json" or "messagepack" are allowed.</param>
         /// <returns>The <see cref="ServiceHubContextBuilder"/> instance itself.</returns>
         public ServiceManagerBuilder WithHubProtocols(params IHubProtocol[] hubProtocols)

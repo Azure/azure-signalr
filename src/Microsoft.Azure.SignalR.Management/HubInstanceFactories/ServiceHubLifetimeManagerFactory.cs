@@ -60,7 +60,7 @@ namespace Microsoft.Azure.SignalR.Management
         private void CheckHubProtocols()
         {
             var protocols = _serviceProvider.GetServices<IHubProtocol>().ToArray();
-            if (protocols.Length > 1 || protocols.Where(p => p.Name.Equals(Constants.Protocol.MessagePack)).Any())
+            if (protocols.Length > 1 || protocols.Any(p => p.Name.Equals(Constants.Protocol.MessagePack, StringComparison.OrdinalIgnoreCase)))
             {
                 throw new InvalidOperationException("ServiceManagerBuilder.WithHubProtocols method is not supported for transient(default) mode yet.");
             }
