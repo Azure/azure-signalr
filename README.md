@@ -6,9 +6,9 @@ This repository contains the open source subset of the .NET SDK.
 
 ## Build Status
 
-[![Windows](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Windows/dev?label=Windows)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Windowns)
-[![Ubuntu](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Ubuntu/dev?label=Ubuntu)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Ubuntu)
-[![OSX](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-OSX/dev?label=OSX)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-OSX)
+[![Windows](https://img.shields.io/github/actions/workflow/status/Azure/azure-signalr/windows.yml?branch=dev&label=Windows)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Windowns)
+[![Ubuntu](https://img.shields.io/github/actions/workflow/status/Azure/azure-signalr/ubuntu.yml?branch=dev&label=Ubuntu)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Ubuntu)
+[![OSX](https://img.shields.io/github/actions/workflow/status/Azure/azure-signalr/osx.yml?branch=dev&label=OSX)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-OSX)
 
 ## Nuget Packages
 
