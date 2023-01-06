@@ -105,16 +105,28 @@ namespace Microsoft.Azure.SignalR.Management
             _services.RemoveAll<IHubProtocol>();
             foreach (var hubProtocol in hubProtocols)
             {
-                if (hubProtocol == null)
-                {
-                    throw new ArgumentNullException(nameof(hubProtocols), $"Null hub protocol is not allowed.");
-                }
-                if (!hubProtocol.Name.Equals(Constants.Protocol.Json, StringComparison.OrdinalIgnoreCase) && !hubProtocol.Name.Equals(Constants.Protocol.MessagePack, StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new ArgumentException($"The name '{hubProtocol.Name}' of the hub protocol is not supported. Only '{Constants.Protocol.Json}' or '{Constants.Protocol.MessagePack}' is allowed.");
-                }
-                _services.TryAddEnumerable(ServiceDescriptor.Singleton(hubProtocol));
+                AddHubProtocol(hubProtocol);
             }
+            return this;
+        }
+
+        /// <summary>
+        /// Add a SignalR hub protocol to serialize messages sent to SignalR clients.
+        /// </summary>
+        /// <param name="hubProtocol">Only the protocol named "json" or "messagepack" is allowed.</param>
+        /// <returns>The <see cref="ServiceHubContextBuilder"/> instance itself.</returns>
+        public ServiceManagerBuilder AddHubProtocol(IHubProtocol hubProtocol)
+        {
+            if (hubProtocol == null)
+            {
+                throw new ArgumentNullException(nameof(hubProtocol));
+            }
+            if (!hubProtocol.Name.Equals(Constants.Protocol.Json, StringComparison.OrdinalIgnoreCase) && !hubProtocol.Name.Equals(Constants.Protocol.MessagePack, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException($"The name '{hubProtocol.Name}' of the hub protocol is not supported. Only '{Constants.Protocol.Json}' or '{Constants.Protocol.MessagePack}' is allowed.");
+            }
+            // If there are duplicate hub protocols with the same name, the last one added works.
+            _services.AddSingleton(hubProtocol);
             return this;
         }
 
