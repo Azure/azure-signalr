@@ -3,10 +3,9 @@
 This SDK is for ASP.NET **Core** SignalR. For differences between ASP.NET SignalR and ASP.NET Core SignalR, see [here](https://learn.microsoft.com/aspnet/core/signalr/version-differences?view=aspnetcore-6.0).
 
 ## Build Status
-
-[![Windows](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Windows/dev?label=Windows)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Windowns)
-[![Ubuntu](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Ubuntu/dev?label=Ubuntu)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Ubuntu)
-[![OSX](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-OSX/dev?label=OSX)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-OSX)
+[![Windows](https://img.shields.io/github/actions/workflow/status/Azure/azure-signalr/windows.yml?branch=dev&label=Windows)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Windowns)
+[![Ubuntu](https://img.shields.io/github/actions/workflow/status/Azure/azure-signalr/ubuntu.yml?branch=dev&label=Ubuntu)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Ubuntu)
+[![OSX](https://img.shields.io/github/actions/workflow/status/Azure/azure-signalr/osx.yml?branch=dev&label=OSX)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-OSX)
 
 ## Nuget Packages
 
