@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
+using Azure.Core.Serialization;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
@@ -88,8 +89,19 @@ namespace Microsoft.Azure.SignalR.Management
             // On .NET Standard 2.0, registering multiple hub protocols with the same name is forbidden.
             services.Replace(ServiceDescriptor.Singleton<IHubProtocol>(sp =>
             {
-                var objectSerializer = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ObjectSerializer;
-                return objectSerializer != null ? new JsonObjectSerializerHubProtocol(objectSerializer) : new JsonHubProtocol();
+                var serviceManagerOptions = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value;
+                var objectSerializer = serviceManagerOptions.ObjectSerializer;
+                if (objectSerializer != null)
+                {
+                    return new JsonObjectSerializerHubProtocol(objectSerializer);
+                }
+#pragma warning disable CS0618 // Type or member is obsolete
+                // The default protocol is different for historical reason.
+                return serviceManagerOptions.ServiceTransportType == default ?
+                    new JsonObjectSerializerHubProtocol(new NewtonsoftJsonObjectSerializer(serviceManagerOptions.JsonSerializerSettings))
+                    :
+                    new JsonHubProtocol();
+#pragma warning restore CS0618 // Type or member is obsolete
             }));
             //add dependencies for persistent mode only
             services
@@ -99,6 +111,9 @@ namespace Microsoft.Azure.SignalR.Management
                 .AddSingleton<IServiceConnectionFactory, ServiceConnectionFactory>()
                 .AddSingleton<MultiEndpointConnectionContainerFactory>()
                 .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
+
+            //add dependencies for transient mode only
+            services.AddSingleton<PayloadBuilderResolver>();
 
             services.AddRestClientFactory();
             services.AddSingleton<NegotiateProcessor>();

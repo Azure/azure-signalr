@@ -11,7 +11,7 @@ using Azure.Core.Serialization;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class PayloadMessageContent : HttpContent
+    internal class JsonPayloadMessageContent : HttpContent
     {
         private static readonly MediaTypeHeaderValue ContentType = new("application/json")
         {
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR
         private readonly PayloadMessage _payloadMessage;
         private readonly ObjectSerializer _jsonObjectSerializer;
 
-        public PayloadMessageContent(PayloadMessage payloadMessage, ObjectSerializer jsonObjectSerializer)
+        public JsonPayloadMessageContent(PayloadMessage payloadMessage, ObjectSerializer jsonObjectSerializer)
         {
             _payloadMessage = payloadMessage ?? throw new System.ArgumentNullException(nameof(payloadMessage));
             _jsonObjectSerializer = jsonObjectSerializer;

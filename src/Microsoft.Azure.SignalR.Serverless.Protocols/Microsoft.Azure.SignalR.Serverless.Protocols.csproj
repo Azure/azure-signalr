@@ -37,7 +37,7 @@
     <Compile Include="$(MessagePackRoot)BufferWriter.cs" LinkBase="MessagePack" />
     <Compile Include="$(MessagePackRoot)SequencePool.cs" LinkBase="MessagePack" />
     <Compile Include="$(MessagePackRoot)Utilities.cs" LinkBase="MessagePack" />
-    <Compile Include="..\Microsoft.Azure.SignalR.Common\Utilities\SequenceOfT.cs" LinkBase="MessagePack" />
+    <Compile Include="..\Common\SequenceOfT.cs" LinkBase="MessagePack" />
   </ItemGroup>
   
 </Project>

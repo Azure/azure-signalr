@@ -17,7 +17,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [MemberData(nameof(TestData))]
         internal async Task TestSerialization(ObjectSerializer objectSerializer, PayloadMessage payloadMessage, string jsonString)
         {
-            var httpContent = new PayloadMessageContent(payloadMessage, objectSerializer);
+            var httpContent = new JsonPayloadMessageContent(payloadMessage, objectSerializer);
             var outputStream = new MemoryStream();
             await httpContent.CopyToAsync(outputStream);
             outputStream.Seek(0, SeekOrigin.Begin);
