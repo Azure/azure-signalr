@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public IPayloadContentBuilder GetPayloadContentBuilder()
         {
-            if (_hubProtocolResolver.AllProtocols.Count == 1 && _hubProtocolResolver.AllProtocols.Single() is JsonObjectSerializerHubProtocol jsonObjectSerializerHubProtocol)
+            if (_hubProtocolResolver.AllProtocols.Count == 1 && _hubProtocolResolver.AllProtocols[0] is JsonObjectSerializerHubProtocol jsonObjectSerializerHubProtocol)
             {
                 // The hub protocol is the default one. Use JSON payload so that the service will convert it to MessagePack and keep backward compatibility as users may depend on this feature for MessagePack client support.
                 return new JsonPayloadContentBuilder(jsonObjectSerializerHubProtocol.ObjectSerializer);
