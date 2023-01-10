@@ -97,7 +97,7 @@ namespace Microsoft.Azure.SignalR.Management
                 }
 #pragma warning disable CS0618 // Type or member is obsolete
                 // The default protocol is different for historical reason.
-                return serviceManagerOptions.ServiceTransportType == default ?
+                return serviceManagerOptions.ServiceTransportType == ServiceTransportType.Transient ?
                     new JsonObjectSerializerHubProtocol(new NewtonsoftJsonObjectSerializer(serviceManagerOptions.JsonSerializerSettings))
                     :
                     new JsonHubProtocol();
