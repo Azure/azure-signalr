@@ -138,5 +138,14 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             .BuildServiceManager()
             .CreateHubContextAsync("hub", default);
         }
+
+        [Fact]
+        public void ForbidOtherCustomProtocolTest()
+        {
+            var customProtocol1 = Mock.Of<IHubProtocol>(h => h.Name == "abc");
+            var customProtocol2 = Mock.Of<IHubProtocol>(h => h.Name == "cde");
+            Assert.Throws<ArgumentException>(() => new ServiceManagerBuilder().WithHubProtocols(customProtocol1, customProtocol2));
+            Assert.Throws<ArgumentException>(() => new ServiceManagerBuilder().AddHubProtocol(customProtocol1));
+        }
     }
 }
