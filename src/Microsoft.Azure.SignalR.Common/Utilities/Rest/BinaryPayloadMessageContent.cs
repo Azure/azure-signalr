@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Common
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
-            var memoryBufferWriter = new MemoryBufferWriter();
+            using var memoryBufferWriter = new MemoryBufferWriter();
             WriteMessageCore(memoryBufferWriter);
             await memoryBufferWriter.CopyToAsync(stream);
         }
