@@ -36,16 +36,9 @@ namespace Microsoft.Azure.SignalR.Common
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
-            var memoryBufferWriter = MemoryBufferWriter.Get();
-            try
-            {
-                WriteMessageCore(memoryBufferWriter);
-                await memoryBufferWriter.CopyToAsync(stream);
-            }
-            finally
-            {
-                MemoryBufferWriter.Return(memoryBufferWriter);
-            }
+            var memoryBufferWriter = new MemoryBufferWriter();
+            WriteMessageCore(memoryBufferWriter);
+            await memoryBufferWriter.CopyToAsync(stream);
         }
 
         protected override bool TryComputeLength(out long length)

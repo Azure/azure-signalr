@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests
 {
-    public class PayloadMessageContentTest
+    public class JsonPayloadMessageContentTest
     {
         [Theory]
         [MemberData(nameof(TestData))]

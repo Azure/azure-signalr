@@ -3,12 +3,16 @@
 
 using System.Linq;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Common;
 
 #nullable enable
 
 namespace Microsoft.Azure.SignalR.Management
 {
+    /// <summary>
+    /// Used to keep backward compatibility after we support upload binary payload in the REST API. If users don't add any their own <see cref="IHubProtocol"/>, then they are legacy user and we still use JSON payload for them. If users have added hub protocols, then we can think the current hub protocols are all the protocols they want to support, and we don't need service-side JSON->MessagePack conversion even if there is only a JSON protocol.
+    /// </summary>
     internal class PayloadBuilderResolver
     {
         private readonly IHubProtocolResolver _hubProtocolResolver;

@@ -3,22 +3,22 @@
 
 using System.Net.Http;
 using Azure.Core.Serialization;
-using Microsoft.Azure.SignalR;
-using Microsoft.Azure.SignalR.Common;
 
 #nullable enable
-
-internal class JsonPayloadContentBuilder : IPayloadContentBuilder
+namespace Microsoft.Azure.SignalR.Common
 {
-    private readonly ObjectSerializer _jsonObjectSerializer;
-
-    public JsonPayloadContentBuilder(ObjectSerializer jsonObjectSerializer)
+    internal class JsonPayloadContentBuilder : IPayloadContentBuilder
     {
-        _jsonObjectSerializer = jsonObjectSerializer;
-    }
+        private readonly ObjectSerializer _jsonObjectSerializer;
 
-    public HttpContent? Build(PayloadMessage? payload)
-    {
-        return payload == null ? null : new JsonPayloadMessageContent(payload, _jsonObjectSerializer);
+        public JsonPayloadContentBuilder(ObjectSerializer jsonObjectSerializer)
+        {
+            _jsonObjectSerializer = jsonObjectSerializer;
+        }
+
+        public HttpContent? Build(PayloadMessage? payload)
+        {
+            return payload == null ? null : new JsonPayloadMessageContent(payload, _jsonObjectSerializer);
+        }
     }
 }

@@ -2,13 +2,16 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
+using MessagePack;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -32,7 +35,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         [Theory]
         [MemberData(nameof(AddProtocolTestData))]
-        public async Task WithProtocolTest(params IHubProtocol[] hubProtocols)
+        public async Task PersistentWithProtocolTest(params IHubProtocol[] hubProtocols)
         {
             var mockConnectionContainer = new Mock<IServiceConnectionContainer>();
             mockConnectionContainer.Setup(c => c.WriteAsync(It.IsAny<BroadcastDataMessage>()))
@@ -60,7 +63,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task AddMessagePackTest()
+        public async Task PersistentAddMessagePackTest()
         {
             var mockConnectionContainer = new Mock<IServiceConnectionContainer>();
             var expectedHubProtocols = new IHubProtocol[] { new JsonHubProtocol(), new MessagePackHubProtocol() };
@@ -89,7 +92,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task AddMessagePack_ThenWithNewtonsoftTest()
+        public async Task PersistentAddMessagePack_ThenWithNewtonsoftTest()
         {
             var hubContext = await new ServiceManagerBuilder()
                 .WithOptions(o =>
@@ -105,6 +108,35 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.Equal(2, allProtocols.Count);
             Assert.Contains(allProtocols, p => p is MessagePackHubProtocol);
             Assert.IsType<NewtonsoftJsonObjectSerializer>((allProtocols.First(p => p is JsonObjectSerializerHubProtocol) as JsonObjectSerializerHubProtocol).ObjectSerializer);
+        }
+
+        [Fact]
+        public async Task TransientWithHubProtocolTest()
+        {
+            var invocationMessage = new InvocationMessage("target", new object[] { "a", new[] { 1, 2 }, null });
+            var hubProtocols = new IHubProtocol[] { new MessagePackHubProtocol(), new JsonHubProtocol() };
+            var hubContext = await new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            })
+            .ConfigureServices(services =>
+            {
+                services.AddHttpClient(string.Empty).AddHttpMessageHandler(() => new TestRootHandler((message, cancellationToken) =>
+                {
+                    var reader = new MessagePackReader(message.Content.ReadAsByteArrayAsync().Result);
+                    Assert.Equal(2, reader.ReadMapHeader());
+                    Assert.Equal(hubProtocols[0].Name, reader.ReadString());
+                    Assert.True(hubProtocols[0].GetMessageBytes(invocationMessage).Span.SequenceEqual(reader.ReadBytes().Value.ToArray().AsSpan()));
+                    Assert.Equal(hubProtocols[1].Name, reader.ReadString());
+                    Assert.True(hubProtocols[1].GetMessageBytes(invocationMessage).Span.SequenceEqual(reader.ReadBytes().Value.ToArray().AsSpan()));
+                    Assert.True(reader.End);
+                }));
+            })
+            .WithHubProtocols(hubProtocols)
+            .BuildServiceManager()
+            .CreateHubContextAsync("hub", default);
         }
     }
 }
