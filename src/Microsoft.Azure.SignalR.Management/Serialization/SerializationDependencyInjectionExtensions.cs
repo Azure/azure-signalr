@@ -14,11 +14,6 @@ namespace Microsoft.Azure.SignalR.Management
         {
             var options = new NewtonsoftServiceHubProtocolOptions();
             configure?.Invoke(options);
-
-            // For transient mode.
-            services.Configure<ServiceManagerOptions>(o => o.ObjectSerializer = new NewtonsoftJsonObjectSerializer(options.PayloadSerializerSettings));
-
-            // For persistent mode.
             services.AddSingleton<IHubProtocol>(new JsonObjectSerializerHubProtocol(new NewtonsoftJsonObjectSerializer(options.PayloadSerializerSettings)));
             return services;
         }
