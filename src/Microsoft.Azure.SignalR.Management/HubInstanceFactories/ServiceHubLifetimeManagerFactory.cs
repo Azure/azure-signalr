@@ -5,9 +5,7 @@ using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
-using Azure.Core.Serialization;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -37,32 +35,13 @@ namespace Microsoft.Azure.SignalR.Management
                     }
                 case ServiceTransportType.Transient:
                     {
-                        CheckHubProtocols();
-#pragma warning disable CS0618 // Type or member is obsolete
-                        var payloadSerializerSettings = _options.JsonSerializerSettings;
-#pragma warning restore CS0618 // Type or member is obsolete
-                        //Currently RestHubProtocol only has Newtonsoft
-                        var objectSerializer = _options.ObjectSerializer;
-                        if (objectSerializer == null)
-                        {
-                            // keep backward compatibility
-                            objectSerializer = new NewtonsoftJsonObjectSerializer(payloadSerializerSettings);
-                        }
+                        var payloadBuilderResolver = _serviceProvider.GetRequiredService<PayloadBuilderResolver>();
                         var httpClientFactory = _serviceProvider.GetRequiredService<IHttpClientFactory>();
                         var serviceEndpoint = _serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.First().Key;
-                        var restClient = new RestClient(httpClientFactory, objectSerializer, _options.EnableMessageTracing);
+                        var restClient = new RestClient(httpClientFactory, payloadBuilderResolver.GetPayloadContentBuilder(), _options.EnableMessageTracing);
                         return new RestHubLifetimeManager<THub>(hubName, serviceEndpoint, _options.ProductInfo, _options.ApplicationName, restClient);
                     }
                 default: throw new InvalidEnumArgumentException(nameof(ServiceManagerOptions.ServiceTransportType), (int)_options.ServiceTransportType, typeof(ServiceTransportType));
-            }
-        }
-
-        private void CheckHubProtocols()
-        {
-            var protocols = _serviceProvider.GetServices<IHubProtocol>().ToArray();
-            if (protocols.Any(p => p.Name.Equals(Constants.Protocol.MessagePack, StringComparison.OrdinalIgnoreCase)))
-            {
-                throw new InvalidOperationException("ServiceManagerBuilder.WithHubProtocols method is not supported for transient(default) mode yet.");
             }
         }
     }
