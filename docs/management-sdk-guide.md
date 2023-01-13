@@ -40,7 +40,7 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 | Check if a user in a group                 | :heavy_check_mark: | :heavy_check_mark: |
 |                                            |                    |                    |
 | Multiple SignalR service instances support | :x:                | :heavy_check_mark: |
-| [MessaegPack clients support](#message-pack-serialization)                |  limited support   |  since v1.20.0     |
+| [MessaegPack clients support](#message-pack-serialization)                |  since v1.21.0 |  since v1.20.0     |
 
 **Features only come with new API**
 |                              | Transient          | Persistent  |
@@ -183,14 +183,12 @@ This SDK can communicates to Azure SignalR Service with two transport types:
 |                                | Transient          | Persistent                        |
 | ------------------------------ | ------------------ | --------------------------------- |
 | Default JSON library           | `Newtonsoft.Json`  | The same as Asp.Net Core SignalR: <br>`Newtonsoft.Json` for .NET Standard 2.0; <br>`System.Text.Json` for .NET Core App 3.1 and above  |
-| MessaegPack clients support    |  limited support   |  since v1.20.0                    |
+| MessaegPack clients support    |  since v1.21.0   |  since v1.20.0                    |
 
 #### Json serialization
 See [Customizing Json Serialization in Management SDK](./advanced-topics/json-object-serializer.md)
 
 #### Message Pack serialization
-
-##### Persistent mode
 
 1. You need to install `Microsoft.AspNetCore.SignalR.Protocols.MessagePack` package.
 1. To add a MessagePack protocol side-by-side with the default JSON protocol:
@@ -204,8 +202,8 @@ See [Customizing Json Serialization in Management SDK](./advanced-topics/json-ob
             .WithHubProtocols(new MessagePackHubProtocol(), new JsonHubProtocol());
     ```
     `WithHubProtocols` first clears the existing protocols, and then adds the new protocols. You can also use this method to remove the JSON protocol and use MessagePack only.
-##### Transient mode (limited support)
-The service side will first deserialize the JSON to object, then serialize the object to MessagePack. During the conversions, the type information might be lost.
 
-A better implementation to allow users to send MessagePack payload directly in transient mode is to be done. See #1745 for tracking.
+
+> For transient mode, by default the service side converts JSON payload to MessagePack payload and it's the legacy way to support MessagePack. However, we recommend you to add a MessagePack hub protocol explicitly as the legacy way might not work as you expect.
+
 
