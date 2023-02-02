@@ -65,8 +65,9 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var blazorDetector = new DefaultBlazorDetector();
+            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, blazorDetector);
+                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, blazorDetector, new DefaultServerNameProvider(), clientInvocationManager);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
@@ -85,6 +86,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var blazorDetector = new DefaultBlazorDetector();
+            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(
                 serviceConnectionManager,
                 new ClientConnectionManager(),
@@ -93,7 +95,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 Marker,
                 _globalHubOptions,
                 _localHubOptions,
-                blazorDetector);
+                blazorDetector,
+                new DefaultServerNameProvider(),
+                clientInvocationManager
+                );
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
@@ -121,9 +126,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var serviceConnectionManager = new ServiceConnectionManager<TestHub>();
             serviceConnectionManager.SetServiceConnection(proxy.ServiceConnectionContainer);
+            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
 
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, blazorDetector);
+                proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, blazorDetector, new DefaultServerNameProvider(), clientInvocationManager);
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -167,8 +173,9 @@ namespace Microsoft.Azure.SignalR.Tests
             IOptions<HubOptions> globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "json", "messagepack", MockProtocol, "json" } });
             IOptions<HubOptions<TestHub>> localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "json", "messagepack", MockProtocol } });
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
+            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), protocolResolver, Logger, Marker, globalHubOptions, localHubOptions, blazorDetector);
+                new ClientConnectionManager(), protocolResolver, Logger, Marker, globalHubOptions, localHubOptions, blazorDetector, new DefaultServerNameProvider(), clientInvocationManager);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
@@ -225,6 +232,32 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.True(false);
         }
 
+        [Fact]
+        public async void SetUserIdTest()
+        {
+            var connectionContext = new TestConnectionContext();
+            connectionContext.Features.Set(new ServiceUserIdFeature("testUser"));
+
+            var hubConnectionContext = new HubConnectionContext(connectionContext, new(), NullLoggerFactory.Instance);
+            var serviceLifetimeManager = MockLifetimeManager(new TestServiceConnectionManager<TestHub>());
+            await serviceLifetimeManager.OnConnectedAsync(hubConnectionContext);
+
+            Assert.Equal("testUser", hubConnectionContext.UserIdentifier);
+        }
+
+        [Fact]
+        public async void DoNotSetUserIdWithoutFeatureTest()
+        {
+            var connectionContext = new TestConnectionContext();
+
+            var hubConnectionContext = new HubConnectionContext(connectionContext, new(), NullLoggerFactory.Instance);
+            var serviceLifetimeManager = MockLifetimeManager(new TestServiceConnectionManager<TestHub>());
+            await serviceLifetimeManager.OnConnectedAsync(hubConnectionContext);
+
+            Assert.Null(hubConnectionContext.UserIdentifier);
+            Assert.Null(hubConnectionContext.Features.Get<ServiceUserIdFeature>());
+        }
+
         private HubLifetimeManager<TestHub> MockLifetimeManager(IServiceConnectionManager<TestHub> serviceConnectionManager, IClientConnectionManager clientConnectionManager = null, IBlazorDetector blazorDetector = null)
         {
             clientConnectionManager ??= new ClientConnectionManager();
@@ -239,6 +272,9 @@ namespace Microsoft.Azure.SignalR.Tests
             );
             IOptions<HubOptions> globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { MockProtocol } });
             IOptions<HubOptions<TestHub>> localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { MockProtocol } });
+
+            var clientInvocationManager = new ClientInvocationManager(protocolResolver);
+
             return new ServiceLifetimeManager<TestHub>(
                 serviceConnectionManager,
                 clientConnectionManager,
@@ -247,9 +283,151 @@ namespace Microsoft.Azure.SignalR.Tests
                 Marker,
                 globalHubOptions,
                 localHubOptions,
-                blazorDetector
+                blazorDetector,
+                new DefaultServerNameProvider(),
+                clientInvocationManager
             );
         }
+
+#if NET7_0_OR_GREATER
+        private static ServiceLifetimeManager<TestHub> GetTestClientInvocationServiceLifetimeManager(
+            ServiceConnectionBase serviceConnection, 
+            IServiceConnectionManager<TestHub> serviceConnectionManager, 
+            ClientConnectionManager clientConnectionManager, 
+            ClientInvocationManager clientInvocationManager = null,
+            ClientConnectionContext clientConnectionContext = null,
+            string protocol = "json"
+            )
+        {
+            // Add a client to ClientConnectionManager
+            if (clientConnectionContext != null)
+            {
+                clientConnectionContext.ServiceConnection = serviceConnection;
+                clientConnectionManager.TryAddClientConnection(clientConnectionContext);
+            }
+
+            // Create ServiceLifetimeManager
+            return new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+                clientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, null, new DefaultServerNameProvider(), clientInvocationManager ?? new ClientInvocationManager(HubProtocolResolver));
+        }
+
+        private static ClientConnectionContext GetClientConnectionContextWithConnection(string connectionId = null, string protocol = null)
+        {
+            var connectMessage = new OpenConnectionMessage(connectionId, new Claim[] { });
+            connectMessage.Protocol = protocol;
+            return new ClientConnectionContext(connectMessage);
+        }
+
+
+        [Theory]
+        [InlineData("json", true)]
+        [InlineData("json", false)]
+        [InlineData("messagepack", true)]
+        [InlineData("messagepack", false)]
+        public async void TestClientInvocationOneService(string protocol, bool isCompletionWithResult)
+        {
+            var serviceConnection = new TestServiceConnection();
+            var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
+
+            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
+            var clientConnectionContext = GetClientConnectionContextWithConnection(TestConnectionIds[1], protocol);
+
+            var serviceLifetimeManager = GetTestClientInvocationServiceLifetimeManager(serviceConnection, serviceConnectionManager, new ClientConnectionManager(), clientInvocationManager, clientConnectionContext, protocol);
+
+            var invocationResult = "invocation-correct-result";
+
+            // Invoke the client 
+            var task = serviceLifetimeManager.InvokeConnectionAsync<string>(TestConnectionIds[1], "InvokedMethod", Array.Empty<object>(), default);
+
+            // Check if the caller server sent a ClientInvocationMessage
+            Assert.IsType<ClientInvocationMessage>(serviceConnectionManager.ServiceMessage);
+            var invocation = (ClientInvocationMessage)serviceConnectionManager.ServiceMessage;
+
+            // Check if the caller server added the invocation
+            Assert.True(clientInvocationManager.Caller.TryGetInvocationReturnType(invocation.InvocationId, out _));
+
+            // Complete the invocation by SerivceLifetimeManager
+            var completionMessage = isCompletionWithResult
+                ? CompletionMessage.WithResult(invocation.InvocationId, invocationResult)
+                : CompletionMessage.WithError(invocation.InvocationId, invocationResult);
+
+            await serviceLifetimeManager.SetConnectionResultAsync(invocation.ConnectionId, completionMessage);
+            // Check if the caller server sent a ClientCompletionMessage
+            Assert.IsType<ClientCompletionMessage>(serviceConnectionManager.ServiceMessage);
+
+            // Check if the invocation result is correct
+            try
+            {
+                await task;
+                Assert.True(isCompletionWithResult);
+                Assert.Equal(invocationResult, task.Result);
+            }
+            catch (Exception e)
+            {
+                Assert.False(isCompletionWithResult);
+                Assert.Equal(invocationResult, e.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData("json", true)]
+        [InlineData("json", false)]
+        [InlineData("messagepack", true)]
+        [InlineData("messagepack", false)]
+        public async void TestMultiClientInvocationsMultipleService(string protocol, bool isCompletionWithResult)
+        {
+            var clientConnectionContext = GetClientConnectionContextWithConnection(TestConnectionIds[1], protocol);
+            var clientConnectionManager = new ClientConnectionManager();
+
+            var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
+            var clientInvocationManagers = new List<ClientInvocationManager>() {
+                new ClientInvocationManager(HubProtocolResolver),
+                new ClientInvocationManager(HubProtocolResolver)
+            };
+
+            var serviceLifetimeManagers = new List<ServiceLifetimeManager<TestHub>>() {
+                GetTestClientInvocationServiceLifetimeManager( new TestServiceConnection(), serviceConnectionManager, clientConnectionManager, clientInvocationManagers[0], null, protocol),
+                GetTestClientInvocationServiceLifetimeManager( new TestServiceConnection(), serviceConnectionManager, clientConnectionManager, clientInvocationManagers[1], clientConnectionContext, protocol)
+            };
+
+            var invocationResult = "invocation-correct-result";
+
+            // Invoke a client
+            var task = serviceLifetimeManagers[0].InvokeConnectionAsync<string>(TestConnectionIds[1], "InvokedMethod", Array.Empty<object>());
+            var invocation = (ClientInvocationMessage)serviceConnectionManager.ServiceMessage;
+            // Check if the invocation was added to caller server
+            Assert.True(clientInvocationManagers[0].Caller.TryGetInvocationReturnType(invocation.InvocationId, out _));
+
+            // Route server adds invocation
+            clientInvocationManagers[1].Router.AddInvocation(TestConnectionIds[1], invocation.InvocationId, "server-0", default);
+            // check if the invocation was adder to route server
+            Assert.True(clientInvocationManagers[1].Router.TryGetInvocationReturnType(invocation.InvocationId, out _));
+
+            // The route server receives CompletionMessage
+            var completionMessage = isCompletionWithResult
+                ? CompletionMessage.WithResult(invocation.InvocationId, invocationResult) 
+                : CompletionMessage.WithError(invocation.InvocationId, invocationResult);
+            await serviceLifetimeManagers[1].SetConnectionResultAsync(invocation.ConnectionId, completionMessage);
+
+            // Check if the router server sent ClientCompletionMessage
+            Assert.IsType<ClientCompletionMessage>(serviceConnectionManager.ServiceMessage);
+            var clientCompletionMessage = (ClientCompletionMessage)serviceConnectionManager.ServiceMessage;
+
+            clientInvocationManagers[0].Caller.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage);
+
+            try
+            {
+                await task;
+                Assert.True(isCompletionWithResult);
+                Assert.Equal(invocationResult, task.Result);
+            }
+            catch (Exception e)
+            {
+                Assert.False(isCompletionWithResult);
+                Assert.Equal(invocationResult, e.Message);
+            }
+        }
+#endif
 
         private static async Task InvokeMethod(HubLifetimeManager<TestHub> serviceLifetimeManager, string methodName)
         {

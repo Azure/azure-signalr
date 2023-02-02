@@ -49,7 +49,9 @@ namespace Microsoft.Azure.SignalR.Management
         [Obsolete("Use ServiceManagerBuilder.WithNewtonsoftJson instead.")]
         public JsonSerializerSettings JsonSerializerSettings { get; } = new JsonSerializerSettings();
 
-        // Don't expose this property directly, as we might want to allow users to use different protocols other than JSON.
+        /// <summary>
+        /// If users want to use MessagePack, they should go to <see cref="ServiceManagerBuilder.AddHubProtocol(AspNetCore.SignalR.Protocol.IHubProtocol)"/>
+        /// </summary>
         internal ObjectSerializer ObjectSerializer { get; set; }
 
         /// <summary>

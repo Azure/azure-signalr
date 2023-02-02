@@ -1,14 +1,11 @@
 # Azure SignalR Service Management SDK
 
-> **NOTE**
->
-> Azure SignalR Service only supports this SDK for ASP.NET CORE SignalR clients.
+This SDK is for ASP.NET **Core** SignalR. For differences between ASP.NET SignalR and ASP.NET Core SignalR, see [here](https://learn.microsoft.com/aspnet/core/signalr/version-differences?view=aspnetcore-6.0).
 
 ## Build Status
-
-[![Windows](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Windows/dev?label=Windows)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Windowns)
-[![Ubuntu](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Ubuntu/dev?label=Ubuntu)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Ubuntu)
-[![OSX](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-OSX/dev?label=OSX)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-OSX)
+[![Windows](https://img.shields.io/github/actions/workflow/status/Azure/azure-signalr/windows.yml?branch=dev&label=Windows)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Windowns)
+[![Ubuntu](https://img.shields.io/github/actions/workflow/status/Azure/azure-signalr/ubuntu.yml?branch=dev&label=Ubuntu)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Ubuntu)
+[![OSX](https://img.shields.io/github/actions/workflow/status/Azure/azure-signalr/osx.yml?branch=dev&label=OSX)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-OSX)
 
 ## Nuget Packages
 
@@ -19,7 +16,7 @@
 
 ## Getting Started
 
-Azure SignalR Service Management SDK helps you to manage SignalR clients through Azure SignalR Service directly such as broadcast messages. Therefore, this SDK can be but not limited to be used in [serverless](https://azure.microsoft.com/zh-cn/solutions/serverless/) environments. You can use this SDK to manage SignalR clients connected to your Azure SignalR Service in any environment, such as in a console app, in an Azure function or in a web server.
+Azure SignalR Service Management SDK helps you to manage SignalR clients through Azure SignalR Service directly such as broadcast messages. Therefore, this SDK can be but not limited to be used in [serverless](https://azure.microsoft.com/solutions/serverless/) environments. You can use this SDK to manage SignalR clients connected to your Azure SignalR Service in any environment, such as in a console app, in an Azure function or in a web server.
 
 **To see guides for SDK version 1.9.x and before, go to [Azure SignalR Service Management SDK (Legacy)](./management-sdk-guide-legacy.md). You might also want to read [Migration guidance](./management-sdk-migration.md).**
 
@@ -43,7 +40,7 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 | Check if a user in a group                 | :heavy_check_mark: | :heavy_check_mark: |
 |                                            |                    |                    |
 | Multiple SignalR service instances support | :x:                | :heavy_check_mark: |
-| MessaegPack clients support                | :heavy_check_mark: | :x:                |
+| [MessaegPack clients support](#message-pack-serialization)                |  since v1.21.0 |  since v1.20.0     |
 
 **Features only come with new API**
 |                              | Transient          | Persistent  |
@@ -186,8 +183,27 @@ This SDK can communicates to Azure SignalR Service with two transport types:
 |                                | Transient          | Persistent                        |
 | ------------------------------ | ------------------ | --------------------------------- |
 | Default JSON library           | `Newtonsoft.Json`  | The same as Asp.Net Core SignalR: <br>`Newtonsoft.Json` for .NET Standard 2.0; <br>`System.Text.Json` for .NET Core App 3.1 and above  |
-| Support for MessagePack client | :heavy_check_mark: | :x:                               |
+| MessaegPack clients support    |  since v1.21.0   |  since v1.20.0                    |
+
+#### Json serialization
+See [Customizing Json Serialization in Management SDK](./advanced-topics/json-object-serializer.md)
+
+#### Message Pack serialization
+
+1. You need to install `Microsoft.AspNetCore.SignalR.Protocols.MessagePack` package.
+1. To add a MessagePack protocol side-by-side with the default JSON protocol:
+    ```csharp
+    var serviceManagerBuilder = new ServiceManagerBuilder()
+        .AddHubProtocol(new MessagePackHubProtocol());
+    ```
+1. To fully control the hub protocols, you can use
+    ```csharp
+        var serviceManagerBuilder = new ServiceManagerBuilder()
+            .WithHubProtocols(new MessagePackHubProtocol(), new JsonHubProtocol());
+    ```
+    `WithHubProtocols` first clears the existing protocols, and then adds the new protocols. You can also use this method to remove the JSON protocol and use MessagePack only.
 
 
-### Next steps
-* [Customizing Json Serialization in Management SDK](./advanced-topics/json-object-serializer.md)
+> For transient mode, by default the service side converts JSON payload to MessagePack payload and it's the legacy way to support MessagePack. However, we recommend you to add a MessagePack hub protocol explicitly as the legacy way might not work as you expect.
+
+

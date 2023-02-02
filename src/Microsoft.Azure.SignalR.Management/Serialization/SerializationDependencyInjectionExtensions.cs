@@ -3,6 +3,7 @@
 
 using System;
 using Azure.Core.Serialization;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -13,7 +14,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             var options = new NewtonsoftServiceHubProtocolOptions();
             configure?.Invoke(options);
-            services.Configure<ServiceManagerOptions>(o => o.ObjectSerializer = new NewtonsoftJsonObjectSerializer(options.PayloadSerializerSettings));
+            services.AddSingleton<IHubProtocol>(new JsonObjectSerializerHubProtocol(new NewtonsoftJsonObjectSerializer(options.PayloadSerializerSettings)));
             return services;
         }
     }

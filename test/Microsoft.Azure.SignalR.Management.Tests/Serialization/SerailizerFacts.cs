@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
 using Microsoft.AspNetCore.SignalR;
@@ -26,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             get
             {
-                yield return new object[] { new JsonObjectSerializer(new() { IgnoreNullValues = true }) };
+                yield return new object[] { new JsonObjectSerializer(new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull }) };
                 yield return new object[] { new NewtonsoftJsonObjectSerializer(new() { NullValueHandling = NullValueHandling.Ignore }) };
             }
         }
@@ -149,6 +150,28 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var expectedPayload = expectedHubProtocol.GetMessageBytes(message);
             using var serviceHubContext = await CreatePersistentBuilder(expectedPayload)
                 .WithOptions(o => o.ObjectSerializer = objectSerializer)
+                .BuildServiceManager()
+                .CreateHubContextAsync("hubName", default);
+            await serviceHubContext.Clients.All.SendAsync(TargetName, Argument);
+
+            var originalProtocol = new JsonHubProtocol();
+            var originalPayload = originalProtocol.GetMessageBytes(message);
+            // Verify that the result is customized compared to default settings.
+            Assert.False(expectedPayload.Span.SequenceEqual(originalPayload.Span));
+        }
+
+        [Fact]
+        public async Task TestPersistent_WithNewtonsoft()
+        {
+            var serializerSettings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            };
+            var message = new InvocationMessage(TargetName, new object[] { Argument });
+            var expectedHubProtocol = new JsonObjectSerializerHubProtocol(new NewtonsoftJsonObjectSerializer(serializerSettings));
+            var expectedPayload = expectedHubProtocol.GetMessageBytes(message);
+            using var serviceHubContext = await CreatePersistentBuilder(expectedPayload)
+                .WithNewtonsoftJson(o => o.PayloadSerializerSettings = serializerSettings)
                 .BuildServiceManager()
                 .CreateHubContextAsync("hubName", default);
             await serviceHubContext.Clients.All.SendAsync(TargetName, Argument);

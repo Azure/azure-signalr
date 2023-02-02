@@ -16,13 +16,13 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal sealed class ServiceHubContextImpl : ServiceHubContext, IInternalServiceHubContext
+    internal sealed class ServiceHubContextImpl : ServiceHubContext
     {
         private readonly string _hubName;
         private readonly IHubContext<Hub> _hubContext;
         private readonly NegotiateProcessor _negotiateProcessor;
         private readonly IServiceEndpointManager _endpointManager;
-        
+
         private bool _disposing;
         internal IServiceProvider ServiceProvider { get; }
 
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _hubName = hubName;
             _hubContext = hubContext;
-            Groups = new GroupManagerAdapter(_hubContext.Groups);
+            Groups = new GroupManagerAdapter(lifetimeManager);
             UserGroups = new UserGroupsManagerAdapter(lifetimeManager);
             ClientManager = new ClientManagerAdapter(lifetimeManager);
             ServiceProvider = serviceProvider;
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.SignalR.Management
             return new ValueTask<NegotiationResponse>(_negotiateProcessor.NegotiateAsync(_hubName, options, cancellationToken));
         }
 
-        IEnumerable<ServiceEndpoint> IInternalServiceHubContext.GetServiceEndpoints() => _endpointManager.GetEndpoints(_hubName);
+        public override IEnumerable<ServiceEndpoint> GetServiceEndpoints() => _endpointManager.GetEndpoints(_hubName);
 
         public override async Task DisposeAsync()
         {
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-        ServiceHubContext IInternalServiceHubContext.WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+        public override ServiceHubContext WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             if (endpoints is null)
             {

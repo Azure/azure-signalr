@@ -2,13 +2,20 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Xunit;
@@ -33,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         public async Task FileConfigHotReloadTest()
         {
             // to avoid possible file name conflict with another FileConfigHotReloadTest
-            string configPath = nameof(DependencyInjectionExtensionFacts);
+            var configPath = nameof(DependencyInjectionExtensionFacts);
             var originUrl = "http://origin.url";
             var newUrl = "http://new.url";
             var configObj = new
@@ -47,7 +54,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 }
             };
             File.WriteAllText(configPath, JsonConvert.SerializeObject(configObj));
-            ServiceCollection services = new ServiceCollection();
+            var services = new ServiceCollection();
             services.AddSignalRServiceManager();
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder().AddJsonFile(configPath, false, true).Build());
             using var provider = services.BuildServiceProvider();
@@ -113,6 +120,21 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
+        public void AddUserAgent()
+        {
+            var services = new ServiceCollection()
+                .AddSignalRServiceManager()
+                .Configure<ServiceManagerOptions>(o =>
+                {
+                    o.ConnectionString = TestConnectionString;
+                })
+                .AddUserAgent(" [key=value]");
+            using var serviceProvider = services.BuildServiceProvider();
+            var productInfo = serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ProductInfo;
+            Assert.EndsWith(" [key=value]", productInfo);
+        }
+
+        [Fact]
         public void ConfigureByDelegateFact()
         {
             var services = new ServiceCollection()
@@ -170,7 +192,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         public async Task MultiServiceEndpoints_NotAppliedToTransientModeAsync()
         {
             // to avoid possible file name conflict with another FileConfigHotReloadTest
-            string configPath = nameof(MultiServiceEndpoints_NotAppliedToTransientModeAsync);
+            var configPath = nameof(MultiServiceEndpoints_NotAppliedToTransientModeAsync);
             var connStr = FakeEndpointUtils.GetFakeConnectionString(1).Single();
             var configObj = new
             {
@@ -207,6 +229,39 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             File.WriteAllText(configPath, JsonConvert.SerializeObject(newConfigObj));
             await Task.Delay(5000);
             Assert.Equal(connStr, optionsMonitor.CurrentValue.ConnectionString);// as new config don't pass validation, it is not reloaded
+        }
+
+        [Fact]
+        public async Task ProxyApplyToTransientModeTestAsync()
+        {
+            var requestUrls = new Queue<string>();
+
+            //create a simple proxy server
+            var appBuilder = WebApplication.CreateBuilder();
+            appBuilder.Services.AddLogging(b => b.AddXunit(_outputHelper));
+            using var app = appBuilder.Build();
+            //randomly choose a free port, listen to all interfaces
+            app.Urls.Add("http://[::1]:0");
+            app.Run(async context =>
+            {
+                requestUrls.Enqueue(context.Request.Path);
+                await context.Response.WriteAsync("");
+            });
+            await app.StartAsync();
+
+            var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                // use http schema to avoid SSL handshake
+                o.ConnectionString = "Endpoint=http://abc;AccessKey=nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=;Version=1.0;";
+                o.Proxy = new WebProxy(app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First());
+            }).BuildServiceManager();
+            Assert.True(await serviceManager.IsServiceHealthy(default));
+            Assert.Equal("/api/v1/health", requestUrls.Dequeue());
+
+            using var hubContext = await serviceManager.CreateHubContextAsync("hub", default);
+            Assert.True(await hubContext.ClientManager.UserExistsAsync("userId"));
+            Assert.Equal("/api/hubs/hub/users/userId", requestUrls.Dequeue());
+            await app.StopAsync();
         }
     }
 }

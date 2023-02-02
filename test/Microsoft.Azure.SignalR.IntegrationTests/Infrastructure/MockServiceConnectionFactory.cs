@@ -19,6 +19,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
             ILoggerFactory loggerFactory,
             ConnectionDelegate connectionDelegate,
             IClientConnectionFactory clientConnectionFactory,
+            IClientInvocationManager clientInvocationManager,   
             IServerNameProvider nameProvider)
             : base(
                   serviceProtocol,
@@ -28,7 +29,8 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
                   connectionDelegate,
                   clientConnectionFactory,
                   nameProvider,
-                  null)
+                  null,
+                  clientInvocationManager)
         {
             _mockService = mockService;
         }

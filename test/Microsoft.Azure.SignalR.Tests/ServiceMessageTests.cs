@@ -39,7 +39,8 @@ namespace Microsoft.Azure.SignalR.Tests
         public async Task TestOpenConnectionMessageWithMigrateIn()
         {
             var clientConnectionFactory = new TestClientConnectionFactory();
-            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory);
+            var clientInvocationManager = new DefaultClientInvocationManager();
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout();
 
@@ -73,8 +74,9 @@ namespace Microsoft.Azure.SignalR.Tests
         public async Task TestCloseConnectionMessageWithMigrateOut()
         {
             var clientConnectionFactory = new TestClientConnectionFactory();
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
-            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"));
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"), clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -113,8 +115,9 @@ namespace Microsoft.Azure.SignalR.Tests
         public async Task TestCloseConnectionMessage()
         {
             var clientConnectionFactory = new TestClientConnectionFactory();
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
-            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"));
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"), clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -167,8 +170,9 @@ namespace Microsoft.Azure.SignalR.Tests
             var endpoint = MockServiceEndpoint(keyType.Name);
             Assert.IsAssignableFrom(keyType, endpoint.AccessKey);
             var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
-            var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint);
+            var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint, clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -191,8 +195,9 @@ namespace Microsoft.Azure.SignalR.Tests
             var endpoint = MockServiceEndpoint(keyType.Name);
             Assert.IsAssignableFrom(keyType, endpoint.AccessKey);
             var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
-            var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint);
+            var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint, clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -226,7 +231,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     Assert.Equal(expectedLogCount, logs.Count);
                     if (logs.Count > 0)
                     {
-                        Assert.StartsWith("Service returned 401 unauthorized:", logs[0].Write.Message);
+                        Assert.Equal("Service '(Primary)https://localhost(hub=foo)' returned 401 unauthorized. Authorization failed. Please check your role assignments. Note: New role assignments will take up to 30 minutes to take effect. Error detail: This is a error messsage.", logs[0].Write.Message);
                     }
                     return true;
                 }))
@@ -239,7 +244,9 @@ namespace Microsoft.Azure.SignalR.Tests
                     field.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(minutesElapsed));
                 }
 
-                var connection = CreateServiceConnection(loggerFactory: loggerFactory, hubServiceEndpoint: endpoint);
+                var clientInvocationManager = new DefaultClientInvocationManager();
+
+                var connection = CreateServiceConnection(loggerFactory: loggerFactory, hubServiceEndpoint: endpoint, clientInvocationManager: clientInvocationManager);
                 var connectionTask = connection.StartAsync();
                 await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -275,6 +282,7 @@ namespace Microsoft.Azure.SignalR.Tests
                                                                      IServiceMessageHandler messageHandler = null,
                                                                      IServiceEventHandler eventHandler = null,
                                                                      IClientConnectionFactory clientConnectionFactory = null,
+                                                                     IClientInvocationManager clientInvocationManager = null,
                                                                      HubServiceEndpoint hubServiceEndpoint = null,
                                                                      ILoggerFactory loggerFactory = null)
         {
@@ -309,6 +317,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 hubServiceEndpoint ?? new TestHubServiceEndpoint(),
                 messageHandler ?? new TestServiceMessageHandler(),
                 eventHandler ?? new TestServiceEventHandler(),
+                clientInvocationManager,
                 mode: mode ?? GracefulShutdownMode.Off
             );
         }
@@ -435,6 +444,7 @@ namespace Microsoft.Azure.SignalR.Tests
                                          HubServiceEndpoint endpoint,
                                          IServiceMessageHandler serviceMessageHandler,
                                          IServiceEventHandler serviceEventHandler,
+                                         IClientInvocationManager clientInvocationManager,
                                          ServiceConnectionType connectionType = ServiceConnectionType.Default,
                                          GracefulShutdownMode mode = GracefulShutdownMode.Off,
                                          int closeTimeOutMilliseconds = 10000) : base(
@@ -449,6 +459,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     endpoint,
                     serviceMessageHandler,
                     serviceEventHandler,
+                    clientInvocationManager,
                     connectionType: connectionType,
                     mode: mode,
                     closeTimeOutMilliseconds: closeTimeOutMilliseconds)

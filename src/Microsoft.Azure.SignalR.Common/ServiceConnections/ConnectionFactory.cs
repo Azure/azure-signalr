@@ -14,6 +14,7 @@ namespace Microsoft.Azure.SignalR
     internal class ConnectionFactory : IConnectionFactory
     {
         private readonly ILoggerFactory _loggerFactory;
+
         private readonly string _serverId;
 
         public ConnectionFactory(IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
@@ -31,7 +32,9 @@ namespace Microsoft.Azure.SignalR
         {
             var provider = hubServiceEndpoint.Provider;
             var hubName = hubServiceEndpoint.Hub;
-            Task<string> accessTokenGenerater() => provider.GenerateServerAccessTokenAsync(hubName, _serverId);
+
+            var accessTokenProvider = provider.GetServerAccessTokenProvider(hubName, _serverId);
+
             var url = GetServiceUrl(provider, hubName, connectionId, target);
 
             headers ??= new Dictionary<string, string>();
@@ -45,7 +48,7 @@ namespace Microsoft.Azure.SignalR
                 Headers = headers,
                 Proxy = provider.Proxy,
             };
-            var connection = new WebSocketConnectionContext(connectionOptions, _loggerFactory, accessTokenGenerater);
+            var connection = new WebSocketConnectionContext(connectionOptions, _loggerFactory, accessTokenProvider);
             try
             {
                 await connection.StartAsync(url, cancellationToken);
@@ -91,6 +94,7 @@ namespace Microsoft.Azure.SignalR
         private sealed class GracefulLoggerFactory : ILoggerFactory
         {
             private readonly ILoggerFactory _inner;
+
             public GracefulLoggerFactory(ILoggerFactory inner)
             {
                 _inner = inner;
@@ -115,6 +119,7 @@ namespace Microsoft.Azure.SignalR
             private sealed class GracefulLogger : ILogger
             {
                 private readonly ILogger _inner;
+
                 public GracefulLogger(ILogger inner)
                 {
                     _inner = inner;

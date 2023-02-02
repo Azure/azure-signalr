@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 builder.UseConnectionHandler<TestConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                                                       "serverId", Guid.NewGuid().ToString("N"), null, null, null);
+                                                       "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager());
 
                 var connectionTask = connection.StartAsync();
 
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 builder.UseConnectionHandler<TestConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                                                       "serverId", Guid.NewGuid().ToString("N"), null, null, null);
+                                                       "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager());
 
                 var connectionTask = connection.StartAsync();
 
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
 
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                                                       "serverId", Guid.NewGuid().ToString("N"), null, null, null);
+                                                       "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager());
 
                 var connectionTask = connection.StartAsync();
 
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                     "serverId", Guid.NewGuid().ToString("N"),
-                    null, null, null, closeTimeOutMilliseconds: 1);
+                    null, null, null, new DefaultClientInvocationManager(), closeTimeOutMilliseconds: 1);
 
                 var connectionTask = connection.StartAsync();
 
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 builder.UseConnectionHandler<EndlessConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                                                       "serverId", Guid.NewGuid().ToString("N"), null, null, null,
+                                                       "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
                                                        closeTimeOutMilliseconds: 500);
 
                 var connectionTask = connection.StartAsync();
@@ -335,7 +335,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
 
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, closeTimeOutMilliseconds: 500);
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), closeTimeOutMilliseconds: 500);
 
                 var connectionTask = connection.StartAsync();
 
@@ -398,7 +398,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
 
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, closeTimeOutMilliseconds: 500);
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), closeTimeOutMilliseconds: 500);
 
                 var connectionTask = connection.StartAsync();
 
@@ -456,7 +456,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 builder.UseConnectionHandler<EndlessConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, closeTimeOutMilliseconds: 500);
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), closeTimeOutMilliseconds: 500);
 
                 var connectionTask = connection.StartAsync();
 
