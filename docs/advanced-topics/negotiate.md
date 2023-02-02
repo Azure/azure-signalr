@@ -44,4 +44,4 @@ A successful negotiate response will look similar to the following payload:
   * The `negotiateVersion` which is the negotiation protocol version being used between the server and client.
   * The `availableTransports` list which describes the transports the server supports. For each transport, the name of the transport (`transport`) is listed, as is a list of "transfer formats" supported by the transport (`transferFormats`)
 
-For more detail about SignalR transport protocol from [HERE](https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/docs/specs/TransportProtocols.md).
+Find more details about SignalR transport protocol from [HERE](https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/docs/specs/TransportProtocols.md).
