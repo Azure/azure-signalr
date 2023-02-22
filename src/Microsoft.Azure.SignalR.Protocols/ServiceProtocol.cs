@@ -1282,7 +1282,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             var payloadCount = ReadMapLength(ref reader, "payloads");
             if (payloadCount > 0)
             {
-                var payloads = new Dictionary<string, ReadOnlyMemory<byte>>((int)payloadCount);
+                var payloads = new Dictionary<string, ReadOnlyMemory<byte>>((int)payloadCount, StringComparer.OrdinalIgnoreCase);
                 for (var i = 0; i < payloadCount; i++)
                 {
                     var key = ReadString(ref reader, $"payloads[{i}].key");
