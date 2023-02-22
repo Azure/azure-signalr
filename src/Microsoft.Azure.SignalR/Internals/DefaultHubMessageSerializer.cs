@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR
     // Planning on replacing in the 5.0 timeframe
     internal class DefaultHubMessageSerializer
     {
-        private readonly Dictionary<string, IHubProtocol> _hubProtocols = new Dictionary<string, IHubProtocol>();
+        private readonly Dictionary<string, IHubProtocol> _hubProtocols = new Dictionary<string, IHubProtocol>(StringComparer.OrdinalIgnoreCase);
 
         public DefaultHubMessageSerializer(IHubProtocolResolver hubProtocolResolver, IList<string> globalSupportedProtocols, IList<string> hubSupportedProtocols)
         {
