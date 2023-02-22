@@ -47,7 +47,9 @@ namespace Microsoft.Azure.SignalR
             return list;
         }
 
+        #region Azure SignalR Service
         public ReadOnlyMemory<byte> SerializeMessage(string protocol, HubMessage message) =>
-            _hubProtocols[protocol].GetMessageBytes(message);
+            _hubProtocols.FirstOrDefault(p => p.Key.Equals(protocol, StringComparison.OrdinalIgnoreCase)).Value.GetMessageBytes(message);
+        #endregion
     }
 }
