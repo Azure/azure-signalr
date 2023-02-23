@@ -286,7 +286,6 @@ namespace Microsoft.Azure.SignalR
 
         protected IDictionary<string, ReadOnlyMemory<byte>> SerializeAllProtocols(string method, object[] args, string invocationId = null)
         {
-            var payloads = new Dictionary<string, ReadOnlyMemory<byte>>();
             InvocationMessage message;
             if (invocationId == null)
             {
@@ -297,6 +296,7 @@ namespace Microsoft.Azure.SignalR
                 message = new InvocationMessage(invocationId, method, args);
             }
             var serializedHubMessages = _messageSerializer.SerializeMessage(message);
+            var payloads = new ArrayDictionary<string, ReadOnlyMemory<byte>>(serializedHubMessages.Count);
             foreach (var serializedMessage in serializedHubMessages)
             {
                 payloads.Add(serializedMessage.ProtocolName, serializedMessage.Serialized);
