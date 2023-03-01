@@ -811,7 +811,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 var values = new string[length];
                 for (int i = 0; i < length; i++)
                 {
-                    values[i] = ReadString(ref reader, $"messages[{i}]");
+                    values[i] = ReadString(ref reader, "messages[{0}]", i);
                 }
 
                 return new PingMessage { Messages = values };
@@ -1266,8 +1266,8 @@ namespace Microsoft.Azure.SignalR.Protocol
 
                 for (var i = 0; i < claimCount; i++)
                 {
-                    var type = ReadString(ref reader, $"claims[{i}].Type");
-                    var value = ReadString(ref reader, $"claims[{i}].Value");
+                    var type = ReadString(ref reader, $"claims[{0}].Type", i);
+                    var value = ReadString(ref reader, $"claims[{0}].Value", i);
                     claims[i] = new Claim(type, value);
                 }
 
@@ -1285,8 +1285,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                 var payloads = new ArrayDictionary<string, ReadOnlyMemory<byte>>((int)payloadCount, StringComparer.OrdinalIgnoreCase);
                 for (var i = 0; i < payloadCount; i++)
                 {
-                    var key = ReadString(ref reader, $"payloads[{i}].key");
-                    var value = ReadBytes(ref reader, $"payloads[{i}].value");
+                    var key = ReadString(ref reader, "payloads[{0}].key", i);
+                    var value = ReadBytes(ref reader, "payloads[{0}].value", i);
                     payloads.Add(key, value);
                 }
 
@@ -1345,6 +1345,30 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
+        private static string ReadString(ref MessagePackReader reader, string formatField, int param)
+        {
+            try
+            {
+                return reader.ReadString();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidDataException($"Reading '{string.Format(formatField, param)}' as String failed.", ex);
+            }
+        }
+
+        private static string ReadString(ref MessagePackReader reader, string formatField, string param1, int param2)
+        {
+            try
+            {
+                return reader.ReadString();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidDataException($"Reading '{string.Format(formatField, param1, param2)}' as String failed.", ex);
+            }
+        }
+
         private static string[] ReadStringArray(ref MessagePackReader reader, string field)
         {
             var arrayLength = ReadArrayLength(ref reader, field);
@@ -1353,7 +1377,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 var array = new string[arrayLength];
                 for (int i = 0; i < arrayLength; i++)
                 {
-                    array[i] = ReadString(ref reader, $"{field}[{i}]");
+                    array[i] = ReadString(ref reader, $"{0}[{1}]", field, i);
                 }
 
                 return array;
@@ -1372,7 +1396,18 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 throw new InvalidDataException($"Reading '{field}' as Byte[] failed.", ex);
             }
+        }
 
+        private static byte[] ReadBytes(ref MessagePackReader reader, string formatField, int param)
+        {
+            try
+            {
+                return reader.ReadBytes()?.ToArray() ?? Array.Empty<byte>();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidDataException($"Reading '{string.Format(formatField, param)}' as Byte[] failed.", ex);
+            }
         }
 
         private static long ReadMapLength(ref MessagePackReader reader, string field)
