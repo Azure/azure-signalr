@@ -5,8 +5,9 @@ using System.Diagnostics.CodeAnalysis;
 
 #nullable enable
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR.Protocol
 {
+
     /// <summary>
     /// Lightweight, read-only IDictionary implementation using two arrays
     /// and O(n) lookup.
@@ -19,8 +20,9 @@ namespace Microsoft.Azure.SignalR
     public class ArrayDictionary<TKey, TValue>
         : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
         where TKey : notnull
-        where TValue : struct
     {
+        public static readonly ArrayDictionary<TKey, TValue> Empty = new(0);
+
         private readonly IEqualityComparer<TKey> _comparer;
         private readonly TKey[] _keys;
         private readonly TValue[] _values;
@@ -33,9 +35,6 @@ namespace Microsoft.Azure.SignalR
             _values = new TValue[capacity];
             _comparer = comparer ?? EqualityComparer<TKey>.Default;
         }
-
-        public static IDictionary<TKey, TValue> Create(int capacity) =>
-            new ArrayDictionary<TKey, TValue>(capacity);
 
         public TValue this[TKey key]
         {
@@ -150,7 +149,7 @@ namespace Microsoft.Azure.SignalR
                     return true;
                 }
             }
-            value = default;
+            value = default!;
             return false;
         }
 
