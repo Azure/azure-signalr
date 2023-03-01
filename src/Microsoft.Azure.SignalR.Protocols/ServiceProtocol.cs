@@ -1266,8 +1266,8 @@ namespace Microsoft.Azure.SignalR.Protocol
 
                 for (var i = 0; i < claimCount; i++)
                 {
-                    var type = ReadString(ref reader, $"claims[{0}].Type", i);
-                    var value = ReadString(ref reader, $"claims[{0}].Value", i);
+                    var type = ReadString(ref reader, "claims[{0}].Type", i);
+                    var value = ReadString(ref reader, "claims[{0}].Value", i);
                     claims[i] = new Claim(type, value);
                 }
 
@@ -1377,7 +1377,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 var array = new string[arrayLength];
                 for (int i = 0; i < arrayLength; i++)
                 {
-                    array[i] = ReadString(ref reader, $"{0}[{1}]", field, i);
+                    array[i] = ReadString(ref reader, "{0}[{1}]", field, i);
                 }
 
                 return array;
