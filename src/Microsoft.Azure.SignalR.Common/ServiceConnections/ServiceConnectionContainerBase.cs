@@ -244,8 +244,7 @@ namespace Microsoft.Azure.SignalR
             var task = _ackHandler.CreateAck(out var id, cancellationToken);
             ackableMessage.AckId = id;
 
-            // There is no need to write ackable message to sticky connections
-            await WriteWithRetry(serviceMessage, null, ServiceConnections);
+            await WriteToScopedOrRandomAvailableConnection(serviceMessage);
 
             var status = await task;
             switch (status)
