@@ -244,6 +244,10 @@ namespace Microsoft.Azure.SignalR
             var task = _ackHandler.CreateAck(out var id, cancellationToken);
             ackableMessage.AckId = id;
 
+            // Sending regular messages completes as soon as the data leaves the outbound pipe, 
+            // whereas ackable ones complete upon full roundtrip of the message and the ack (or timeout). 
+            // Therefore sending them over different connections creates a possibility for processing them out of original order.
+            // By sending both message types over the same connection we ensure that they are sent (and processed) in their original order.
             await WriteToScopedOrRandomAvailableConnection(serviceMessage);
 
             var status = await task;
