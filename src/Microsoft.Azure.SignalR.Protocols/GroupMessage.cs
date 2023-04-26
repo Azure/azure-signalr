@@ -38,6 +38,40 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
+    /// A join-group message for mulitple groups and connections.
+    /// </summary>
+    public class MultiJoinGroupMessage : ExtensibleServiceMessage, IMessageWithTracingId
+    {
+        /// <summary>
+        /// Gets or sets the group names.
+        /// </summary>
+        public string[] GroupNames { get; set; }
+
+        /// <summary>
+        /// Filter out the connection ids to be added to the groups
+        /// </summary>
+        public string Filter { get; set; }
+
+        /// <summary>
+        /// Gets or sets the tracing Id
+        /// </summary>
+        public ulong? TracingId { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MultiJoinGroupMessage"/> class.
+        /// </summary>
+        /// <param name="groupNames">The target groups.</param>
+        /// <param name="filter">The filter for target connection ids.</param>
+        /// <param name="tracingId">The tracing Id of the message.</param>
+        public MultiJoinGroupMessage(string[] groupNames, string filter, ulong? tracingId = null)
+        {
+            GroupNames = groupNames;
+            Filter = filter;
+            TracingId = tracingId;
+        }
+    }
+
+    /// <summary>
     /// A leave-group message.
     /// </summary>
     public class LeaveGroupMessage : ExtensibleServiceMessage, IMessageWithTracingId
@@ -67,6 +101,40 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             ConnectionId = connectionId;
             GroupName = groupName;
+            TracingId = tracingId;
+        }
+    }
+
+    /// <summary>
+    /// A leave-group message for mulitple groups and connections.
+    /// </summary>
+    public class MultiLeaveGroupMessage : ExtensibleServiceMessage, IMessageWithTracingId
+    {
+        /// <summary>
+        /// Gets or sets the group names.
+        /// </summary>
+        public string[] GroupNames { get; set; }
+
+        /// <summary>
+        /// Filter out the connection ids to be removed from the groups
+        /// </summary>
+        public string Filter { get; set; }
+
+        /// <summary>
+        /// Gets or sets the tracing Id
+        /// </summary>
+        public ulong? TracingId { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MultiLeaveGroupMessage"/> class.
+        /// </summary>
+        /// <param name="groupNames">The target groups.</param>
+        /// <param name="filter">The filter for target connection ids.</param>
+        /// <param name="tracingId">The tracing Id of the message.</param>
+        public MultiLeaveGroupMessage(string[] groupNames, string filter, ulong? tracingId = null)
+        {
+            GroupNames = groupNames;
+            Filter = filter;
             TracingId = tracingId;
         }
     }
