@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
+
 namespace Microsoft.Azure.SignalR.Protocol
 {
     /// <summary>
@@ -45,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the group names.
         /// </summary>
-        public string[] GroupNames { get; set; }
+        public IReadOnlyList<string> GroupNames { get; set; }
 
         /// <summary>
         /// Filter out the connection ids to be added to the groups
@@ -63,7 +65,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="groupNames">The target groups.</param>
         /// <param name="filter">The filter for target connection ids.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public MultiJoinGroupMessage(string[] groupNames, string filter, ulong? tracingId = null)
+        public MultiJoinGroupMessage(IReadOnlyList<string> groupNames, string filter, ulong? tracingId = null)
         {
             GroupNames = groupNames;
             Filter = filter;
@@ -113,7 +115,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the group names.
         /// </summary>
-        public string[] GroupNames { get; set; }
+        public IReadOnlyList<string> GroupNames { get; set; }
 
         /// <summary>
         /// Filter out the connection ids to be removed from the groups
@@ -131,7 +133,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="groupNames">The target groups.</param>
         /// <param name="filter">The filter for target connection ids.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public MultiLeaveGroupMessage(string[] groupNames, string filter, ulong? tracingId = null)
+        public MultiLeaveGroupMessage(IReadOnlyList<string> groupNames, string filter, ulong? tracingId = null)
         {
             GroupNames = groupNames;
             Filter = filter;
