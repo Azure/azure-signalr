@@ -477,10 +477,23 @@ namespace Microsoft.Azure.SignalR
                 timer.Start();
                 while (await timer)
                 {
-                    var token = await key.GenerateAadTokenAsync();
-                    var message = new AccessKeyRequestMessage(token);
-                    await SafeWriteAsync(message);
+                    await SendAccessKeyRequestMessageAsync(key);
                 }
+            }
+        }
+
+        private async Task SendAccessKeyRequestMessageAsync(AadAccessKey key)
+        {
+            try
+            {
+                var source = new CancellationTokenSource(AadAccessKey.AuthorizeTimeout);
+                var token = await key.GenerateAadTokenAsync(source.Token);
+                var message = new AccessKeyRequestMessage(token);
+                await SafeWriteAsync(message);
+            }
+            catch (Exception e)
+            {
+                Log.SendAccessKeyRequestFailed(Logger, _endpointName, e.Message, e);
             }
         }
 
@@ -694,6 +707,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, string, Exception> _authorizeFailed =
                 LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(32, "AuthorizeFailed"), "Service '{Endpoint}' returned 401 unauthorized. Authorization failed. Please check your role assignments. Note: New role assignments will take up to 30 minutes to take effect. Error detail: {Error}.");
 
+            private static readonly Action<ILogger, string, string, Exception> _sendAccessKeyRequestMessageFailed =
+                LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(33, "SendAccessKeyRequestFailed"), "Cannot send AccessKeyRequestMessage to '{Endpoint}' via server connections, authentication failures may occur if this warning continues. Error detail: {Message}");
+
             public static void FailedToWrite(ILogger logger, ulong? tracingId, string serviceConnectionId, Exception exception)
             {
                 _failedToWrite(logger, tracingId, exception.Message, serviceConnectionId, null);
@@ -702,6 +718,11 @@ namespace Microsoft.Azure.SignalR
             public static void AuthorizeFailed(ILogger logger, string endpoint, string message, Exception exception)
             {
                 _authorizeFailed(logger, endpoint, message, exception);
+            }
+
+            public static void SendAccessKeyRequestFailed(ILogger logger, string endpoint, string message, Exception exception)
+            {
+                _sendAccessKeyRequestMessageFailed(logger, endpoint, message, exception);
             }
 
             public static void FailedToConnect(ILogger logger, string endpoint, string serviceConnectionId, Exception exception)
