@@ -22,6 +22,10 @@ namespace Microsoft.Azure.SignalR
 
         internal const int AuthorizeRetryIntervalInSec = 3;
 
+        internal const int GetTokenMaxRetryTimes = 3;
+
+        internal static readonly TimeSpan AuthorizeTimeout = TimeSpan.FromSeconds(10);
+
         private const string DefaultScope = "https://signalr.azure.com/.default";
 
         private static readonly TimeSpan AuthorizeInterval = TimeSpan.FromMinutes(AuthorizeIntervalInMinute);
@@ -31,8 +35,6 @@ namespace Microsoft.Azure.SignalR
         private static readonly TimeSpan AuthorizeIntervalWhenFailed = TimeSpan.FromMinutes(5);
 
         private static readonly TimeSpan AuthorizeRetryInterval = TimeSpan.FromSeconds(AuthorizeRetryIntervalInSec);
-
-        private static readonly TimeSpan AuthorizeTimeout = TimeSpan.FromSeconds(10);
 
         private readonly TaskCompletionSource<object> _initializedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -72,8 +74,20 @@ namespace Microsoft.Azure.SignalR
 
         public virtual async Task<string> GenerateAadTokenAsync(CancellationToken ctoken = default)
         {
-            var token = await TokenCredential.GetTokenAsync(DefaultRequestContext, ctoken);
-            return token.Token;
+            Exception latest = null;
+            for (var i = 0; i < GetTokenMaxRetryTimes; i++)
+            {
+                try
+                {
+                    var token = await TokenCredential.GetTokenAsync(DefaultRequestContext, ctoken);
+                    return token.Token;
+                }
+                catch (Exception e)
+                {
+                    latest = e;
+                }
+            }
+            throw latest;
         }
 
         public override async Task<string> GenerateAccessTokenAsync(
@@ -109,7 +123,7 @@ namespace Microsoft.Azure.SignalR
             Authorized = true;
         }
 
-        internal async Task UpdateAccessKeyAsync(CancellationToken token = default)
+        internal async Task UpdateAccessKeyAsync(CancellationToken ctoken = default)
         {
             var delta = DateTime.UtcNow - _lastUpdatedTime;
             if (Authorized && delta < AuthorizeInterval)
@@ -120,20 +134,20 @@ namespace Microsoft.Azure.SignalR
             {
                 return;
             }
-            await AuthorizeWithRetryAsync(token);
+            await AuthorizeWithRetryAsync(ctoken);
         }
 
-        private async Task AuthorizeWithRetryAsync(CancellationToken token)
+        private async Task AuthorizeWithRetryAsync(CancellationToken ctoken = default)
         {
             Exception latest = null;
             for (var i = 0; i < AuthorizeMaxRetryTimes; i++)
             {
                 var source = new CancellationTokenSource(AuthorizeTimeout);
-                var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(source.Token, token);
+                var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(source.Token, ctoken);
                 try
                 {
-                    var aadToken = await GenerateAadTokenAsync(linkedSource.Token);
-                    await AuthorizeWithTokenAsync(aadToken, linkedSource.Token);
+                    var token = await GenerateAadTokenAsync(linkedSource.Token);
+                    await AuthorizeWithTokenAsync(token, linkedSource.Token);
                     return;
                 }
                 catch (OperationCanceledException e)
@@ -152,7 +166,7 @@ namespace Microsoft.Azure.SignalR
             throw latest;
         }
 
-        private async Task AuthorizeWithTokenAsync(string accessToken, CancellationToken token = default)
+        private async Task AuthorizeWithTokenAsync(string accessToken, CancellationToken ctoken = default)
         {
             var api = new RestApiEndpoint(AuthorizeUrl, accessToken);
 
@@ -161,7 +175,7 @@ namespace Microsoft.Azure.SignalR
                 HttpMethod.Get,
                 "",
                 handleExpectedResponseAsync: HandleHttpResponseAsync,
-                cancellationToken: token);
+                cancellationToken: ctoken);
         }
 
         private async Task<bool> HandleHttpResponseAsync(HttpResponseMessage response)
