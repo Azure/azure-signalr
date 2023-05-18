@@ -6,8 +6,8 @@ FROM mcr.microsoft.com/dotnet/core/sdk:3.0
 
 COPY ./ /home/signalr-src
 
-RUN cd /home/signalr-src/samples/ChatSample/ChatSample && \
-    dotnet build && \
+WORKDIR /home/signalr-src/samples/ChatSample/ChatSample 
+RUN dotnet build && \
     dotnet publish -r ubuntu.16.04-x64 -c Release -o /home/build/
 
 ##################################################
