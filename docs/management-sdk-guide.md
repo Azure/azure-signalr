@@ -40,7 +40,7 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 | Check if a user in a group                 | :heavy_check_mark: | :heavy_check_mark: |
 |                                            |                    |                    |
 | Multiple SignalR service instances support | :x:                | :heavy_check_mark: |
-| [MessaegPack clients support](#message-pack-serialization)                |  since v1.21.0 |  since v1.20.0     |
+| [MessagePack clients support](#message-pack-serialization)                |  since v1.21.0 |  since v1.20.0     |
 
 **Features only come with new API**
 |                              | Transient          | Persistent  |
