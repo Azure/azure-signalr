@@ -160,6 +160,28 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.False(expectedPayload.Span.SequenceEqual(originalPayload.Span));
         }
 
+        [Fact]
+        public async Task TestPersistent_WithNewtonsoft()
+        {
+            var serializerSettings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            };
+            var message = new InvocationMessage(TargetName, new object[] { Argument });
+            var expectedHubProtocol = new JsonObjectSerializerHubProtocol(new NewtonsoftJsonObjectSerializer(serializerSettings));
+            var expectedPayload = expectedHubProtocol.GetMessageBytes(message);
+            using var serviceHubContext = await CreatePersistentBuilder(expectedPayload)
+                .WithNewtonsoftJson(o => o.PayloadSerializerSettings = serializerSettings)
+                .BuildServiceManager()
+                .CreateHubContextAsync("hubName", default);
+            await serviceHubContext.Clients.All.SendAsync(TargetName, Argument);
+
+            var originalProtocol = new JsonHubProtocol();
+            var originalPayload = originalProtocol.GetMessageBytes(message);
+            // Verify that the result is customized compared to default settings.
+            Assert.False(expectedPayload.Span.SequenceEqual(originalPayload.Span));
+        }
+
         private ServiceManagerBuilder CreatePersistentBuilder(ReadOnlyMemory<byte> expectedPayload)
         {
 

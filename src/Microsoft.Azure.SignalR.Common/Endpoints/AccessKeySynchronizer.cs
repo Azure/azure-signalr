@@ -11,11 +11,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class AccessKeySynchronizer : IAccessKeySynchronizer, IDisposable
+    internal partial class AccessKeySynchronizer : IAccessKeySynchronizer, IDisposable
     {
         private readonly ConcurrentDictionary<ServiceEndpoint, object> _endpoints = new ConcurrentDictionary<ServiceEndpoint, object>(ReferenceEqualityComparer.Instance);
 
         private readonly ILoggerFactory _factory;
+
         private readonly TimerAwaitable _timer = new TimerAwaitable(TimeSpan.Zero, TimeSpan.FromMinutes(1));
 
         public AccessKeySynchronizer(
@@ -95,12 +96,13 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-
         private sealed class ReferenceEqualityComparer : IEqualityComparer<ServiceEndpoint>
         {
             internal static readonly ReferenceEqualityComparer Instance = new ReferenceEqualityComparer();
 
-            private ReferenceEqualityComparer() { }
+            private ReferenceEqualityComparer()
+            {
+            }
 
             public bool Equals(ServiceEndpoint x, ServiceEndpoint y)
             {
@@ -110,25 +112,6 @@ namespace Microsoft.Azure.SignalR
             public int GetHashCode(ServiceEndpoint obj)
             {
                 return RuntimeHelpers.GetHashCode(obj);
-            }
-        }
-
-        private static class Log
-        {
-            private static readonly Action<ILogger, string, Exception> _failedAuthorize =
-                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(2, "FailedAuthorizeAccessKey"), "Failed in authorizing AccessKey for '{endpoint}', will retry in " + AadAccessKey.AuthorizeRetryIntervalInSec + " seconds");
-
-            private static readonly Action<ILogger, string, Exception> _succeedAuthorize =
-                LoggerMessage.Define<string>(LogLevel.Information, new EventId(3, "SucceedAuthorizeAccessKey"), "Succeed in authorizing AccessKey for '{endpoint}'");
-
-            public static void FailedToAuthorizeAccessKey(ILogger logger, string endpoint, Exception e)
-            {
-                _failedAuthorize(logger, endpoint, e);
-            }
-
-            public static void SucceedToAuthorizeAccessKey(ILogger logger, string endpoint)
-            {
-                _succeedAuthorize(logger, endpoint, null);
             }
         }
     }

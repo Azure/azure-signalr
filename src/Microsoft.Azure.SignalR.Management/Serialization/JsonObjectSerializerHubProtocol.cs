@@ -20,14 +20,14 @@ using Microsoft.AspNetCore.SignalR.Protocol;
 namespace Microsoft.Azure.SignalR.Management
 {
     /// <summary>
-    /// Implements the SignalR Hub Protocol using <see cref="ObjectSerializer"/>.
+    /// Implements the SignalR Hub Protocol using <see cref="global::Azure.Core.Serialization.ObjectSerializer"/>.
     /// Modified from https://github.com/dotnet/aspnetcore/blob/d9660d157627af710b71c636fa8cb139616cadba/src/SignalR/common/Protocols.Json/src/Protocol/JsonHubProtocol.cs
     /// </summary>
     /// <remarks>
     /// Changes compared to original version:
     ///  <list>
     ///     <item> Change <see cref="TryParseMessage(ref ReadOnlySequence{byte}, IInvocationBinder, out HubMessage)"/> to unsupported as we don't need it. Related codes removed.</item>
-    ///     <item> Use <see cref="ObjectSerializer"/> instead of <see cref="JsonSerializer"/> in the serialization. </item>
+    ///     <item> Use <see cref="global::Azure.Core.Serialization.ObjectSerializer"/> instead of <see cref="JsonSerializer"/> in the serialization. </item>
     /// </list>
     /// </remarks>
     internal sealed class JsonObjectSerializerHubProtocol : IHubProtocol
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.SignalR.Management
         private const string ProtocolName = "json";
         private const int ProtocolVersion = 1;
 
-        private readonly ObjectSerializer _objectSerializer;
+        public ObjectSerializer ObjectSerializer { get; }
 
         public JsonObjectSerializerHubProtocol() : this(new JsonObjectSerializer())
         {
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public JsonObjectSerializerHubProtocol(ObjectSerializer objectSerializer)
         {
-            _objectSerializer = objectSerializer;
+            ObjectSerializer = objectSerializer;
         }
 
         /// <inheritdoc />
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.SignalR.Management
         private void WriteWithObjectSerializer(object obj, Utf8JsonWriter utf8JsonWriter, IBufferWriter<byte> bufferWriter)
         {
             utf8JsonWriter.Flush();
-            var binaryData = _objectSerializer.Serialize(obj);
+            var binaryData = ObjectSerializer.Serialize(obj);
             bufferWriter.Write(binaryData.ToMemory().Span);
         }
 

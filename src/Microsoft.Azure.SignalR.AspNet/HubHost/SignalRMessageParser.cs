@@ -224,9 +224,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             return filter.Split('|').Select(s => GetName(s, PrefixHelper.ConnectionIdPrefix)).ToArray();
         }
 
-        private static Dictionary<string, ReadOnlyMemory<byte>> GetPayloads(ReadOnlyMemory<byte> data)
+        private static IDictionary<string, ReadOnlyMemory<byte>> GetPayloads(ReadOnlyMemory<byte> data)
         {
-            return new Dictionary<string, ReadOnlyMemory<byte>>
+            return new ArrayDictionary<string, ReadOnlyMemory<byte>>(1)
             {
                 { "json", data }
             };

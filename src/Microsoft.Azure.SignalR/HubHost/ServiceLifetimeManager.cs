@@ -188,7 +188,7 @@ namespace Microsoft.Azure.SignalR
             IDictionary<string, ReadOnlyMemory<byte>> payloads;
             if (serviceConnectionContext.Protocol != null)
             {
-                payloads = new Dictionary<string, ReadOnlyMemory<byte>>()
+                payloads = new ArrayDictionary<string, ReadOnlyMemory<byte>>(1)
                 {
                     { serviceConnectionContext.Protocol, SerializeProtocol(serviceConnectionContext.Protocol, methodName, args) }
                 };

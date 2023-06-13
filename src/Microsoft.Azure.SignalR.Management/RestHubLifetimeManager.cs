@@ -46,7 +46,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
 
             var api = await _restApiProvider.GetConnectionGroupManagementEndpointAsync(_appName, _hubName, connectionId, groupName);
-            await _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
+            await _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: HandleAddToGroupResponse, cancellationToken: cancellationToken);
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
@@ -75,8 +75,13 @@ namespace Microsoft.Azure.SignalR.Management
             await _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
-        public async Task ConnectionRemoveFromAllGroupsAsync(string connectionId, CancellationToken cancellationToken = default)
+        public async Task RemoveFromAllGroupsAsync(string connectionId, CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
             var api = await _restApiProvider.GetRemoveConnectionFromAllGroupsAsync(_appName, _hubName, connectionId);
             await _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
@@ -190,7 +195,7 @@ namespace Microsoft.Azure.SignalR.Management
             ValidateUserIdAndGroupName(userId, groupName);
 
             var api = await _restApiProvider.GetUserGroupManagementEndpointAsync(_appName, _hubName, userId, groupName);
-            await _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
+            await _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: HandleAddToGroupResponse, cancellationToken: cancellationToken);
         }
 
         public async Task UserAddToGroupAsync(string userId, string groupName, TimeSpan ttl, CancellationToken cancellationToken = default)
@@ -206,7 +211,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 ["ttl"] = ((int)ttl.TotalSeconds).ToString(),
             };
-            await _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
+            await _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: HandleAddToGroupResponse, cancellationToken: cancellationToken);
         }
 
         public async Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
@@ -339,5 +344,11 @@ namespace Microsoft.Azure.SignalR.Management
         }
 
         public Task DisposeAsync() => Task.CompletedTask;
+
+        private Task<bool> HandleAddToGroupResponse(HttpResponseMessage response) => response.IsSuccessStatusCode
+                ? Task.FromResult(true)
+                : response.StatusCode == HttpStatusCode.NotFound && response.Headers.TryGetValues(Constants.Headers.MicrosoftErrorCode, out var errorCodes) && errorCodes.First().EndsWith(Constants.ErrorCodes.NotExisted)
+                ? Task.FromResult(true)
+                : Task.FromResult(false);
     }
 }

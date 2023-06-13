@@ -18,15 +18,21 @@ namespace Microsoft.Azure.SignalR
     internal class RestClient
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly ObjectSerializer _objectSerializer;
+        private readonly IPayloadContentBuilder _payloadContentBuilder;
         private readonly bool _enableMessageTracing;
 
-        public RestClient(IHttpClientFactory httpClientFactory, ObjectSerializer objectSerializer, bool enableMessageTracing)
+        public RestClient(IHttpClientFactory httpClientFactory, IPayloadContentBuilder contentBuilder, bool enableMessageTracing)
         {
             _httpClientFactory = httpClientFactory;
-            _objectSerializer = objectSerializer;
+            _payloadContentBuilder = contentBuilder;
             _enableMessageTracing = enableMessageTracing;
         }
+
+
+        public RestClient(IHttpClientFactory httpClientFactory, ObjectSerializer objectSerializer, bool enableMessageTracing) : this(httpClientFactory, new JsonPayloadContentBuilder(objectSerializer), enableMessageTracing)
+        {
+        }
+
 
         public RestClient() : this(HttpClientFactory.Instance, new JsonObjectSerializer(), false)
         {
@@ -60,11 +66,10 @@ namespace Microsoft.Azure.SignalR
         {
             using var httpClient = _httpClientFactory.CreateClient();
             using var request = BuildRequest(api, httpMethod, productInfo, methodName, args);
-            HttpResponseMessage response = null;
 
             try
             {
-                response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 if (handleExpectedResponseAsync == null)
                 {
                     await ThrowExceptionOnResponseFailureAsync(response);
@@ -80,10 +85,6 @@ namespace Microsoft.Azure.SignalR
             catch (HttpRequestException ex)
             {
                 throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), ex);
-            }
-            finally
-            {
-                response?.Dispose();
             }
         }
 
@@ -157,7 +158,7 @@ namespace Microsoft.Azure.SignalR
             var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
             request.Headers.Add(Constants.AsrsUserAgent, productInfo);
-            request.Content = payload != null ? new PayloadMessageContent(payload, _objectSerializer) : null;
+            request.Content = _payloadContentBuilder.Build(payload);
             return request;
         }
 

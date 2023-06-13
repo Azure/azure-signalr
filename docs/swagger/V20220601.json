@@ -18,8 +18,7 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           }
         ],
         "responses": {
@@ -40,9 +39,7 @@
         "summary": "Close all of the connections in the hub.",
         "operationId": "SignalR_CloseConnections",
         "produces": [
-          "text/plain",
-          "application/json",
-          "text/json"
+          "application/json"
         ],
         "parameters": [
           {
@@ -81,13 +78,12 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           }
         ],
         "responses": {
           "204": {
-            "description": "Success"
+            "description": "No Content"
           },
           "default": {
             "description": "Error response",
@@ -153,8 +149,7 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           },
           {
             "in": "body",
@@ -168,7 +163,7 @@
         ],
         "responses": {
           "202": {
-            "description": "Success",
+            "description": "Accepted",
             "schema": {
               "$ref": "#/definitions/ServiceResponse"
             }
@@ -190,71 +185,6 @@
       }
     },
     "/api/hubs/{hub}/connections/{connectionId}": {
-      "head": {
-        "tags": [
-          "signalr"
-        ],
-        "summary": "Check if the connection with the given connectionId exists",
-        "operationId": "SignalR_CheckConnectionExistence",
-        "produces": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "hub",
-            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
-            "required": true,
-            "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
-          },
-          {
-            "in": "path",
-            "name": "connectionId",
-            "description": "The connection Id.",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "application",
-            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
-            "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
-          },
-          {
-            "in": "query",
-            "name": "api-version",
-            "description": "The version of the REST APIs.",
-            "required": true,
-            "type": "string",
-            "default": "2022-06-01"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/ServiceResponse"
-            }
-          },
-          "default": {
-            "description": "Error response",
-            "schema": {
-              "$ref": "#/definitions/ErrorDetail"
-            },
-            "x-ms-error-response": true,
-            "headers": {
-              "x-ms-error-code": {
-                "x-ms-client-name": "ErrorCode",
-                "type": "string"
-              }
-            }
-          }
-        }
-      },
       "delete": {
         "tags": [
           "signalr"
@@ -300,8 +230,7 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           }
         ],
         "responses": {
@@ -316,6 +245,59 @@
             "schema": {
               "$ref": "#/definitions/ErrorDetail"
             },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Check if the connection with the given connectionId exists",
+        "operationId": "SignalR_CheckConnectionExistence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "description": "The connection Id.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "default": {
+            "description": "Error response",
             "x-ms-error-response": true,
             "headers": {
               "x-ms-error-code": {
@@ -372,8 +354,7 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           },
           {
             "in": "body",
@@ -387,6 +368,73 @@
         ],
         "responses": {
           "202": {
+            "description": "Accepted",
+            "schema": {
+              "$ref": "#/definitions/ServiceResponse"
+            }
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/connections/{connectionId}/groups": {
+      "delete": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Remove a connection from all groups",
+        "operationId": "SignalR_RemoveConnectionFromAllGroups",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "description": "Target connection Id",
+            "required": true,
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
             "description": "Success",
             "schema": {
               "$ref": "#/definitions/ServiceResponse"
@@ -415,11 +463,6 @@
         ],
         "summary": "Check if there are any client connections inside the given group",
         "operationId": "SignalR_CheckGroupExistence",
-        "produces": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
         "parameters": [
           {
             "in": "path",
@@ -436,7 +479,8 @@
             "required": true,
             "type": "string",
             "maxLength": 1024,
-            "minLength": 1
+            "minLength": 1,
+            "pattern": "^(?!\\s+$).+$"
           },
           {
             "in": "query",
@@ -450,25 +494,18 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           }
         ],
         "responses": {
           "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/ServiceResponse"
-            }
+            "description": "Success"
           },
           "404": {
             "description": "Not Found"
           },
           "default": {
             "description": "Error response",
-            "schema": {
-              "$ref": "#/definitions/ErrorDetail"
-            },
             "x-ms-error-response": true,
             "headers": {
               "x-ms-error-code": {
@@ -488,9 +525,7 @@
         "summary": "Close connections in the specific group.",
         "operationId": "SignalR_CloseGroupConnections",
         "produces": [
-          "text/plain",
-          "application/json",
-          "text/json"
+          "application/json"
         ],
         "parameters": [
           {
@@ -508,7 +543,8 @@
             "required": true,
             "type": "string",
             "maxLength": 1024,
-            "minLength": 1
+            "minLength": 1,
+            "pattern": "^(?!\\s+$).+$"
           },
           {
             "in": "query",
@@ -538,13 +574,12 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           }
         ],
         "responses": {
           "204": {
-            "description": "Success"
+            "description": "No Content"
           },
           "default": {
             "description": "Error response",
@@ -619,8 +654,7 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           },
           {
             "in": "body",
@@ -634,7 +668,7 @@
         ],
         "responses": {
           "202": {
-            "description": "Success",
+            "description": "Accepted",
             "schema": {
               "$ref": "#/definitions/ServiceResponse"
             }
@@ -656,83 +690,6 @@
       }
     },
     "/api/hubs/{hub}/groups/{group}/connections/{connectionId}": {
-      "put": {
-        "tags": [
-          "signalr"
-        ],
-        "summary": "Add a connection to the target group.",
-        "operationId": "SignalR_AddConnectionToGroup",
-        "produces": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "hub",
-            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
-            "required": true,
-            "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
-          },
-          {
-            "in": "path",
-            "name": "group",
-            "description": "Target group name, which length should be greater than 0 and less than 1025.",
-            "required": true,
-            "type": "string",
-            "maxLength": 1024,
-            "minLength": 1
-          },
-          {
-            "in": "path",
-            "name": "connectionId",
-            "description": "Target connection Id",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "application",
-            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
-            "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
-          },
-          {
-            "in": "query",
-            "name": "api-version",
-            "description": "The version of the REST APIs.",
-            "required": true,
-            "type": "string",
-            "default": "2022-06-01"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/ServiceResponse"
-            }
-          },
-          "404": {
-            "description": "Not Found"
-          },
-          "default": {
-            "description": "Error response",
-            "schema": {
-              "$ref": "#/definitions/ErrorDetail"
-            },
-            "x-ms-error-response": true,
-            "headers": {
-              "x-ms-error-code": {
-                "x-ms-client-name": "ErrorCode",
-                "type": "string"
-              }
-            }
-          }
-        }
-      },
       "delete": {
         "tags": [
           "signalr"
@@ -782,8 +739,7 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           }
         ],
         "responses": {
@@ -810,15 +766,13 @@
             }
           }
         }
-      }
-    },
-    "/api/hubs/{hub}/connections/{connectionId}/groups": {
-      "delete": {
+      },
+      "put": {
         "tags": [
           "signalr"
         ],
-        "summary": "Remove a connection from all groups",
-        "operationId": "SignalR_RemoveConnectionFromAllGroups",
+        "summary": "Add a connection to the target group.",
+        "operationId": "SignalR_AddConnectionToGroup",
         "produces": [
           "text/plain",
           "application/json",
@@ -835,11 +789,20 @@
           },
           {
             "in": "path",
+            "name": "group",
+            "description": "Target group name, which length should be greater than 0 and less than 1025.",
+            "required": true,
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^(?!\\s+$).+$"
+          },
+          {
+            "in": "path",
             "name": "connectionId",
             "description": "Target connection Id",
             "required": true,
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           {
             "in": "query",
@@ -853,8 +816,7 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           }
         ],
         "responses": {
@@ -890,11 +852,6 @@
         ],
         "summary": "Check if there are any client connections connected for the given user",
         "operationId": "SignalR_CheckUserExistence",
-        "produces": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
         "parameters": [
           {
             "in": "path",
@@ -923,25 +880,18 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           }
         ],
         "responses": {
           "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/ServiceResponse"
-            }
+            "description": "Success"
           },
           "404": {
             "description": "Not Found"
           },
           "default": {
             "description": "Error response",
-            "schema": {
-              "$ref": "#/definitions/ErrorDetail"
-            },
             "x-ms-error-response": true,
             "headers": {
               "x-ms-error-code": {
@@ -961,9 +911,7 @@
         "summary": "Close connections for the specific user.",
         "operationId": "SignalR_CloseUserConnections",
         "produces": [
-          "text/plain",
-          "application/json",
-          "text/json"
+          "application/json"
         ],
         "parameters": [
           {
@@ -1011,13 +959,12 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           }
         ],
         "responses": {
           "204": {
-            "description": "Success"
+            "description": "No Content"
           },
           "default": {
             "description": "Error response",
@@ -1080,8 +1027,7 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           },
           {
             "in": "body",
@@ -1095,7 +1041,7 @@
         ],
         "responses": {
           "202": {
-            "description": "Success",
+            "description": "Accepted",
             "schema": {
               "$ref": "#/definitions/ServiceResponse"
             }
@@ -1116,17 +1062,15 @@
         }
       }
     },
-    "/api/hubs/{hub}/users/{user}/groups/{group}": {
-      "head": {
+    "/api/hubs/{hub}/users/{user}/groups": {
+      "delete": {
         "tags": [
           "signalr"
         ],
-        "summary": "Check whether a user exists in the target group.",
-        "operationId": "SignalR_CheckUserExistenceInGroup",
+        "summary": "Remove a user from all groups.",
+        "operationId": "SignalR_RemoveUserFromAllGroups",
         "produces": [
-          "text/plain",
-          "application/json",
-          "text/json"
+          "application/json"
         ],
         "parameters": [
           {
@@ -1136,15 +1080,6 @@
             "required": true,
             "type": "string",
             "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
-          },
-          {
-            "in": "path",
-            "name": "group",
-            "description": "Target group name, which length should be greater than 0 and less than 1025.",
-            "required": true,
-            "type": "string",
-            "maxLength": 1024,
-            "minLength": 1
           },
           {
             "in": "path",
@@ -1165,25 +1100,155 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           }
         ],
         "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/ServiceResponse"
-            }
-          },
-          "404": {
-            "description": "Not Found"
+          "204": {
+            "description": "No Content"
           },
           "default": {
             "description": "Error response",
             "schema": {
               "$ref": "#/definitions/ErrorDetail"
             },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/users/{user}/groups/{group}": {
+      "delete": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Remove a user from the target group.",
+        "operationId": "SignalR_RemoveUserFromGroup",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "group",
+            "description": "Target group name, which length should be greater than 0 and less than 1025.",
+            "required": true,
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^(?!\\s+$).+$"
+          },
+          {
+            "in": "path",
+            "name": "user",
+            "description": "Target user Id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Check whether a user exists in the target group.",
+        "operationId": "SignalR_CheckUserExistenceInGroup",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "group",
+            "description": "Target group name, which length should be greater than 0 and less than 1025.",
+            "required": true,
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^(?!\\s+$).+$"
+          },
+          {
+            "in": "path",
+            "name": "user",
+            "description": "Target user Id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "default": {
+            "description": "Error response",
             "x-ms-error-response": true,
             "headers": {
               "x-ms-error-code": {
@@ -1221,7 +1286,8 @@
             "required": true,
             "type": "string",
             "maxLength": 1024,
-            "minLength": 1
+            "minLength": 1,
+            "pattern": "^(?!\\s+$).+$"
           },
           {
             "in": "path",
@@ -1249,8 +1315,7 @@
             "name": "api-version",
             "description": "The version of the REST APIs.",
             "required": true,
-            "type": "string",
-            "default": "2022-06-01"
+            "type": "string"
           }
         ],
         "responses": {
@@ -1274,154 +1339,10 @@
             }
           }
         }
-      },
-      "delete": {
-        "tags": [
-          "signalr"
-        ],
-        "summary": "Remove a user from the target group.",
-        "operationId": "SignalR_RemoveUserFromGroup",
-        "produces": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "hub",
-            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
-            "required": true,
-            "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
-          },
-          {
-            "in": "path",
-            "name": "group",
-            "description": "Target group name, which length should be greater than 0 and less than 1025.",
-            "required": true,
-            "type": "string",
-            "maxLength": 1024,
-            "minLength": 1
-          },
-          {
-            "in": "path",
-            "name": "user",
-            "description": "Target user Id",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "application",
-            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
-            "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
-          },
-          {
-            "in": "query",
-            "name": "api-version",
-            "description": "The version of the REST APIs.",
-            "required": true,
-            "type": "string",
-            "default": "2022-06-01"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Success"
-          },
-          "default": {
-            "description": "Error response",
-            "schema": {
-              "$ref": "#/definitions/ErrorDetail"
-            },
-            "x-ms-error-response": true,
-            "headers": {
-              "x-ms-error-code": {
-                "x-ms-client-name": "ErrorCode",
-                "type": "string"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/hubs/{hub}/users/{user}/groups": {
-      "delete": {
-        "tags": [
-          "signalr"
-        ],
-        "summary": "Remove a user from all groups.",
-        "operationId": "SignalR_RemoveUserFromAllGroups",
-        "produces": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "hub",
-            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
-            "required": true,
-            "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
-          },
-          {
-            "in": "path",
-            "name": "user",
-            "description": "Target user Id",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "application",
-            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
-            "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
-          },
-          {
-            "in": "query",
-            "name": "api-version",
-            "description": "The version of the REST APIs.",
-            "required": true,
-            "type": "string",
-            "default": "2022-06-01"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Success"
-          },
-          "default": {
-            "description": "Error response",
-            "schema": {
-              "$ref": "#/definitions/ErrorDetail"
-            },
-            "x-ms-error-response": true,
-            "headers": {
-              "x-ms-error-code": {
-                "x-ms-client-name": "ErrorCode",
-                "type": "string"
-              }
-            }
-          }
-        }
       }
     }
   },
   "definitions": {
-    "CodeLevel": {
-      "format": "int32",
-      "enum": [
-        0,
-        1,
-        2
-      ],
-      "type": "integer"
-    },
     "ErrorDetail": {
       "description": "The error object.",
       "type": "object",
@@ -1450,24 +1371,70 @@
         }
       }
     },
-    "ErrorKind": {
+    "HttpStatusCode": {
       "format": "int32",
       "enum": [
-        0,
-        1,
-        2,
-        3
-      ],
-      "type": "integer"
-    },
-    "ErrorScope": {
-      "format": "int32",
-      "enum": [
-        0,
-        1,
-        2,
-        3,
-        4
+        100,
+        101,
+        102,
+        103,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        226,
+        300,
+        301,
+        302,
+        303,
+        304,
+        305,
+        306,
+        307,
+        308,
+        400,
+        401,
+        402,
+        403,
+        404,
+        405,
+        406,
+        407,
+        408,
+        409,
+        410,
+        411,
+        412,
+        413,
+        414,
+        415,
+        416,
+        417,
+        421,
+        422,
+        423,
+        424,
+        426,
+        428,
+        429,
+        431,
+        451,
+        500,
+        501,
+        502,
+        503,
+        504,
+        505,
+        506,
+        507,
+        508,
+        510,
+        511
       ],
       "type": "integer"
     },
@@ -1490,6 +1457,7 @@
       "type": "object",
       "properties": {
         "target": {
+          "minLength": 1,
           "type": "string"
         },
         "arguments": {
@@ -1515,17 +1483,38 @@
     "ServiceResponse": {
       "type": "object",
       "properties": {
+        "statusCode": {
+          "$ref": "#/definitions/HttpStatusCode"
+        },
         "code": {
           "type": "string"
         },
         "level": {
-          "$ref": "#/definitions/CodeLevel"
+          "enum": [
+            "Info",
+            "Warning",
+            "Error"
+          ],
+          "type": "string"
         },
         "scope": {
-          "$ref": "#/definitions/ErrorScope"
+          "enum": [
+            "Unknown",
+            "Request",
+            "Connection",
+            "User",
+            "Group"
+          ],
+          "type": "string"
         },
         "errorKind": {
-          "$ref": "#/definitions/ErrorKind"
+          "enum": [
+            "Unknown",
+            "NotExisted",
+            "NotInGroup",
+            "Invalid"
+          ],
+          "type": "string"
         },
         "message": {
           "type": "string"

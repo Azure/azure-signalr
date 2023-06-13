@@ -4,12 +4,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Moq;
+using Moq.Protected;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -46,7 +51,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             services.AddSingleton<IReadOnlyCollection<ServiceDescriptor>>(services.ToList());
             var serviceManager = services.BuildServiceProvider().GetRequiredService<IServiceManager>();
 
-            var hubContext = (await serviceManager.CreateHubContextAsync(Hub) as IInternalServiceHubContext)
+            var hubContext = (await serviceManager.CreateHubContextAsync(Hub) as ServiceHubContext)
                 .WithEndpoints(targetEndpoints);
             var serviceProvider = (hubContext as ServiceHubContextImpl).ServiceProvider;
             var container = serviceProvider.GetRequiredService<IServiceConnectionContainer>() as MultiEndpointMessageWriter;
@@ -70,7 +75,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             for (var i = 0; i < 5; i++)
             {
                 var randomEndpoint = ServiceEndpoints[StaticRandom.Next(0, Count)];
-                var negotiationResponse = await (hubContext as IInternalServiceHubContext)
+                var negotiationResponse = await hubContext
                     .WithEndpoints(new ServiceEndpoint[] { randomEndpoint })
                     .NegotiateAsync();
 
@@ -184,6 +189,62 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             await MockConnectionTestAsync(serviceTransportType, testAction, assertAction);
         }
 
+        [Fact]
+        public async Task AddNotExistedConnectionToGroup_NoError_Test()
+        {
+            using var disposable = StartLog(out var loggerFactory, LogLevel.Debug);
+            var hubContext = await new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            })
+            .WithLoggerFactory(loggerFactory)
+            .ConfigureServices(services =>
+            {
+                services.AddHttpClient(string.Empty).AddHttpMessageHandler(sp =>
+                {
+                    var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+                    response.Headers.Add(Constants.Headers.MicrosoftErrorCode, "Error.Connections.NotExisted");
+                    var mock = new Mock<DelegatingHandler>();
+                    mock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                    .ReturnsAsync(response);
+                    return mock.Object;
+                });
+            })
+            .BuildServiceManager()
+            .CreateHubContextAsync(Hub, default);
+            await hubContext.Groups.AddToGroupAsync(Guid.NewGuid().ToString(), GroupName);
+        }
+
+        [Fact]
+        public async Task AddNotExistedUserToGroup_NoError_Test()
+        {
+            using var disposable = StartLog(out var loggerFactory, LogLevel.Debug);
+            var hubContext = await new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            })
+            .WithLoggerFactory(loggerFactory)
+            .ConfigureServices(services =>
+            {
+                services.AddHttpClient(string.Empty).AddHttpMessageHandler(sp =>
+                {
+                    var response = new HttpResponseMessage(HttpStatusCode.NotFound);
+                    response.Headers.Add(Constants.Headers.MicrosoftErrorCode, "Error.User.NotExisted");
+                    var mock = new Mock<DelegatingHandler>();
+                    mock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                    .ReturnsAsync(response);
+                    return mock.Object;
+                });
+            })
+            .BuildServiceManager()
+            .CreateHubContextAsync(Hub, default);
+            await hubContext.UserGroups.AddToGroupAsync(UserId, GroupName);
+        }
+
         private async Task MockConnectionTestAsync(ServiceTransportType serviceTransportType, Func<ServiceHubContext, Task> testAction, Action<Dictionary<HubServiceEndpoint, List<TestServiceConnection>>> assertAction)
         {
             using (StartLog(out var loggerFactory, LogLevel.Debug))
@@ -198,7 +259,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     .WithLoggerFactory(loggerFactory)
                     .ConfigureServices(services => services.AddSingleton<IServiceConnectionFactory>(connectionFactory))
                     .BuildServiceManager();
-                var hubContext = await serviceManager.CreateHubContextAsync(Hub,default);
+                var hubContext = await serviceManager.CreateHubContextAsync(Hub, default);
 
                 await testAction.Invoke(hubContext);
 
