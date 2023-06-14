@@ -334,10 +334,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             try
             {
                 Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(groupNames).SendAsync(MethodName, Message);
-                
+
                 IList<HubConnection> connections = null;
                 CancellationTokenSource cancellationTokenSource = null;
-                
+
                 try
                 {
                     connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
@@ -801,6 +801,111 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 await context.DisposeAsync();
             }
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task AddNonexistentConnectionToGroupRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.Groups.AddToGroupAsync(Guid.NewGuid().ToString(), "group");
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task CloseNonexistentConnectionToGroupRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.ClientManager.CloseConnectionAsync(Guid.NewGuid().ToString());
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task RemoveNonexistentConnectionFromGroupRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.Groups.RemoveFromGroupAsync(Guid.NewGuid().ToString(), "group");
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task RemoveNonexistentConnectionFromAllGroupsRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.Groups.RemoveFromAllGroupsAsync(Guid.NewGuid().ToString());
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task AddNonexistentUserToGroupRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.UserGroups.AddToGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task AddNonexistentUserToGroupWithTTLRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.UserGroups.AddToGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), TimeSpan.Zero);
+            await context.UserGroups.AddToGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), TimeSpan.FromSeconds(1));
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task RemoveNonexistentUserFromGroupRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.UserGroups.RemoveFromGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task RemoveNonexistentUserFromAllGroupsRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.UserGroups.RemoveFromAllGroupsAsync(Guid.NewGuid().ToString());
         }
 
         private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)

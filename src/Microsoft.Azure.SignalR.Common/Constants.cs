@@ -102,6 +102,16 @@ namespace Microsoft.Azure.SignalR
             public const string AsrsHeaderPrefix = "X-ASRS-";
             public const string AsrsServerId = AsrsHeaderPrefix + "Server-Id";
             public const string AsrsMessageTracingId = AsrsHeaderPrefix + "Message-Tracing-Id";
+            public const string MicrosoftErrorCode = "x-ms-error-code";
+        }
+
+        public static class ErrorCodes
+        {
+            public const string WarningConnectionNotExisted = "Warning.Connection.NotExisted";
+            public const string WarningUserNotExisted = "Warning.User.NotExisted";
+            public const string WarningGroupNotExisted = "Warning.Group.NotExisted";
+            public const string InfoUserNotInGroup = "Info.User.NotInGroup";
+            public const string ErrorConnectionNotExisted = "Error.Connection.NotExisted";
         }
     }
 }
