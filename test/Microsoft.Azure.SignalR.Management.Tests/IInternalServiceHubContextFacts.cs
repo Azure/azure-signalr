@@ -205,7 +205,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 services.AddHttpClient(string.Empty).AddHttpMessageHandler(sp =>
                 {
                     var response = new HttpResponseMessage(HttpStatusCode.NotFound);
-                    response.Headers.Add(Constants.Headers.MicrosoftErrorCode, "Error.Connections.NotExisted");
+                    response.Headers.Add(Constants.Headers.MicrosoftErrorCode, "Error.Connection.NotExisted");
                     var mock = new Mock<DelegatingHandler>();
                     mock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
                     .ReturnsAsync(response);
@@ -215,34 +215,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             .BuildServiceManager()
             .CreateHubContextAsync(Hub, default);
             await hubContext.Groups.AddToGroupAsync(Guid.NewGuid().ToString(), GroupName);
-        }
-
-        [Fact]
-        public async Task AddNotExistedUserToGroup_NoError_Test()
-        {
-            using var disposable = StartLog(out var loggerFactory, LogLevel.Debug);
-            var hubContext = await new ServiceManagerBuilder()
-            .WithOptions(o =>
-            {
-                o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
-                o.ServiceTransportType = ServiceTransportType.Transient;
-            })
-            .WithLoggerFactory(loggerFactory)
-            .ConfigureServices(services =>
-            {
-                services.AddHttpClient(string.Empty).AddHttpMessageHandler(sp =>
-                {
-                    var response = new HttpResponseMessage(HttpStatusCode.NotFound);
-                    response.Headers.Add(Constants.Headers.MicrosoftErrorCode, "Error.User.NotExisted");
-                    var mock = new Mock<DelegatingHandler>();
-                    mock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-                    .ReturnsAsync(response);
-                    return mock.Object;
-                });
-            })
-            .BuildServiceManager()
-            .CreateHubContextAsync(Hub, default);
-            await hubContext.UserGroups.AddToGroupAsync(UserId, GroupName);
         }
 
         private async Task MockConnectionTestAsync(ServiceTransportType serviceTransportType, Func<ServiceHubContext, Task> testAction, Action<Dictionary<HubServiceEndpoint, List<TestServiceConnection>>> assertAction)

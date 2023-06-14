@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Primitives;
+using static Microsoft.Azure.SignalR.Constants;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
 
             var api = await _restApiProvider.GetConnectionGroupManagementEndpointAsync(_appName, _hubName, connectionId, groupName);
-            await _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: HandleAddToGroupResponse, cancellationToken: cancellationToken);
+            await _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponse: static response => FilterExpectedResponse(response, ErrorCodes.ErrorConnectionNotExisted), cancellationToken: cancellationToken);
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
@@ -195,7 +196,7 @@ namespace Microsoft.Azure.SignalR.Management
             ValidateUserIdAndGroupName(userId, groupName);
 
             var api = await _restApiProvider.GetUserGroupManagementEndpointAsync(_appName, _hubName, userId, groupName);
-            await _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: HandleAddToGroupResponse, cancellationToken: cancellationToken);
+            await _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
         public async Task UserAddToGroupAsync(string userId, string groupName, TimeSpan ttl, CancellationToken cancellationToken = default)
@@ -211,7 +212,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 ["ttl"] = ((int)ttl.TotalSeconds).ToString(),
             };
-            await _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: HandleAddToGroupResponse, cancellationToken: cancellationToken);
+            await _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
         public async Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
@@ -234,16 +235,8 @@ namespace Microsoft.Azure.SignalR.Management
             var api = await _restApiProvider.GetUserGroupManagementEndpointAsync(_appName, _hubName, userId, groupName);
             await _restClient.SendAsync(api, HttpMethod.Get, _productInfo, handleExpectedResponse: response =>
                 {
-                    switch (response.StatusCode)
-                    {
-                        case HttpStatusCode.OK:
-                            isUserInGroup = true;
-                            return true;
-                        case HttpStatusCode.NotFound:
-                            return true;
-                        default:
-                            return false;
-                    }
+                    isUserInGroup = response.StatusCode == HttpStatusCode.OK;
+                    return FilterExpectedResponse(response, ErrorCodes.InfoUserNotInGroup);
                 }, cancellationToken: cancellationToken);
             return isUserInGroup;
         }
@@ -281,16 +274,8 @@ namespace Microsoft.Azure.SignalR.Management
             var api = await _restApiProvider.GetCheckConnectionExistsEndpointAsync(_appName, _hubName, connectionId);
             await _restClient.SendAsync(api, HttpMethod.Head, _productInfo, handleExpectedResponse: response =>
             {
-                switch (response.StatusCode)
-                {
-                    case HttpStatusCode.OK:
-                        exists = true;
-                        return true;
-                    case HttpStatusCode.NotFound:
-                        return true;
-                    default:
-                        return false;
-                }
+                exists = response.StatusCode == HttpStatusCode.OK;
+                return FilterExpectedResponse(response, ErrorCodes.WarningConnectionsNotExisted);
             }, cancellationToken: cancellationToken);
             return exists;
         }
@@ -305,16 +290,8 @@ namespace Microsoft.Azure.SignalR.Management
             var api = await _restApiProvider.GetCheckUserExistsEndpointAsync(_appName, _hubName, userId);
             await _restClient.SendAsync(api, HttpMethod.Head, _productInfo, handleExpectedResponse: response =>
             {
-                switch (response.StatusCode)
-                {
-                    case HttpStatusCode.OK:
-                        exists = true;
-                        return true;
-                    case HttpStatusCode.NotFound:
-                        return true;
-                    default:
-                        return false;
-                }
+                exists = response.StatusCode == HttpStatusCode.OK;
+                return FilterExpectedResponse(response, ErrorCodes.WarningUserNotExisted);
             }, cancellationToken: cancellationToken);
             return exists;
         }
@@ -329,26 +306,16 @@ namespace Microsoft.Azure.SignalR.Management
             var api = await _restApiProvider.GetCheckGroupExistsEndpointAsync(_appName, _hubName, groupName);
             await _restClient.SendAsync(api, HttpMethod.Head, _productInfo, handleExpectedResponse: response =>
             {
-                switch (response.StatusCode)
-                {
-                    case HttpStatusCode.OK:
-                        exists = true;
-                        return true;
-                    case HttpStatusCode.NotFound:
-                        return true;
-                    default:
-                        return false;
-                }
+                exists = response.StatusCode == HttpStatusCode.OK;
+                return FilterExpectedResponse(response, ErrorCodes.WarningGroupNotExisted);
             }, cancellationToken: cancellationToken);
             return exists;
         }
 
         public Task DisposeAsync() => Task.CompletedTask;
 
-        private Task<bool> HandleAddToGroupResponse(HttpResponseMessage response) => response.IsSuccessStatusCode
-                ? Task.FromResult(true)
-                : response.StatusCode == HttpStatusCode.NotFound && response.Headers.TryGetValues(Constants.Headers.MicrosoftErrorCode, out var errorCodes) && errorCodes.First().EndsWith(Constants.ErrorCodes.NotExisted)
-                ? Task.FromResult(true)
-                : Task.FromResult(false);
+        private static bool FilterExpectedResponse(HttpResponseMessage response, string expectedErrorCode) =>
+            response.IsSuccessStatusCode
+            || (response.StatusCode == HttpStatusCode.NotFound && response.Headers.TryGetValues(Headers.MicrosoftErrorCode, out var errorCodes) && errorCodes.First().Equals(expectedErrorCode, StringComparison.OrdinalIgnoreCase));
     }
 }

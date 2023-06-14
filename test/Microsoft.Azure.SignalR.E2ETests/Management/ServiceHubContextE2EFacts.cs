@@ -334,10 +334,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             try
             {
                 Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(groupNames).SendAsync(MethodName, Message);
-                
+
                 IList<HubConnection> connections = null;
                 CancellationTokenSource cancellationTokenSource = null;
-                
+
                 try
                 {
                     connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
@@ -801,6 +801,19 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 await context.DisposeAsync();
             }
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task AddNonexistentConnectionToGroupRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.Groups.AddToGroupAsync(Guid.NewGuid().ToString(), "group");
         }
 
         private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)
