@@ -107,7 +107,7 @@ namespace Microsoft.Azure.SignalR
 
         public static class ErrorCodes
         {
-            public const string WarningConnectionsNotExisted = "Warning.Connection.NotExisted";
+            public const string WarningConnectionNotExisted = "Warning.Connection.NotExisted";
             public const string WarningUserNotExisted = "Warning.User.NotExisted";
             public const string WarningGroupNotExisted = "Warning.Group.NotExisted";
             public const string InfoUserNotInGroup = "Info.User.NotInGroup";
