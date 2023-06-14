@@ -248,7 +248,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
             }
             var api = await _restApiProvider.GetCloseConnectionEndpointAsync(_appName, _hubName, connectionId, reason);
-            await _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
+            await _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponse: static response => FilterExpectedResponse(response, ErrorCodes.WarningConnectionNotExisted), cancellationToken: cancellationToken);
         }
 
         private static void ValidateUserIdAndGroupName(string userId, string groupName)
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.SignalR.Management
             await _restClient.SendAsync(api, HttpMethod.Head, _productInfo, handleExpectedResponse: response =>
             {
                 exists = response.StatusCode == HttpStatusCode.OK;
-                return FilterExpectedResponse(response, ErrorCodes.WarningConnectionsNotExisted);
+                return FilterExpectedResponse(response, ErrorCodes.WarningConnectionNotExisted);
             }, cancellationToken: cancellationToken);
             return exists;
         }
