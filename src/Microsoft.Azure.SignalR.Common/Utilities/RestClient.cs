@@ -66,11 +66,10 @@ namespace Microsoft.Azure.SignalR
         {
             using var httpClient = _httpClientFactory.CreateClient();
             using var request = BuildRequest(api, httpMethod, productInfo, methodName, args);
-            HttpResponseMessage response = null;
 
             try
             {
-                response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 if (handleExpectedResponseAsync == null)
                 {
                     await ThrowExceptionOnResponseFailureAsync(response);
@@ -86,10 +85,6 @@ namespace Microsoft.Azure.SignalR
             catch (HttpRequestException ex)
             {
                 throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), ex);
-            }
-            finally
-            {
-                response?.Dispose();
             }
         }
 
