@@ -19,6 +19,7 @@ namespace Microsoft.Azure.SignalR.Management
             target.Endpoints = source.ServiceEndpoints;
             target.Proxy = source.Proxy;
             target.InitialHubServerConnectionCount = source.ConnectionCount;
+            target.MaxHubServerConnectionCount = source.ConnectionCount;
         }
     }
 }
