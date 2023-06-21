@@ -44,6 +44,11 @@ namespace Microsoft.Azure.SignalR.Management
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
 
         /// <summary>
+        /// Gets or sets the timespan to wait before the HTTP request times out. The default value is 100 seconds.
+        /// </summary>
+        public TimeSpan HttpClientTimeout { get; set; } = TimeSpan.FromSeconds(100);
+
+        /// <summary>
         /// Gets the json serializer settings that will be used to serialize content sent to Azure SignalR Service.
         /// </summary>
         [Obsolete("Use ServiceManagerBuilder.WithNewtonsoftJson instead.")]
