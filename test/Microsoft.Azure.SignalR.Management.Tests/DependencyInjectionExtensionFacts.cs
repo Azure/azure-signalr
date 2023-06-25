@@ -269,35 +269,43 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Fact]
         public async Task CustomizeHttpClientTimeoutTestAsync()
         {
-            using var serviceManager = new ServiceManagerBuilder()
-                .WithOptions(o =>
-                {
-                    // use http schema to avoid SSL handshake
-                    o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
-                    o.HttpClientTimeout = TimeSpan.FromSeconds(1);
-                })
-                .ConfigureServices(services => services.AddHttpClient(Options.DefaultName).AddHttpMessageHandler(sp => new WaitInfinitelyHandler()))
-                .BuildServiceManager();
-            var requestStartTime = DateTime.UtcNow;
-            var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", default);
-            await Assert.ThrowsAsync<TaskCanceledException>(() => serviceHubContext.Clients.All.SendCoreAsync("method", null));
-            var elapsed = DateTime.UtcNow - requestStartTime;
-            _outputHelper.WriteLine($"Request elapsed time: {elapsed.Ticks}");
-            Assert.True(elapsed >= TimeSpan.FromSeconds(1));
+            for (int i = 0; i < 100; i++)
+            {
+
+                using var serviceManager = new ServiceManagerBuilder()
+                    .WithOptions(o =>
+                    {
+                        // use http schema to avoid SSL handshake
+                        o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
+                        o.HttpClientTimeout = TimeSpan.FromSeconds(1);
+                    })
+                    .ConfigureServices(services => services.AddHttpClient(Options.DefaultName).AddHttpMessageHandler(sp => new WaitInfinitelyHandler()))
+                    .BuildServiceManager();
+                var requestStartTime = DateTime.UtcNow;
+                var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", default);
+                await Assert.ThrowsAsync<TaskCanceledException>(() => serviceHubContext.Clients.All.SendCoreAsync("method", null));
+                var elapsed = DateTime.UtcNow - requestStartTime;
+                _outputHelper.WriteLine($"Request elapsed time: {elapsed.Ticks}");
+                Assert.True(elapsed >= TimeSpan.FromSeconds(1));
+            }
         }
 
         [Fact]
         public async Task TimeOut()
         {
-            var requestStartTime = DateTime.UtcNow;
-            var httpClient = new HttpClient(new WaitInfinitelyHandler())
+            for (int i = 0; i < 100; i++)
             {
-                Timeout = TimeSpan.FromSeconds(1)
-            };
-            await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetAsync("http://abc"));
-            var elapsed = DateTime.UtcNow - requestStartTime;
-            _outputHelper.WriteLine($"Request elapsed time: {elapsed.Ticks}");
-            Assert.True(elapsed >= TimeSpan.FromSeconds(1));
+
+                var requestStartTime = DateTime.UtcNow;
+                var httpClient = new HttpClient(new WaitInfinitelyHandler())
+                {
+                    Timeout = TimeSpan.FromSeconds(1)
+                };
+                await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetAsync("http://abc"));
+                var elapsed = DateTime.UtcNow - requestStartTime;
+                _outputHelper.WriteLine($"Request elapsed time: {elapsed.Ticks}");
+                Assert.True(elapsed >= TimeSpan.FromSeconds(1));
+            }
         }
 
         private class WaitInfinitelyHandler : DelegatingHandler
