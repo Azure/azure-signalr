@@ -282,7 +282,21 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", default);
             await Assert.ThrowsAsync<TaskCanceledException>(() => serviceHubContext.Clients.All.SendCoreAsync("method", null));
             var elapsed = DateTime.UtcNow - requestStartTime;
-            _outputHelper.WriteLine("Request elapsed time: {0}", elapsed);
+            _outputHelper.WriteLine($"Request elapsed time: {elapsed.Ticks}");
+            Assert.True(elapsed >= TimeSpan.FromSeconds(1));
+        }
+
+        [Fact]
+        public async Task TimeOut()
+        {
+            var requestStartTime = DateTime.UtcNow;
+            var httpClient = new HttpClient(new WaitInfinitelyHandler())
+            {
+                Timeout = TimeSpan.FromSeconds(1)
+            };
+            await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetAsync("http://abc"));
+            var elapsed = DateTime.UtcNow - requestStartTime;
+            _outputHelper.WriteLine($"Request elapsed time: {elapsed.Ticks}");
             Assert.True(elapsed >= TimeSpan.FromSeconds(1));
         }
 
