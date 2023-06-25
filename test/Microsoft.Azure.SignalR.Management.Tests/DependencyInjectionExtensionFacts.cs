@@ -281,7 +281,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var requestStartTime = DateTime.UtcNow;
             var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", default);
             await Assert.ThrowsAsync<TaskCanceledException>(() => serviceHubContext.Clients.All.SendCoreAsync("method", null));
-            Assert.True(DateTime.UtcNow - requestStartTime > TimeSpan.FromSeconds(1));
+            var elapsed = DateTime.UtcNow - requestStartTime;
+            _outputHelper.WriteLine("Request elapsed time: {0}", elapsed);
+            Assert.True(elapsed >= TimeSpan.FromSeconds(1));
         }
 
         private class WaitInfinitelyHandler : DelegatingHandler
