@@ -84,7 +84,7 @@ namespace Microsoft.Azure.SignalR
             }
             catch (HttpRequestException ex)
             {
-                throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), ex);
+                throw new AzureSignalRException($"An error happened when making request to {request.RequestUri}", ex);
             }
         }
 
