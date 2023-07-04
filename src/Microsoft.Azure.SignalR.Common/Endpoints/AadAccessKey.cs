@@ -61,14 +61,10 @@ namespace Microsoft.Azure.SignalR
 
         private Task<object> InitializedTask => _initializedTcs.Task;
 
-        public AadAccessKey(Uri uri, TokenCredential credential) : base(uri)
+        public AadAccessKey(Uri endpoint, TokenCredential credential, Uri serverEndpoint = null) : base(endpoint)
         {
-            var builder = new UriBuilder(Endpoint)
-            {
-                Path = "/api/v1/auth/accessKey",
-                Port = uri.Port
-            };
-            AuthorizeUrl = builder.Uri.AbsoluteUri;
+            var authorizeUri = (serverEndpoint ?? endpoint).Append("/api/v1/auth/accessKey");
+            AuthorizeUrl = authorizeUri.AbsoluteUri;
             TokenCredential = credential;
         }
 

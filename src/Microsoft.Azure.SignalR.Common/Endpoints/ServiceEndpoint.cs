@@ -10,8 +10,14 @@ namespace Microsoft.Azure.SignalR
     public class ServiceEndpoint
     {
         private readonly Uri _serviceEndpoint;
+
         private readonly Uri _serverEndpoint;
+
         private readonly Uri _clientEndpoint;
+
+        private readonly TokenCredential _tokenCredential;
+
+        private AccessKey _accessKey;
 
         public string ConnectionString { get; }
 
@@ -42,6 +48,7 @@ namespace Microsoft.Azure.SignalR
                 _clientEndpoint = value;
             }
         }
+
         /// <summary>
         /// When current app server instance has server connections connected to the target endpoint for current hub, it can deliver messages to that endpoint.
         /// The endpoint is then considered as *Online*; otherwise, *Offline*.
@@ -69,7 +76,15 @@ namespace Microsoft.Azure.SignalR
 
         internal string Version { get; }
 
-        internal AccessKey AccessKey { get; private set; }
+        internal AccessKey AccessKey
+        {
+            get
+            {
+                _accessKey ??= new AadAccessKey(_serviceEndpoint, _tokenCredential, ServerEndpoint);
+                return _accessKey;
+            }
+            private init => _accessKey = value;
+        }
 
         // Flag to indicate an updaing endpoint needs staging
         internal virtual bool PendingReload { get; set; }
@@ -132,16 +147,18 @@ namespace Microsoft.Azure.SignalR
         /// <param name="name">The endpoint name.</param>
         /// <param name="serverEndpoint">The endpoint for servers to connect to Azure SignalR.</param>
         /// <param name="clientEndpoint">The endpoint for clients to connect to Azure SignalR.</param>
-        public ServiceEndpoint(Uri endpoint, TokenCredential credential, EndpointType endpointType = EndpointType.Primary, string name = "",
-            Uri serverEndpoint = null, Uri clientEndpoint = null)
+        public ServiceEndpoint(Uri endpoint,
+                               TokenCredential credential,
+                               EndpointType endpointType = EndpointType.Primary,
+                               string name = "",
+                               Uri serverEndpoint = null,
+                               Uri clientEndpoint = null)
         {
             _serviceEndpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
             CheckScheme(endpoint);
-            if (credential is null)
-            {
-                throw new ArgumentNullException(nameof(credential));
-            }
-            AccessKey = new AadAccessKey(endpoint, credential);
+
+            _tokenCredential = credential ?? throw new ArgumentNullException(nameof(credential));
+
             EndpointType = endpointType;
             Name = name;
 
