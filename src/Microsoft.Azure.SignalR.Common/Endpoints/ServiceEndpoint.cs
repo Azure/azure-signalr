@@ -17,7 +17,9 @@ namespace Microsoft.Azure.SignalR
 
         private readonly TokenCredential _tokenCredential;
 
-        private AccessKey _accessKey;
+        private readonly object _lock = new object();
+
+        private volatile AccessKey _accessKey;
 
         public string ConnectionString { get; }
 
@@ -80,7 +82,13 @@ namespace Microsoft.Azure.SignalR
         {
             get
             {
-                _accessKey ??= new AadAccessKey(_serviceEndpoint, _tokenCredential, ServerEndpoint);
+                if (_accessKey is null)
+                {
+                    lock (_lock)
+                    {
+                        _accessKey ??= new AadAccessKey(_serviceEndpoint, _tokenCredential, ServerEndpoint);
+                    }
+                }
                 return _accessKey;
             }
             private init => _accessKey = value;
