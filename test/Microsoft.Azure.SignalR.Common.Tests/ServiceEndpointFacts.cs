@@ -65,11 +65,11 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var serverEndpoint = new Uri("http://serverEndpoint:123/path");
             var endpoint = "https://test.service.signalr.net";
             var serviceEndpoints = new ServiceEndpoint[]{
-    new ServiceEndpoint(new Uri(endpoint), new DefaultAzureCredential())
-    {
-        ClientEndpoint = clientEndpoint,
-        ServerEndpoint = serverEndpoint
-    },
+                new ServiceEndpoint(new Uri(endpoint), new DefaultAzureCredential())
+                {
+                    ClientEndpoint = clientEndpoint,
+                    ServerEndpoint = serverEndpoint
+                },
                 new ServiceEndpoint($"Endpoint={endpoint};AccessKey={DefaultKey}")
                 {
                     ClientEndpoint = clientEndpoint,
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData("http://localhost/", "http://localhost", 80)]
         [InlineData("http://localhost/foo", "http://localhost", 80)]
         [InlineData("https://localhost/foo/", "https://localhost", 443)]
-        public void TestAadConstructor(string url, string expectedEndpoint, int port)
+        public void TestAzureADConstructor(string url, string expectedEndpoint, int port)
         {
             var uri = new Uri(url);
             var serviceEndpoint = new ServiceEndpoint(uri, new DefaultAzureCredential());
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData("ftp://localhost")]
         [InlineData("ws://localhost")]
         [InlineData("localhost:5050")]
-        public void TestAadConstructorThrowsError(string url)
+        public void TestAzureADConstructorThrowsError(string url)
         {
             var uri = new Uri(url);
             Assert.Throws<ArgumentException>(() => new ServiceEndpoint(uri, new DefaultAzureCredential()));
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData(":bar", ":bar", EndpointType.Primary)]
         [InlineData(":primary", "", EndpointType.Primary)]
         [InlineData(":secondary", "", EndpointType.Secondary)]
-        public void TestAadConstructorWithKey(string key, string name, EndpointType type)
+        public void TestAzureADConstructorWithKey(string key, string name, EndpointType type)
         {
             var uri = new Uri("http://localhost");
             var serviceEndpoint = new ServiceEndpoint(key, uri, new DefaultAzureCredential());
@@ -154,6 +154,34 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             Assert.Equal(name, serviceEndpoint.Name);
             Assert.Equal(type, serviceEndpoint.EndpointType);
             TestCopyConstructor(serviceEndpoint);
+        }
+
+        [Fact]
+        public void TestAzureADConstructorWithServerEndpoint()
+        {
+            var serverEndpoint1 = new Uri("http://serverEndpoint:123");
+            var serverEndpoint2 = new Uri("http://serverEndpoint:123/path");
+            var serviceEndpoint = "https://test.service.signalr.net";
+            var endpoint = new ServiceEndpoint(new Uri(serviceEndpoint), new DefaultAzureCredential())
+            {
+                ServerEndpoint = serverEndpoint1
+            };
+            var key = Assert.IsType<AadAccessKey>(endpoint.AccessKey);
+            Assert.Same(key, endpoint.AccessKey);
+            Assert.Equal("http://serverEndpoint:123/api/v1/auth/accessKey", key.AuthorizeUrl, StringComparer.OrdinalIgnoreCase);
+
+            endpoint = new ServiceEndpoint(new Uri(serviceEndpoint), new DefaultAzureCredential(), serverEndpoint: serverEndpoint2);
+            key = Assert.IsType<AadAccessKey>(endpoint.AccessKey);
+            Assert.Same(key, endpoint.AccessKey);
+            Assert.Equal("http://serverEndpoint:123/path/api/v1/auth/accessKey", key.AuthorizeUrl, StringComparer.OrdinalIgnoreCase);
+
+            endpoint = new ServiceEndpoint(new Uri(serviceEndpoint), new DefaultAzureCredential(), serverEndpoint: serverEndpoint1)
+            {
+                ServerEndpoint = serverEndpoint2 // property initialize should override constructor param.
+            };
+            key = Assert.IsType<AadAccessKey>(endpoint.AccessKey);
+            Assert.Same(key, endpoint.AccessKey);
+            Assert.Equal("http://serverEndpoint:123/path/api/v1/auth/accessKey", key.AuthorizeUrl, StringComparer.OrdinalIgnoreCase);
         }
 
         [Theory]
