@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -262,6 +264,41 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.True(await hubContext.ClientManager.UserExistsAsync("userId"));
             Assert.Equal("/api/hubs/hub/users/userId", requestUrls.Dequeue());
             await app.StopAsync();
+        }
+
+        [Fact]
+        public async Task CustomizeHttpClientTimeoutTestAsync()
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                using var serviceManager = new ServiceManagerBuilder()
+                    .WithOptions(o =>
+                    {
+                        // use http schema to avoid SSL handshake
+                        o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
+                        o.HttpClientTimeout = TimeSpan.FromSeconds(1);
+                    })
+                    .ConfigureServices(services => services.AddHttpClient(Options.DefaultName).AddHttpMessageHandler(sp => new WaitInfinitelyHandler()))
+                    .BuildServiceManager();
+                var requestStartTime = DateTime.UtcNow;
+                var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", default);
+                await Assert.ThrowsAsync<TaskCanceledException>(() => serviceHubContext.Clients.All.SendCoreAsync("method", null));
+                var elapsed = DateTime.UtcNow - requestStartTime;
+                _outputHelper.WriteLine($"Request elapsed time: {elapsed.Ticks}");
+                // Don't know why, the elapsed time sometimes is shorter than 1 second, but it should be close to 1 second.
+                Assert.True(elapsed >= TimeSpan.FromSeconds(0.8));
+                Assert.True(elapsed < TimeSpan.FromSeconds(1.2));
+            }
+        }
+
+        private class WaitInfinitelyHandler : DelegatingHandler
+        {
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                // Make the HTTP request pending forever until the token is cancelled.
+                await Task.Delay(-1, cancellationToken);
+                return null;
+            }
         }
     }
 }

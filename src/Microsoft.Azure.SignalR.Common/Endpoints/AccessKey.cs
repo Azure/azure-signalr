@@ -12,11 +12,12 @@ namespace Microsoft.Azure.SignalR
     internal class AccessKey
     {
         public string Id => Key?.Item1;
+
         public string Value => Key?.Item2;
 
-        protected Tuple<string, string> Key { get; set; }
-
         public Uri Endpoint { get; }
+
+        protected Tuple<string, string> Key { get; set; }
 
         public AccessKey(string uri, string key) : this(new Uri(uri))
         {

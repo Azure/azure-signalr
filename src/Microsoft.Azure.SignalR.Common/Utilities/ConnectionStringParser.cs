@@ -24,11 +24,11 @@ namespace Microsoft.Azure.SignalR
 
         private const string EndpointProperty = "endpoint";
 
+        private const string ServerEndpointProperty = "ServerEndpoint";
+
         private const string InvalidVersionValueFormat = "Version {0} is not supported.";
 
         private const string PortProperty = "port";
-
-        private const string ServerEndpoint = "ServerEndpoint";
 
         // For SDK 1.x, only support Azure SignalR Service 1.x
         private const string SupportedVersion = "1";
@@ -114,6 +114,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             Uri clientEndpointUri = null;
+            Uri serverEndpointUri = null;
 
             // parse and validate clientEndpoint.
             if (dict.TryGetValue(ClientEndpointProperty, out var clientEndpoint))
@@ -124,25 +125,26 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
+            // parse and validate clientEndpoint.
+            if (dict.TryGetValue(ServerEndpointProperty, out var serverEndpoint))
+            {
+                if (!TryGetEndpointUri(serverEndpoint, out serverEndpointUri))
+                {
+                    throw new ArgumentException($"{ServerEndpointProperty} property in connection string is not a valid URI: {serverEndpoint}.");
+                }
+            }
+
             // try building accesskey.
             dict.TryGetValue(AuthTypeProperty, out var type);
             var accessKey = type?.ToLower() switch
             {
-                TypeAzureAD => BuildAadAccessKey(builder.Uri, dict),
-                TypeAzure => BuildAzureAccessKey(builder.Uri, dict),
-                TypeAzureApp => BuildAzureAppAccessKey(builder.Uri, dict),
-                TypeAzureMsi => BuildAzureMsiAccessKey(builder.Uri, dict),
+                TypeAzureAD => BuildAzureADAccessKey(builder.Uri, serverEndpointUri, dict),
+                TypeAzure => BuildAzureAccessKey(builder.Uri, serverEndpointUri, dict),
+                TypeAzureApp => BuildAzureAppAccessKey(builder.Uri, serverEndpointUri, dict),
+                TypeAzureMsi => BuildAzureMsiAccessKey(builder.Uri, serverEndpointUri, dict),
                 _ => BuildAccessKey(builder.Uri, dict),
             };
 
-            Uri serverEndpointUri = null;
-            if (dict.TryGetValue(ServerEndpoint, out var serverEndpoint))
-            {
-                if (!TryGetEndpointUri(serverEndpoint, out serverEndpointUri))
-                {
-                    throw new ArgumentException($"{ServerEndpoint} property in connection string is not a valid URI: {serverEndpoint}.");
-                }
-            }
             return new ParsedConnectionString()
             {
                 Endpoint = builder.Uri,
@@ -159,7 +161,7 @@ namespace Microsoft.Azure.SignalR
                    (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         }
 
-        private static AccessKey BuildAadAccessKey(Uri uri, Dictionary<string, string> dict)
+        private static AccessKey BuildAzureADAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
         {
             if (dict.TryGetValue(ClientIdProperty, out var clientId))
             {
@@ -167,11 +169,11 @@ namespace Microsoft.Azure.SignalR
                 {
                     if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
                     {
-                        return new AadAccessKey(uri, new ClientSecretCredential(tenantId, clientId, clientSecret));
+                        return new AadAccessKey(uri, new ClientSecretCredential(tenantId, clientId, clientSecret), serverEndpointUri);
                     }
                     else if (dict.TryGetValue(ClientCertProperty, out var clientCertPath))
                     {
-                        return new AadAccessKey(uri, new ClientCertificateCredential(tenantId, clientId, clientCertPath));
+                        return new AadAccessKey(uri, new ClientCertificateCredential(tenantId, clientId, clientCertPath), serverEndpointUri);
                     }
                     else
                     {
@@ -180,30 +182,28 @@ namespace Microsoft.Azure.SignalR
                 }
                 else
                 {
-                    return new AadAccessKey(uri, new ManagedIdentityCredential(clientId));
+                    return new AadAccessKey(uri, new ManagedIdentityCredential(clientId), serverEndpointUri);
                 }
             }
             else
             {
-                return new AadAccessKey(uri, new ManagedIdentityCredential());
+                return new AadAccessKey(uri, new ManagedIdentityCredential(), serverEndpointUri);
             }
         }
 
         private static AccessKey BuildAccessKey(Uri uri, Dictionary<string, string> dict)
         {
-            if (dict.TryGetValue(AccessKeyProperty, out var key))
-            {
-                return new AccessKey(uri, key);
-            }
-            throw new ArgumentException(MissingAccessKeyProperty, AccessKeyProperty);
+            return dict.TryGetValue(AccessKeyProperty, out var key)
+                ? new AccessKey(uri, key)
+                : throw new ArgumentException(MissingAccessKeyProperty, AccessKeyProperty);
         }
 
-        private static AccessKey BuildAzureAccessKey(Uri uri, Dictionary<string, string> dict)
+        private static AccessKey BuildAzureAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
         {
-            return new AadAccessKey(uri, new DefaultAzureCredential());
+            return new AadAccessKey(uri, new DefaultAzureCredential(), serverEndpointUri);
         }
 
-        private static AccessKey BuildAzureAppAccessKey(Uri uri, Dictionary<string, string> dict)
+        private static AccessKey BuildAzureAppAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
         {
             if (!dict.TryGetValue(ClientIdProperty, out var clientId))
             {
@@ -217,22 +217,20 @@ namespace Microsoft.Azure.SignalR
 
             if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
             {
-                return new AadAccessKey(uri, new ClientSecretCredential(tenantId, clientId, clientSecret));
+                return new AadAccessKey(uri, new ClientSecretCredential(tenantId, clientId, clientSecret), serverEndpointUri);
             }
             else if (dict.TryGetValue(ClientCertProperty, out var clientCertPath))
             {
-                return new AadAccessKey(uri, new ClientCertificateCredential(tenantId, clientId, clientCertPath));
+                return new AadAccessKey(uri, new ClientCertificateCredential(tenantId, clientId, clientCertPath), serverEndpointUri);
             }
             throw new ArgumentException(MissingClientSecretProperty, ClientSecretProperty);
         }
 
-        private static AccessKey BuildAzureMsiAccessKey(Uri uri, Dictionary<string, string> dict)
+        private static AccessKey BuildAzureMsiAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
         {
-            if (dict.TryGetValue(ClientIdProperty, out var clientId))
-            {
-                return new AadAccessKey(uri, new ManagedIdentityCredential(clientId));
-            }
-            return new AadAccessKey(uri, new ManagedIdentityCredential());
+            return dict.TryGetValue(ClientIdProperty, out var clientId)
+                ? new AadAccessKey(uri, new ManagedIdentityCredential(clientId), serverEndpointUri)
+                : new AadAccessKey(uri, new ManagedIdentityCredential(), serverEndpointUri);
         }
 
         private static Dictionary<string, string> ToDictionary(string connectionString)

@@ -101,8 +101,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         {
             var r = ConnectionStringParser.Parse(connectionString);
 
-            var aadAccessKey = Assert.IsType<AadAccessKey>(r.AccessKey);
-            Assert.IsType<ClientSecretCredential>(aadAccessKey.TokenCredential);
+            var key = Assert.IsType<AadAccessKey>(r.AccessKey);
+            Assert.IsType<ClientSecretCredential>(key.TokenCredential);
             Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
             Assert.Null(r.Version);
             Assert.Null(r.ClientEndpoint);
@@ -148,8 +148,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             var r = ConnectionStringParser.Parse(connectionString);
 
             Assert.Equal(expectedEndpoint, r.Endpoint.AbsoluteUri.TrimEnd('/'));
-            var aadAccessKey = Assert.IsType<AadAccessKey>(r.AccessKey);
-            Assert.IsType<DefaultAzureCredential>(aadAccessKey.TokenCredential);
+            var key = Assert.IsType<AadAccessKey>(r.AccessKey);
+            Assert.IsType<DefaultAzureCredential>(key.TokenCredential);
             Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
         }
 
@@ -165,10 +165,23 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             var r = ConnectionStringParser.Parse(connectionString);
 
             Assert.Equal(expectedEndpoint, r.Endpoint.AbsoluteUri.TrimEnd('/'));
-            var aadAccessKey = Assert.IsType<AadAccessKey>(r.AccessKey);
-            Assert.IsType<ManagedIdentityCredential>(aadAccessKey.TokenCredential);
+            var key = Assert.IsType<AadAccessKey>(r.AccessKey);
+            Assert.IsType<ManagedIdentityCredential>(key.TokenCredential);
             Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
             Assert.Null(r.ClientEndpoint);
+        }
+
+        [Theory]
+        [InlineData("endpoint=https://aaa;AuthType=aad;serverendpoint=https://foo", "https://foo/api/v1/auth/accesskey")]
+        [InlineData("endpoint=https://aaa;AuthType=aad;serverendpoint=https://foo:123", "https://foo:123/api/v1/auth/accesskey")]
+        [InlineData("endpoint=https://aaa;AuthType=aad;serverendpoint=https://foo/bar", "https://foo/bar/api/v1/auth/accesskey")]
+        [InlineData("endpoint=https://aaa;AuthType=aad;serverendpoint=https://foo/bar/", "https://foo/bar/api/v1/auth/accesskey")]
+        [InlineData("endpoint=https://aaa;AuthType=aad;serverendpoint=https://foo:123/bar/", "https://foo:123/bar/api/v1/auth/accesskey")]
+        internal void TestAzureADWithServerEndpoint(string connectionString, string expectedAuthorizeUrl)
+        {
+            var r = ConnectionStringParser.Parse(connectionString);
+            var key = Assert.IsType<AadAccessKey>(r.AccessKey);
+            Assert.Equal(expectedAuthorizeUrl, key.AuthorizeUrl, StringComparer.OrdinalIgnoreCase);
         }
 
         public class ClientEndpointTestData : IEnumerable<object[]>
