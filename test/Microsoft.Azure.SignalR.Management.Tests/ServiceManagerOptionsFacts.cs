@@ -4,6 +4,7 @@
 using System;
 using System.Linq;
 using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.Configuration;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
@@ -29,6 +30,28 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         public void AllowSingleEndpointInTransientModeFact()
         {
             new ServiceManagerOptions { ServiceEndpoints = FakeEndpointUtils.GetFakeEndpoint(1).ToArray() }.ValidateOptions();
+        }
+
+        [Fact]
+        public void OptionsBindingFact()
+        {
+            var configuration = new ConfigurationBuilder()
+                               .AddInMemoryCollection()
+                               .Build();
+            var connectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
+            configuration["ApplicationName"] = "applicationName";
+            configuration["ConnectionCount"] = "3";
+            configuration["ConnectionString"] = connectionString;
+            configuration["ServiceTransportType"] = "Persistent";
+            configuration["HttpClientTimeout"] = "00:00:10";
+
+            var options = new ServiceManagerOptions();
+            configuration.Bind(options);
+            Assert.Equal("applicationName", options.ApplicationName);
+            Assert.Equal(3, options.ConnectionCount);
+            Assert.Equal(connectionString, options.ConnectionString);
+            Assert.Equal(ServiceTransportType.Persistent, options.ServiceTransportType);
+            Assert.Equal(TimeSpan.FromSeconds(10), options.HttpClientTimeout);
         }
     }
 }
