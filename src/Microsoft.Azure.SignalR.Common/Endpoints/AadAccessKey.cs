@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR
 
         internal const int GetTokenMaxRetryTimes = 3;
 
-        internal static readonly TimeSpan AuthorizeTimeout = TimeSpan.FromSeconds(10);
+        internal static readonly TimeSpan AuthorizeTimeout = TimeSpan.FromSeconds(100);
 
         private const string DefaultScope = "https://signalr.azure.com/.default";
 
