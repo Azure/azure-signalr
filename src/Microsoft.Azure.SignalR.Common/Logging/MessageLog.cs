@@ -9,26 +9,31 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class MessageLog
     {
-        public const string StartToBroadcastMessageTemplate = "Start to broadcast message {0}.";
-        public const string StartToBroadcastMessageWithExcludedConnectionTemplate = "Start to broadcast message {0} except for {1} connections {2}.";
-        public const string StartToSendMessageToConnectionsTemplate = "Start to send message {0} to {1} connections {2}.";
-        public const string StartToSendMessageToConnectionTemplate = "Start to send message {0} to connection {1}.";
-        public const string StartToBroadcastMessageToGroupTemplate = "Start to broadcast message {0} to group {1}.";
-        public const string StartToBroadcastMessageToGroupWithExcludedConnectionsTemplate = "Start to broadcast message {0} to group {1} except for {2} connections {3}.";
-        public const string StartToBroadcastMessageToGroupsTemplate = "Start to broadcast message {0} to {1} groups {2}.";
-        public const string StartToSendMessageToUserTemplate = "Start to send message {0} to user {1}.";
-        public const string StartToSendMessageToUsersTemplate = "Start to send message {0} to {1} users {2}.";
-        public const string StartToAddConnectionToGroupTemplate = "Start to send message {0} to add connection {1} to group {2}.";
-        public const string StartToRemoveConnectionFromGroupTemplate = "Start to send message {0} to remove connection {1} from group {2}.";
-        public const string StartToAddUserToGroupTemplate = "Start to send message {0} to add user {1} to group {2}.";
-        public const string StartToAddUserToGroupWithTtlTemplate = "Start to send message {0} to add user {1} to group {2} with TTL {3} seconds.";
-        public const string StartToRemoveUserFromGroupTemplate = "Start to send message {0} to remove user {1} from group {2}.";
-        public const string StartToRemoveUserFromAllGroupsTemplate = "Start to send message {0} to remove user {1} from all groups.";
-        public const string StartToRemoveConnectionFromAllGroupsTemplate = "Start to send message {0} to remove connection {1} from all groups.";
-        public const string StartToCheckIfUserInGroupTemplate = "Start to send message {0} to check if user {1} in group {2}.";
-        public const string FailedToSendMessageTemplate = "Failed to send message {0}.";
-        public const string SucceededToSendMessageTemplate = "Succeeded to send message {0}.";
-
+        public const string StartToBroadcastMessageTemplate = "Start to broadcast message {tracingId}.";
+        public const string StartToBroadcastMessageWithExcludedConnectionTemplate = "Start to broadcast message {tracingId} except for {excludedCount} connections {excludedList}.";
+        public const string StartToSendMessageToConnectionsTemplate = "Start to send message {tracingId} to {connectionsCount} connections {connectionsList}.";
+        public const string StartToSendMessageToConnectionTemplate = "Start to send message {tracingId} to connection {connectionId}.";
+        public const string StartToBroadcastMessageToGroupTemplate = "Start to broadcast message {tracingId} to group {group}.";
+        public const string StartToBroadcastMessageToGroupWithExcludedConnectionsTemplate = "Start to broadcast message {tracingId} to group {group} except for {excludedCount} connections {connectionsList}.";
+        public const string StartToBroadcastMessageToGroupsTemplate = "Start to broadcast message {tracingId} to {groupsCount} groups {groupsList}.";
+        public const string StartToSendMessageToUserTemplate = "Start to send message {tracingId} to user {userId}.";
+        public const string StartToSendMessageToUsersTemplate = "Start to send message {tracingId} to {usersCount} users {usersList}.";
+        public const string StartToAddConnectionToGroupTemplate = "Start to send message {tracingId} to add connection {connectionId} to group {group}.";
+        public const string StartToRemoveConnectionFromGroupTemplate = "Start to send message {tracingId} to remove connection {connectionId} from group {group}.";
+        public const string StartToAddUserToGroupTemplate = "Start to send message {tracingId} to add user {userId} to group {group}.";
+        public const string StartToAddUserToGroupWithTtlTemplate = "Start to send message {tracingId} to add user {userId} to group {group} with TTL {timeToLive} seconds.";
+        public const string StartToRemoveUserFromGroupTemplate = "Start to send message {tracingId} to remove user {userId} from group {group}.";
+        public const string StartToRemoveUserFromAllGroupsTemplate = "Start to send message {tracingId} to remove user {userId} from all groups.";
+        public const string StartToRemoveConnectionFromAllGroupsTemplate = "Start to send message {tracingId} to remove connection {connectionId} from all groups.";
+        public const string StartToCheckIfUserInGroupTemplate = "Start to send message {tracingId} to check if user {userId} in group {group}.";
+        public const string FailedToSendMessageTemplate = "Failed to send message {tracingId}.";
+        public const string SucceededToSendMessageTemplate = "Succeeded to send message {tracingId}.";
+        public const string ReceivedMessageFromClientConnectionTemplate = "Received message {tracingId} from client connection {connectionId}.";
+        public const string StartToSendMessageToCloseConnectionTemplate = "Start to send message {tracingId} to close connection {connectionId} for reason: '{reason}'.";
+        public const string StartToSendMessageToCheckConnectionTemplate = "Start to send message {tracingId} to check if connection {connectionId} exists.";
+        public const string StartToSendMessageToCheckIfUserExistsTemplate = "Start to send message {tracingId} to check if user {userId} exists.";
+        public const string StartToSendMessageToCheckIfGroupExistsTemplate = "Start to send message {tracingId} to check if group {group} exists.";
+        
         private static readonly Action<ILogger, ulong?, Exception> _startToBroadcastMessage =
             LoggerMessage.Define<ulong?>(
                 LogLevel.Information,
@@ -141,7 +146,7 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define<ulong?, string>(
                     LogLevel.Information,
                     new EventId(120, "RecieveMessageFromService"),
-                    "Received message {tracingId} from client connection {connectionId}.");
+                    ReceivedMessageFromClientConnectionTemplate);
 
         private static readonly Action<ILogger, ulong?, string, string, Exception> _startToCheckIfUserInGroup =
                 LoggerMessage.Define<ulong?, string, string>(
@@ -153,24 +158,25 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define<ulong?, string, string>(
                     LogLevel.Information,
                     new EventId(140, "StartToCloseConnection"),
-                    "Start to send message {tracingId} to close connection {connectionId} for reason: '{reason}'.");
+                    StartToSendMessageToCloseConnectionTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfConnectionExists = LoggerMessage.Define<ulong?, string>(
+        private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfConnectionExists = 
+                LoggerMessage.Define<ulong?, string>(
                     LogLevel.Information,
                     new EventId(150, "StartToCheckIfConnectionExists"),
-                    "Start to send message {tracingId} to check if connection {connectionId} exists.");
+                    StartToSendMessageToCheckConnectionTemplate);
 
         private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfUserExists =
                 LoggerMessage.Define<ulong?, string>(
                     LogLevel.Information,
                     new EventId(160, "StartToCheckIfUserExists"),
-                    "Start to send message {tracingId} to check if user {userId} exists.");
+                    StartToSendMessageToCheckIfUserExistsTemplate);
 
         private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfGroupExists =
                 LoggerMessage.Define<ulong?, string>(
                     LogLevel.Information,
                     new EventId(170, "StartToCheckIfGroupExists"),
-                    "Start to send message {tracingId} to check if group {group} exists.");
+                    StartToSendMessageToCheckIfGroupExistsTemplate);
 
         public static void ReceiveMessageFromService(ILogger logger, ConnectionDataMessage message)
         {
