@@ -118,7 +118,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private bool HandshakeResponseMessagesEqual(HandshakeResponseMessage x, HandshakeResponseMessage y)
         {
-            return StringEqual(x.ErrorMessage, y.ErrorMessage);
+            return StringEqual(x.ErrorMessage, y.ErrorMessage) &&
+                StringEqual(x.ConnectionId, y.ConnectionId);
         }
 
         private bool AccessKeyRequestMessageEqual(AccessKeyRequestMessage x, AccessKeyRequestMessage y)
