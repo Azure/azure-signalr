@@ -91,9 +91,17 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new HandshakeResponseMessage(),
                 binary: "kgKg"),
             new ProtocolTestData(
+                name: "HandshakeResponse_NoConnectionId",
+                message: new HandshakeResponseMessage(),
+                binary: "kwKggA=="),
+            new ProtocolTestData(
                 name: "HandshakeResponseWithError_NoOptionalField",
                 message: new HandshakeResponseMessage("Version mismatch."),
                 binary: "kgKxVmVyc2lvbiBtaXNtYXRjaC4="),
+            new ProtocolTestData(
+                name: "HandshakeResponseWithError_NoConnectionId",
+                message: new HandshakeResponseMessage("Version mismatch."),
+                binary: "kwKxVmVyc2lvbiBtaXNtYXRjaC6A"),
             new ProtocolTestData(
                 name: "OpenConnection_NoOptionalField",
                 message: new OpenConnectionMessage("conn1", null),
@@ -280,11 +288,15 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             new ProtocolTestData(
                 name: "HandshakeResponse",
                 message: new HandshakeResponseMessage(),
-                binary: "kwKggA=="),
+                binary: "lAKggMA="),
             new ProtocolTestData(
                 name: "HandshakeResponseWithError",
                 message: new HandshakeResponseMessage("Version mismatch."),
-                binary: "kwKxVmVyc2lvbiBtaXNtYXRjaC6A"),
+                binary: "lAKxVmVyc2lvbiBtaXNtYXRjaC6AwA=="),
+            new ProtocolTestData(
+                name: "HandshakeResponseWithConnectionId",
+                message: new HandshakeResponseMessage() { ConnectionId = "abc" },
+                binary: "lAKggKNhYmM="),
             new ProtocolTestData(
                 name: "AccessKeyRequestMessage",
                 message: new AccessKeyRequestMessage("token"),
