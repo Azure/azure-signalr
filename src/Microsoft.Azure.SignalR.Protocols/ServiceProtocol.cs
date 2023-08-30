@@ -319,10 +319,11 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteHandshakeResponseMessage(ref MessagePackWriter writer, HandshakeResponseMessage message)
         {
-            writer.WriteArrayHeader(3);
+            writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.HandshakeResponseType);
             writer.Write(message.ErrorMessage);
             message.WriteExtensionMembers(ref writer);
+            writer.Write(message.ConnectionId);
         }
 
         private static void WriteAccessKeyRequestMessage(ref MessagePackWriter writer, AccessKeyRequestMessage message)
@@ -799,6 +800,10 @@ namespace Microsoft.Azure.SignalR.Protocol
             if (arrayLength >= 3)
             {
                 result.ReadExtensionMembers(ref reader);
+            }
+            if (arrayLength >= 4)
+            {
+                result.ConnectionId = ReadString(ref reader, "connectionId");
             }
             return result;
         }
