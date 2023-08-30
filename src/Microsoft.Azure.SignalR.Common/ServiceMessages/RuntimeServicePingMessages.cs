@@ -9,6 +9,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class RuntimeServicePingMessage
     {
+        private const string EchoKey = "echo";
         private const string OfflineKey = "offline";
         private const string TargetKey = "target";
         private const string StatusKey = "status";
@@ -51,6 +52,11 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly ServicePingMessage ServersTag =
             new ServicePingMessage { Messages = new[] { ServersKey, string.Empty } };
+
+        public static bool IsEchoMessage(this ServicePingMessage ping)
+        {
+            return TryGetValue(ping, EchoKey, out _);
+        }
 
         public static bool TryGetMessageLogEnableFlag(this ServicePingMessage ping, out bool enableMessageLog)
         {

@@ -299,6 +299,10 @@ namespace Microsoft.Azure.SignalR
 
         protected virtual Task OnPingMessageAsync(PingMessage pingMessage)
         {
+            if (RuntimeServicePingMessage.IsEchoMessage(pingMessage))
+            {
+                return WriteAsync(pingMessage);
+            }
             if (RuntimeServicePingMessage.TryGetOffline(pingMessage, out var instanceId))
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);

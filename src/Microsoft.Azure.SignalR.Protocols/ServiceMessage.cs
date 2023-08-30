@@ -286,6 +286,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string ErrorMessage { get; set; }
 
         /// <summary>
+        /// Gets or sets the id of this connection.
+        /// </summary>
+        public string ConnectionId { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="HandshakeResponseMessage"/> class.
         /// </summary>
         public HandshakeResponseMessage() : this(string.Empty)
