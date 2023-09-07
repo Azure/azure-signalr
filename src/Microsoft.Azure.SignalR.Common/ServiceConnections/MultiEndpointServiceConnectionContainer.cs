@@ -431,7 +431,7 @@ namespace Microsoft.Azure.SignalR
             {
                 return endpoints;
             }
-            throw new NotSupportedException(message.GetType().Name);
+            throw new NotSupportedException("Client invocation to wait for multiple endpoints' results is not supported yet.");
         }
 
         internal static class Log
