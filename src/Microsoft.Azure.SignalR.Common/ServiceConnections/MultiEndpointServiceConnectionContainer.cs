@@ -427,7 +427,7 @@ namespace Microsoft.Azure.SignalR
 
         private IEnumerable<ServiceEndpoint> SingleOrNotSupported(IEnumerable<ServiceEndpoint> endpoints, ServiceMessage message)
         {
-            if (endpoints.Count() == 1)
+            if (endpoints.ToList().Count == 1)
             {
                 return endpoints;
             }
