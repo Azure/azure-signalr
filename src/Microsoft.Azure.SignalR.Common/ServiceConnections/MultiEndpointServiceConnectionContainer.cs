@@ -427,9 +427,14 @@ namespace Microsoft.Azure.SignalR
 
         private IEnumerable<ServiceEndpoint> SingleOrNotSupported(IEnumerable<ServiceEndpoint> endpoints, ServiceMessage message)
         {
-            if (endpoints.ToList().Count == 1)
+            var endpointCnt = endpoints.ToList().Count;
+            if (endpointCnt == 1)
             {
                 return endpoints;
+            }
+            if (endpointCnt == 0)
+            {
+                throw new ArgumentException("Client invocation is not sent because no endpoint is returned from the endpoint router.");
             }
             throw new NotSupportedException("Client invocation to wait for multiple endpoints' results is not supported yet.");
         }
