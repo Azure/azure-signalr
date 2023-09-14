@@ -230,6 +230,15 @@ namespace Microsoft.Azure.SignalR
                 case CloseConnectionMessage closeConnectionMessage:
                     return _router.GetEndpointsForConnection(closeConnectionMessage.ConnectionId, endpoints);
 
+                case ClientInvocationMessage clientInvocationMessage:
+                    return SingleOrNotSupported(_router.GetEndpointsForConnection(clientInvocationMessage.ConnectionId, endpoints), clientInvocationMessage);
+
+                case ServiceMappingMessage serviceMappingMessage:
+                    return SingleOrNotSupported(_router.GetEndpointsForConnection(serviceMappingMessage.ConnectionId, endpoints), serviceMappingMessage);
+
+                case ServiceCompletionMessage serviceCompletionMessage:
+                    return SingleOrNotSupported(_router.GetEndpointsForConnection(serviceCompletionMessage.ConnectionId, endpoints), serviceCompletionMessage);
+
                 default:
                     throw new NotSupportedException(message.GetType().Name);
             }
@@ -414,6 +423,20 @@ namespace Microsoft.Azure.SignalR
                 await Task.Delay(Constants.Periods.DefaultCloseDelayInterval);
             }
             Log.TimeoutWaitingClientsDisconnect(_logger, endpoint.ToString(), (int)_scaleTimeout.TotalSeconds);
+        }
+
+        private IEnumerable<ServiceEndpoint> SingleOrNotSupported(IEnumerable<ServiceEndpoint> endpoints, ServiceMessage message)
+        {
+            var endpointCnt = endpoints.ToList().Count;
+            if (endpointCnt == 1)
+            {
+                return endpoints;
+            }
+            if (endpointCnt == 0)
+            {
+                throw new ArgumentException("Client invocation is not sent because no endpoint is returned from the endpoint router.");
+            }
+            throw new NotSupportedException("Client invocation to wait for multiple endpoints' results is not supported yet.");
         }
 
         internal static class Log
