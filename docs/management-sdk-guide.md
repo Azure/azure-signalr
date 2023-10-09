@@ -183,7 +183,7 @@ This SDK can communicates to Azure SignalR Service with two transport types:
 |                                | Transient          | Persistent                        |
 | ------------------------------ | ------------------ | --------------------------------- |
 | Default JSON library           | `Newtonsoft.Json`  | The same as Asp.Net Core SignalR: <br>`Newtonsoft.Json` for .NET Standard 2.0; <br>`System.Text.Json` for .NET Core App 3.1 and above  |
-| MessaegPack clients support    |  since v1.21.0   |  since v1.20.0                    |
+| MessagePack clients support    |  since v1.21.0   |  since v1.20.0                    |
 
 #### Json serialization
 See [Customizing Json Serialization in Management SDK](./advanced-topics/json-object-serializer.md)
