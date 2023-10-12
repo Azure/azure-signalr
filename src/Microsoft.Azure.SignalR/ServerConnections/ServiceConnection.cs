@@ -21,16 +21,20 @@ namespace Microsoft.Azure.SignalR
     {
         private const int DefaultCloseTimeoutMilliseconds = 30000;
 
+        private const string ClientConnectionCountInHub = "#clientInHub";
+
+        private const string ClientConnectionCountInServiceConnection = "#client";
+
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
         private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
 
-        private const string ClientConnectionCountInHub = "#clientInHub";
-        private const string ClientConnectionCountInServiceConnection = "#client";
-
         private readonly IConnectionFactory _connectionFactory;
+
         private readonly IClientConnectionFactory _clientConnectionFactory;
+
         private readonly int _closeTimeOutMilliseconds;
+
         private readonly IClientConnectionManager _clientConnectionManager;
 
         private readonly ConcurrentDictionary<string, string> _connectionIds =
@@ -155,10 +159,12 @@ namespace Microsoft.Azure.SignalR
                 {
                     context.AbortOnClose = false;
                     context.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(ServerId, to));
+
                     // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
                     // Since all data messages will be sent to `ServiceConnection` directly.
                     // We can simply ignore all messages came from the application.
                     context.CancelOutgoing();
+
                     // The close connection message must be the last message, so we could complete the pipe.
                     context.CompleteIncoming();
                 }
@@ -211,14 +217,15 @@ namespace Microsoft.Azure.SignalR
             if (RuntimeServicePingMessage.TryGetOffline(pingMessage, out var instanceId))
             {
                 _clientInvocationManager.Caller.CleanupInvocationsByInstance(instanceId);
+
                 // Router invocations will be cleanup by its `CleanupInvocationsByConnection`, which is called by `RemoveClientConnection`.
-                // In `base.OnPingMessageAsync`, `CleanupClientConnections(instanceId)` will finally execute `RemoveClientConnection` for each ConnectionId. 
+                // In `base.OnPingMessageAsync`, `CleanupClientConnections(instanceId)` will finally execute `RemoveClientConnection` for each ConnectionId.
             }
 #endif
             return base.OnPingMessageAsync(pingMessage);
         }
 
-    private async Task ProcessClientConnectionAsync(ClientConnectionContext connection)
+        private async Task ProcessClientConnectionAsync(ClientConnectionContext connection)
         {
             try
             {
@@ -276,6 +283,7 @@ namespace Microsoft.Azure.SignalR
                     // Inform the Service that we will remove the client because SignalR told us it is disconnected.
                     var serviceMessage =
                         new CloseConnectionMessage(connection.ConnectionId, errorMessage: exception?.Message);
+
                     // when it fails, it means the underlying connection is dropped
                     // service is responsible for closing the client connections in this case and there is no need to throw
                     await SafeWriteAsync(serviceMessage);
