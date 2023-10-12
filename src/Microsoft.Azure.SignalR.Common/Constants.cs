@@ -46,6 +46,9 @@ namespace Microsoft.Azure.SignalR
             // Custom handshake timeout of SignalR Service
             public const int DefaultHandshakeTimeout = 15;
             public const int MaxCustomHandshakeTimeout = 30;
+
+            public static readonly TimeSpan DefaultServerHandshakeTimeout = TimeSpan.FromSeconds(15);
+            public static readonly TimeSpan DefaultClientHandshakeTimeout = TimeSpan.FromSeconds(15);
         }
 
         public static class ClaimType
@@ -102,6 +105,7 @@ namespace Microsoft.Azure.SignalR
             public const string AsrsHeaderPrefix = "X-ASRS-";
             public const string AsrsServerId = AsrsHeaderPrefix + "Server-Id";
             public const string AsrsMessageTracingId = AsrsHeaderPrefix + "Message-Tracing-Id";
+            public const string AsrsIngressReloadMigrate = AsrsHeaderPrefix + "Ingress-Reload-Migrate";
             public const string MicrosoftErrorCode = "x-ms-error-code";
         }
 

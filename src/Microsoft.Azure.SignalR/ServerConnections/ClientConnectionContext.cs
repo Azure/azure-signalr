@@ -21,8 +21,12 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Primitives;
+using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -53,38 +57,32 @@ namespace Microsoft.Azure.SignalR
                                               IHttpContextFeature,
                                               IConnectionStatFeature
     {
-        private const int WritingState = 1;
-
         private const int CompletedState = 2;
 
         private const int IdleState = 0;
+
+        private const int WritingState = 1;
 
         private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
             resumeWriterThreshold: 0,
             readerScheduler: PipeScheduler.ThreadPool,
             useSynchronizationContext: false);
 
-        private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-
         private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
 
+        private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
         private readonly object _heartbeatLock = new object();
+
+        private volatile bool _abortOnClose = true;
 
         private int _connectionState = IdleState;
 
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
-        private volatile bool _abortOnClose = true;
-
         private long _lastMessageReceivedAt;
 
         private long _receivedBytes;
-
-        public bool IsMigrated { get; }
-
-        public string Protocol { get; }
-
-        public string InstanceId { get; }
 
         // Send "Abort" to service on close except that Service asks SDK to close
         public bool AbortOnClose
@@ -93,33 +91,46 @@ namespace Microsoft.Azure.SignalR
             set => _abortOnClose = value;
         }
 
+        public IDuplexPipe Application { get; set; }
+
         public override string ConnectionId { get; set; }
 
         public override IFeatureCollection Features { get; }
 
-        public override IDictionary<object, object> Items { get; set; } = new ConnectionItems(new ConcurrentDictionary<object, object>());
-
-        public override IDuplexPipe Transport { get; set; }
-
-        public IDuplexPipe Application { get; set; }
-
-        public ClaimsPrincipal User { get; set; }
-
-        public Task LifetimeTask => _connectionEndTcs.Task;
-
-        public ServiceConnectionBase ServiceConnection { get; set; }
-
         public HttpContext HttpContext { get; set; }
 
-        public CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
+        public string InstanceId { get; }
+
+        public bool IsMigrated { get; }
+
+        public override IDictionary<object, object> Items { get; set; } = new ConnectionItems(new ConcurrentDictionary<object, object>());
 
         public DateTime LastMessageReceivedAtUtc => new DateTime(Volatile.Read(ref _lastMessageReceivedAt), DateTimeKind.Utc);
 
-        public DateTime StartedAtUtc { get; } = DateTime.UtcNow;
+        public Task LifetimeTask => _connectionEndTcs.Task;
+
+        public CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
+
+        public string Protocol { get; }
 
         public long ReceivedBytes => Volatile.Read(ref _receivedBytes);
 
-        public ClientConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
+        public ServiceConnectionBase ServiceConnection { get; set; }
+
+        public DateTime StartedAtUtc { get; } = DateTime.UtcNow;
+
+        public override IDuplexPipe Transport { get; set; }
+
+        public ClaimsPrincipal User { get; set; }
+
+        public ServiceConnectionWritter WritterDelegate { get; set; }
+
+        public ILogger Logger { get; set; } = NullLogger.Instance;
+
+        public ClientConnectionContext(OpenConnectionMessage serviceMessage,
+                                       Action<HttpContext> configureContext = null,
+                                       PipeOptions transportPipeOptions = null,
+                                       PipeOptions appPipeOptions = null)
         {
             ConnectionId = serviceMessage.ConnectionId;
             Protocol = serviceMessage.Protocol;
@@ -145,6 +156,21 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        /// <summary>
+        /// Cancel the outgoing process
+        /// </summary>
+        public void CancelOutgoing(int millisecondsDelay = 0)
+        {
+            if (millisecondsDelay <= 0)
+            {
+                _abortOutgoingCts.Cancel();
+            }
+            else
+            {
+                _abortOutgoingCts.CancelAfter(millisecondsDelay);
+            }
+        }
+
         public void CompleteIncoming()
         {
             // always set the connection state to completing when this method is called
@@ -158,6 +184,133 @@ namespace Microsoft.Azure.SignalR
             if (previousState != WritingState)
             {
                 Application.Output.Complete();
+            }
+        }
+
+        public void OnCompleted()
+        {
+            _connectionEndTcs.TrySetResult(null);
+        }
+
+        public void OnHeartbeat(Action<object> action, object state)
+        {
+            lock (_heartbeatLock)
+            {
+                if (_heartbeatHandlers == null)
+                {
+                    _heartbeatHandlers = new List<(Action<object> handler, object state)>();
+                }
+                _heartbeatHandlers.Add((action, state));
+            }
+        }
+
+        public async Task ProcessApplicationTaskAsync(ConnectionDelegate connectionDelegate)
+        {
+            Exception exception = null;
+
+            try
+            {
+                // Wait for the application task to complete
+                // application task can end when exception, or Context.Abort() from hub
+                await connectionDelegate(this);
+            }
+            catch (Exception ex)
+            {
+                // Capture the exception to communicate it to the transport (this isn't strictly required)
+                exception = ex;
+                throw;
+            }
+            finally
+            {
+                // Close the transport side since the application is no longer running
+                Transport.Output.Complete(exception);
+                Transport.Input.Complete();
+            }
+        }
+
+        public async Task ProcessOutgoingMessagesAsync()
+        {
+            try
+            {
+                if (IsMigrated)
+                {
+                    using var timeoutToken = new CancellationTokenSource(Constants.Periods.DefaultClientHandshakeTimeout);
+                    using var source = CancellationTokenSource.CreateLinkedTokenSource(OutgoingAborted, timeoutToken.Token);
+
+                    // A handshake response is not expected to be given
+                    // if the connection was migrated from another server,
+                    // since the connection hasn't been `dropped` from the client point of view.
+                    if (!await SkipHandshakeResponse(source.Token))
+                    {
+                        return;
+                    }
+                }
+
+                while (true)
+                {
+                    var result = await Application.Input.ReadAsync(OutgoingAborted);
+
+                    if (result.IsCanceled)
+                    {
+                        break;
+                    }
+
+                    var buffer = result.Buffer;
+
+                    if (!buffer.IsEmpty)
+                    {
+                        try
+                        {
+                            // Forward the message to the service
+                            await WritterDelegate(new ConnectionDataMessage(ConnectionId, buffer));
+                        }
+                        catch (ServiceConnectionNotActiveException)
+                        {
+                            // Service connection not active means the transport layer for this connection is closed, no need to continue processing
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.ErrorSendingMessage(Logger, ex);
+                        }
+                    }
+
+                    if (result.IsCompleted)
+                    {
+                        // This connection ended (the application itself shut down) we should remove it from the list of connections
+                        break;
+                    }
+
+                    Application.Input.AdvanceTo(buffer.End);
+                }
+            }
+            catch (Exception ex)
+            {
+                // The exception means application fail to process input anymore
+                // Cancel any pending flush so that we can quit and perform disconnect
+                // Here is abort close and WaitOnApplicationTask will send close message to notify client to disconnect
+                Log.SendLoopStopped(Logger, ConnectionId, ex);
+                Application.Output.CancelPendingFlush();
+            }
+            finally
+            {
+                Application.Input.Complete();
+            }
+        }
+
+        public void TickHeartbeat()
+        {
+            lock (_heartbeatLock)
+            {
+                if (_heartbeatHandlers == null)
+                {
+                    return;
+                }
+
+                foreach (var (handler, state) in _heartbeatHandlers)
+                {
+                    handler(state);
+                }
             }
         }
 
@@ -190,54 +343,6 @@ namespace Microsoft.Azure.SignalR
                 {
                     Application.Output.Complete();
                 }
-            }
-        }
-
-        public void OnCompleted()
-        {
-            _connectionEndTcs.TrySetResult(null);
-        }
-
-        public void OnHeartbeat(Action<object> action, object state)
-        {
-            lock (_heartbeatLock)
-            {
-                if (_heartbeatHandlers == null)
-                {
-                    _heartbeatHandlers = new List<(Action<object> handler, object state)>();
-                }
-                _heartbeatHandlers.Add((action, state));
-            }
-        }
-
-        public void TickHeartbeat()
-        {
-            lock (_heartbeatLock)
-            {
-                if (_heartbeatHandlers == null)
-                {
-                    return;
-                }
-
-                foreach (var (handler, state) in _heartbeatHandlers)
-                {
-                    handler(state);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Cancel the outgoing process
-        /// </summary>
-        public void CancelOutgoing(int millisecondsDelay = 0)
-        {
-            if (millisecondsDelay <= 0)
-            {
-                _abortOutgoingCts.Cancel();
-            }
-            else
-            {
-                _abortOutgoingCts.CancelAfter(millisecondsDelay);
             }
         }
 
@@ -307,28 +412,6 @@ namespace Microsoft.Azure.SignalR
             return features;
         }
 
-        private async Task WriteMessageAsyncCore(ReadOnlySequence<byte> payload)
-        {
-            if (payload.IsSingleSegment)
-            {
-                // Write the raw connection payload to the pipe let the upstream handle it
-                await Application.Output.WriteAsync(payload.First);
-            }
-            else
-            {
-                var position = payload.Start;
-                while (payload.TryGet(ref position, out var memory))
-                {
-                    var result = await Application.Output.WriteAsync(memory);
-                    if (result.IsCanceled)
-                    {
-                        // IsCanceled when CancelPendingFlush is called
-                        break;
-                    }
-                }
-            }
-        }
-
         private HttpContext BuildHttpContext(OpenConnectionMessage message)
         {
             var httpContextFeatures = new FeatureCollection();
@@ -361,6 +444,65 @@ namespace Microsoft.Azure.SignalR
                 return instanceId;
             }
             return string.Empty;
+        }
+
+        private async Task<bool> SkipHandshakeResponse(CancellationToken token)
+        {
+            try
+            {
+                while (true)
+                {
+                    var result = await Application.Input.ReadAsync(token);
+                    if (result.IsCanceled || token.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+
+                    var buffer = result.Buffer;
+                    if (buffer.IsEmpty)
+                    {
+                        continue;
+                    }
+
+                    if (SignalRProtocol.HandshakeProtocol.TryParseResponseMessage(ref buffer, out var message))
+                    {
+                        Application.Input.AdvanceTo(buffer.Start);
+                        return true;
+                    }
+
+                    if (result.IsCompleted)
+                    {
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorSkippingHandshakeResponse(Logger, ex);
+            }
+            return false;
+        }
+
+        private async Task WriteMessageAsyncCore(ReadOnlySequence<byte> payload)
+        {
+            if (payload.IsSingleSegment)
+            {
+                // Write the raw connection payload to the pipe let the upstream handle it
+                await Application.Output.WriteAsync(payload.First);
+            }
+            else
+            {
+                var position = payload.Start;
+                while (payload.TryGet(ref position, out var memory))
+                {
+                    var result = await Application.Output.WriteAsync(memory);
+                    if (result.IsCanceled)
+                    {
+                        // IsCanceled when CancelPendingFlush is called
+                        break;
+                    }
+                }
+            }
         }
     }
 }

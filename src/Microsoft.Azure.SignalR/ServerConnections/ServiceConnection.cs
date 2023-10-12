@@ -5,15 +5,12 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
-using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -114,8 +111,23 @@ namespace Microsoft.Azure.SignalR
                 });
         }
 
+        protected Task OnIngressReloadAsync()
+        {
+            if (!_clientConnectionManager.ClientConnections.TryGetValue(ConnectionId, out var connection))
+            {
+                return Task.CompletedTask;
+            }
+
+            return Task.CompletedTask;
+        }
+
         protected override Task OnClientConnectedAsync(OpenConnectionMessage message)
         {
+            if (message.Headers.TryGetValue(Constants.Headers.AsrsIngressReloadMigrate, out var _))
+            {
+                return OnIngressReloadAsync();
+            }
+
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
             connection.ServiceConnection = this;
 
@@ -229,11 +241,14 @@ namespace Microsoft.Azure.SignalR
         {
             try
             {
+                connection.WritterDelegate = WriteAsync;
+                connection.Logger = Logger;
+
                 // Writing from the application to the service
-                var transport = ProcessOutgoingMessagesAsync(connection, connection.OutgoingAborted);
+                var transport = connection.ProcessOutgoingMessagesAsync();
 
                 // Waiting for the application to shutdown so we can clean up the connection
-                var app = ProcessApplicationTaskAsyncCore(connection);
+                var app = connection.ProcessApplicationTaskAsync(_connectionDelegate);
 
                 var task = await Task.WhenAny(app, transport);
 
@@ -303,141 +318,10 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task<bool> SkipHandshakeResponse(ClientConnectionContext connection, CancellationToken token)
-        {
-            try
-            {
-                while (true)
-                {
-                    var result = await connection.Application.Input.ReadAsync(token);
-                    if (result.IsCanceled || token.IsCancellationRequested)
-                    {
-                        return false;
-                    }
-
-                    var buffer = result.Buffer;
-                    if (buffer.IsEmpty)
-                    {
-                        continue;
-                    }
-
-                    if (SignalRProtocol.HandshakeProtocol.TryParseResponseMessage(ref buffer, out var message))
-                    {
-                        connection.Application.Input.AdvanceTo(buffer.Start);
-                        return true;
-                    }
-
-                    if (result.IsCompleted)
-                    {
-                        return false;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.ErrorSkippingHandshakeResponse(Logger, ex);
-            }
-            return false;
-        }
-
-        private async Task ProcessOutgoingMessagesAsync(ClientConnectionContext connection, CancellationToken token = default)
-        {
-            try
-            {
-                if (connection.IsMigrated)
-                {
-                    using var timeoutToken = new CancellationTokenSource(DefaultHandshakeTimeout);
-                    using var source = CancellationTokenSource.CreateLinkedTokenSource(token, timeoutToken.Token);
-
-                    // A handshake response is not expected to be given
-                    // if the connection was migrated from another server,
-                    // since the connection hasn't been `dropped` from the client point of view.
-                    if (!await SkipHandshakeResponse(connection, source.Token))
-                    {
-                        return;
-                    }
-                }
-
-                while (true)
-                {
-                    var result = await connection.Application.Input.ReadAsync(token);
-
-                    if (result.IsCanceled)
-                    {
-                        break;
-                    }
-
-                    var buffer = result.Buffer;
-
-                    if (!buffer.IsEmpty)
-                    {
-                        try
-                        {
-                            // Forward the message to the service
-                            await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, buffer));
-                        }
-                        catch (ServiceConnectionNotActiveException)
-                        {
-                            // Service connection not active means the transport layer for this connection is closed, no need to continue processing
-                            break;
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.ErrorSendingMessage(Logger, ex);
-                        }
-                    }
-
-                    if (result.IsCompleted)
-                    {
-                        // This connection ended (the application itself shut down) we should remove it from the list of connections
-                        break;
-                    }
-
-                    connection.Application.Input.AdvanceTo(buffer.End);
-                }
-            }
-            catch (Exception ex)
-            {
-                // The exception means application fail to process input anymore
-                // Cancel any pending flush so that we can quit and perform disconnect
-                // Here is abort close and WaitOnApplicationTask will send close message to notify client to disconnect
-                Log.SendLoopStopped(Logger, connection.ConnectionId, ex);
-                connection.Application.Output.CancelPendingFlush();
-            }
-            finally
-            {
-                connection.Application.Input.Complete();
-            }
-        }
-
         private void AddClientConnection(ClientConnectionContext connection, OpenConnectionMessage message)
         {
             _clientConnectionManager.TryAddClientConnection(connection);
             _connectionIds.TryAdd(connection.ConnectionId, connection.InstanceId);
-        }
-
-        private async Task ProcessApplicationTaskAsyncCore(ClientConnectionContext connection)
-        {
-            Exception exception = null;
-
-            try
-            {
-                // Wait for the application task to complete
-                // application task can end when exception, or Context.Abort() from hub
-                await _connectionDelegate(connection);
-            }
-            catch (Exception ex)
-            {
-                // Capture the exception to communicate it to the transport (this isn't strictly required)
-                exception = ex;
-                throw;
-            }
-            finally
-            {
-                // Close the transport side since the application is no longer running
-                connection.Transport.Output.Complete(exception);
-                connection.Transport.Input.Complete();
-            }
         }
 
         private async Task PerformDisconnectAsyncCore(string connectionId)
