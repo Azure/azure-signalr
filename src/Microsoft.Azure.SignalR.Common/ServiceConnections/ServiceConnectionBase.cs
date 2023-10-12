@@ -17,8 +17,6 @@ namespace Microsoft.Azure.SignalR
 {
     internal abstract class ServiceConnectionBase : IServiceConnection
     {
-        protected static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
-
         // Service ping rate is 5 sec to let server know service status. Set timeout for 30 sec for some space.
         private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(30);
 
@@ -389,7 +387,7 @@ namespace Microsoft.Azure.SignalR
             using var cts = new CancellationTokenSource();
             if (!Debugger.IsAttached)
             {
-                cts.CancelAfter(DefaultHandshakeTimeout);
+                cts.CancelAfter(Constants.Periods.DefaultServerHandshakeTimeout);
             }
 
             if (await ReceiveHandshakeResponseAsync(context.Transport.Input, cts.Token))
