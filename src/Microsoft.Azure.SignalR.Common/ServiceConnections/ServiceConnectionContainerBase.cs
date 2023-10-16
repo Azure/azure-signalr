@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,6 +54,8 @@ namespace Microsoft.Azure.SignalR
         private volatile Tuple<string, long> _serversTagContext = DefaultServersTagContext;
         private volatile bool _hasClients;
         private volatile bool _terminated = false;
+
+        private volatile IServiceConnection _inUseConnection;
 
         protected ILogger Logger { get; }
 
@@ -140,7 +141,7 @@ namespace Microsoft.Azure.SignalR
             ConnectionStatusChanged += OnStatusChanged;
 
             _statusPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.ServiceStatus, WriteServiceStatusPingAsync, Constants.Periods.DefaultStatusPingInterval, Constants.Periods.DefaultStatusPingInterval);
-            
+
             // when server connection count is specified to 0, the app server only handle negotiate requests
             if (initial.Count > 0)
             {
@@ -231,7 +232,7 @@ namespace Microsoft.Azure.SignalR
 
         public virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
-            return WriteToScopedOrRandomAvailableConnection(serviceMessage);
+            return WriteToScopedOrFixedAvailableConnection(serviceMessage);
         }
 
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
@@ -248,7 +249,7 @@ namespace Microsoft.Azure.SignalR
             // whereas ackable ones complete upon full roundtrip of the message and the ack (or timeout). 
             // Therefore sending them over different connections creates a possibility for processing them out of original order.
             // By sending both message types over the same connection we ensure that they are sent (and processed) in their original order.
-            await WriteToScopedOrRandomAvailableConnection(serviceMessage);
+            await WriteToScopedOrFixedAvailableConnection(serviceMessage);
 
             var status = await task;
             switch (status)
@@ -484,7 +485,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task WriteToScopedOrRandomAvailableConnection(ServiceMessage serviceMessage)
+        private async Task WriteToScopedOrFixedAvailableConnection(ServiceMessage serviceMessage)
         {
             // ServiceConnections can change the collection underneath so we make a local copy and pass it along
             var currentConnections = ServiceConnections;
@@ -498,7 +499,7 @@ namespace Microsoft.Azure.SignalR
                 IServiceConnection connection = null;
                 connectionWeakReference?.TryGetTarget(out connection);
 
-                var connectionUsed = await WriteWithRetry(serviceMessage, connection, currentConnections);
+                var connectionUsed = await WriteWithRetry(serviceMessage, connection, currentConnections, IterateConnectionsInRandomOrder);
 
                 // Todo:
                 // There is currently no synchronization when persisting selected connection in ClientConnectionScope.
@@ -515,22 +516,21 @@ namespace Microsoft.Azure.SignalR
             }
             else
             {
-                await WriteWithRetry(serviceMessage, null, currentConnections);
+                var connectionUsed = await WriteWithRetry(serviceMessage, _inUseConnection, currentConnections, IterateConnectionsInFixedOrder);
+                // Similarly, here is currently no synchronization when persisting selected connection in _inUseConnection.
+
+                if (connectionUsed != _inUseConnection)
+                {
+                    _inUseConnection = connectionUsed;
+                }
             }
         }
 
-        private async Task<IServiceConnection> WriteWithRetry(ServiceMessage serviceMessage, IServiceConnection connection, List<IServiceConnection> currentConnections)
+        private async Task<IServiceConnection> WriteWithRetry(ServiceMessage serviceMessage, IServiceConnection connection, List<IServiceConnection> currentConnections, Func<List<IServiceConnection>, IEnumerable<IServiceConnection>> iterateConnections)
         {
             // go through all the connections, it can be useful when one of the remote service instances is down
-            var count = currentConnections.Count;
-            var initial = StaticRandom.Next(-count, count);
-            var maxRetry = count;
-            var retry = 0;
-            var index = (initial & int.MaxValue) % count;
-            var direction = initial > 0 ? 1 : count - 1;
-
-            // ensure a full sweep starting with the connection flowed with the async context
-            while (retry <= maxRetry)
+            IEnumerator<IServiceConnection> iterator = null;
+            while (true)
             {
                 if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
                 {
@@ -542,22 +542,32 @@ namespace Microsoft.Azure.SignalR
                     }
                     catch (ServiceConnectionNotActiveException)
                     {
-                        if (retry == maxRetry - 1)
-                        {
-                            throw;
-                        }
                     }
                 }
+                iterator ??= iterateConnections(currentConnections).GetEnumerator();
+                connection = iterator.MoveNext() ? iterator.Current : throw new ServiceConnectionNotActiveException();
+            }
+        }
 
-                // try current index instead
-                connection = currentConnections[index];
+        private static IEnumerable<IServiceConnection> IterateConnectionsInRandomOrder(List<IServiceConnection> connections)
+        {
+            var count = connections.Count;
+            var initial = StaticRandom.Next(-count, count);
+            var maxRetry = count;
+            var retry = 0;
+            var index = (initial & int.MaxValue) % count;
+            var direction = initial > 0 ? 1 : count - 1;
+
+            while (retry <= maxRetry)
+            {
+                yield return connections[index];
 
                 retry++;
                 index = (index + direction) % count;
             }
-
-            throw new ServiceConnectionNotActiveException();
         }
+
+        private static IEnumerable<IServiceConnection> IterateConnectionsInFixedOrder(List<IServiceConnection> connections) => connections;
 
         private IEnumerable<IServiceConnection> CreateFixedServiceConnection(int count)
         {
