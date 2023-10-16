@@ -62,9 +62,11 @@ Basically the process is similar and the major different is that service underst
 
 ### Transient Mode(TODO)
 
+## Limitations
+
 > NOTES
 > 
 > * Service cached pending invocations for at most __10 minutes__ for memory concerns and will notify server when timeout.
 > * Serverless is __NOT__ supporeted in the first stage.
 > * ASPNET SignalR is __NOT__ supported.
-> * Sharding is __NOT__ supported. Please use [Geo-Replication](https://learn.microsoft.com/azure/azure-signalr/howto-enable-geo-replication) for combined client invocation and large scale scenarios.
+> * Sharding is __NOT__ fully supported yet. Please use [Geo-Replication](https://learn.microsoft.com/azure/azure-signalr/howto-enable-geo-replication) for combined client invocation and large scale scenarios. Also see [this](https://github.com/Azure/azure-signalr/pull/1828) for planning.

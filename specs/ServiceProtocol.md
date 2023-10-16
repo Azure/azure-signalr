@@ -114,6 +114,7 @@ EMPTY | EMPTY | Both | Keep server connection alive ping
 `offline` | `finack` | Service -> Server | Response of received `offline` request
 `servers` | EMPTY | Server -> Service | Request to get all server ids connect to the service 
 `servers` | `<timestamp>:<server1>;<server2>` | Service -> Server | Response of `servers` ping of all server ids
+`echo` | `<identify>` | Service <-> Server | Identify the latency of server connection, available from SDK 1.21.6.
 
 ## Message Encodings
 
