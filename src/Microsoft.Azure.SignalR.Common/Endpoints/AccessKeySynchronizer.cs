@@ -88,11 +88,11 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 await key.UpdateAccessKeyAsync();
-                Log.SucceedToAuthorizeAccessKey(logger, key.Endpoint.AbsoluteUri);
+                Log.SucceedToAuthorizeAccessKey(logger, key.AuthorizeUrl);
             }
             catch (Exception e)
             {
-                Log.FailedToAuthorizeAccessKey(logger, key.Endpoint.AbsoluteUri, e);
+                Log.FailedToAuthorizeAccessKey(logger, key.AuthorizeUrl, e);
             }
         }
 
