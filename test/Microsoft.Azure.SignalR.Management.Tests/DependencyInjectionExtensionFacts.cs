@@ -278,7 +278,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                         o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
                         o.HttpClientTimeout = TimeSpan.FromSeconds(1);
                     })
-                    .ConfigureServices(services => services.AddHttpClient(Options.DefaultName).AddHttpMessageHandler(sp => new WaitInfinitelyHandler()))
+                    .ConfigureServices(services => services.AddHttpClient(Constants.HttpClientNames.Resilient).AddHttpMessageHandler(sp => new WaitInfinitelyHandler()))
                     .BuildServiceManager();
                 var requestStartTime = DateTime.UtcNow;
                 var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", default);

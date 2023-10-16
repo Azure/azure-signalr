@@ -44,7 +44,7 @@ internal class RetryHttpMessageHandler : DelegatingHandler
                     return response;
                 }
             }
-            catch (OperationCanceledException operationCanceledException) when (!cancellationToken.IsCancellationRequested && operationCanceledException.InnerException is TimeoutException)
+            catch (TaskCanceledException operationCanceledException) when (!cancellationToken.IsCancellationRequested && operationCanceledException.InnerException is TimeoutException)
             {
                 // Thrown by our timeout handler
                 ex = operationCanceledException;
