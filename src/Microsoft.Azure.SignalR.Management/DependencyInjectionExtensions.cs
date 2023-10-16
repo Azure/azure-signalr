@@ -156,15 +156,52 @@ namespace Microsoft.Azure.SignalR.Management
             return services.Configure<ServiceManagerOptions>(o => o.ProductInfo ??= productInfo);
         }
 
-        private static IServiceCollection AddRestClientFactory(this IServiceCollection services) => services
-            .AddHttpClient(Options.DefaultName, (sp, client) => client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout)
-            .ConfigurePrimaryHttpMessageHandler(sp => new HttpClientHandler() { Proxy = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.Proxy }).Services
-            .AddSingleton(sp =>
+        private static IServiceCollection AddRestClientFactory(this IServiceCollection services)
+        {
+            // For AAD, health check.
+            services
+                .AddHttpClient(Options.DefaultName, (sp, client) => client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout)
+                .ConfigurePrimaryHttpMessageHandler(ConfigureProxy);
+
+            // For other data plane APIs.
+            services.AddSingleton<IBackOffPolicy>(sp =>
+            {
+                var options = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value;
+                var retryOptions = options.RetryOptions;
+                return retryOptions == null
+                    ? new DummyBackOffPolicy()
+                    : retryOptions.Mode switch
+                    {
+                        RetryMode.Fixed => ActivatorUtilities.CreateInstance<FixedBackOffPolicy>(sp),
+                        RetryMode.Exponential => ActivatorUtilities.CreateInstance<ExponentialBackOffPolicy>(sp),
+                        _ => throw new NotSupportedException($"Retry mode {retryOptions.Mode} is not supported.")
+                    };
+            });
+            services
+                .AddHttpClient(Constants.HttpClientNames.Resilient, (sp, client) =>
+                {
+                    var options = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value;
+                    if (options.RetryOptions == null)
+                    {
+                        client.Timeout = options.HttpClientTimeout;
+                    }
+                    // Else the timeout is enforced by TimeoutHttpMessageHandler.
+                })
+                .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
+                .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp))
+                .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<TimeoutHttpMessageHandler>(sp));
+
+            services.AddSingleton(sp =>
             {
                 var options = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value;
                 var productInfo = options.ProductInfo;
                 var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
                 return new RestClientFactory(productInfo, httpClientFactory);
             });
+
+            return services;
+
+            static HttpMessageHandler ConfigureProxy(IServiceProvider sp) => new HttpClientHandler() { Proxy = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.Proxy };
+        }
     }
 }
