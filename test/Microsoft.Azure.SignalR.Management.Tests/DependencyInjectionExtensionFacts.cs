@@ -278,13 +278,23 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                         o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
                         o.HttpClientTimeout = TimeSpan.FromSeconds(1);
                     })
-                    .ConfigureServices(services => services.AddHttpClient(Constants.HttpClientNames.Resilient).AddHttpMessageHandler(sp => new WaitInfinitelyHandler()))
+                    .ConfigureServices(services =>
+                    {
+                        services.AddHttpClient(Constants.HttpClientNames.MessageResilient).AddHttpMessageHandler(sp => new WaitInfinitelyHandler());
+                        services.AddHttpClient(Constants.HttpClientNames.Resilient).AddHttpMessageHandler(sp => new WaitInfinitelyHandler());
+                    })
                     .BuildServiceManager();
                 var requestStartTime = DateTime.UtcNow;
                 var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", default);
-                await Assert.ThrowsAsync<TaskCanceledException>(() => serviceHubContext.Clients.All.SendCoreAsync("method", null));
+                await TestCoreAsync(() => serviceHubContext.Clients.All.SendCoreAsync("method", null));
+                await TestCoreAsync(() => serviceHubContext.ClientManager.CloseConnectionAsync("connectionId"));
+            }
+
+            static async Task TestCoreAsync(Func<Task> testAction)
+            {
+                var requestStartTime = DateTime.UtcNow;
+                await Assert.ThrowsAsync<TaskCanceledException>(testAction);
                 var elapsed = DateTime.UtcNow - requestStartTime;
-                _outputHelper.WriteLine($"Request elapsed time: {elapsed.Ticks}");
                 // Don't know why, the elapsed time sometimes is shorter than 1 second, but it should be close to 1 second.
                 Assert.True(elapsed >= TimeSpan.FromSeconds(0.8));
                 Assert.True(elapsed < TimeSpan.FromSeconds(1.2));

@@ -117,6 +117,7 @@ namespace Microsoft.Azure.SignalR
         public static class HttpClientNames
         {
             public const string Resilient = "Resilient";
+            public const string MessageResilient = "MessageResilient";
         }
     }
 }

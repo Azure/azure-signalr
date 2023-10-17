@@ -100,7 +100,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
 
             var api = await _restApiProvider.GetBroadcastEndpointAsync(_appName, _hubName, excluded: excludedConnectionIds);
-            await _restClient.SendWithRetryAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
+            await _restClient.SendMessageWithRetryAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
         }
 
         public override async Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
 
             var api = await _restApiProvider.GetSendToConnectionEndpointAsync(_appName, _hubName, connectionId);
-            await _restClient.SendWithRetryAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
+            await _restClient.SendMessageWithRetryAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
         }
 
         public override async Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
 
             var api = await _restApiProvider.GetSendToGroupEndpointAsync(_appName, _hubName, groupName, excluded: excludedConnectionIds);
-            await _restClient.SendWithRetryAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
+            await _restClient.SendMessageWithRetryAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
         }
 
         public override async Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
 
             var api = await _restApiProvider.GetSendToUserEndpointAsync(_appName, _hubName, userId);
-            await _restClient.SendWithRetryAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
+            await _restClient.SendMessageWithRetryAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
         }
 
         public override async Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args, CancellationToken cancellationToken = default)

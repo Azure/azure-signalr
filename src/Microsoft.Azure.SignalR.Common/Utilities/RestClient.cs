@@ -81,6 +81,18 @@ namespace Microsoft.Azure.SignalR
             return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, productInfo, methodName, args, handleExpectedResponse == null ? null : response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
         }
 
+        public Task SendMessageWithRetryAsync(
+            RestApiEndpoint api,
+            HttpMethod httpMethod,
+            string productInfo,
+            string? methodName = null,
+            object[]? args = null,
+            Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
+            CancellationToken cancellationToken = default)
+        {
+            return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, productInfo, methodName, args, handleExpectedResponse == null ? null : response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
+        }
+
         private async Task ThrowExceptionOnResponseFailureAsync(HttpResponseMessage response)
         {
             if (response.IsSuccessStatusCode)

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 using System;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -188,8 +189,13 @@ namespace Microsoft.Azure.SignalR.Management
                     // Else the timeout is enforced by TimeoutHttpMessageHandler.
                 })
                 .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
-                .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp))
+                .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorForNonMessageApi(code)))
                 .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<TimeoutHttpMessageHandler>(sp));
+
+            services
+                .AddHttpClient(Constants.HttpClientNames.MessageResilient, (sp, client) => client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout)
+                .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
+                .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorAndIdempotentForMessageApi(code)));
 
             services.AddSingleton(sp =>
             {
@@ -202,6 +208,14 @@ namespace Microsoft.Azure.SignalR.Management
             return services;
 
             static HttpMessageHandler ConfigureProxy(IServiceProvider sp) => new HttpClientHandler() { Proxy = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.Proxy };
+
+            static bool IsTransientErrorAndIdempotentForMessageApi(HttpStatusCode code) =>
+                // Runtime returns 500 for timeout errors too, to avoid duplicate message, we exclude 500 here.
+                code > HttpStatusCode.InternalServerError;
+
+            static bool IsTransientErrorForNonMessageApi(HttpStatusCode code) =>
+                code >= HttpStatusCode.InternalServerError ||
+                code == HttpStatusCode.RequestTimeout;
         }
     }
 }

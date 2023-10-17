@@ -115,7 +115,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .WithLoggerFactory(_loggerFactory)
                 .ConfigureServices(services =>
                 {
-                    services.AddHttpClient(Constants.HttpClientNames.Resilient).AddHttpMessageHandler(() => new TestRootHandler((message, cancellationToken) =>
+                    services.AddHttpClient(Constants.HttpClientNames.MessageResilient).AddHttpMessageHandler(() => new TestRootHandler((message, cancellationToken) =>
                     {
                         var actualBody = message.Content.ReadAsStringAsync().Result;
 
