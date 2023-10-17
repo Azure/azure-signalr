@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -10,9 +11,9 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly IEndpointRouter _inner;
 
-        public EndpointRouterDecorator(IEndpointRouter router = null)
+        public EndpointRouterDecorator(IEndpointRouter router = null, IOptions<ServiceOptions> options = null)
         {
-            _inner = router ?? new DefaultEndpointRouter(null);
+            _inner = router ?? new DefaultEndpointRouter(options);
         }
 
         public virtual ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
