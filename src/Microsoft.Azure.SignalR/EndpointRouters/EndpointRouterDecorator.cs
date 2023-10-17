@@ -11,6 +11,11 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly IEndpointRouter _inner;
 
+        public EndpointRouterDecorator(IEndpointRouter router = null)
+        {
+            _inner = router ?? new DefaultEndpointRouter(null);
+        }
+
         public EndpointRouterDecorator(IEndpointRouter router = null, IOptions<ServiceOptions> options = null)
         {
             _inner = router ?? new DefaultEndpointRouter(options);
