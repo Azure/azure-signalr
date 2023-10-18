@@ -23,6 +23,7 @@ namespace Microsoft.Azure.SignalR
             public static readonly string ConnectionStringSecondaryKeyPrefix = $"{ConnectionStringSecondaryKey}:";
         }
 
+        public const string AsrsMigrateIngress = "Asrs-Migrate-Ingress";
         public const string AsrsMigrateFrom = "Asrs-Migrate-From";
         public const string AsrsMigrateTo = "Asrs-Migrate-To";
 
@@ -42,6 +43,8 @@ namespace Microsoft.Azure.SignalR
             public static readonly TimeSpan DefaultServersPingInterval = TimeSpan.FromSeconds(5);
             // Depends on DefaultStatusPingInterval, make 1/2 to fast check.
             public static readonly TimeSpan DefaultCloseDelayInterval = TimeSpan.FromSeconds(5);
+
+            public static readonly TimeSpan DefaultServerHandshakeTimeout = TimeSpan.FromSeconds(15);
 
             // Custom handshake timeout of SignalR Service
             public const int DefaultHandshakeTimeout = 15;

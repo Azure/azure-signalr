@@ -7,6 +7,19 @@ using System.ComponentModel;
 
 namespace Microsoft.Azure.SignalR.Protocol
 {
+    public class MigrateConnectionWithAckMessage : ExtensibleServiceMessage, IAckableMessage
+    {
+        /// <summary>
+        /// Gets or sets the ack Id.
+        /// </summary>
+        public int AckId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the connection Id.
+        /// </summary>
+        public string ConnectionId { get; set; }
+    }
+
     public abstract class CloseWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
     {
         /// <summary>

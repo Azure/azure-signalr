@@ -68,6 +68,8 @@ namespace Microsoft.Azure.SignalR
 
         private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
 
+        private volatile CancellationTokenSource _pauseOutgoingCts = new CancellationTokenSource();
+
         private readonly object _heartbeatLock = new object();
 
         private int _connectionState = IdleState;
@@ -107,11 +109,15 @@ namespace Microsoft.Azure.SignalR
 
         public Task LifetimeTask => _connectionEndTcs.Task;
 
+        public Task ApplicationTask { get; private set; }
+
         public ServiceConnectionBase ServiceConnection { get; set; }
 
         public HttpContext HttpContext { get; set; }
 
         public CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
+
+        public CancellationToken OutgoingPaused => _pauseOutgoingCts.Token;
 
         public DateTime LastMessageReceivedAtUtc => new DateTime(Volatile.Read(ref _lastMessageReceivedAt), DateTimeKind.Utc);
 
@@ -159,6 +165,12 @@ namespace Microsoft.Azure.SignalR
             {
                 Application.Output.Complete();
             }
+        }
+
+        public Task ProcessApplicationTaskAsync(ConnectionDelegate connectionDelegate)
+        {
+            ApplicationTask ??= ProcessApplicationTaskAsyncInner(connectionDelegate);
+            return ApplicationTask;
         }
 
         public async Task WriteMessageAsync(ReadOnlySequence<byte> payload)
@@ -241,6 +253,12 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        public void PauseOutgoing()
+        {
+            _pauseOutgoingCts.Cancel();
+            _pauseOutgoingCts = new CancellationTokenSource();
+        }
+
         internal static bool TryGetRemoteIpAddress(IHeaderDictionary headers, out IPAddress address)
         {
             var forwardedFor = headers.GetCommaSeparatedValues("X-Forwarded-For");
@@ -285,6 +303,30 @@ namespace Microsoft.Azure.SignalR
                 {
                     // skip invalid culture, normal won't hit.
                 }
+            }
+        }
+
+        private async Task ProcessApplicationTaskAsyncInner(ConnectionDelegate connectionDelegate)
+        {
+            Exception exception = null;
+
+            try
+            {
+                // Wait for the application task to complete
+                // application task can end when exception, or Context.Abort() from hub
+                await connectionDelegate(this);
+            }
+            catch (Exception ex)
+            {
+                // Capture the exception to communicate it to the transport (this isn't strictly required)
+                exception = ex;
+                throw;
+            }
+            finally
+            {
+                // Close the transport side since the application is no longer running
+                Transport.Output.Complete(exception);
+                Transport.Input.Complete();
             }
         }
 

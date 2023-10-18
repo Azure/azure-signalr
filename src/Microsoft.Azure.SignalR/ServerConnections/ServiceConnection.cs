@@ -33,9 +33,9 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IClientConnectionFactory _clientConnectionFactory;
 
-        private readonly int _closeTimeOutMilliseconds;
-
         private readonly IClientConnectionManager _clientConnectionManager;
+
+        private readonly int _closeTimeOutMilliseconds;
 
         private readonly ConcurrentDictionary<string, string> _connectionIds =
             new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
@@ -48,6 +48,8 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientInvocationManager _clientInvocationManager;
 
         private readonly AckHandler _ackHandler;
+
+        private bool _isDiagnosticClient = false;
 
         public Action<HttpContext> ConfigureContext { get; set; }
 
@@ -118,8 +120,58 @@ namespace Microsoft.Azure.SignalR
                 });
         }
 
+        protected async Task OnClientMigratedAsync(OpenConnectionMessage message, CancellationToken ctoken = default)
+        {
+            if (!_clientConnectionManager.ClientConnections.TryGetValue(message.ConnectionId, out var connection))
+            {
+                return;
+            }
+
+            // check if the current service connection has already been switched.
+            if (string.Equals(ConnectionId, connection.ServiceConnection.ConnectionId))
+            {
+                // TODO this should not happen
+                return;
+            }
+
+
+            // pause outgoing message task
+            connection.PauseOutgoing();
+            await connection.LifetimeTask;
+
+            // write ack message to runtime.
+            var task = _ackHandler.CreateAck(out var ackId, ctoken);
+            var ackableMessage = new MigrateConnectionWithAckMessage()
+            {
+                ConnectionId = connection.ServiceConnection.ConnectionId,
+                AckId = ackId,
+            };
+            await connection.ServiceConnection.WriteAsync(ackableMessage);
+
+            // wait for ack message
+            var status = await task;
+            if (AckHandler.HandleAckStatus(ackableMessage, status))
+            {
+                // switch to current service connection
+                connection.ServiceConnection = this;
+            }
+
+            // restart client connection task
+            using (new ClientConnectionScope(endpoint: HubEndpoint, outboundConnection: this, isDiagnosticClient: _isDiagnosticClient))
+            {
+                _ = ProcessClientConnectionAsync(connection);
+            }
+
+            return;
+        }
+
         protected override Task OnClientConnectedAsync(OpenConnectionMessage message)
         {
+            if (message.Headers.TryGetValue(Constants.AsrsMigrateIngress, out var _))
+            {
+                return OnClientMigratedAsync(message);
+            }
+
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
             connection.ServiceConnection = this;
 
@@ -130,14 +182,13 @@ namespace Microsoft.Azure.SignalR
 
             AddClientConnection(connection, message);
 
-            bool isDiagnosticClient = false;
             message.Headers.TryGetValue(Constants.AsrsIsDiagnosticClient, out var isDiagnosticClientValue);
             if (!StringValues.IsNullOrEmpty(isDiagnosticClientValue))
             {
-                isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
+                _isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
             }
 
-            using (new ClientConnectionScope(endpoint: HubEndpoint, outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
+            using (new ClientConnectionScope(endpoint: HubEndpoint, outboundConnection: this, isDiagnosticClient: _isDiagnosticClient))
             {
                 _ = ProcessClientConnectionAsync(connection);
             }
@@ -229,21 +280,27 @@ namespace Microsoft.Azure.SignalR
             return base.OnPingMessageAsync(pingMessage);
         }
 
-        protected override Task OnClientMigratedAsync(MigrateConnectionMessage migrateConnectionMessage)
+        protected override async Task OnClientMigratedAsync(MigrateConnectionMessage migrateConnectionMessage)
         {
-            // TODO
-            return Task.CompletedTask;
+            // pause client connection outgoing task.
+            if (_clientConnectionManager.ClientConnections.TryGetValue(migrateConnectionMessage.ConnectionId, out var connection))
+            {
+                connection.PauseOutgoing();
+            }
+
+            await connection.LifetimeTask;
+
+            await connection.ServiceConnection.WriteAsync(new AckMessage(1, 2));
         }
 
         private async Task ProcessClientConnectionAsync(ClientConnectionContext connection)
         {
             try
             {
+                var pausedSource = connection.OutgoingPaused;
                 // Writing from the application to the service
-                var transport = ProcessOutgoingMessagesAsync(connection, connection.OutgoingAborted);
-
-                // Waiting for the application to shutdown so we can clean up the connection
-                var app = ProcessApplicationTaskAsyncCore(connection);
+                var transport = ProcessOutgoingMessagesAsync(connection, connection.OutgoingAborted, pausedSource);
+                var app = connection.ProcessApplicationTaskAsync(_connectionDelegate);
 
                 var task = await Task.WhenAny(app, transport);
 
@@ -265,6 +322,11 @@ namespace Microsoft.Azure.SignalR
 
                     // transport never throws
                     await transport;
+                }
+                else if (pausedSource.IsCancellationRequested)
+                {
+                    Log.PauseOutgoingMessageTask(Logger, connection.ConnectionId);
+                    return;
                 }
                 else
                 {
@@ -350,27 +412,29 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
-        private async Task ProcessOutgoingMessagesAsync(ClientConnectionContext connection, CancellationToken token = default)
+        private async Task ProcessOutgoingMessagesAsync(ClientConnectionContext connection, CancellationToken aborted, CancellationToken paused)
         {
             try
             {
                 if (connection.IsMigrated)
                 {
-                    using var timeoutToken = new CancellationTokenSource(DefaultHandshakeTimeout);
-                    using var source = CancellationTokenSource.CreateLinkedTokenSource(token, timeoutToken.Token);
+                    using var timeoutToken = new CancellationTokenSource(Constants.Periods.DefaultServerHandshakeTimeout);
+                    using var s = CancellationTokenSource.CreateLinkedTokenSource(aborted, paused, timeoutToken.Token);
 
                     // A handshake response is not expected to be given
                     // if the connection was migrated from another server,
                     // since the connection hasn't been `dropped` from the client point of view.
-                    if (!await SkipHandshakeResponse(connection, source.Token))
+                    if (!await SkipHandshakeResponse(connection, s.Token))
                     {
                         return;
                     }
                 }
 
-                while (true)
+                using var source = CancellationTokenSource.CreateLinkedTokenSource(aborted, paused);
+
+                while (!paused.IsCancellationRequested)
                 {
-                    var result = await connection.Application.Input.ReadAsync(token);
+                    var result = await connection.Application.Input.ReadAsync(source.Token);
 
                     if (result.IsCanceled)
                     {
@@ -424,30 +488,6 @@ namespace Microsoft.Azure.SignalR
         {
             _clientConnectionManager.TryAddClientConnection(connection);
             _connectionIds.TryAdd(connection.ConnectionId, connection.InstanceId);
-        }
-
-        private async Task ProcessApplicationTaskAsyncCore(ClientConnectionContext connection)
-        {
-            Exception exception = null;
-
-            try
-            {
-                // Wait for the application task to complete
-                // application task can end when exception, or Context.Abort() from hub
-                await _connectionDelegate(connection);
-            }
-            catch (Exception ex)
-            {
-                // Capture the exception to communicate it to the transport (this isn't strictly required)
-                exception = ex;
-                throw;
-            }
-            finally
-            {
-                // Close the transport side since the application is no longer running
-                connection.Transport.Output.Complete(exception);
-                connection.Transport.Input.Complete();
-            }
         }
 
         private async Task PerformDisconnectAsyncCore(string connectionId)
