@@ -156,8 +156,9 @@ public class HttpClientRetryFacts
                 .ConfigurePrimaryHttpMessageHandler(sp => handlerMock.Object))
             .BuildServiceManager()
             .CreateHubContextAsync(HubName, default);
-        var exception = await Assert.ThrowsAnyAsync<AggregateException>(() => testAction(hubContext));
-        assert(exception);
+        var exception = await Assert.ThrowsAnyAsync<AzureSignalRRuntimeException>(() => testAction(hubContext));
+        var aggregationException = Assert.IsType<AggregateException>(exception.InnerException);
+        assert(aggregationException);
 
         handlerMock.Protected().Verify("SendAsync", Times.Exactly(4), ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
     }
