@@ -38,7 +38,7 @@ internal class RetryHttpMessageHandler : DelegatingHandler
                 {
                     var innerException = new HttpRequestException(
                 $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})");
-                    ex = new AzureSignalRRuntimeException(request.RequestUri.ToString(), innerException);
+                    ex = new AzureSignalRRuntimeException(request.RequestUri?.ToString(), innerException);
                     response.Dispose();
                 }
                 else
@@ -61,7 +61,7 @@ internal class RetryHttpMessageHandler : DelegatingHandler
                 else
                 {
                     exceptions.Add(ex);
-                    throw new AzureSignalRRuntimeException(request.RequestUri.ToString(), new AggregateException(exceptions));
+                    throw new AzureSignalRRuntimeException(request.RequestUri?.ToString(), new AggregateException(exceptions));
                 }
             }
             else
