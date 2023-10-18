@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -10,26 +12,72 @@ namespace Microsoft.Azure.SignalR.Tests
     public class EndpointRouterTests
     {
         [Fact]
-        public void TestDefaultEndpointWeightedRouter()
+        public void TestDefaultEndpointRouterWeightedMode()
         {
-            const int loops = 1000;
-            var context = new RandomContext();
-            var drt = new DefaultEndpointRouter();
+            var drt = GetEndpointRouter(EndpointRoutingMode.Weighted);
 
-            const string u1Full = "u1_full", u1Empty = "u1_empty";
-            var u1F = GenerateServiceEndpoint(1000, 10, 990, u1Full);
-            var u1E = GenerateServiceEndpoint(1000, 10, 0, u1Empty);
-            var el = new List<ServiceEndpoint>() { u1E, u1F };
+            const int loops = 20;
+            var context = new RandomContext();
+
+            const string small = "small_instance", large = "large_instance";
+            var uSmall = GenerateServiceEndpoint(10, 0, 9, small);
+            var uLarge = GenerateServiceEndpoint(1000, 0, 900, large);
+            var el = new List<ServiceEndpoint>() { uLarge, uSmall };
             context.BenchTest(loops, () =>
-                drt.GetNegotiateEndpoint(null, el).Name);
-            var u1ECount = context.GetCount(u1Empty);
-            const int smallVar = 10;
-            Assert.True(u1ECount is > loops - smallVar and <= loops);
-            var u1FCount = context.GetCount(u1Full);
-            Assert.True(u1FCount <= smallVar);
+            {
+                var ep = drt.GetNegotiateEndpoint(null, el);
+                ep.EndpointMetrics.ClientConnectionCount++;
+                return ep.Name;
+            });
+            var uLargeCount = context.GetCount(large);
+            const int smallVar = 3;
+            var uSmallCount = context.GetCount(small);
+            Assert.True(uLargeCount is >= loops - smallVar and <= loops);
+            Assert.True(uSmallCount is >= 1 and <= smallVar);
             context.Reset();
         }
 
+        [Fact]
+        public void TestDefaultEndpointRouterLeastConnectionMode()
+        {
+            var drt = GetEndpointRouter(EndpointRoutingMode.LeastConnection);
+
+            const int loops = 10;
+            var context = new RandomContext();
+
+            const string small = "small_instance", large = "large_instance";
+            var uSmall = GenerateServiceEndpoint(100, 0, 90, small);
+            var uLarge = GenerateServiceEndpoint(1000, 0, 200, large);
+            var el = new List<ServiceEndpoint>() { uLarge, uSmall };
+            context.BenchTest(loops, () =>
+            {
+                var ep = drt.GetNegotiateEndpoint(null, el);
+                ep.EndpointMetrics.ClientConnectionCount++;
+                return ep.Name;
+            });
+            var uLargeCount = context.GetCount(large);
+            var uSmallCount = context.GetCount(small);
+            Assert.Equal(0, uLargeCount);
+            Assert.Equal(10, uSmallCount);
+            context.Reset();
+        }
+
+        private static IEndpointRouter GetEndpointRouter(EndpointRoutingMode mode)
+        {
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection()
+                .AddSignalR()
+                .AddAzureSignalR(
+                    o =>
+                    {
+                        o.EndpointRoutingMode = mode;
+                    })
+                .Services
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            return serviceProvider.GetRequiredService<IEndpointRouter>();
+        }
 
         private static ServiceEndpoint GenerateServiceEndpoint(int capacity, int serverConnectionCount,
             int clientConnectionCount, string name)

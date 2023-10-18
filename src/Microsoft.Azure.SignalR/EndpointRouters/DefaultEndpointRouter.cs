@@ -6,29 +6,41 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
     internal class DefaultEndpointRouter : DefaultMessageRouter, IEndpointRouter
     {
+        private readonly EndpointRoutingMode _mode;
+
+        public DefaultEndpointRouter(IOptions<ServiceOptions> options)
+        {
+            _mode = options?.Value.EndpointRoutingMode ?? EndpointRoutingMode.Weighted;
+        }
+        
         /// <summary>
-        /// Randomly select from the available endpoints
+        /// Select an endpoint for negotiate request according to the mode
         /// </summary>
         /// <param name="context">The http context of the incoming request</param>
         /// <param name="endpoints">All the available endpoints</param>
-        /// <returns></returns>
         public ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
         {
             // get primary endpoints snapshot
             var availableEndpoints = GetNegotiateEndpoints(endpoints);
-            return GetEndpointAccordingToWeight(availableEndpoints);
+            return _mode switch
+            {
+                EndpointRoutingMode.Random => GetEndpointRandomly(availableEndpoints),
+                EndpointRoutingMode.LeastConnection => GetEndpointWithLeastConnection(availableEndpoints),
+                _ => GetEndpointAccordingToWeight(availableEndpoints),
+            };
         }
 
         /// <summary>
         /// Only primary endpoints will be returned by client /negotiate
         /// If no primary endpoint is available, promote one secondary endpoint
         /// </summary>
-        /// <returns>The availbale endpoints</returns>
+        /// <returns>The available endpoints</returns>
         private ServiceEndpoint[] GetNegotiateEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             var primary = endpoints.Where(s => s.Online && s.EndpointType == EndpointType.Primary).ToArray();
@@ -49,8 +61,7 @@ namespace Microsoft.Azure.SignalR
 
         /// <summary>
         ///  Choose endpoint randomly by weight. 
-        ///  The weight is defined as the remaining connection quota.
-        ///  The least weight is set to 1. So instance with no connection quota still has chance.
+        ///  The weight is defined as (the remaining connection quota / the connection capacity).
         /// </summary>
         private ServiceEndpoint GetEndpointAccordingToWeight(ServiceEndpoint[] availableEndpoints)
         {
@@ -69,7 +80,7 @@ namespace Microsoft.Azure.SignalR
                 var remain = endpointMetrics.ConnectionCapacity -
                              (endpointMetrics.ClientConnectionCount +
                               endpointMetrics.ServerConnectionCount);
-                var weight = remain > 0 ? remain : 1;
+                var weight = Math.Max((int)((double)remain / endpointMetrics.ConnectionCapacity * 1000), 1);
                 totalCapacity += weight;
                 we[i] = totalCapacity;
             }
@@ -77,6 +88,34 @@ namespace Microsoft.Azure.SignalR
             var index = StaticRandom.Next(totalCapacity);
             
             return availableEndpoints[Array.FindLastIndex(we, x => x <= index) + 1];
+        }
+        
+        /// <summary>
+        ///  Choose endpoint with least connection count
+        /// </summary>
+        private ServiceEndpoint GetEndpointWithLeastConnection(ServiceEndpoint[] availableEndpoints)
+        {
+            //first check if weight is available or necessary
+            if (availableEndpoints.Any(endpoint => endpoint.EndpointMetrics.ConnectionCapacity == 0) ||
+                availableEndpoints.Length == 1)
+            {
+                return GetEndpointRandomly(availableEndpoints);
+            }
+
+            var leastConnectionCount = int.MaxValue;
+            var index = 0;
+            for (var i = 0; i < availableEndpoints.Length; i++)
+            {
+                var endpointMetrics = availableEndpoints[i].EndpointMetrics;
+                var connectionCount = endpointMetrics.ClientConnectionCount + endpointMetrics.ServerConnectionCount;
+                if (connectionCount < leastConnectionCount)
+                {
+                    leastConnectionCount = connectionCount;
+                    index = i;
+                }
+            }
+
+            return availableEndpoints[index];
         }
 
         private static ServiceEndpoint GetEndpointRandomly(ServiceEndpoint[] availableEndpoints)
