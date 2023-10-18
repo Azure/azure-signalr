@@ -2,15 +2,21 @@
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
     internal sealed class AckHandler : IDisposable
     {
         private readonly ConcurrentDictionary<int, AckInfo> _acks = new ConcurrentDictionary<int, AckInfo>();
+
         private readonly Timer _timer;
+
         private readonly TimeSpan _ackInterval;
+
         private readonly TimeSpan _ackTtl;
+
         private int _currentId = 0;
 
         public AckHandler(int ackIntervalInMilliseconds = 3000, int ackTtlInMilliseconds = 10000)
@@ -18,7 +24,7 @@ namespace Microsoft.Azure.SignalR
             _ackInterval = TimeSpan.FromMilliseconds(ackIntervalInMilliseconds);
             _ackTtl = TimeSpan.FromMilliseconds(ackTtlInMilliseconds);
 
-            bool restoreFlow = false;
+            var restoreFlow = false;
             try
             {
                 if (!ExecutionContext.IsFlowSuppressed())
@@ -39,6 +45,17 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        public static bool HandleAckStatus(IAckableMessage message, AckStatus status)
+        {
+            return status switch
+            {
+                AckStatus.Ok => true,
+                AckStatus.NotFound => false,
+                AckStatus.Timeout or AckStatus.InternalServerError => throw new TimeoutException($"Ack-able message {message.GetType()}(ackId: {message.AckId}) timed out."),
+                _ => throw new AzureSignalRException($"Ack-able message {message.GetType()}(ackId: {message.AckId}) gets error ack status {status}."),
+            };
+        }
+
         public Task<AckStatus> CreateAck(out int id, CancellationToken cancellationToken = default)
         {
             id = Interlocked.Increment(ref _currentId);
@@ -55,6 +72,19 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        public void Dispose()
+        {
+            _timer?.Dispose();
+
+            foreach (var pair in _acks)
+            {
+                if (_acks.TryRemove(pair.Key, out var ack))
+                {
+                    ack.Tcs.TrySetCanceled();
+                }
+            }
+        }
+
         private void CheckAcks()
         {
             var utcNow = DateTime.UtcNow;
@@ -67,19 +97,6 @@ namespace Microsoft.Azure.SignalR
                     {
                         ack.Tcs.TrySetResult(AckStatus.Timeout);
                     }
-                }
-            }
-        }
-
-        public void Dispose()
-        {
-            _timer?.Dispose();
-
-            foreach (var pair in _acks)
-            {
-                if (_acks.TryRemove(pair.Key, out var ack))
-                {
-                    ack.Tcs.TrySetCanceled();
                 }
             }
         }
