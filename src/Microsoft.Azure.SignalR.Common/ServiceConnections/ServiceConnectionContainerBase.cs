@@ -301,7 +301,7 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         protected IServiceConnection CreateServiceConnectionCore(ServiceConnectionType type)
         {
-            var connection = ServiceConnectionFactory.Create(Endpoint, this, type);
+            var connection = ServiceConnectionFactory.Create(Endpoint, this, _ackHandler, type);
 
             connection.ConnectionStatusChanged += OnConnectionStatusChanged;
             return connection;

@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             _generator = generator;
         }
 
-        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
+        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, AckHandler ackHandler, ServiceConnectionType type)
         {
             var conn = _generator?.Invoke(endpoint) ?? new TestServiceConnection(serviceMessageHandler: serviceMessageHandler);
             var receiver = CreatedConnections.GetOrAdd(endpoint, e => new());
