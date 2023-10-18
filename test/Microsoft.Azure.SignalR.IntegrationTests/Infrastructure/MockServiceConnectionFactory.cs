@@ -35,9 +35,9 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
             _mockService = mockService;
         }
 
-        public override IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
+        public override IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, AckHandler ackHandler, ServiceConnectionType type)
         {
-            var serviceConnection = base.Create(endpoint, serviceMessageHandler, type);
+            var serviceConnection = base.Create(endpoint, serviceMessageHandler, ackHandler, type);
             return new MockServiceConnection(_mockService, serviceConnection);
         }
     }
