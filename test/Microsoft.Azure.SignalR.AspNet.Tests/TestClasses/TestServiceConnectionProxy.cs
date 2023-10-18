@@ -32,7 +32,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 clientConnectionManager,
                 loggerFactory,
                 serviceMessageHandler ?? new TestServiceMessageHandler(),
-                null)
+                null,
+                new AckHandler())
         {
         }
 
