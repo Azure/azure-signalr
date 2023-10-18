@@ -15,10 +15,10 @@ internal class ExponentialBackOffPolicy : IBackOffPolicy
 
     public ExponentialBackOffPolicy(IOptions<ServiceManagerOptions> options)
     {
-        var retryOptions = options.Value.RetryOptions ?? throw new InvalidOperationException();
+        var retryOptions = options.Value.RetryOptions ?? throw new ArgumentException();
         if (retryOptions.Mode != RetryMode.Exponential)
         {
-            throw new InvalidOperationException();
+            throw new ArgumentException();
         }
         _maxRetries = retryOptions.MaxRetries;
         _minDelay = retryOptions.Delay;
@@ -29,7 +29,7 @@ internal class ExponentialBackOffPolicy : IBackOffPolicy
         var lastDelay = TimeSpan.MinValue;
         for (var i = 0; i < _maxRetries; i++)
         {
-            if (lastDelay > _maxDelay)
+            if (lastDelay >= _maxDelay)
             {
                 yield return _maxDelay;
             }

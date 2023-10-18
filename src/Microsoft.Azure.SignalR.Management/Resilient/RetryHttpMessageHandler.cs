@@ -16,12 +16,12 @@ namespace Microsoft.Azure.SignalR.Management;
 internal class RetryHttpMessageHandler : DelegatingHandler
 {
     private readonly IBackOffPolicy _retryDelayProvider;
-    private readonly Func<HttpStatusCode, bool> _isTransientError;
+    private readonly Func<HttpStatusCode, bool> _canRetry;
 
     public RetryHttpMessageHandler(IBackOffPolicy retryDelayProvider, Func<HttpStatusCode, bool> transientErrorPredicate)
     {
         _retryDelayProvider = retryDelayProvider;
-        _isTransientError = transientErrorPredicate;
+        _canRetry = transientErrorPredicate;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -34,12 +34,11 @@ internal class RetryHttpMessageHandler : DelegatingHandler
             try
             {
                 var response = await base.SendAsync(request, cancellationToken);
-                if (_isTransientError(response.StatusCode))
+                if (_canRetry(response.StatusCode))
                 {
-
                     var innerException = new HttpRequestException(
                 $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})");
-                    ex = new AzureSignalRRuntimeException(response.RequestMessage?.RequestUri?.ToString(), innerException);
+                    ex = new AzureSignalRRuntimeException(request.RequestUri.ToString(), innerException);
                     response.Dispose();
                 }
                 else
@@ -62,7 +61,7 @@ internal class RetryHttpMessageHandler : DelegatingHandler
                 else
                 {
                     exceptions.Add(ex);
-                    throw new AggregateException(exceptions);
+                    throw new AzureSignalRRuntimeException(request.RequestUri.ToString(), new AggregateException(exceptions));
                 }
             }
             else
