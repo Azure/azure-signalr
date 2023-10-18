@@ -57,7 +57,7 @@ public class ExponentialBackoffPolicyTests
         });
 
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => new ExponentialBackOffPolicy(options));
+        Assert.Throws<ArgumentException>(() => new ExponentialBackOffPolicy(options));
     }
 
     [Fact]
@@ -67,6 +67,6 @@ public class ExponentialBackoffPolicyTests
         var options = Options.Create(new ServiceManagerOptions());
 
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => new ExponentialBackOffPolicy(options));
+        Assert.Throws<ArgumentException>(() => new ExponentialBackOffPolicy(options));
     }
 }
