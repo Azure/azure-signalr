@@ -223,7 +223,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException($"{nameof(serviceMessage)} is not {nameof(IAckableMessage)}");
             }
 
-            var task = _ackHandler.CreateAck(out var id, cancellationToken);
+            var task = _ackHandler.CreateSingleAck(out var id, null, cancellationToken);
             ackableMessage.AckId = id;
 
             // Sending regular messages completes as soon as the data leaves the outbound pipe,
