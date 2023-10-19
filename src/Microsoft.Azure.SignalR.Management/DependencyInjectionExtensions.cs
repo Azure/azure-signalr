@@ -2,8 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 using System;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
 using Microsoft.AspNetCore.Connections;
@@ -156,15 +158,69 @@ namespace Microsoft.Azure.SignalR.Management
             return services.Configure<ServiceManagerOptions>(o => o.ProductInfo ??= productInfo);
         }
 
-        private static IServiceCollection AddRestClientFactory(this IServiceCollection services) => services
-            .AddHttpClient(Options.DefaultName, (sp, client) => client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout)
-            .ConfigurePrimaryHttpMessageHandler(sp => new HttpClientHandler() { Proxy = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.Proxy }).Services
-            .AddSingleton(sp =>
+        private static IServiceCollection AddRestClientFactory(this IServiceCollection services)
+        {
+            // For AAD, health check.
+            services
+                .AddHttpClient(Options.DefaultName, (sp, client) => client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout)
+                .ConfigurePrimaryHttpMessageHandler(ConfigureProxy);
+
+            // For other data plane APIs.
+            services.AddSingleton<IBackOffPolicy>(sp =>
+            {
+                var options = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value;
+                var retryOptions = options.RetryOptions;
+                return retryOptions == null
+                    ? new DummyBackOffPolicy()
+                    : retryOptions.Mode switch
+                    {
+                        ServiceManagerRetryMode.Fixed => ActivatorUtilities.CreateInstance<FixedBackOffPolicy>(sp),
+                        ServiceManagerRetryMode.Exponential => ActivatorUtilities.CreateInstance<ExponentialBackOffPolicy>(sp),
+                        _ => throw new NotSupportedException($"Retry mode {retryOptions.Mode} is not supported.")
+                    };
+            });
+            services
+                .AddHttpClient(Constants.HttpClientNames.Resilient, (sp, client) =>
+                {
+                    var options = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value;
+                    if (options.RetryOptions == null)
+                    {
+                        client.Timeout = options.HttpClientTimeout;
+                    }
+                    else
+                    {
+                        // The timeout is enforced by TimeoutHttpMessageHandler.
+                        client.Timeout = Timeout.InfiniteTimeSpan;
+                    }
+                })
+                .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
+                .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorForNonMessageApi(code)))
+                .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<TimeoutHttpMessageHandler>(sp));
+
+            services
+                .AddHttpClient(Constants.HttpClientNames.MessageResilient, (sp, client) => client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout)
+                .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
+                .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorAndIdempotentForMessageApi(code)));
+
+            services.AddSingleton(sp =>
             {
                 var options = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value;
                 var productInfo = options.ProductInfo;
                 var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
                 return new RestClientFactory(productInfo, httpClientFactory);
             });
+
+            return services;
+
+            static HttpMessageHandler ConfigureProxy(IServiceProvider sp) => new HttpClientHandler() { Proxy = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.Proxy };
+
+            static bool IsTransientErrorAndIdempotentForMessageApi(HttpStatusCode code) =>
+                // Runtime returns 500 for timeout errors too, to avoid duplicate message, we exclude 500 here.
+                code > HttpStatusCode.InternalServerError;
+
+            static bool IsTransientErrorForNonMessageApi(HttpStatusCode code) =>
+                code >= HttpStatusCode.InternalServerError ||
+                code == HttpStatusCode.RequestTimeout;
+        }
     }
 }

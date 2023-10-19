@@ -113,5 +113,11 @@ namespace Microsoft.Azure.SignalR
             public const string InfoUserNotInGroup = "Info.User.NotInGroup";
             public const string ErrorConnectionNotExisted = "Error.Connection.NotExisted";
         }
+
+        public static class HttpClientNames
+        {
+            public const string Resilient = "Resilient";
+            public const string MessageResilient = "MessageResilient";
+        }
     }
 }
