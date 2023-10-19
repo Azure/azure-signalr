@@ -173,8 +173,8 @@ namespace Microsoft.Azure.SignalR.Management
                     ? new DummyBackOffPolicy()
                     : retryOptions.Mode switch
                     {
-                        RetryMode.Fixed => ActivatorUtilities.CreateInstance<FixedBackOffPolicy>(sp),
-                        RetryMode.Exponential => ActivatorUtilities.CreateInstance<ExponentialBackOffPolicy>(sp),
+                        ServiceManagerRetryMode.Fixed => ActivatorUtilities.CreateInstance<FixedBackOffPolicy>(sp),
+                        ServiceManagerRetryMode.Exponential => ActivatorUtilities.CreateInstance<ExponentialBackOffPolicy>(sp),
                         _ => throw new NotSupportedException($"Retry mode {retryOptions.Mode} is not supported.")
                     };
             });

@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public TimeSpan HttpClientTimeout { get; set; } = TimeSpan.FromSeconds(100);
 
-        public RetryOptions? RetryOptions { get; set; }
+        public ServiceManagerRetryOptions? RetryOptions { get; set; }
 
         /// <summary>
         /// Gets the json serializer settings that will be used to serialize content sent to Azure SignalR Service.

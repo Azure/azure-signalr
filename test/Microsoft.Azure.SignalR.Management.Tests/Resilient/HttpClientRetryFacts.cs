@@ -144,9 +144,9 @@ public class HttpClientRetryFacts
             {
                 o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
                 o.HttpClientTimeout = TimeSpan.FromMilliseconds(1000);
-                o.RetryOptions = new RetryOptions
+                o.RetryOptions = new ServiceManagerRetryOptions
                 {
-                    Mode = RetryMode.Fixed,
+                    Mode = ServiceManagerRetryMode.Fixed,
                     Delay = TimeSpan.FromMilliseconds(50),
                     MaxRetries = 3
                 };
@@ -231,9 +231,9 @@ public class HttpClientRetryFacts
             {
                 o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
                 o.HttpClientTimeout = TimeSpan.FromMilliseconds(1000);
-                o.RetryOptions = new RetryOptions
+                o.RetryOptions = new ServiceManagerRetryOptions
                 {
-                    Mode = RetryMode.Fixed,
+                    Mode = ServiceManagerRetryMode.Fixed,
                     Delay = TimeSpan.FromMilliseconds(50),
                     MaxRetries = 3
                 };
@@ -260,9 +260,9 @@ public class HttpClientRetryFacts
              {
                  o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
                  o.HttpClientTimeout = TimeSpan.FromMilliseconds(1);
-                 o.RetryOptions = new RetryOptions
+                 o.RetryOptions = new ServiceManagerRetryOptions
                  {
-                     Mode = RetryMode.Fixed,
+                     Mode = ServiceManagerRetryMode.Fixed,
                      Delay = TimeSpan.FromMilliseconds(50),
                      MaxRetries = 3
                  };

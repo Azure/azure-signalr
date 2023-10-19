@@ -16,7 +16,7 @@ internal class ExponentialBackOffPolicy : IBackOffPolicy
     public ExponentialBackOffPolicy(IOptions<ServiceManagerOptions> options)
     {
         var retryOptions = options.Value.RetryOptions ?? throw new ArgumentException();
-        if (retryOptions.Mode != RetryMode.Exponential)
+        if (retryOptions.Mode != ServiceManagerRetryMode.Exponential)
         {
             throw new ArgumentException();
         }

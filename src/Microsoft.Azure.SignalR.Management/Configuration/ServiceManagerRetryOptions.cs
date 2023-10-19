@@ -7,7 +7,7 @@ namespace Microsoft.Azure.SignalR.Management;
 
 #nullable enable
 
-public class RetryOptions
+public class ServiceManagerRetryOptions
 {
     /// <summary>
     /// The maximum number of retry attempts before giving up.
@@ -28,7 +28,7 @@ public class RetryOptions
     /// <summary>
     /// The approach to use for calculating retry delays.
     /// </summary>
-    public RetryMode Mode { get; set; } = RetryMode.Fixed;
+    public ServiceManagerRetryMode Mode { get; set; } = ServiceManagerRetryMode.Fixed;
 }
 
 

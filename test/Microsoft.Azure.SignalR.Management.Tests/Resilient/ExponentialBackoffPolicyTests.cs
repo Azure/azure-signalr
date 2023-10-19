@@ -16,9 +16,9 @@ public class ExponentialBackoffPolicyTests
         // Arrange
         var options = Options.Create(new ServiceManagerOptions
         {
-            RetryOptions = new RetryOptions
+            RetryOptions = new ServiceManagerRetryOptions
             {
-                Mode = RetryMode.Exponential,
+                Mode = ServiceManagerRetryMode.Exponential,
                 MaxRetries = 5,
                 Delay = TimeSpan.FromSeconds(1),
                 MaxDelay = TimeSpan.FromSeconds(10)
@@ -47,9 +47,9 @@ public class ExponentialBackoffPolicyTests
         // Arrange
         var options = Options.Create(new ServiceManagerOptions
         {
-            RetryOptions = new RetryOptions
+            RetryOptions = new ServiceManagerRetryOptions
             {
-                Mode = RetryMode.Fixed,
+                Mode = ServiceManagerRetryMode.Fixed,
                 MaxRetries = 5,
                 Delay = TimeSpan.FromSeconds(1),
                 MaxDelay = TimeSpan.FromSeconds(10)

@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR.Management;
 /// <summary>
 /// The type of approach to apply when calculating the delay between retry attempts.
 /// </summary>
-public enum RetryMode
+public enum ServiceManagerRetryMode
 {
     /// <summary>
     /// Retry attempts happen at fixed intervals; each delay is a consistent duration.

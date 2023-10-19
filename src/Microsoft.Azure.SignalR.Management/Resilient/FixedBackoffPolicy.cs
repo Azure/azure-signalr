@@ -14,7 +14,7 @@ internal class FixedBackOffPolicy : IBackOffPolicy
     public FixedBackOffPolicy(IOptions<ServiceManagerOptions> options)
     {
         var retryOptions = options.Value.RetryOptions ?? throw new ArgumentException();
-        if (retryOptions.Mode != RetryMode.Fixed)
+        if (retryOptions.Mode != ServiceManagerRetryMode.Fixed)
         {
             throw new ArgumentException();
         }
