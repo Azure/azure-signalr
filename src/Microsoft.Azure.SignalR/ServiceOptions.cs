@@ -121,11 +121,5 @@ namespace Microsoft.Azure.SignalR
         /// Gets or sets a function which accepts <see cref="HttpContext"/> and returns a bitmask combining one or more <see cref="HttpTransportType"/> values that specify what transports the service should use to receive HTTP requests.
         /// </summary>
         public Func<HttpContext, HttpTransportType> TransportTypeDetector { get; set; } = null;
-        
-        /// <summary>
-        /// Gets or sets the default endpoint routing mode when using multiple endpoints.
-        /// <see cref="EndpointRoutingMode.Weighted"/> by default.
-        /// </summary>
-        public EndpointRoutingMode EndpointRoutingMode { get; set; } = EndpointRoutingMode.Weighted;
     }
 }

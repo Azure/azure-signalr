@@ -245,7 +245,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 var endpoint = new ServiceEndpoint(ConnectionString1);
                 var sem = new TestServiceEndpointManager(endpoint);
-                var router = new DefaultEndpointRouter(null);
+                var router = new DefaultEndpointRouter();
 
                 var container = new TestMultiEndpointServiceConnectionContainer("hub",
                     e => new TestServiceConnectionContainer(new List<IServiceConnection> {
