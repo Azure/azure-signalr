@@ -54,21 +54,6 @@ namespace Microsoft.Azure.SignalR
             };
         }
 
-        //public Task<T> CreateSingleAck<T>(out int id, TimeSpan? ackTimeout = default, CancellationToken cancellationToken = default)
-        //{
-        //    if (_disposed)
-        //    {
-        //        throw new ObjectDisposedException(nameof(AckHandler));
-        //    }
-
-        //    id = NextId();
-        //    var info = (SingleAckInfo<T>)_acks.GetOrAdd(id, _ => new SingleAckInfo<T>(ackTimeout ?? _defaultAckTimeout));
-
-        //    cancellationToken.Register(() => info.Cancel());
-
-        //    return info.Task;
-        //}
-
         public Task<AckStatus> CreateMultiAck(out int id, TimeSpan? ackTimeout = default)
         {
             id = NextId();
@@ -220,25 +205,6 @@ namespace Microsoft.Azure.SignalR
             public void Cancel() => _tcs.TrySetCanceled();
         }
 
-        //private sealed class SingleAckInfo<T> : IAckInfo<T>
-        //{
-        //    public readonly TaskCompletionSource<T> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        //    public DateTime TimeoutAt { get; }
-
-        //    public SingleAckInfo(TimeSpan timeout)
-        //    {
-        //        TimeoutAt = DateTime.UtcNow + timeout;
-        //    }
-
-        //    public bool Ack(T status) =>
-        //        _tcs.TrySetResult(status);
-
-        //    public Task<T> Task => _tcs.Task;
-
-        //    public void Cancel() => _tcs.TrySetCanceled();
-        //}
-
         private sealed class MultiAckInfo : IAckInfo<AckStatus>, IMultiAckInfo
         {
             public readonly TaskCompletionSource<AckStatus> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -291,6 +257,11 @@ namespace Microsoft.Azure.SignalR
                 return result;
             }
 
+            /// <summary>
+            /// Forcely ack the multi ack regardless of the expected count.
+            /// </summary>
+            /// <param name="status"></param>
+            /// <returns></returns>
             public bool ForceAck(AckStatus status = AckStatus.Ok)
             {
                 lock (_tcs)

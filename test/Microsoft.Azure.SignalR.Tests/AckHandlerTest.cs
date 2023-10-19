@@ -29,6 +29,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.False(task.IsCompleted);
             await Task.Delay(TimeSpan.FromSeconds(1.5));
             Assert.True(task.IsCompleted);
+            // This assertion is different from RT for different behaviour when timeout of AckHandler. See annotation in AckHandler.cs method CheckAcs
             Assert.Equal(AckStatus.Timeout, task.Result);
         }
 
@@ -67,6 +68,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.False(task.IsCompleted);
             await Task.Delay(TimeSpan.FromSeconds(1.5));
             Assert.True(task.IsCompleted);
+            // This assertion is different from RT for different behaviour when timeout of AckHandler. See annotation in AckHandler.cs method CheckAcs
             Assert.Equal(AckStatus.Timeout, task.Result);
         }
 
