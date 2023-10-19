@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
 using Microsoft.AspNetCore.Connections;
@@ -186,7 +187,11 @@ namespace Microsoft.Azure.SignalR.Management
                     {
                         client.Timeout = options.HttpClientTimeout;
                     }
-                    // Else the timeout is enforced by TimeoutHttpMessageHandler.
+                    else
+                    {
+                        // The timeout is enforced by TimeoutHttpMessageHandler.
+                        client.Timeout = Timeout.InfiniteTimeSpan;
+                    }
                 })
                 .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
                 .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorForNonMessageApi(code)))
