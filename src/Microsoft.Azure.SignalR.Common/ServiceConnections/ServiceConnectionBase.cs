@@ -277,6 +277,8 @@ namespace Microsoft.Azure.SignalR
 
         protected abstract Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage);
 
+        protected abstract Task OnClientMigratedAsync(MigrateConnectionMessage migrateConnectionMessage);
+
         protected abstract Task OnClientMessageAsync(ConnectionDataMessage connectionDataMessage);
 
         protected Task OnServiceErrorAsync(ServiceErrorMessage serviceErrorMessage)
@@ -573,6 +575,7 @@ namespace Microsoft.Azure.SignalR
                 AckMessage ackMessage => OnAckMessageAsync(ackMessage),
                 ServiceEventMessage eventMessage => OnEventMessageAsync(eventMessage),
                 AccessKeyResponseMessage keyMessage => OnAccessKeyMessageAsync(keyMessage),
+                MigrateConnectionMessage migrateConnectionMessage => OnClientMigratedAsync(migrateConnectionMessage),
                 _ => Task.CompletedTask,
             };
         }

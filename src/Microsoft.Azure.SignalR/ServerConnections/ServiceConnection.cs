@@ -229,6 +229,12 @@ namespace Microsoft.Azure.SignalR
             return base.OnPingMessageAsync(pingMessage);
         }
 
+        protected override Task OnClientMigratedAsync(MigrateConnectionMessage migrateConnectionMessage)
+        {
+            // TODO
+            return Task.CompletedTask;
+        }
+
         private async Task ProcessClientConnectionAsync(ClientConnectionContext connection)
         {
             try

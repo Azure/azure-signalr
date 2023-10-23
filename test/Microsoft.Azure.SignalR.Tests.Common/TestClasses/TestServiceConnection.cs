@@ -90,6 +90,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             await Task.Yield();
             return _expectedStatus == ServiceConnectionStatus.Connected;
         }
+
         protected override Task OnClientConnectedAsync(OpenConnectionMessage openConnectionMessage)
         {
             return Task.CompletedTask;
@@ -118,7 +119,12 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         protected Task WriteAsyncBase(ServiceMessage serviceMessage)
         {
-            return base.WriteAsync(serviceMessage);
+            return WriteAsync(serviceMessage);
+        }
+
+        protected override Task OnClientMigratedAsync(MigrateConnectionMessage migrateConnectionMessage)
+        {
+            return Task.CompletedTask;
         }
     }
 }

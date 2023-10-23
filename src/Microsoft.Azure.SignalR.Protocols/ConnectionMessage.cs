@@ -27,6 +27,16 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
+    /// A migrate-connection message.
+    /// </summary>
+    public class MigrateConnectionMessage : ConnectionMessage
+    {
+        public MigrateConnectionMessage(string connectionId) : base(connectionId)
+        {
+        }
+    }
+
+    /// <summary>
     /// A open-connection message.
     /// </summary>
     public class OpenConnectionMessage : ConnectionMessage, IHasProtocol, IMessageWithTracingId

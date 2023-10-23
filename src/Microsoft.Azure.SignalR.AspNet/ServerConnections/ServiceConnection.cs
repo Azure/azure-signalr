@@ -130,6 +130,12 @@ namespace Microsoft.Azure.SignalR.AspNet
             return ForwardMessageToApplication(connectionDataMessage.ConnectionId, connectionDataMessage);
         }
 
+        protected override Task OnClientMigratedAsync(MigrateConnectionMessage migrateConnectionMessage)
+        {
+            // TODO
+            return Task.CompletedTask;
+        }
+
         protected virtual async Task CleanupConnectionsAsyncCore(string instanceId = null)
         {
             try
