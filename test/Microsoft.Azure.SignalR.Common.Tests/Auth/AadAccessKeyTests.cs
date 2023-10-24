@@ -81,7 +81,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             }
             else
             {
-                await Assert.ThrowsAsync<TaskCanceledException>(async () => await key.UpdateAccessKeyAsync(source.Token));
+                await Assert.ThrowsAsync<OperationCanceledException>(async () => await key.UpdateAccessKeyAsync(source.Token));
                 Assert.False((bool)isAuthorizedField.GetValue(key));
                 Assert.True(lastUpdatedTime < (DateTime)lastUpdatedTimeField.GetValue(key));
                 Assert.True(initializedTcs.Task.IsCompleted);
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             );
 
             var source = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            await Assert.ThrowsAnyAsync<TaskCanceledException>(
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 async () => await key.UpdateAccessKeyAsync(source.Token)
             );
 
