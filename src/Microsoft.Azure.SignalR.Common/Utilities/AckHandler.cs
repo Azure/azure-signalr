@@ -116,7 +116,6 @@ namespace Microsoft.Azure.SignalR
 
             var utcNow = DateTime.UtcNow;
 
-            // `foreach (var (id, ack) in _acks)` cannot pass under netstandard2.0
             foreach (var item in _acks)
             {
                 var id = item.Key;
@@ -125,8 +124,6 @@ namespace Microsoft.Azure.SignalR
                 {
                     if (_acks.TryRemove(id, out _))
                     {
-                        // This part is slightly different from RT.
-                        // RT will call `ack.Cancel()` directly without special check for `IAckInfo<AckStatus>`.
                         if (ack is SingleAckInfo singleAckInfo)
                         {
                             singleAckInfo.Ack(AckStatus.Timeout);
@@ -152,7 +149,6 @@ namespace Microsoft.Azure.SignalR
 
             while (!_acks.IsEmpty)
             {
-                // `foreach (var (id, ack) in _acks)` cannot pass under netstandard2.0
                 foreach (var item in _acks)
                 {
                     var id = item.Key;
