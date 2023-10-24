@@ -301,6 +301,36 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
+        [Theory]
+        [InlineData("")]
+        [InlineData(Constants.HttpClientNames.MessageResilient)]
+        [InlineData(Constants.HttpClientNames.Resilient)]
+        public async Task HttpClientProductInfoTestAsync(string httpClientName)
+        {
+            using var hubContext = await new ServiceManagerBuilder()
+                .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
+                .ConfigureServices(services => services.AddHttpClient(httpClientName)
+                            .ConfigurePrimaryHttpMessageHandler(() =>
+                            new TestRootHandler((message, token) =>
+                            {
+                                if (message.Headers.TryGetValues(Constants.AsrsUserAgent, out var values))
+                                {
+                                    Assert.Single(values);
+                                    Assert.Matches("^Microsoft.Azure.SignalR.Management/", values.Single());
+                                }
+                                else
+                                {
+                                    throw new Exception("Product info header is missing");
+                                }
+                            })))
+                .BuildServiceManager()
+                .CreateHubContextAsync("hubName", default);
+            var serviceProvider = (hubContext as ServiceHubContextImpl).ServiceProvider;
+            var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+            using var httpClient = httpClientFactory.CreateClient(httpClientName);
+            await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://abc"));
+        }
+
         private class WaitInfinitelyHandler : DelegatingHandler
         {
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

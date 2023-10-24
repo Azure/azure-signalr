@@ -162,7 +162,11 @@ namespace Microsoft.Azure.SignalR.Management
         {
             // For AAD, health check.
             services
-                .AddHttpClient(Options.DefaultName, (sp, client) => client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout)
+                .AddHttpClient(Options.DefaultName, (sp, client) =>
+                {
+                    client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout;
+                    ConfigureProduceInfo(sp, client);
+                })
                 .ConfigurePrimaryHttpMessageHandler(ConfigureProxy);
 
             // For other data plane APIs.
@@ -192,13 +196,18 @@ namespace Microsoft.Azure.SignalR.Management
                         // The timeout is enforced by TimeoutHttpMessageHandler.
                         client.Timeout = Timeout.InfiniteTimeSpan;
                     }
+                    ConfigureProduceInfo(sp, client);
                 })
                 .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
                 .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorForNonMessageApi(code)))
                 .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<TimeoutHttpMessageHandler>(sp));
 
             services
-                .AddHttpClient(Constants.HttpClientNames.MessageResilient, (sp, client) => client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout)
+                .AddHttpClient(Constants.HttpClientNames.MessageResilient, (sp, client) =>
+                {
+                    client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout;
+                    ConfigureProduceInfo(sp, client);
+                })
                 .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
                 .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorAndIdempotentForMessageApi(code)));
 
@@ -221,6 +230,10 @@ namespace Microsoft.Azure.SignalR.Management
             static bool IsTransientErrorForNonMessageApi(HttpStatusCode code) =>
                 code >= HttpStatusCode.InternalServerError ||
                 code == HttpStatusCode.RequestTimeout;
+
+            static void ConfigureProduceInfo(IServiceProvider sp, HttpClient client) =>
+                client.DefaultRequestHeaders.Add(Constants.AsrsUserAgent, sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ProductInfo);
+
         }
     }
 }
