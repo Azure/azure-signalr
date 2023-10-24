@@ -232,7 +232,9 @@ namespace Microsoft.Azure.SignalR.Management
                 code == HttpStatusCode.RequestTimeout;
 
             static void ConfigureProduceInfo(IServiceProvider sp, HttpClient client) =>
-                client.DefaultRequestHeaders.Add(Constants.AsrsUserAgent, sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ProductInfo);
+                client.DefaultRequestHeaders.Add(Constants.AsrsUserAgent, sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ProductInfo ??
+                    // The following value should not be used.
+                    "Microsoft.Azure.SignalR.Management/");
 
         }
     }
