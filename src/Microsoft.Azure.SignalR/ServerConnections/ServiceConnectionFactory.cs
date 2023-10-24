@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR
             _clientInvocationManager = clientInvocationManager;
         }
 
-        public virtual IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
+        public virtual IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, AckHandler ackHandler, ServiceConnectionType type)
         {
             return new ServiceConnection(
                 _serviceProtocol,
@@ -59,6 +59,7 @@ namespace Microsoft.Azure.SignalR
                 serviceMessageHandler,
                 _serviceEventHandler,
                 _clientInvocationManager,
+                ackHandler,
                 type,
                 ShutdownMode
             )

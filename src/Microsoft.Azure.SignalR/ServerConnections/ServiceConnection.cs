@@ -47,6 +47,8 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IClientInvocationManager _clientInvocationManager;
 
+        private readonly AckHandler _ackHandler;
+
         public Action<HttpContext> ConfigureContext { get; set; }
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
@@ -61,6 +63,7 @@ namespace Microsoft.Azure.SignalR
                                  IServiceMessageHandler serviceMessageHandler,
                                  IServiceEventHandler serviceEventHandler,
                                  IClientInvocationManager clientInvocationManager,
+                                 AckHandler ackHandler,
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
                                  GracefulShutdownMode mode = GracefulShutdownMode.Off,
                                  int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds
@@ -72,6 +75,7 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionFactory = clientConnectionFactory;
             _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
             _clientInvocationManager = clientInvocationManager;
+            _ackHandler = ackHandler;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)

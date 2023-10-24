@@ -19,10 +19,10 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
+        private const string ReconnectMessage = "asrs:reconnect";
+
         private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string>
             {{Constants.AsrsUserAgent, ProductInfo.GetProductInfo()}};
-
-        private const string ReconnectMessage = "asrs:reconnect";
 
         private static readonly TimeSpan CloseApplicationTimeout = TimeSpan.FromSeconds(5);
 
@@ -30,7 +30,10 @@ namespace Microsoft.Azure.SignalR.AspNet
             new ConcurrentDictionary<string, ClientConnectionContext>(StringComparer.Ordinal);
 
         private readonly IConnectionFactory _connectionFactory;
+
         private readonly IClientConnectionManager _clientConnectionManager;
+
+        private readonly AckHandler _ackHandler;
 
         public ServiceConnection(
             string serverId,
@@ -42,6 +45,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             ILoggerFactory loggerFactory,
             IServiceMessageHandler serviceMessageHandler,
             IServiceEventHandler serviceEventHandler,
+            AckHandler ackHandler,
             ServiceConnectionType connectionType = ServiceConnectionType.Default)
             : base(
                   serviceProtocol,
@@ -55,6 +59,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             _connectionFactory = connectionFactory;
             _clientConnectionManager = clientConnectionManager;
+            _ackHandler = ackHandler;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -147,6 +152,17 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
+        private static string GetString(ReadOnlySequence<byte> buffer)
+        {
+            if (buffer.IsSingleSegment)
+            {
+                MemoryMarshal.TryGetArray(buffer.First, out var segment);
+                return Encoding.UTF8.GetString(segment.Array, segment.Offset, segment.Count);
+            }
+
+            return Encoding.UTF8.GetString(buffer.ToArray());
+        }
+
         private async Task ForwardMessageToApplication(string connectionId, ServiceMessage message)
         {
             if (_clientConnections.TryGetValue(connectionId, out var clientContext))
@@ -230,6 +246,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             catch (Exception e)
             {
                 Log.ConnectedStartingFailed(Logger, connectionId, e);
+
                 // Should not wait for application task inside the application task
                 _ = PerformDisconnectCore(connectionId, false);
                 _ = SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
@@ -276,14 +293,18 @@ namespace Microsoft.Azure.SignalR.AspNet
                             case OpenConnectionMessage openConnectionMessage:
                                 await OnConnectedAsyncCore(clientContext, openConnectionMessage);
                                 break;
+
                             case CloseConnectionMessage closeConnectionMessage:
+
                                 // should not wait for application task when inside the application task
                                 // As the messages are in a queue, close message should be after all the other messages
                                 await PerformDisconnectCore(closeConnectionMessage.ConnectionId, false);
                                 return;
+
                             case ConnectionDataMessage connectionDataMessage:
                                 ProcessOutgoingMessages(clientContext, connectionDataMessage);
                                 break;
+
                             default:
                                 break;
                         }
@@ -302,17 +323,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                 _ = PerformDisconnectCore(connectionId, false);
                 _ = SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
-        }
-
-        private static string GetString(ReadOnlySequence<byte> buffer)
-        {
-            if (buffer.IsSingleSegment)
-            {
-                MemoryMarshal.TryGetArray(buffer.First, out var segment);
-                return Encoding.UTF8.GetString(segment.Array, segment.Offset, segment.Count);
-            }
-
-            return Encoding.UTF8.GetString(buffer.ToArray());
         }
 
         private string GetInstanceId(IDictionary<string, StringValues> header)
