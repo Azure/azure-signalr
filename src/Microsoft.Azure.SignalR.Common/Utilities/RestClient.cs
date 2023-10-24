@@ -43,7 +43,6 @@ namespace Microsoft.Azure.SignalR
         public Task SendAsync(
             RestApiEndpoint api,
             HttpMethod httpMethod,
-            string productInfo,
             string? methodName = null,
             object[]? args = null,
             Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
@@ -51,46 +50,43 @@ namespace Microsoft.Azure.SignalR
         {
             if (handleExpectedResponse == null)
             {
-                return SendAsync(api, httpMethod, productInfo, methodName, args, handleExpectedResponseAsync: null, cancellationToken);
+                return SendAsync(api, httpMethod, methodName, args, handleExpectedResponseAsync: null, cancellationToken);
             }
 
-            return SendAsync(api, httpMethod, productInfo, methodName, args, response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
+            return SendAsync(api, httpMethod, methodName, args, response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
         }
 
         public Task SendAsync(
             RestApiEndpoint api,
             HttpMethod httpMethod,
-            string productInfo,
             string? methodName = null,
             object[]? args = null,
             Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
             CancellationToken cancellationToken = default)
         {
-            return SendAsyncCore(Options.DefaultName, api, httpMethod, productInfo, methodName, args, handleExpectedResponseAsync, cancellationToken);
+            return SendAsyncCore(Options.DefaultName, api, httpMethod, methodName, args, handleExpectedResponseAsync, cancellationToken);
         }
 
         public Task SendWithRetryAsync(
             RestApiEndpoint api,
             HttpMethod httpMethod,
-            string productInfo,
             string? methodName = null,
             object[]? args = null,
             Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
             CancellationToken cancellationToken = default)
         {
-            return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, productInfo, methodName, args, handleExpectedResponse == null ? null : response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
+            return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, methodName, args, handleExpectedResponse == null ? null : response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
         }
 
         public Task SendMessageWithRetryAsync(
             RestApiEndpoint api,
             HttpMethod httpMethod,
-            string productInfo,
             string? methodName = null,
             object[]? args = null,
             Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
             CancellationToken cancellationToken = default)
         {
-            return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, productInfo, methodName, args, handleExpectedResponse == null ? null : response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
+            return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, methodName, args, handleExpectedResponse == null ? null : response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
         }
 
         private async Task ThrowExceptionOnResponseFailureAsync(HttpResponseMessage response)
@@ -122,14 +118,13 @@ namespace Microsoft.Azure.SignalR
             string httpClientName,
             RestApiEndpoint api,
             HttpMethod httpMethod,
-            string productInfo,
             string? methodName = null,
             object[]? args = null,
             Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
             CancellationToken cancellationToken = default)
         {
             using var httpClient = _httpClientFactory.CreateClient(httpClientName);
-            using var request = BuildRequest(api, httpMethod, productInfo, methodName, args);
+            using var request = BuildRequest(api, httpMethod, methodName, args);
 
             try
             {
@@ -182,21 +177,20 @@ namespace Microsoft.Azure.SignalR
             return builder.Uri;
         }
 
-        private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string productInfo, string? methodName = null, object[]? args = null)
+        private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string? methodName = null, object[]? args = null)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
             if (_enableMessageTracing)
             {
                 AddTracingId(api);
             }
-            return GenerateHttpRequest(api.Audience, api.Query, httpMethod, payload, api.Token, productInfo);
+            return GenerateHttpRequest(api.Audience, api.Query, httpMethod, payload, api.Token);
         }
 
-        private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, PayloadMessage? payload, string tokenString, string productInfo)
+        private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, PayloadMessage? payload, string tokenString)
         {
             var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
-            request.Headers.Add(Constants.AsrsUserAgent, productInfo);
             request.Content = _payloadContentBuilder.Build(payload);
             return request;
         }
