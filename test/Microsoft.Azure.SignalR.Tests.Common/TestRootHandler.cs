@@ -57,7 +57,10 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             {
                 response.Content = new ByteArrayContent(Encoding.UTF8.GetBytes(_content));
             }
-            await _callback?.Invoke(request, cancellationToken);
+            if (_callback != null)
+            {
+                await _callback.Invoke(request, cancellationToken);
+            }
             return response;
         }
     }
