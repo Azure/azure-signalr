@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Testing;
-using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
 using Xunit;
@@ -22,13 +21,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
     public class RestHealthCheckServiceFacts : LoggedTest
     {
         private const string HubName = "hub";
-        public static IEnumerable<object[]> TestRestClientFactoryData
+        public static IEnumerable<object[]> HttpClientMockData
         {
             get
             {
-                yield return new object[] { new TestRestClientFactory("userAgent", HttpStatusCode.BadGateway) };
-                yield return new object[] { new TestRestClientFactory("userAgent", HttpStatusCode.NotFound) };
-                yield return new object[] { new TestRestClientFactory("userAgent", (req, token) => throw new HttpRequestException()) };
+                yield return new object[] { new TestRootHandler(HttpStatusCode.BadGateway) };
+                yield return new object[] { new TestRootHandler(HttpStatusCode.NotFound) };
+                yield return new object[] { new TestRootHandler((request, token) => throw new HttpRequestException()) };
             }
         }
         public RestHealthCheckServiceFacts(ITestOutputHelper output = null) : base(output)
@@ -36,8 +35,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Theory]
-        [MemberData(nameof(TestRestClientFactoryData))]
-        internal async Task TestRestHealthCheckServiceWithUnhealthyEndpoint(RestClientFactory implementationInstance)
+        [MemberData(nameof(HttpClientMockData))]
+        internal async Task TestRestHealthCheckServiceWithUnhealthyEndpoint(TestRootHandler testHandler)
         {
             using var _ = StartLog(out var loggerFactory);
             using var serviceHubContext = await new ServiceManagerBuilder()
@@ -45,7 +44,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .WithLoggerFactory(loggerFactory)
                 .ConfigureServices(services =>
                 {
-                    services.AddSingleton(implementationInstance);
+                    services.AddHttpClient(Constants.HttpClientNames.InternalDefault)
+                            .ConfigurePrimaryHttpMessageHandler(() => testHandler);
                     services.Configure<HealthCheckOption>(o => o.EnabledForSingleEndpoint = true);
                 })
                 .BuildServiceManager()
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             using var _ = StartLog(out var loggerFactory);
             var services = new ServiceCollection()
                 .AddSignalRServiceManager()
-                .AddHttpClient(Options.DefaultName).ConfigurePrimaryHttpMessageHandler(() => handlerMock.Object).Services
+                .AddHttpClient(Constants.HttpClientNames.InternalDefault).ConfigurePrimaryHttpMessageHandler(() => handlerMock.Object).Services
                 .Configure<HealthCheckOption>(o =>
                 {
                     o.CheckInterval = checkInterval;
@@ -92,6 +92,43 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             //Wait until the next health check finish
             await Task.Delay(checkInterval + retryTime + TimeSpan.FromSeconds(1));
             Assert.False(endpoint.Online);
+        }
+
+        [Fact]
+        public async Task TestTimeoutAsync()
+        {
+            using var _ = StartLog(out var loggerFactory);
+            DateTime startTime = default, endTime = default;
+            var services = new ServiceCollection()
+                .AddSignalRServiceManager()
+                .AddHttpClient(Constants.HttpClientNames.InternalDefault).ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(async (message, token) =>
+                {
+                    try
+                    {
+                        startTime = DateTime.Now;
+                        await Task.Delay(-1, token);
+                    }
+                    catch (OperationCanceledException) when (token.IsCancellationRequested)
+                    {
+                        endTime = DateTime.Now;
+                    }
+                })).Services
+                .Configure<HealthCheckOption>(o =>
+                {
+                    // Never retry
+                    o.RetryInterval = Timeout.InfiniteTimeSpan;
+                    o.HttpTimeout = TimeSpan.FromMilliseconds(100);
+                    o.EnabledForSingleEndpoint = true;
+                });
+            using var serviceHubContext = await new ServiceManagerBuilder(services)
+                .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
+                .WithLoggerFactory(loggerFactory)
+                .BuildServiceManager()
+                .CreateHubContextAsync(HubName, default);
+
+
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
+            Assert.InRange(endTime - startTime, TimeSpan.FromMilliseconds(80), TimeSpan.FromMilliseconds(120));
         }
     }
 }

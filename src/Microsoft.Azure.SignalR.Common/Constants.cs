@@ -118,6 +118,8 @@ namespace Microsoft.Azure.SignalR
         {
             public const string Resilient = "Resilient";
             public const string MessageResilient = "MessageResilient";
+            public const string UserDefault = "UserDefault";
+            public const string InternalDefault = "InternalDefault";
         }
     }
 }

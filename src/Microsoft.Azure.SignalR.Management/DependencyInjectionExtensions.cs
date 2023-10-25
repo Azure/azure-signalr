@@ -117,7 +117,7 @@ namespace Microsoft.Azure.SignalR.Management
             //add dependencies for transient mode only
             services.AddSingleton<PayloadBuilderResolver>();
 
-            services.AddRestClientFactory();
+            services.AddRestClient();
             services.AddSingleton<NegotiateProcessor>();
             return services.TrySetProductInfo();
         }
@@ -158,31 +158,37 @@ namespace Microsoft.Azure.SignalR.Management
             return services.Configure<ServiceManagerOptions>(o => o.ProductInfo ??= productInfo);
         }
 
-        private static IServiceCollection AddRestClientFactory(this IServiceCollection services)
+        private static IServiceCollection AddRestClient(this IServiceCollection services)
         {
-            // For AAD, health check.
+            // For internal health check. Not impacted by user set timeout.
             services
-                .AddHttpClient(Options.DefaultName, (sp, client) =>
+                .AddHttpClient(Constants.HttpClientNames.InternalDefault, ConfigureProduceInfo)
+                .ConfigurePrimaryHttpMessageHandler(ConfigureProxy);
+
+            // Used by user. Impacted by user set timeout.
+            services.AddSingleton(sp => sp.GetRequiredService<PayloadBuilderResolver>().GetPayloadContentBuilder())
+                    .AddSingleton<RestClient>()
+                    .AddSingleton<IBackOffPolicy>(sp =>
+                    {
+                        var options = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value;
+                        var retryOptions = options.RetryOptions;
+                        return retryOptions == null
+                            ? new DummyBackOffPolicy()
+                            : retryOptions.Mode switch
+                            {
+                                ServiceManagerRetryMode.Fixed => ActivatorUtilities.CreateInstance<FixedBackOffPolicy>(sp),
+                                ServiceManagerRetryMode.Exponential => ActivatorUtilities.CreateInstance<ExponentialBackOffPolicy>(sp),
+                                _ => throw new NotSupportedException($"Retry mode {retryOptions.Mode} is not supported.")
+                            };
+                    });
+            services
+                .AddHttpClient(Constants.HttpClientNames.UserDefault, (sp, client) =>
                 {
-                    client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout;
+                    ConfigureUserTimeout(sp, client);
                     ConfigureProduceInfo(sp, client);
                 })
                 .ConfigurePrimaryHttpMessageHandler(ConfigureProxy);
 
-            // For other data plane APIs.
-            services.AddSingleton<IBackOffPolicy>(sp =>
-            {
-                var options = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value;
-                var retryOptions = options.RetryOptions;
-                return retryOptions == null
-                    ? new DummyBackOffPolicy()
-                    : retryOptions.Mode switch
-                    {
-                        ServiceManagerRetryMode.Fixed => ActivatorUtilities.CreateInstance<FixedBackOffPolicy>(sp),
-                        ServiceManagerRetryMode.Exponential => ActivatorUtilities.CreateInstance<ExponentialBackOffPolicy>(sp),
-                        _ => throw new NotSupportedException($"Retry mode {retryOptions.Mode} is not supported.")
-                    };
-            });
             services
                 .AddHttpClient(Constants.HttpClientNames.Resilient, (sp, client) =>
                 {
@@ -206,20 +212,12 @@ namespace Microsoft.Azure.SignalR.Management
             services
                 .AddHttpClient(Constants.HttpClientNames.MessageResilient, (sp, client) =>
                 {
-                    client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout;
+                    ConfigureUserTimeout(sp, client);
                     ConfigureProduceInfo(sp, client);
                     ConfigureMessageTracingId(sp, client);
                 })
                 .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
                 .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorAndIdempotentForMessageApi(code)));
-
-            services.AddSingleton(sp =>
-            {
-                var options = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value;
-                var productInfo = options.ProductInfo;
-                var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
-                return new RestClientFactory(productInfo, httpClientFactory);
-            });
 
             return services;
 
@@ -232,6 +230,8 @@ namespace Microsoft.Azure.SignalR.Management
             static bool IsTransientErrorForNonMessageApi(HttpStatusCode code) =>
                 code >= HttpStatusCode.InternalServerError ||
                 code == HttpStatusCode.RequestTimeout;
+
+            static void ConfigureUserTimeout(IServiceProvider sp, HttpClient client) => client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout;
 
             static void ConfigureProduceInfo(IServiceProvider sp, HttpClient client) =>
                 client.DefaultRequestHeaders.Add(Constants.AsrsUserAgent, sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ProductInfo ??
