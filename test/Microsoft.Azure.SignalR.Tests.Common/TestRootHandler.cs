@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 {
     internal class TestRootHandler : DelegatingHandler
     {
-        private readonly Action<HttpRequestMessage, CancellationToken> _callback;
+        private readonly Func<HttpRequestMessage, CancellationToken, Task> _callback;
         private readonly HttpStatusCode _code;
         private readonly string _content;
 
@@ -27,6 +27,15 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         }
 
         public TestRootHandler(Action<HttpRequestMessage, CancellationToken> callback)
+            : this((message, token) =>
+            {
+                callback(message, token);
+                return Task.CompletedTask;
+            })
+        {
+        }
+
+        public TestRootHandler(Func<HttpRequestMessage, CancellationToken, Task> callback)
             : this(HttpStatusCode.OK)
         {
             _callback = callback;
@@ -37,7 +46,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             base.Dispose(false);
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             //to avoid possible retry policy which dispose content, create new content each time
             var response = new HttpResponseMessage(_code)
@@ -48,8 +57,11 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             {
                 response.Content = new ByteArrayContent(Encoding.UTF8.GetBytes(_content));
             }
-            _callback?.Invoke(request, cancellationToken);
-            return Task.FromResult(response);
+            if (_callback != null)
+            {
+                await _callback.Invoke(request, cancellationToken);
+            }
+            return response;
         }
     }
 }

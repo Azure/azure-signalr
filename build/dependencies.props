@@ -26,7 +26,6 @@
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.1</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
-    <MicrosoftRestClientRuntimePackageVersion>2.3.24</MicrosoftRestClientRuntimePackageVersion>
 
     <!--Security Patch-->
     <!-- Fix risks from Microsoft.AspNetCore.SignalR 1.0.0-->

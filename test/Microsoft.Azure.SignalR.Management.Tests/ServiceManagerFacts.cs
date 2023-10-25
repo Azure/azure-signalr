@@ -26,7 +26,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private const string AccessKey = "fake_key";
         private const string HubName = "signalrBench";
         private const string UserId = "UserA";
-        private const string UserAgent = "userAgent";
         private static readonly string _testConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0;";
         private static readonly TimeSpan _tokenLifeTime = TimeSpan.FromSeconds(99);
         private static readonly Claim[] _defaultClaims = new Claim[] { new Claim("type1", "val1") };
@@ -123,8 +122,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var services = new ServiceCollection()
                 .AddSignalRServiceManager()
-                .Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString)
-                .AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, HttpStatusCode.OK));
+                .Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
+            ConfigureTestHttpClient(HttpStatusCode.OK)(services);
             var serviceManager = services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>)
                 .BuildServiceProvider()
                 .GetRequiredService<IServiceManager>();
@@ -143,7 +142,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var services = new ServiceCollection();
             services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
             services.AddSignalRServiceManager();
-            services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, statusCode));
+            ConfigureTestHttpClient(statusCode)(services);
             services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
             using var serviceManager = services.BuildServiceProvider().GetRequiredService<IServiceManager>();
 
@@ -162,7 +161,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var services = new ServiceCollection();
             services.AddSignalRServiceManager();
             services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
-            services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, statusCode));
+            ConfigureTestHttpClient(statusCode)(services);
             services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
             using var serviceManager = services.BuildServiceProvider().GetRequiredService<IServiceManager>();
 
@@ -189,7 +188,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             using var serviceHubContext = await new ServiceManagerBuilder()
                 .WithOptions(o => o.ConnectionString = _testConnectionString)
                 // avoid waiting for health check result for long time
-                .ConfigureServices(services => services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, HttpStatusCode.OK)))
+                .ConfigureServices(ConfigureTestHttpClient(HttpStatusCode.OK))
                 .BuildServiceManager()
                 .CreateHubContextAsync(HubName, default);
             Assert.Equal(1, (serviceHubContext as ServiceHubContextImpl).ServiceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ConnectionCount);
@@ -205,10 +204,16 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     o.ConnectionCount = 5;
                 })
                 // avoid waiting for health check result for long time
-                .ConfigureServices(services => services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, HttpStatusCode.OK)))
+                .ConfigureServices(ConfigureTestHttpClient(HttpStatusCode.OK))
                 .BuildServiceManager()
                 .CreateHubContextAsync(HubName, default);
             Assert.Equal(5, (serviceHubContext as ServiceHubContextImpl).ServiceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ConnectionCount);
+        }
+
+        private static Action<IServiceCollection> ConfigureTestHttpClient(HttpStatusCode statusCode)
+        {
+            return services => services.AddHttpClient(Constants.HttpClientNames.UserDefault)
+                .ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(statusCode));
         }
     }
 }
