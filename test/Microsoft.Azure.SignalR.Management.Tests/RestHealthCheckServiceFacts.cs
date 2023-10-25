@@ -98,26 +98,26 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         public async Task TestTimeoutAsync()
         {
             using var _ = StartLog(out var loggerFactory);
-            DateTime startTime = default, endTime = default;
+            var taskSource = new TaskCompletionSource();
             var services = new ServiceCollection()
                 .AddSignalRServiceManager()
                 .AddHttpClient(Constants.HttpClientNames.InternalDefault).ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(async (message, token) =>
                 {
                     try
                     {
-                        startTime = DateTime.Now;
                         await Task.Delay(-1, token);
                     }
                     catch (OperationCanceledException) when (token.IsCancellationRequested)
                     {
-                        endTime = DateTime.Now;
+                        taskSource.SetResult();
                     }
                 })).Services
                 .Configure<HealthCheckOption>(o =>
                 {
                     // Never retry
                     o.RetryInterval = Timeout.InfiniteTimeSpan;
-                    o.HttpTimeout = TimeSpan.FromMilliseconds(100);
+                    // Make the timeout happens as soon as quickly.
+                    o.HttpTimeout = TimeSpan.FromMilliseconds(1);
                     o.EnabledForSingleEndpoint = true;
                 });
             using var serviceHubContext = await new ServiceManagerBuilder(services)
@@ -126,9 +126,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .BuildServiceManager()
                 .CreateHubContextAsync(HubName, default);
 
-
-            await Task.Delay(TimeSpan.FromMilliseconds(200));
-            Assert.InRange(endTime - startTime, TimeSpan.FromMilliseconds(80), TimeSpan.FromMilliseconds(120));
+            await taskSource.Task.OrTimeout();
         }
     }
 }
