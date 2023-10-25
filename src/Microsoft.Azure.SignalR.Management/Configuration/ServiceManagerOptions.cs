@@ -6,6 +6,8 @@ using System.Net;
 using Azure.Core.Serialization;
 using Newtonsoft.Json;
 
+#nullable enable
+
 namespace Microsoft.Azure.SignalR.Management
 {
     /// <summary>
@@ -16,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Gets or sets the ApplicationName which will be prefixed to each hub name
         /// </summary>
-        public string ApplicationName { get; set; }
+        public string? ApplicationName { get; set; }
 
         /// <summary>
         /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 1.
@@ -26,17 +28,17 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Gets or sets a service endpoint of Azure SignalR Service instance by connection string.
         /// </summary>
-        public string ConnectionString { get; set; } = null;
+        public string? ConnectionString { get; set; } = null;
 
         /// <summary>
         /// Gets or sets multiple service endpoints of Azure SignalR Service instances.
         /// </summary>
-        public ServiceEndpoint[] ServiceEndpoints { get; set; }
+        public ServiceEndpoint[]? ServiceEndpoints { get; set; }
 
         /// <summary>
         /// Gets or sets the proxy used when ServiceManager will attempt to connect to Azure SignalR Service.
         /// </summary>
-        public IWebProxy Proxy { get; set; }
+        public IWebProxy? Proxy { get; set; }
 
         /// <summary>
         /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
@@ -48,6 +50,8 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public TimeSpan HttpClientTimeout { get; set; } = TimeSpan.FromSeconds(100);
 
+        public ServiceManagerRetryOptions? RetryOptions { get; set; }
+
         /// <summary>
         /// Gets the json serializer settings that will be used to serialize content sent to Azure SignalR Service.
         /// </summary>
@@ -57,7 +61,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// If users want to use MessagePack, they should go to <see cref="ServiceManagerBuilder.AddHubProtocol(AspNetCore.SignalR.Protocol.IHubProtocol)"/>
         /// </summary>
-        internal ObjectSerializer ObjectSerializer { get; set; }
+        internal ObjectSerializer? ObjectSerializer { get; set; }
 
         /// <summary>
         /// Set a JSON object serializer used to serialize the data sent to clients.
@@ -73,7 +77,7 @@ namespace Microsoft.Azure.SignalR.Management
         // not ready
         internal bool EnableMessageTracing { get; set; } = false;
 
-        internal string ProductInfo { get; set; }
+        internal string? ProductInfo { get; set; }
 
         internal void ValidateOptions()
         {

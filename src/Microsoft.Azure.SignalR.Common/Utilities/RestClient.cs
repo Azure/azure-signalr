@@ -11,7 +11,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+
+#nullable enable
 
 namespace Microsoft.Azure.SignalR
 {
@@ -28,7 +31,6 @@ namespace Microsoft.Azure.SignalR
             _enableMessageTracing = enableMessageTracing;
         }
 
-
         public RestClient(IHttpClientFactory httpClientFactory, ObjectSerializer objectSerializer, bool enableMessageTracing) : this(httpClientFactory, new JsonPayloadContentBuilder(objectSerializer), enableMessageTracing)
         {
         }
@@ -41,31 +43,88 @@ namespace Microsoft.Azure.SignalR
         public Task SendAsync(
             RestApiEndpoint api,
             HttpMethod httpMethod,
-            string productInfo,
-            string methodName = null,
-            object[] args = null,
-            Func<HttpResponseMessage, bool> handleExpectedResponse = null,
+            string? methodName = null,
+            object[]? args = null,
+            Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
             CancellationToken cancellationToken = default)
         {
             if (handleExpectedResponse == null)
             {
-                return SendAsync(api, httpMethod, productInfo, methodName, args, handleExpectedResponseAsync: null, cancellationToken);
+                return SendAsync(api, httpMethod, methodName, args, handleExpectedResponseAsync: null, cancellationToken);
             }
 
-            return SendAsync(api, httpMethod, productInfo, methodName, args, response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
+            return SendAsync(api, httpMethod, methodName, args, response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
         }
 
-        public async Task SendAsync(
+        public Task SendAsync(
             RestApiEndpoint api,
             HttpMethod httpMethod,
-            string productInfo,
-            string methodName = null,
-            object[] args = null,
-            Func<HttpResponseMessage, Task<bool>> handleExpectedResponseAsync = null,
+            string? methodName = null,
+            object[]? args = null,
+            Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
             CancellationToken cancellationToken = default)
         {
-            using var httpClient = _httpClientFactory.CreateClient();
-            using var request = BuildRequest(api, httpMethod, productInfo, methodName, args);
+            return SendAsyncCore(Options.DefaultName, api, httpMethod, methodName, args, handleExpectedResponseAsync, cancellationToken);
+        }
+
+        public Task SendWithRetryAsync(
+            RestApiEndpoint api,
+            HttpMethod httpMethod,
+            string? methodName = null,
+            object[]? args = null,
+            Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
+            CancellationToken cancellationToken = default)
+        {
+            return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, methodName, args, handleExpectedResponse == null ? null : response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
+        }
+
+        public Task SendMessageWithRetryAsync(
+            RestApiEndpoint api,
+            HttpMethod httpMethod,
+            string? methodName = null,
+            object[]? args = null,
+            Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
+            CancellationToken cancellationToken = default)
+        {
+            return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, methodName, args, handleExpectedResponse == null ? null : response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
+        }
+
+        private async Task ThrowExceptionOnResponseFailureAsync(HttpResponseMessage response)
+        {
+            if (response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            var detail = await response.Content.ReadAsStringAsync();
+
+#if NET5_0_OR_GREATER
+            var innerException = new HttpRequestException(
+    $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})", null, response.StatusCode);
+#else
+            var innerException = new HttpRequestException(
+                $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})");
+#endif
+            throw response.StatusCode switch
+            {
+                HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(response.RequestMessage?.RequestUri?.ToString(), innerException, detail),
+                HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(response.RequestMessage?.RequestUri?.ToString(), innerException),
+                HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(response.RequestMessage?.RequestUri?.ToString(), innerException),
+                _ => new AzureSignalRRuntimeException(response.RequestMessage?.RequestUri?.ToString(), innerException),
+            };
+        }
+
+        private async Task SendAsyncCore(
+            string httpClientName,
+            RestApiEndpoint api,
+            HttpMethod httpMethod,
+            string? methodName = null,
+            object[]? args = null,
+            Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
+            CancellationToken cancellationToken = default)
+        {
+            using var httpClient = _httpClientFactory.CreateClient(httpClientName);
+            using var request = BuildRequest(api, httpMethod, methodName, args);
 
             try
             {
@@ -88,32 +147,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public async Task ThrowExceptionOnResponseFailureAsync(HttpResponseMessage response)
-        {
-            if (response.IsSuccessStatusCode)
-            {
-                return;
-            }
-
-            var detail = await response.Content.ReadAsStringAsync();
-
-#if NET5_0_OR_GREATER
-            var innerException = new HttpRequestException(
-    $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})", null, response.StatusCode);
-#else
-            var innerException = new HttpRequestException(
-                $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})");
-#endif
-            throw response.StatusCode switch
-            {
-                HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(response.RequestMessage.RequestUri.ToString(), innerException, detail),
-                HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(response.RequestMessage.RequestUri.ToString(), innerException),
-                HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(response.RequestMessage.RequestUri.ToString(), innerException),
-                _ => new AzureSignalRRuntimeException(response.RequestMessage.RequestUri.ToString(), innerException),
-            };
-        }
-
-        private static Uri GetUri(string url, IDictionary<string, StringValues> query)
+        private static Uri GetUri(string url, IDictionary<string, StringValues>? query)
         {
             if (query == null || query.Count == 0)
             {
@@ -136,28 +170,27 @@ namespace Microsoft.Azure.SignalR
                     sb.Append(sb.Length > 0 ? '&' : '?');
                     sb.Append(Uri.EscapeDataString(item.Key));
                     sb.Append('=');
-                    sb.Append(Uri.EscapeDataString(value));
+                    sb.Append(Uri.EscapeDataString(value!));
                 }
             }
             builder.Query = sb.ToString();
             return builder.Uri;
         }
 
-        private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string productInfo, string methodName = null, object[] args = null)
+        private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string? methodName = null, object[]? args = null)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
             if (_enableMessageTracing)
             {
                 AddTracingId(api);
             }
-            return GenerateHttpRequest(api.Audience, api.Query, httpMethod, payload, api.Token, productInfo);
+            return GenerateHttpRequest(api.Audience, api.Query, httpMethod, payload, api.Token);
         }
 
-        private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, PayloadMessage payload, string tokenString, string productInfo)
+        private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, PayloadMessage? payload, string tokenString)
         {
             var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
-            request.Headers.Add(Constants.AsrsUserAgent, productInfo);
             request.Content = _payloadContentBuilder.Build(payload);
             return request;
         }
