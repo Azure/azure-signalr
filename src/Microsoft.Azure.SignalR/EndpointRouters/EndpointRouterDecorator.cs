@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR
 
         public EndpointRouterDecorator(IEndpointRouter router = null)
         {
-            _inner = router ?? new DefaultEndpointRouter(null);
+            _inner = router ?? new DefaultEndpointRouter();
         }
 
         public virtual ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
