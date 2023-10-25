@@ -61,7 +61,9 @@ namespace Microsoft.Azure.SignalR.Management
 
         private async Task CheckEndpointHealthAsync()
         {
-            if (_serviceEndpointManager.Endpoints.Count > 1 || _enabledForSingleEndpoint)
+            if (_serviceEndpointManager.Endpoints.Count > 1 || _enabledForSingleEndpoint ||
+                // If there is only one unhealthy endpoint, we still need to check its health to give it a chance to become healthy again.
+                _serviceEndpointManager.Endpoints.Any(e => !e.Key.Online))
             {
                 await Task.WhenAll(_serviceEndpointManager.GetEndpoints(_hubName).Select(async endpoint =>
                 {
