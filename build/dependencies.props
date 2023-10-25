@@ -5,18 +5,14 @@
   <PropertyGroup Label="Package Versions">
     <!-- Azure ASP.NET Core SignalR -->
     <MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion>1.0.4</MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion>
-    <MicrosoftAspNetCoreHttpConnectionsCommonPackage3_0Version>3.0.0</MicrosoftAspNetCoreHttpConnectionsCommonPackage3_0Version>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackage3_1Version>3.1.9</MicrosoftAspNetCoreHttpConnectionsCommonPackage3_1Version>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackage5_0Version>5.0.1</MicrosoftAspNetCoreHttpConnectionsCommonPackage5_0Version>
     <MicrosoftExtensionsLoggingAbstractionsPackageVersion>2.1.1</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
-    <MicrosoftExtensionsLoggingAbstractionsPackage3_0Version>3.0.0</MicrosoftExtensionsLoggingAbstractionsPackage3_0Version>
     <MicrosoftExtensionsLoggingAbstractionsPackage3_1Version>3.1.9</MicrosoftExtensionsLoggingAbstractionsPackage3_1Version>
     <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0</MicrosoftExtensionsDependencyInjectionPackageVersion>
-    <MicrosoftExtensionsDependencyInjectionPackage3_0Version>3.0.0</MicrosoftExtensionsDependencyInjectionPackage3_0Version>
     <MicrosoftExtensionsDependencyInjectionPackage3_1Version>3.1.9</MicrosoftExtensionsDependencyInjectionPackage3_1Version>
     <MicrosoftExtensionHttpVersion>2.1.0</MicrosoftExtensionHttpVersion>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.2</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
-    <MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>3.0.0</MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackage3_1Version>3.1.9</MicrosoftAspNetCoreConnectionsAbstractionsPackage3_1Version>
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRPackageVersion>
     <MicrosoftAspNetCoreLocalizationPackageVersion>2.1.0</MicrosoftAspNetCoreLocalizationPackageVersion>

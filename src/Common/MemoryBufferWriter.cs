@@ -293,7 +293,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-#if NETCOREAPP2_2
+#if NETCOREAPP
         public override void Write(ReadOnlySpan<byte> span)
         {
             if (_currentSegment != null && span.TryCopyTo(_currentSegment.AsSpan(_position)))
