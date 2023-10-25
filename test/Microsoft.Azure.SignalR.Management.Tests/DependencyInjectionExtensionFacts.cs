@@ -331,6 +331,68 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://abc"));
         }
 
+        [Theory]
+        [InlineData(Constants.HttpClientNames.Resilient)]
+        [InlineData(Constants.HttpClientNames.MessageResilient)]
+        public async Task HttpClientMessageTracingIdEnabledTestAsync(string httpClientName)
+        {
+            using var hubContext = await new ServiceManagerBuilder()
+                .WithOptions(o =>
+                {
+                    o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
+                    o.EnableMessageTracing = true;
+                })
+                .ConfigureServices(services => services.AddHttpClient(httpClientName)
+                            .ConfigurePrimaryHttpMessageHandler(() =>
+                            new TestRootHandler((message, token) =>
+                            {
+                                if (message.Headers.TryGetValues(Constants.Headers.AsrsMessageTracingId, out var values))
+                                {
+                                    Assert.Single(values);
+                                    Convert.ToUInt64(values.Single());
+                                }
+                                else
+                                {
+                                    throw new Exception("Message tracing Id header is missing");
+                                }
+                            })))
+                .BuildServiceManager()
+                .CreateHubContextAsync("hubName", default);
+            var serviceProvider = (hubContext as ServiceHubContextImpl).ServiceProvider;
+            var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+            using var httpClient = httpClientFactory.CreateClient(httpClientName);
+            await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://abc"));
+        }
+
+
+        [Theory]
+        [InlineData(Constants.HttpClientNames.Resilient)]
+        [InlineData(Constants.HttpClientNames.MessageResilient)]
+        public async Task HttpClientMessageTracingIdDisabledTestAsync(string httpClientName)
+        {
+            using var hubContext = await new ServiceManagerBuilder()
+                .WithOptions(o =>
+                {
+                    o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
+                    o.EnableMessageTracing = false;
+                })
+                .ConfigureServices(services => services.AddHttpClient(httpClientName)
+                            .ConfigurePrimaryHttpMessageHandler(() =>
+                            new TestRootHandler((message, token) =>
+                            {
+                                if (message.Headers.TryGetValues(Constants.Headers.AsrsMessageTracingId, out var values))
+                                {
+                                    throw new Exception("Message tracing Id header is not expected");
+                                }
+                            })))
+                .BuildServiceManager()
+                .CreateHubContextAsync("hubName", default);
+            var serviceProvider = (hubContext as ServiceHubContextImpl).ServiceProvider;
+            var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+            using var httpClient = httpClientFactory.CreateClient(httpClientName);
+            await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://abc"));
+        }
+
         private class WaitInfinitelyHandler : DelegatingHandler
         {
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

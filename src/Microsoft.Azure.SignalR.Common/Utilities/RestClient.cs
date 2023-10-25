@@ -22,21 +22,20 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IPayloadContentBuilder _payloadContentBuilder;
-        private readonly bool _enableMessageTracing;
 
-        public RestClient(IHttpClientFactory httpClientFactory, IPayloadContentBuilder contentBuilder, bool enableMessageTracing)
+        public RestClient(IHttpClientFactory httpClientFactory, IPayloadContentBuilder contentBuilder)
         {
             _httpClientFactory = httpClientFactory;
             _payloadContentBuilder = contentBuilder;
-            _enableMessageTracing = enableMessageTracing;
         }
 
-        public RestClient(IHttpClientFactory httpClientFactory, ObjectSerializer objectSerializer, bool enableMessageTracing) : this(httpClientFactory, new JsonPayloadContentBuilder(objectSerializer), enableMessageTracing)
+        // TODO: Test only, will remove later
+        internal RestClient(IHttpClientFactory httpClientFactory) : this(httpClientFactory, new JsonPayloadContentBuilder(new JsonObjectSerializer()))
         {
         }
 
-
-        public RestClient() : this(HttpClientFactory.Instance, new JsonObjectSerializer(), false)
+        // TODO: remove later
+        public RestClient() : this(HttpClientFactory.Instance)
         {
         }
 
@@ -180,10 +179,6 @@ namespace Microsoft.Azure.SignalR
         private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string? methodName = null, object[]? args = null)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
-            if (_enableMessageTracing)
-            {
-                AddTracingId(api);
-            }
             return GenerateHttpRequest(api.Audience, api.Query, httpMethod, payload, api.Token);
         }
 
@@ -193,16 +188,6 @@ namespace Microsoft.Azure.SignalR
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
             request.Content = _payloadContentBuilder.Build(payload);
             return request;
-        }
-
-        private void AddTracingId(RestApiEndpoint api)
-        {
-            var id = MessageWithTracingIdHelper.Generate();
-            if (api.Query == null)
-            {
-                api.Query = new Dictionary<string, StringValues>();
-            }
-            api.Query.Add(Constants.Headers.AsrsMessageTracingId, id.ToString());
         }
     }
 }

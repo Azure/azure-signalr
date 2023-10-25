@@ -197,6 +197,7 @@ namespace Microsoft.Azure.SignalR.Management
                         client.Timeout = Timeout.InfiniteTimeSpan;
                     }
                     ConfigureProduceInfo(sp, client);
+                    ConfigureMessageTracingId(sp, client);
                 })
                 .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
                 .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorForNonMessageApi(code)))
@@ -207,6 +208,7 @@ namespace Microsoft.Azure.SignalR.Management
                 {
                     client.Timeout = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.HttpClientTimeout;
                     ConfigureProduceInfo(sp, client);
+                    ConfigureMessageTracingId(sp, client);
                 })
                 .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
                 .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorAndIdempotentForMessageApi(code)));
@@ -236,6 +238,13 @@ namespace Microsoft.Azure.SignalR.Management
                     // The following value should not be used.
                     "Microsoft.Azure.SignalR.Management/");
 
+            static void ConfigureMessageTracingId(IServiceProvider sp, HttpClient client)
+            {
+                if (sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.EnableMessageTracing)
+                {
+                    client.DefaultRequestHeaders.Add(Constants.Headers.AsrsMessageTracingId, MessageWithTracingIdHelper.Generate().ToString());
+                }
+            }
         }
     }
 }

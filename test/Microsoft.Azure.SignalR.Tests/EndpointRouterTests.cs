@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -14,7 +12,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public void TestDefaultEndpointRouterWeightedMode()
         {
-            var drt = GetEndpointRouter(EndpointRoutingMode.Weighted);
+            var drt = new DefaultEndpointRouter();
 
             const int loops = 20;
             var context = new RandomContext();
@@ -37,46 +35,43 @@ namespace Microsoft.Azure.SignalR.Tests
             context.Reset();
         }
 
-        [Fact]
-        public void TestDefaultEndpointRouterLeastConnectionMode()
+        [Theory]
+        [InlineData(200)]
+        [InlineData(300)]
+        [InlineData(400)]
+        [InlineData(500)]
+        public void TestDefaultEndpointRouterWeightedModeWhenAutoScaleIsEnabled(int quotaOfScaleUpInstance)
         {
-            var drt = GetEndpointRouter(EndpointRoutingMode.LeastConnection);
+            var drt = new DefaultEndpointRouter();
 
-            const int loops = 10;
+            var loops = 100 + (quotaOfScaleUpInstance / 5);
             var context = new RandomContext();
+            const double quotaBarForScaleUp = 0.8;
 
-            const string small = "small_instance", large = "large_instance";
-            var uSmall = GenerateServiceEndpoint(100, 0, 90, small);
-            var uLarge = GenerateServiceEndpoint(1000, 0, 200, large);
-            var el = new List<ServiceEndpoint>() { uLarge, uSmall };
+            var endpointA = GenerateServiceEndpoint(quotaOfScaleUpInstance, 0, 80, "a");
+            var endpointB = GenerateServiceEndpoint(100, 0, 70, "b");
+            var endpointC = GenerateServiceEndpoint(100, 0, 70, "c");
+            var el = new List<ServiceEndpoint>() {endpointA, endpointB, endpointC};
             context.BenchTest(loops, () =>
             {
                 var ep = drt.GetNegotiateEndpoint(null, el);
                 ep.EndpointMetrics.ClientConnectionCount++;
+                var percent = (ep.EndpointMetrics.ClientConnectionCount + ep.EndpointMetrics.ServerConnectionCount) /
+                              (double)ep.EndpointMetrics.ConnectionCapacity;
+                if (percent > quotaBarForScaleUp)
+                {
+                    ep.EndpointMetrics.ConnectionCapacity += 100;
+                }
+
                 return ep.Name;
             });
-            var uLargeCount = context.GetCount(large);
-            var uSmallCount = context.GetCount(small);
-            Assert.Equal(0, uLargeCount);
-            Assert.Equal(10, uSmallCount);
+
+            Assert.Equal(context.GetCount("a") + context.GetCount("b") + context.GetCount("c"), loops);
+            Assert.Equal(quotaOfScaleUpInstance, endpointA.EndpointMetrics.ConnectionCapacity);
+            Assert.Equal(200, endpointB.EndpointMetrics.ConnectionCapacity);
+            Assert.Equal(200, endpointC.EndpointMetrics.ConnectionCapacity);
+
             context.Reset();
-        }
-
-        private static IEndpointRouter GetEndpointRouter(EndpointRoutingMode mode)
-        {
-            var config = new ConfigurationBuilder().Build();
-            var serviceProvider = new ServiceCollection()
-                .AddSignalR()
-                .AddAzureSignalR(
-                    o =>
-                    {
-                        o.EndpointRoutingMode = mode;
-                    })
-                .Services
-                .AddSingleton<IConfiguration>(config)
-                .BuildServiceProvider();
-
-            return serviceProvider.GetRequiredService<IEndpointRouter>();
         }
 
         private static ServiceEndpoint GenerateServiceEndpoint(int capacity, int serverConnectionCount,

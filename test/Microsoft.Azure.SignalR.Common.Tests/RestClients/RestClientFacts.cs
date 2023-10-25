@@ -4,7 +4,6 @@
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Azure.Core.Serialization;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -21,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
             var httpClientFactory = new ServiceCollection()
                 .AddHttpClient("").ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(HttpStatusCode.InsufficientStorage)).Services
                 .BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
-            var client = new RestClient(httpClientFactory, new JsonObjectSerializer(), true);
+            var client = new RestClient(httpClientFactory);
             var apiEndpoint = new RestApiEndpoint("https://localhost.test.com", "token");
             var exception = await Assert.ThrowsAsync<AzureSignalRRuntimeException>(() =>
             {
