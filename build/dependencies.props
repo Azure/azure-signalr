@@ -26,7 +26,7 @@
     <SystemMemoryPackageVersion>4.5.4</SystemMemoryPackageVersion>
     <SystemRuntimeCompilerServicesUnsafePackageVersion>4.6.0</SystemRuntimeCompilerServicesUnsafePackageVersion>
     <SystemIdentityModelTokensJwtPackageVersion>5.5.0</SystemIdentityModelTokensJwtPackageVersion>
-    <AzureIdentityPackageVersion>1.4.0</AzureIdentityPackageVersion>
+    <AzureIdentityPackageVersion>1.10.2</AzureIdentityPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.1</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
@@ -67,7 +67,7 @@
     <!-- Samples -->
     <MicrosoftAspNetCorePackageVersion>2.1.0</MicrosoftAspNetCorePackageVersion>
     <MicrosoftAspNetCoreSignalRClientPackageVersion>3.1.24</MicrosoftAspNetCoreSignalRClientPackageVersion>
-    <MicrosoftOwinPackageVersion>2.1.0</MicrosoftOwinPackageVersion>
+    <MicrosoftOwinPackageVersion>4.2.2</MicrosoftOwinPackageVersion>
     <OwinPackageVersion>1.0.0</OwinPackageVersion>
 
     <!--Emulator -->
@@ -83,7 +83,7 @@
     <MoqPackageVersion>4.14.5</MoqPackageVersion>
     <XunitPackageVersion>2.4.0</XunitPackageVersion>
     <XunitRunnerVisualStudioPackageVersion>2.4.0</XunitRunnerVisualStudioPackageVersion>
-    <MicrosoftOwinTestingPackageVersion>4.0.0</MicrosoftOwinTestingPackageVersion>
+    <MicrosoftOwinTestingPackageVersion>4.2.2</MicrosoftOwinTestingPackageVersion>
     <MicrosoftAspNetCoreTestingVersion>2.1.0</MicrosoftAspNetCoreTestingVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.3</SystemThreadingTasksExtensionsVersion>
     <MicrosoftAspNetCoreTestHostPackageVersion>3.0.3</MicrosoftAspNetCoreTestHostPackageVersion>
