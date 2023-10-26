@@ -157,7 +157,14 @@ namespace Microsoft.Azure.SignalR
                 catch (Exception e)
                 {
                     latest = e;
-                    await Task.Delay(AuthorizeRetryInterval);
+                    try
+                    {
+                        await Task.Delay(AuthorizeRetryInterval, ctoken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                 }
             }
 
