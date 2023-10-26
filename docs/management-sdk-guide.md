@@ -3,6 +3,7 @@
 This SDK is for ASP.NET **Core** SignalR. For differences between ASP.NET SignalR and ASP.NET Core SignalR, see [here](https://learn.microsoft.com/aspnet/core/signalr/version-differences?view=aspnetcore-6.0).
 
 ## Build Status
+
 [![Windows](https://img.shields.io/github/actions/workflow/status/Azure/azure-signalr/windows.yml?branch=dev&label=Windows)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Windowns)
 [![Ubuntu](https://img.shields.io/github/actions/workflow/status/Azure/azure-signalr/ubuntu.yml?branch=dev&label=Ubuntu)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Ubuntu)
 [![OSX](https://img.shields.io/github/actions/workflow/status/Azure/azure-signalr/osx.yml?branch=dev&label=OSX)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-OSX)
@@ -12,7 +13,6 @@ This SDK is for ASP.NET **Core** SignalR. For differences between ASP.NET Signal
 |Package Name | Target Framework | NuGet | MyGet|
 |---|---|---|---|
 | Microsoft.Azure.SignalR.Management | .NET Standard 2.0 <br/> .NET Core App 3.0 <br/> .NET 5.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Management.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Management.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management) |
-
 
 ## Getting Started
 
@@ -40,7 +40,8 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 | Check if a user in a group                 | :heavy_check_mark: | :heavy_check_mark: |
 |                                            |                    |                    |
 | Multiple SignalR service instances support | :x:                | :heavy_check_mark: |
-| [MessagePack clients support](#message-pack-serialization)                |  since v1.21.0 |  since v1.20.0     |
+| [MessagePack clients support](#message-pack-serialization)  |  since v1.21.0 |  since v1.20.0     |
+| [Retry transient error](#retry-transient-error)                      | since v1.22.0      |  :x:               |
 
 **Features only come with new API**
 |                              | Transient          | Persistent  |
@@ -50,10 +51,10 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 | Check if a user exists       | :heavy_check_mark: | Since v1.11 |
 | Close a client connection    | :heavy_check_mark: | Since v1.11 |
 
-
-> More details about different modes can be found [here](#Transport-Type).
+> More details about different modes can be found [here](#transport-type).
 
 > [For a full sample on management SDK, please go here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
+>
 ## Create Service Manager
 
 Build your instance of `ServiceManager` from a `ServiceManagerBuilder`
@@ -149,6 +150,7 @@ finally
 A strongly typed hub is a programming model that you can extract your client methods into an interface, so that avoid errors like misspelling the method name or passing the wrong parameter types.
 
 Let's say we have a client method called `ReceivedMessage` with two string parameters. Without strongly typed hubs, you broadcast to clients through `hubContext.Clients.All.SendAsync("ReceivedMessage", user, message)`. With strongly typed hubs, you first define an interface like this:
+
 ```cs
 public interface IChatClient
 {
@@ -157,11 +159,13 @@ public interface IChatClient
 ```
 
 And then you create a strongly typed hub context which implements `IHubContext<Hub<T>, T>`, `T` is your client method interface:
+
 ```cs
 ServiceHubContext<IChatClient> serviceHubContext = await serviceManager.CreateHubContextAsync<IChatClient>(hubName, cancellationToken);
 ```
 
 Finally, you could directly invoke the method:
+
 ```cs
 await Clients.All.ReceiveMessage(user, message);
 ```
@@ -175,6 +179,7 @@ Except for the difference of sending messages, you could negotiate or manage gro
 ## Transport Type
 
 This SDK can communicates to Azure SignalR Service with two transport types:
+
 * Transient: Create a Http request Azure SignalR Service for each message sent. The SDK simply wrap up [Azure SignalR Service REST API](./rest-api.md) in Transient mode. It is useful when you are unable to establish a WebSockets connection.
 * Persistent: Create a WebSockets connection first and then send all messages in this connection. It is useful when you send large amount of messages.
 
@@ -186,24 +191,40 @@ This SDK can communicates to Azure SignalR Service with two transport types:
 | MessagePack clients support    |  since v1.21.0   |  since v1.20.0                    |
 
 #### Json serialization
+
 See [Customizing Json Serialization in Management SDK](./advanced-topics/json-object-serializer.md)
 
 #### Message Pack serialization
 
 1. You need to install `Microsoft.AspNetCore.SignalR.Protocols.MessagePack` package.
 1. To add a MessagePack protocol side-by-side with the default JSON protocol:
+
     ```csharp
     var serviceManagerBuilder = new ServiceManagerBuilder()
         .AddHubProtocol(new MessagePackHubProtocol());
     ```
+
 1. To fully control the hub protocols, you can use
+
     ```csharp
         var serviceManagerBuilder = new ServiceManagerBuilder()
             .WithHubProtocols(new MessagePackHubProtocol(), new JsonHubProtocol());
     ```
-    `WithHubProtocols` first clears the existing protocols, and then adds the new protocols. You can also use this method to remove the JSON protocol and use MessagePack only.
 
+    `WithHubProtocols` first clears the existing protocols, and then adds the new protocols. You can also use this method to remove the JSON protocol and use MessagePack only.
 
 > For transient mode, by default the service side converts JSON payload to MessagePack payload and it's the legacy way to support MessagePack. However, we recommend you to add a MessagePack hub protocol explicitly as the legacy way might not work as you expect.
 
+## HTTP requests retry
 
+For the **transient** mode, this SDK provides the capability to automatically resend requests when transient errors occur, as long as the requests are idempotent. To enable this capability, you can use the `ServiceManagerOptions.RetryOptions` property.
+
+In particular, the following types of requests are retried:
+
+* For message requests that send messages to SignalR clients, the SDK retries the request if the HTTP response status code is greater than 500. Note that when the HTTP response code is equal to 500, it may indicate a timeout on the service side, and retrying the request could result in duplicate messages.
+
+* For other types of requests, such as adding a connection to a group, the SDK retries the request under the following conditions:
+    1. The HTTP response status code is in the 5xx range, or the request timed out with a status code of 408 (Request Timeout).
+    2. The request timed out with a duration longer than the timeout length configured in `ServiceManagerOptions.HttpClientTimeout`.
+
+Please note that the SDK can only retry idempotent requests, which are requests that have no additional effect if they are repeated. If your requests are not idempotent, you may need to handle retries manually.
