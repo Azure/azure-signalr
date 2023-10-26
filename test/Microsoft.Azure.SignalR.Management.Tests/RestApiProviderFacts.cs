@@ -4,9 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
-using Azure.Core.Serialization;
 using Microsoft.Azure.SignalR.Tests;
 using Xunit;
 
@@ -31,28 +29,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             Assert.Equal(expectedAudience, api.Audience);
             Assert.Equal(expectedTokenString, api.Token);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        internal async Task EnableMessageTracingIdInRestApiTest(bool enable)
-        {
-            var api = await _restApiProvider.GetBroadcastEndpointAsync("app", "hub");
-            var client = new RestClient(HttpClientFactory.Instance, new NewtonsoftJsonObjectSerializer(), enable);
-            try
-            {
-                await client.SendAsync(api, HttpMethod.Post, "", handleExpectedResponse: default).OrTimeout(200);
-            }
-            catch
-            {
-            }
-            Assert.Equal(enable, api.Query?.ContainsKey(Constants.Headers.AsrsMessageTracingId) ?? false);
-            if (enable)
-            {
-                var id = Convert.ToUInt64(api.Query[Constants.Headers.AsrsMessageTracingId]);
-                Assert.Equal(MessageWithTracingIdHelper.Prefix, id);
-            }
         }
 
         public static IEnumerable<object[]> GetTestData() =>

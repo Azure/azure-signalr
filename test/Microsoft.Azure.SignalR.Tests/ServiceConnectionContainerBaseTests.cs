@@ -16,61 +16,6 @@ namespace Microsoft.Azure.SignalR.Tests
         public ServiceConnectionContainerBaseTests(ITestOutputHelper helper) : base(helper)
         { }
 
-
-        [Theory]
-        [InlineData(ServiceConnectionStatus.Disconnected)]
-        [InlineData(ServiceConnectionStatus.Connected)]
-        [InlineData(ServiceConnectionStatus.Connecting)]
-        [InlineData(ServiceConnectionStatus.Inited)]
-        internal async Task TestIfConnectionWillNotRestartAfterShutdown(ServiceConnectionStatus status)
-        {
-            List<IServiceConnection> connections = new List<IServiceConnection>
-            {
-                new SimpleTestServiceConnection(),
-                new SimpleTestServiceConnection(status: status)
-            };
-
-            IServiceConnection connection = connections[1];
-
-            using TestServiceConnectionContainer container = new TestServiceConnectionContainer(connections, factory: new SimpleTestServiceConnectionFactory());
-            container.ShutdownForTest();
-
-            await container.OnConnectionCompleteForTestShutdown(connection);
-
-            // the connection should not be replaced when shutting down
-            Assert.Equal(container.Connections[1], connection);
-            // its status is not changed
-            Assert.Equal(status, container.Connections[1].Status);
-            // the container is not listening to the connection's status changes after shutdown
-            Assert.Equal(1, (connection as SimpleTestServiceConnection).ConnectionStatusChangedRemoveCount);
-        }
-
-        [Theory]
-        [InlineData(GracefulShutdownMode.Off)]
-        [InlineData(GracefulShutdownMode.WaitForClientsClose)]
-        [InlineData(GracefulShutdownMode.MigrateClients)]
-        internal async Task TestOffline(GracefulShutdownMode mode)
-        {
-            List<IServiceConnection> connections = new List<IServiceConnection>
-            {
-                new SimpleTestServiceConnection(),
-                new SimpleTestServiceConnection()
-            };
-            using TestServiceConnectionContainer container = new TestServiceConnectionContainer(connections, factory: new SimpleTestServiceConnectionFactory());
-
-            foreach (SimpleTestServiceConnection c in connections)
-            {
-                Assert.False(c.ConnectionOfflineTask.IsCompleted);
-            }
-
-            await container.OfflineAsync(mode);
-
-            foreach (SimpleTestServiceConnection c in connections)
-            {
-                Assert.True(c.ConnectionOfflineTask.IsCompleted);
-            }
-        }
-
         [Theory]
         [InlineData(3, 3, 0)]
         [InlineData(0, 1, 1)] // stop more than start will log warn
@@ -95,10 +40,10 @@ namespace Microsoft.Azure.SignalR.Tests
                     new SimpleTestServiceConnection(),
                     new SimpleTestServiceConnection()
                 };
-                using TestServiceConnectionContainer container = 
+                using TestServiceConnectionContainer container =
                     new TestServiceConnectionContainer(
-                        connections, 
-                        factory: new SimpleTestServiceConnectionFactory(), 
+                        connections,
+                        factory: new SimpleTestServiceConnectionFactory(),
                         logger: loggerFactory.CreateLogger<TestServiceConnectionContainer>());
 
                 await container.StartAsync();
@@ -114,12 +59,12 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 // default interval is 5s, add 2s for delay, validate any one connection write servers ping.
                 if (tasks.Count > 0)
-                { 
+                {
                     await Task.WhenAny(connections.Select(c =>
                     {
                         var connection = c as SimpleTestServiceConnection;
                         return connection.ServersPingTask.OrTimeout(7000);
-                    })); 
+                    }));
                 }
 
                 tasks.Clear();
@@ -211,20 +156,76 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
+        [Theory]
+        [InlineData(ServiceConnectionStatus.Disconnected)]
+        [InlineData(ServiceConnectionStatus.Connected)]
+        [InlineData(ServiceConnectionStatus.Connecting)]
+        [InlineData(ServiceConnectionStatus.Inited)]
+        internal async Task TestIfConnectionWillNotRestartAfterShutdown(ServiceConnectionStatus status)
+        {
+            List<IServiceConnection> connections = new List<IServiceConnection>
+            {
+                new SimpleTestServiceConnection(),
+                new SimpleTestServiceConnection(status: status)
+            };
+
+            IServiceConnection connection = connections[1];
+
+            using TestServiceConnectionContainer container = new TestServiceConnectionContainer(connections, factory: new SimpleTestServiceConnectionFactory());
+            container.ShutdownForTest();
+
+            await container.OnConnectionCompleteForTestShutdown(connection);
+
+            // the connection should not be replaced when shutting down
+            Assert.Equal(container.Connections[1], connection);
+
+            // its status is not changed
+            Assert.Equal(status, container.Connections[1].Status);
+
+            // the container is not listening to the connection's status changes after shutdown
+            Assert.Equal(1, (connection as SimpleTestServiceConnection).ConnectionStatusChangedRemoveCount);
+        }
+
+        [Theory]
+        [InlineData(GracefulShutdownMode.Off)]
+        [InlineData(GracefulShutdownMode.WaitForClientsClose)]
+        [InlineData(GracefulShutdownMode.MigrateClients)]
+        internal async Task TestOffline(GracefulShutdownMode mode)
+        {
+            List<IServiceConnection> connections = new List<IServiceConnection>
+            {
+                new SimpleTestServiceConnection(),
+                new SimpleTestServiceConnection()
+            };
+            using TestServiceConnectionContainer container = new TestServiceConnectionContainer(connections, factory: new SimpleTestServiceConnectionFactory());
+
+            foreach (SimpleTestServiceConnection c in connections)
+            {
+                Assert.False(c.ConnectionOfflineTask.IsCompleted);
+            }
+
+            await container.OfflineAsync(mode);
+
+            foreach (SimpleTestServiceConnection c in connections)
+            {
+                Assert.True(c.ConnectionOfflineTask.IsCompleted);
+            }
+        }
 
         private sealed class SimpleTestServiceConnectionFactory : IServiceConnectionFactory
         {
-            public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type) => new SimpleTestServiceConnection();
+            public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, AckHandler ackHandler, ServiceConnectionType type) => new SimpleTestServiceConnection();
         }
 
         private sealed class SimpleTestServiceConnection : IServiceConnection
         {
+            private readonly TaskCompletionSource<bool> _offline = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            private readonly TaskCompletionSource<bool> _serversPing = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
             public Task ConnectionInitializedTask => Task.Delay(TimeSpan.FromSeconds(1));
 
             public ServiceConnectionStatus Status { get; set; } = ServiceConnectionStatus.Disconnected;
-
-            private readonly TaskCompletionSource<bool> _offline = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            private readonly TaskCompletionSource<bool> _serversPing = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             public Task ConnectionOfflineTask => _offline.Task;
 
@@ -241,8 +242,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
             public event Action<StatusChange> ConnectionStatusChanged
             {
-                add { ConnectionStatusChangedAddCount++; }
-                remove { ConnectionStatusChangedRemoveCount++; }
+                add => ConnectionStatusChangedAddCount++;
+                remove => ConnectionStatusChangedRemoveCount++;
             }
 
             public Task StartAsync(string target = null)

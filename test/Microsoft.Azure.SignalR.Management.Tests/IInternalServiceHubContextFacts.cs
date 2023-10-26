@@ -202,7 +202,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             .WithLoggerFactory(loggerFactory)
             .ConfigureServices(services =>
             {
-                services.AddHttpClient(string.Empty).AddHttpMessageHandler(sp =>
+                services.AddHttpClient(Constants.HttpClientNames.Resilient).AddHttpMessageHandler(sp =>
                 {
                     var response = new HttpResponseMessage(HttpStatusCode.NotFound);
                     response.Headers.Add(Constants.Headers.MicrosoftErrorCode, "Error.Connection.NotExisted");

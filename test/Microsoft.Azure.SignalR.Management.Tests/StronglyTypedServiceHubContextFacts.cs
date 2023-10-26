@@ -11,7 +11,6 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
@@ -69,7 +68,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var expected = JsonConvert.SerializeObject(payload);
                 Assert.Equal(expected, actual);
             }
-            var services = new ServiceCollection().AddHttpClient(Options.DefaultName)
+            var services = new ServiceCollection().AddHttpClient(Constants.HttpClientNames.Resilient)
                 .ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(assertion)).Services
                 .AddSignalRServiceManager();
             await using var hubContext = await Create(ServiceTransportType.Transient, services);
@@ -116,7 +115,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
             var services = new ServiceCollection()
                 .AddSignalRServiceManager()
-                .AddHttpClient(Options.DefaultName).ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(assertion)).Services;
+                .AddHttpClient(Constants.HttpClientNames.Resilient).ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(assertion)).Services;
             await using var hubContext = await Create(ServiceTransportType.Transient, services);
 
             await hubContext.Groups.AddToGroupAsync(connectionId, groupName);
@@ -158,7 +157,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
             var services = new ServiceCollection()
                 .AddSignalRServiceManager()
-                .AddHttpClient(Options.DefaultName).ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(assertion)).Services;
+                .AddHttpClient(Constants.HttpClientNames.Resilient).ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(assertion)).Services;
             await using var hubContext = await Create(ServiceTransportType.Transient, services);
 
             await hubContext.UserGroups.AddToGroupAsync(userId, groupName);
@@ -200,7 +199,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
             var services = new ServiceCollection()
                 .AddSignalRServiceManager()
-                .AddHttpClient(Options.DefaultName).ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(assertion)).Services;
+                .AddHttpClient(Constants.HttpClientNames.Resilient).ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(assertion)).Services;
             await using var hubContext = await Create(ServiceTransportType.Transient, services);
 
             await hubContext.ClientManager.CloseConnectionAsync(connectionId);

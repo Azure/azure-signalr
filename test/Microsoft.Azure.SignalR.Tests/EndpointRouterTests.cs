@@ -10,26 +10,69 @@ namespace Microsoft.Azure.SignalR.Tests
     public class EndpointRouterTests
     {
         [Fact]
-        public void TestDefaultEndpointWeightedRouter()
+        public void TestDefaultEndpointRouterWeightedMode()
         {
-            const int loops = 1000;
-            var context = new RandomContext();
             var drt = new DefaultEndpointRouter();
 
-            const string u1Full = "u1_full", u1Empty = "u1_empty";
-            var u1F = GenerateServiceEndpoint(1000, 10, 990, u1Full);
-            var u1E = GenerateServiceEndpoint(1000, 10, 0, u1Empty);
-            var el = new List<ServiceEndpoint>() { u1E, u1F };
+            const int loops = 20;
+            var context = new RandomContext();
+
+            const string small = "small_instance", large = "large_instance";
+            var uSmall = GenerateServiceEndpoint(10, 0, 9, small);
+            var uLarge = GenerateServiceEndpoint(1000, 0, 900, large);
+            var el = new List<ServiceEndpoint>() { uLarge, uSmall };
             context.BenchTest(loops, () =>
-                drt.GetNegotiateEndpoint(null, el).Name);
-            var u1ECount = context.GetCount(u1Empty);
-            const int smallVar = 10;
-            Assert.True(u1ECount is > loops - smallVar and <= loops);
-            var u1FCount = context.GetCount(u1Full);
-            Assert.True(u1FCount <= smallVar);
+            {
+                var ep = drt.GetNegotiateEndpoint(null, el);
+                ep.EndpointMetrics.ClientConnectionCount++;
+                return ep.Name;
+            });
+            var uLargeCount = context.GetCount(large);
+            const int smallVar = 3;
+            var uSmallCount = context.GetCount(small);
+            Assert.True(uLargeCount is >= loops - smallVar and <= loops);
+            Assert.True(uSmallCount is >= 1 and <= smallVar);
             context.Reset();
         }
 
+        [Theory]
+        [InlineData(200)]
+        [InlineData(300)]
+        [InlineData(400)]
+        [InlineData(500)]
+        public void TestDefaultEndpointRouterWeightedModeWhenAutoScaleIsEnabled(int quotaOfScaleUpInstance)
+        {
+            var drt = new DefaultEndpointRouter();
+
+            var loops = 100 + (quotaOfScaleUpInstance / 5);
+            var context = new RandomContext();
+            const double quotaBarForScaleUp = 0.8;
+
+            var endpointA = GenerateServiceEndpoint(quotaOfScaleUpInstance, 0, 80, "a");
+            var endpointB = GenerateServiceEndpoint(100, 0, 70, "b");
+            var endpointC = GenerateServiceEndpoint(100, 0, 70, "c");
+            var el = new List<ServiceEndpoint>() {endpointA, endpointB, endpointC};
+            context.BenchTest(loops, () =>
+            {
+                var ep = drt.GetNegotiateEndpoint(null, el);
+                ep.EndpointMetrics.ClientConnectionCount++;
+                var percent = (ep.EndpointMetrics.ClientConnectionCount + ep.EndpointMetrics.ServerConnectionCount) /
+                              (double)ep.EndpointMetrics.ConnectionCapacity;
+                if (percent > quotaBarForScaleUp)
+                {
+                    ep.EndpointMetrics.ConnectionCapacity += 100;
+                }
+
+                return ep.Name;
+            });
+
+            Assert.Equal(context.GetCount("a") + context.GetCount("b") + context.GetCount("c"), loops);
+            Assert.Equal(quotaOfScaleUpInstance, endpointA.EndpointMetrics.ConnectionCapacity);
+            Assert.Equal(200, endpointB.EndpointMetrics.ConnectionCapacity);
+            Assert.Equal(200, endpointC.EndpointMetrics.ConnectionCapacity);
+
+            context.Reset();
+        }
 
         private static ServiceEndpoint GenerateServiceEndpoint(int capacity, int serverConnectionCount,
             int clientConnectionCount, string name)

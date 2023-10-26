@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _serviceEventHandler = serviceEventHandler;
         }
 
-        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
+        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, AckHandler ackHandler, ServiceConnectionType type)
         {
             return new ServiceConnection(
                 _nameProvider.GetName(),
@@ -41,6 +41,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 _logger,
                 serviceMessageHandler,
                 _serviceEventHandler,
+                ackHandler,
                 type);
         }
     }
