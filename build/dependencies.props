@@ -20,9 +20,9 @@
     <MicrosoftAzureKeyVaultPackageVersion>2.3.2</MicrosoftAzureKeyVaultPackageVersion>
     <SystemBuffersPackageVersion>4.5.1</SystemBuffersPackageVersion>
     <SystemMemoryPackageVersion>4.5.4</SystemMemoryPackageVersion>
-    <SystemRuntimeCompilerServicesUnsafePackageVersion>4.6.0</SystemRuntimeCompilerServicesUnsafePackageVersion>
+    <SystemRuntimeCompilerServicesUnsafePackageVersion>6.0.0</SystemRuntimeCompilerServicesUnsafePackageVersion>
     <SystemIdentityModelTokensJwtPackageVersion>5.5.0</SystemIdentityModelTokensJwtPackageVersion>
-    <AzureIdentityPackageVersion>1.4.0</AzureIdentityPackageVersion>
+    <AzureIdentityPackageVersion>1.10.3</AzureIdentityPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.1</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
@@ -45,7 +45,7 @@
     <SystemIOPipelinesPackage3_1Version>4.7.3</SystemIOPipelinesPackage3_1Version>
 
     <!-- SignalR Management -->
-    <AzureCorePackageVersion>1.21.0</AzureCorePackageVersion>
+    <AzureCorePackageVersion>1.35.0</AzureCorePackageVersion>
     <MicrosoftAzureCoreNewtonsoftJsonPackageVersion>1.0.0</MicrosoftAzureCoreNewtonsoftJsonPackageVersion>
     <MicrosoftConfigurationFileExtensionVersion>2.2.0</MicrosoftConfigurationFileExtensionVersion>
     <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>
@@ -75,14 +75,14 @@
     <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
     <MessagePackPackage3_1Version>1.9.11</MessagePackPackage3_1Version>
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>3.1.24</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
-    <MicrosoftNETTestSdkPackageVersion>15.6.1</MicrosoftNETTestSdkPackageVersion>
+    <MicrosoftNETTestSdkPackageVersion>17.7.2</MicrosoftNETTestSdkPackageVersion>
     <MoqPackageVersion>4.14.5</MoqPackageVersion>
-    <XunitPackageVersion>2.4.0</XunitPackageVersion>
-    <XunitRunnerVisualStudioPackageVersion>2.4.0</XunitRunnerVisualStudioPackageVersion>
+    <XunitPackageVersion>2.4.2</XunitPackageVersion>
+    <XunitRunnerVisualStudioPackageVersion>2.4.2</XunitRunnerVisualStudioPackageVersion>
     <MicrosoftOwinTestingPackageVersion>4.0.0</MicrosoftOwinTestingPackageVersion>
     <MicrosoftAspNetCoreTestingVersion>2.1.0</MicrosoftAspNetCoreTestingVersion>
-    <SystemThreadingTasksExtensionsVersion>4.5.3</SystemThreadingTasksExtensionsVersion>
-    <MicrosoftAspNetCoreTestHostPackageVersion>3.0.3</MicrosoftAspNetCoreTestHostPackageVersion>
+    <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
+    <MicrosoftAspNetCoreTestHostPackageVersion>6.0.24</MicrosoftAspNetCoreTestHostPackageVersion>
     <E2eTestUserSecretId>E2eTestUserSecret</E2eTestUserSecretId>
     <MicrosoftAspNetCoreSignalRProtocolsJsonPackageVersion>5.0.0</MicrosoftAspNetCoreSignalRProtocolsJsonPackageVersion>
   </PropertyGroup>
