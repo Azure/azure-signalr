@@ -2,70 +2,140 @@
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Protocol;
+
+#nullable enable
 
 namespace Microsoft.Azure.SignalR
 {
     internal sealed class AckHandler : IDisposable
     {
-        private readonly ConcurrentDictionary<int, AckInfo> _acks = new ConcurrentDictionary<int, AckInfo>();
+        private readonly ConcurrentDictionary<int, IAckInfo> _acks = new();
         private readonly Timer _timer;
-        private readonly TimeSpan _ackInterval;
-        private readonly TimeSpan _ackTtl;
-        private int _currentId = 0;
+        private readonly TimeSpan _defaultAckTimeout;
+        private volatile bool _disposed;
 
-        public AckHandler(int ackIntervalInMilliseconds = 3000, int ackTtlInMilliseconds = 10000)
+        private int _nextId;
+        private int NextId() => Interlocked.Increment(ref _nextId);
+
+        public AckHandler(int ackIntervalInMilliseconds = 3000, int ackTtlInMilliseconds = 10000) : this(TimeSpan.FromMilliseconds(ackIntervalInMilliseconds), TimeSpan.FromMilliseconds(ackTtlInMilliseconds)) { }
+
+        internal AckHandler(TimeSpan ackInterval, TimeSpan defaultAckTimeout)
         {
-            _ackInterval = TimeSpan.FromMilliseconds(ackIntervalInMilliseconds);
-            _ackTtl = TimeSpan.FromMilliseconds(ackTtlInMilliseconds);
+            _defaultAckTimeout = defaultAckTimeout;
+            _timer = new Timer(_ => CheckAcks(), null, ackInterval, ackInterval);
+        }
 
-            bool restoreFlow = false;
-            try
+        public Task<AckStatus> CreateSingleAck(out int id, TimeSpan? ackTimeout = default, CancellationToken cancellationToken = default)
+        {
+            id = NextId();
+            if (_disposed)
             {
-                if (!ExecutionContext.IsFlowSuppressed())
-                {
-                    ExecutionContext.SuppressFlow();
-                    restoreFlow = true;
-                }
-
-                _timer = new Timer(state => ((AckHandler)state).CheckAcks(), state: this, dueTime: _ackInterval, period: _ackInterval);
+                return Task.FromResult(AckStatus.Ok);
             }
-            finally
+            var info = (IAckInfo<AckStatus>)_acks.GetOrAdd(id, _ => new SingleAckInfo(ackTimeout ?? _defaultAckTimeout));
+            if (info is MultiAckInfo)
             {
-                // Restore the current ExecutionContext
-                if (restoreFlow)
+                throw new InvalidOperationException();
+            }
+            cancellationToken.Register(() => info.Cancel());
+            return info.Task;
+        }
+
+        public static bool HandleAckStatus(IAckableMessage message, AckStatus status)
+        {
+            return status switch
+            {
+                AckStatus.Ok => true,
+                AckStatus.NotFound => false,
+                AckStatus.Timeout or AckStatus.InternalServerError => throw new TimeoutException($"Ack-able message {message.GetType()}(ackId: {message.AckId}) timed out."),
+                _ => throw new AzureSignalRException($"Ack-able message {message.GetType()}(ackId: {message.AckId}) gets error ack status {status}."),
+            };
+        }
+
+        public Task<AckStatus> CreateMultiAck(out int id, TimeSpan? ackTimeout = default)
+        {
+            id = NextId();
+            if (_disposed)
+            {
+                return Task.FromResult(AckStatus.Ok);
+            }
+            var info = (IAckInfo<AckStatus>)_acks.GetOrAdd(id, _ => new MultiAckInfo(ackTimeout ?? _defaultAckTimeout));
+            if (info is SingleAckInfo)
+            {
+                throw new InvalidOperationException();
+            }
+            return info.Task;
+        }
+
+        public void TriggerAck(int id, AckStatus status = AckStatus.Ok)
+        {
+            if (_acks.TryGetValue(id, out var info))
+            {
+                switch (info)
                 {
-                    ExecutionContext.RestoreFlow();
+                    case IAckInfo<AckStatus> ackInfo:
+                        if (ackInfo.Ack(status))
+                        {
+                            _acks.TryRemove(id, out _);
+                        }
+                        break;
+                    default:
+                        throw new InvalidCastException($"Expected: IAckInfo<{typeof(IAckInfo<AckStatus>).Name}>, actual type: {info.GetType().Name}");
                 }
             }
         }
 
-        public Task<AckStatus> CreateAck(out int id, CancellationToken cancellationToken = default)
+        public void SetExpectedCount(int id, int expectedCount)
         {
-            id = Interlocked.Increment(ref _currentId);
-            var tcs = _acks.GetOrAdd(id, _ => new AckInfo(_ackTtl)).Tcs;
-            cancellationToken.Register(() => tcs.TrySetCanceled());
-            return tcs.Task;
-        }
-
-        public void TriggerAck(int id, AckStatus ackStatus)
-        {
-            if (_acks.TryRemove(id, out var ack))
+            if (_disposed)
             {
-                ack.Tcs.TrySetResult(ackStatus);
+                return;
+            }
+
+            if (_acks.TryGetValue(id, out var info))
+            {
+                if (info is not IMultiAckInfo multiAckInfo)
+                {
+                    throw new InvalidOperationException();
+                }
+                if (multiAckInfo.SetExpectedCount(expectedCount))
+                {
+                    _acks.TryRemove(id, out _);
+                }
             }
         }
 
         private void CheckAcks()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             var utcNow = DateTime.UtcNow;
 
-            foreach (var pair in _acks)
+            foreach (var item in _acks)
             {
-                if (utcNow > pair.Value.Expired)
+                var id = item.Key;
+                var ack = item.Value;
+                if (utcNow > ack.TimeoutAt)
                 {
-                    if (_acks.TryRemove(pair.Key, out var ack))
+                    if (_acks.TryRemove(id, out _))
                     {
-                        ack.Tcs.TrySetResult(AckStatus.Timeout);
+                        if (ack is SingleAckInfo singleAckInfo)
+                        {
+                            singleAckInfo.Ack(AckStatus.Timeout);
+                        }
+                        else if (ack is MultiAckInfo multipleAckInfo)
+                        {
+                            multipleAckInfo.ForceAck(AckStatus.Timeout);
+                        }
+                        else
+                        {
+                            ack.Cancel();
+                        }
                     }
                 }
             }
@@ -73,28 +143,135 @@ namespace Microsoft.Azure.SignalR
 
         public void Dispose()
         {
-            _timer?.Dispose();
+            _disposed = true;
 
-            foreach (var pair in _acks)
+            _timer.Dispose();
+
+            while (!_acks.IsEmpty)
             {
-                if (_acks.TryRemove(pair.Key, out var ack))
+                foreach (var item in _acks)
                 {
-                    ack.Tcs.TrySetCanceled();
+                    var id = item.Key;
+                    var ack = item.Value;
+                    if (_acks.TryRemove(id, out _))
+                    {
+                        ack.Cancel();
+                        if (ack is IDisposable disposable)
+                        {
+                            disposable.Dispose();
+                        }
+                    }
                 }
             }
         }
 
-        private class AckInfo
+        private interface IAckInfo
         {
-            public TaskCompletionSource<AckStatus> Tcs { get; private set; }
-
-            public DateTime Expired { get; private set; }
-
-            public AckInfo(TimeSpan ttl)
-            {
-                Expired = DateTime.UtcNow.Add(ttl);
-                Tcs = new TaskCompletionSource<AckStatus>(TaskCreationOptions.RunContinuationsAsynchronously);
-            }
+            DateTime TimeoutAt { get; }
+            void Cancel();
         }
+
+        private interface IAckInfo<T> : IAckInfo
+        {
+            Task<T> Task { get; }
+            bool Ack(T status);
+        }
+
+        public interface IMultiAckInfo
+        {
+            bool SetExpectedCount(int expectedCount);
+        }
+
+        private sealed class SingleAckInfo : IAckInfo<AckStatus>
+        {
+            public readonly TaskCompletionSource<AckStatus> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public DateTime TimeoutAt { get; }
+
+            public SingleAckInfo(TimeSpan timeout)
+            {
+                TimeoutAt = DateTime.UtcNow + timeout;
+            }
+
+            public bool Ack(AckStatus status = AckStatus.Ok) =>
+                _tcs.TrySetResult(status);
+
+            public Task<AckStatus> Task => _tcs.Task;
+
+            public void Cancel() => _tcs.TrySetCanceled();
+        }
+
+        private sealed class MultiAckInfo : IAckInfo<AckStatus>, IMultiAckInfo
+        {
+            public readonly TaskCompletionSource<AckStatus> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            private int _ackCount;
+            private int? _expectedCount;
+
+            public DateTime TimeoutAt { get; }
+
+            public MultiAckInfo(TimeSpan timeout)
+            {
+                TimeoutAt = DateTime.UtcNow + timeout;
+            }
+
+            public bool SetExpectedCount(int expectedCount)
+            {
+                if (expectedCount < 0)
+                {
+                    throw new ArgumentException("Cannot less than 0.", nameof(expectedCount));
+                }
+                bool result;
+                lock (_tcs)
+                {
+                    if (_expectedCount != null)
+                    {
+                        throw new InvalidOperationException("Cannot set expected count more than once!");
+                    }
+                    _expectedCount = expectedCount;
+                    result = expectedCount <= _ackCount;
+                }
+                if (result)
+                {
+                    _tcs.TrySetResult(AckStatus.Ok);
+                }
+                return result;
+            }
+
+            public bool Ack(AckStatus status = AckStatus.Ok)
+            {
+                bool result;
+                lock (_tcs)
+                {
+                    _ackCount++;
+                    result = _expectedCount <= _ackCount;
+                }
+                if (result)
+                {
+                    _tcs.TrySetResult(status);
+                }
+                return result;
+            }
+
+            /// <summary>
+            /// Forcely ack the multi ack regardless of the expected count.
+            /// </summary>
+            /// <param name="status"></param>
+            /// <returns></returns>
+            public bool ForceAck(AckStatus status = AckStatus.Ok)
+            {
+                lock (_tcs)
+                {
+                    _ackCount = _expectedCount ?? 0;
+                }
+                _tcs.TrySetResult(status);
+                return true;
+            }
+
+            public Task<AckStatus> Task => _tcs.Task;
+
+            public void Cancel() => _tcs.TrySetCanceled();
+        }
+
     }
 }

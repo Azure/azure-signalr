@@ -51,7 +51,8 @@ namespace Microsoft.Azure.SignalR
                         }
                         else
                         {
-                            tcs.TrySetException(new Exception(completionMessage.Error));
+                            // Follow https://github.com/dotnet/aspnetcore/blob/v8.0.0-rc.2.23480.2/src/SignalR/common/Shared/ClientResultsManager.cs#L30
+                            tcs.TrySetException(new HubException(completionMessage.Error));
                         }
                     })
             );

@@ -83,7 +83,8 @@ namespace Microsoft.Azure.SignalR
                 // Stop should be used to trigger the call to end the loop which disposes
                 if (_disposed)
                 {
-                    throw new ObjectDisposedException(GetType().FullName);
+                    // no need to throw, to allow Stop to be called multiple times safely
+                    return;
                 }
 
                 _running = false;

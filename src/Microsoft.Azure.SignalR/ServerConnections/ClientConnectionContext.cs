@@ -54,7 +54,9 @@ namespace Microsoft.Azure.SignalR
                                               IConnectionStatFeature
     {
         private const int WritingState = 1;
+
         private const int CompletedState = 2;
+
         private const int IdleState = 0;
 
         private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
@@ -63,11 +65,12 @@ namespace Microsoft.Azure.SignalR
             useSynchronizationContext: false);
 
         private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
         private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
 
-        private int _connectionState = IdleState;
-
         private readonly object _heartbeatLock = new object();
+
+        private int _connectionState = IdleState;
 
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
@@ -175,6 +178,7 @@ namespace Microsoft.Azure.SignalR
             {
                 _lastMessageReceivedAt = DateTime.UtcNow.Ticks;
                 _receivedBytes += payload.Length;
+
                 // Start write
                 await WriteMessageAsyncCore(payload);
             }
@@ -234,6 +238,53 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 _abortOutgoingCts.CancelAfter(millisecondsDelay);
+            }
+        }
+
+        internal static bool TryGetRemoteIpAddress(IHeaderDictionary headers, out IPAddress address)
+        {
+            var forwardedFor = headers.GetCommaSeparatedValues("X-Forwarded-For");
+            if (forwardedFor.Length > 0 && IPAddress.TryParse(forwardedFor[0], out address))
+            {
+                return true;
+            }
+            address = null;
+            return false;
+        }
+
+        private static void ProcessQuery(string queryString, out string originalPath)
+        {
+            originalPath = string.Empty;
+            var query = QueryHelpers.ParseNullableQuery(queryString);
+            if (query == null)
+            {
+                return;
+            }
+
+            if (query.TryGetValue(Constants.QueryParameter.RequestCulture, out var culture))
+            {
+                SetCurrentThreadCulture(culture.FirstOrDefault());
+            }
+            if (query.TryGetValue(Constants.QueryParameter.OriginalPath, out var path))
+            {
+                originalPath = path.FirstOrDefault();
+            }
+        }
+
+        private static void SetCurrentThreadCulture(string cultureName)
+        {
+            if (!string.IsNullOrEmpty(cultureName))
+            {
+                try
+                {
+                    var requestCulture = new RequestCulture(cultureName);
+                    CultureInfo.CurrentCulture = requestCulture.Culture;
+                    CultureInfo.CurrentUICulture = requestCulture.UICulture;
+                }
+                catch (Exception)
+                {
+                    // skip invalid culture, normal won't hit.
+                }
             }
         }
 
@@ -310,53 +361,6 @@ namespace Microsoft.Azure.SignalR
                 return instanceId;
             }
             return string.Empty;
-        }
-
-        internal static bool TryGetRemoteIpAddress(IHeaderDictionary headers, out IPAddress address)
-        {
-            var forwardedFor = headers.GetCommaSeparatedValues("X-Forwarded-For");
-            if (forwardedFor.Length > 0 && IPAddress.TryParse(forwardedFor[0], out address))
-            {
-                return true;
-            }
-            address = null;
-            return false;
-        }
-
-        private static void ProcessQuery(string queryString, out string originalPath)
-        {
-            originalPath = string.Empty;
-            var query = QueryHelpers.ParseNullableQuery(queryString);
-            if (query == null)
-            {
-                return;
-            }
-
-            if (query.TryGetValue(Constants.QueryParameter.RequestCulture, out var culture))
-            {
-                SetCurrentThreadCulture(culture.FirstOrDefault());
-            }
-            if (query.TryGetValue(Constants.QueryParameter.OriginalPath, out var path))
-            {
-                originalPath = path.FirstOrDefault();
-            }
-        }
-
-        private static void SetCurrentThreadCulture(string cultureName)
-        {
-            if (!string.IsNullOrEmpty(cultureName))
-            {
-                try
-                {
-                    var requestCulture = new RequestCulture(cultureName);
-                    CultureInfo.CurrentCulture = requestCulture.Culture;
-                    CultureInfo.CurrentUICulture = requestCulture.UICulture;
-                }
-                catch (Exception)
-                {
-                    // skip invalid culture, normal won't hit.
-                }
-            }
         }
     }
 }

@@ -146,22 +146,6 @@ namespace Microsoft.Azure.SignalR.Tests
             await connection.StopAsync();
         }
 
-        private ServiceEndpoint MockServiceEndpoint(string keyTypeName)
-        {
-            switch (keyTypeName)
-            {
-                case nameof(AccessKey):
-                    return new ServiceEndpoint(_keyConnectionString);
-                case nameof(AadAccessKey):
-                    var endpoint = new ServiceEndpoint(_aadConnectionString);
-                    var p = typeof(ServiceEndpoint).GetProperty("AccessKey", BindingFlags.NonPublic | BindingFlags.Instance);
-                    p.SetValue(endpoint, new TestAadAccessKey());
-                    return endpoint;
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
         [Theory]
         [InlineData(typeof(AccessKey))]
         [InlineData(typeof(AadAccessKey))]
@@ -322,6 +306,24 @@ namespace Microsoft.Azure.SignalR.Tests
             );
         }
 
+        private ServiceEndpoint MockServiceEndpoint(string keyTypeName)
+        {
+            switch (keyTypeName)
+            {
+                case nameof(AccessKey):
+                    return new ServiceEndpoint(_keyConnectionString);
+
+                case nameof(AadAccessKey):
+                    var endpoint = new ServiceEndpoint(_aadConnectionString);
+                    var p = typeof(ServiceEndpoint).GetProperty("AccessKey", BindingFlags.NonPublic | BindingFlags.Instance);
+                    p.SetValue(endpoint, new TestAadAccessKey());
+                    return endpoint;
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
         private class TestAadAccessKey : AadAccessKey
         {
             public string Token { get; } = Guid.NewGuid().ToString();
@@ -335,6 +337,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 return Task.FromResult(Token);
             }
         }
+
         private sealed class TestConnectionContainer
         {
             public TestConnection Instance { get; set; }
@@ -343,6 +346,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private sealed class TestConnectionHandler : ConnectionHandler
         {
             private readonly int _shutdownAfter = 0;
+
             private readonly string _lastWords;
 
             public TestConnectionHandler(int shutdownAfter = 0, string lastWords = null)
@@ -389,6 +393,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 await connection.Transport.Output.FlushAsync();
             }
         }
+
         ///<summary>
         ///   ------------------------- Client Connection------------------------------                 -------------Service Connection---------
         ///  |                                      Transport           Application   |                 |    Transport           Application   |
@@ -409,15 +414,19 @@ namespace Microsoft.Azure.SignalR.Tests
             private readonly TestConnectionContainer _container;
 
             private readonly TaskCompletionSource _clientConnectedTcs = new TaskCompletionSource();
+
             private readonly TaskCompletionSource _clientDisconnectedTcs = new TaskCompletionSource();
 
             private ReadOnlySequence<byte> _payload = new ReadOnlySequence<byte>();
+
             public TestClientConnectionManager ClientConnectionManager { get; }
 
             public PipeReader Reader => _connection.Application.Input;
+
             public PipeWriter Writer => _connection.Application.Output;
 
             public Task ClientConnectedTask => _clientConnectedTcs.Task;
+
             public Task ClientDisconnectedTask => _clientDisconnectedTcs.Task;
 
             public ServiceProtocol DefaultServiceProtocol { get; } = new ServiceProtocol();
@@ -460,6 +469,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     serviceMessageHandler,
                     serviceEventHandler,
                     clientInvocationManager,
+                    new AckHandler(),
                     connectionType: connectionType,
                     mode: mode,
                     closeTimeOutMilliseconds: closeTimeOutMilliseconds)
@@ -467,6 +477,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 _container = container;
                 ClientConnectionManager = clientConnectionManager;
             }
+
             public async Task ExpectStringMessage(string expected, string connectionId = null)
             {
                 var payload = await GetPayloadAsync(connectionId: connectionId);
@@ -479,7 +490,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 _payload = payload.Slice(expectedBytes.Length);
             }
 
-            public async Task<T> ExpectServiceMessage<T>() where T: ServiceMessage
+            public async Task<T> ExpectServiceMessage<T>() where T : ServiceMessage
             {
                 var result = await Reader.ReadAsync();
                 var buffer = result.Buffer;

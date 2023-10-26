@@ -1555,13 +1555,13 @@ namespace Microsoft.Azure.SignalR.Tests
                 var endpoints = sem.GetEndpoints("hub");
                 var clientInvocationManager = new DefaultClientInvocationManager();
                 var connection1 = new ServiceConnection(protocol, ccm, connectionFactory1, loggerFactory, connectionDelegate, ccf,
-                                    "serverId", "server-conn-1", endpoints[0], endpoints[0].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, closeTimeOutMilliseconds: 500);
+                                    "serverId", "server-conn-1", endpoints[0], endpoints[0].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, new AckHandler(), closeTimeOutMilliseconds: 500);
 
                 var connection2 = new ServiceConnection(protocol, ccm, connectionFactory2, loggerFactory, connectionDelegate, ccf,
-                                    "serverId", "server-conn-2", endpoints[1], endpoints[1].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, closeTimeOutMilliseconds: 500);
+                                    "serverId", "server-conn-2", endpoints[1], endpoints[1].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, new AckHandler(), closeTimeOutMilliseconds: 500);
 
                 var connection22 = new ServiceConnection(protocol, ccm, connectionFactory22, loggerFactory, connectionDelegate, ccf,
-                                    "serverId", "server-conn-22", endpoints[1], endpoints[1].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, closeTimeOutMilliseconds: 500);
+                                    "serverId", "server-conn-22", endpoints[1], endpoints[1].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, new AckHandler(), closeTimeOutMilliseconds: 500);
 
                 var router = new TestEndpointRouter();
 

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,26 +16,24 @@ namespace Microsoft.Azure.SignalR
     internal abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler
     {
         private const int CheckWindow = 5;
-        private static readonly TimeSpan CheckTimeSpan = TimeSpan.FromMinutes(10);
 
         // Give interval(5s) * 24 = 2min window for retry considering abnormal case.
         private const int MaxRetryRemoveSeverConnection = 24;
 
+        private static readonly TimeSpan CheckTimeSpan = TimeSpan.FromMinutes(10);
+
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
+
         // Give (interval * 3 + 1) delay when check value expire.
         private static readonly long DefaultServersPingTimeoutTicks = Stopwatch.Frequency * ((long)Constants.Periods.DefaultServersPingInterval.TotalSeconds * 3 + 1);
-        private static readonly Tuple<string, long> DefaultServersTagContext = new Tuple<string, long>(string.Empty, 0);
 
-        private static TimeSpan ReconnectInterval =>
-            TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackOffInternalInMilliseconds));
+        private static readonly Tuple<string, long> DefaultServersTagContext = new Tuple<string, long>(string.Empty, 0);
 
         private readonly BackOffPolicy _backOffPolicy = new BackOffPolicy();
 
         private readonly object _lock = new object();
 
         private readonly object _statusLock = new object();
-
-        private (int count, DateTime? last) _inactiveInfo;
 
         private readonly AckHandler _ackHandler;
 
@@ -46,33 +43,20 @@ namespace Microsoft.Azure.SignalR
 
         private readonly ServiceDiagnosticLogsContext _serviceDiagnosticLogsContext = new ServiceDiagnosticLogsContext { EnableMessageLog = false };
 
+        private (int count, DateTime? last) _inactiveInfo;
+
         private volatile List<IServiceConnection> _serviceConnections;
 
         private volatile ServiceConnectionStatus _status;
 
-
         // <serversTag, latestTimestamp>
         private volatile Tuple<string, long> _serversTagContext = DefaultServersTagContext;
+
         private volatile bool _hasClients;
+
         private volatile bool _terminated = false;
 
-        protected ILogger Logger { get; }
-
-        protected List<IServiceConnection> ServiceConnections
-        {
-            get { return _serviceConnections; }
-            set { _serviceConnections = value; }
-        }
-
-        protected IServiceConnectionFactory ServiceConnectionFactory { get; }
-
-        protected int FixedConnectionCount { get; }
-
-        protected virtual ServiceConnectionType InitialConnectionType { get; } = ServiceConnectionType.Default;
-
         public HubServiceEndpoint Endpoint { get; }
-
-        public event Action<StatusChange> ConnectionStatusChanged;
 
         public string ServersTag => _serversTagContext.Item1;
 
@@ -99,6 +83,26 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        public Task ConnectionInitializedTask => Task.WhenAny(from connection in ServiceConnections
+                                                              select connection.ConnectionInitializedTask);
+
+        protected ILogger Logger { get; }
+
+        protected List<IServiceConnection> ServiceConnections
+        {
+            get => _serviceConnections;
+            set => _serviceConnections = value;
+        }
+
+        protected IServiceConnectionFactory ServiceConnectionFactory { get; }
+
+        protected int FixedConnectionCount { get; }
+
+        protected virtual ServiceConnectionType InitialConnectionType { get; } = ServiceConnectionType.Default;
+
+        private static TimeSpan ReconnectInterval =>
+                                                                                                                                                                                                    TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackOffInternalInMilliseconds));
+
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
                                                  int minConnectionCount,
                                                  HubServiceEndpoint endpoint,
@@ -112,7 +116,7 @@ namespace Microsoft.Azure.SignalR
             _ackHandler = ackHandler ?? new AckHandler();
 
             // make sure it is after _endpoint is set
-            // init initial connections 
+            // init initial connections
             List<IServiceConnection> initial;
             if (initialConnections == null)
             {
@@ -140,7 +144,7 @@ namespace Microsoft.Azure.SignalR
             ConnectionStatusChanged += OnStatusChanged;
 
             _statusPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.ServiceStatus, WriteServiceStatusPingAsync, Constants.Periods.DefaultStatusPingInterval, Constants.Periods.DefaultStatusPingInterval);
-            
+
             // when server connection count is specified to 0, the app server only handle negotiate requests
             if (initial.Count > 0)
             {
@@ -149,6 +153,8 @@ namespace Microsoft.Azure.SignalR
 
             _serversPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServersPingAsync, Constants.Periods.DefaultServersPingInterval, Constants.Periods.DefaultServersPingInterval);
         }
+
+        public event Action<StatusChange> ConnectionStatusChanged;
 
         public async Task StartAsync()
         {
@@ -163,27 +169,6 @@ namespace Microsoft.Azure.SignalR
             _terminated = true;
             _statusPing.Stop();
             return Task.WhenAll(ServiceConnections.Select(c => c.StopAsync()));
-        }
-
-        /// <summary>
-        /// Start and manage the whole connection lifetime
-        /// </summary>
-        /// <returns></returns>
-        protected async Task StartCoreAsync(IServiceConnection connection, string target = null)
-        {
-            if (_terminated)
-            {
-                return;
-            }
-
-            try
-            {
-                await connection.StartAsync(target);
-            }
-            finally
-            {
-                await OnConnectionComplete(connection);
-            }
         }
 
         public virtual Task HandlePingAsync(PingMessage pingMessage)
@@ -226,9 +211,6 @@ namespace Microsoft.Azure.SignalR
             _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status);
         }
 
-        public Task ConnectionInitializedTask => Task.WhenAny(from connection in ServiceConnections
-                                                              select connection.ConnectionInitializedTask);
-
         public virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
             return WriteToScopedOrRandomAvailableConnection(serviceMessage);
@@ -241,28 +223,17 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException($"{nameof(serviceMessage)} is not {nameof(IAckableMessage)}");
             }
 
-            var task = _ackHandler.CreateAck(out var id, cancellationToken);
+            var task = _ackHandler.CreateSingleAck(out var id, null, cancellationToken);
             ackableMessage.AckId = id;
 
-            // Sending regular messages completes as soon as the data leaves the outbound pipe, 
-            // whereas ackable ones complete upon full roundtrip of the message and the ack (or timeout). 
+            // Sending regular messages completes as soon as the data leaves the outbound pipe,
+            // whereas ackable ones complete upon full roundtrip of the message and the ack (or timeout).
             // Therefore sending them over different connections creates a possibility for processing them out of original order.
             // By sending both message types over the same connection we ensure that they are sent (and processed) in their original order.
             await WriteToScopedOrRandomAvailableConnection(serviceMessage);
 
             var status = await task;
-            switch (status)
-            {
-                case AckStatus.Ok:
-                    return true;
-                case AckStatus.NotFound:
-                    return false;
-                case AckStatus.Timeout:
-                case AckStatus.InternalServerError:
-                    throw new TimeoutException($"Ack-able message {serviceMessage.GetType()}(ackId: {ackableMessage.AckId}) timed out.");
-                default:
-                    throw new AzureSignalRException($"Ack-able message {serviceMessage.GetType()}(ackId: {ackableMessage.AckId}) gets error ack status {status}.");
-            }
+            return AckHandler.HandleAckStatus(ackableMessage, status);
         }
 
         public virtual Task OfflineAsync(GracefulShutdownMode mode)
@@ -296,12 +267,65 @@ namespace Microsoft.Azure.SignalR
             GC.SuppressFinalize(this);
         }
 
+        internal static TimeSpan GetRetryDelay(int retryCount)
+        {
+            // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
+            // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
+            if (retryCount > 5)
+            {
+                return TimeSpan.FromMinutes(1) + ReconnectInterval;
+            }
+            return TimeSpan.FromSeconds(1 << retryCount) + ReconnectInterval;
+        }
+
+        internal bool GetServiceStatus(bool active, int checkWindow, TimeSpan checkTimeSpan)
+        {
+            if (active)
+            {
+                _inactiveInfo = (0, null);
+                return true;
+            }
+            else
+            {
+                var info = _inactiveInfo;
+                var last = info.last ?? DateTime.UtcNow;
+                var count = info.count;
+                count++;
+                _inactiveInfo = (count, last);
+
+                // Inactive it only when it checks over 5 times and elapsed for over 10 minutes
+                var inactive = count >= checkWindow && DateTime.UtcNow - last >= checkTimeSpan;
+                return !inactive;
+            }
+        }
+
+        /// <summary>
+        /// Start and manage the whole connection lifetime
+        /// </summary>
+        /// <returns></returns>
+        protected async Task StartCoreAsync(IServiceConnection connection, string target = null)
+        {
+            if (_terminated)
+            {
+                return;
+            }
+
+            try
+            {
+                await connection.StartAsync(target);
+            }
+            finally
+            {
+                await OnConnectionComplete(connection);
+            }
+        }
+
         /// <summary>
         /// Create a connection for a specific service connection type
         /// </summary>
         protected IServiceConnection CreateServiceConnectionCore(ServiceConnectionType type)
         {
-            var connection = ServiceConnectionFactory.Create(Endpoint, this, type);
+            var connection = ServiceConnectionFactory.Create(Endpoint, this, _ackHandler, type);
 
             connection.ConnectionStatusChanged += OnConnectionStatusChanged;
             return connection;
@@ -324,52 +348,12 @@ namespace Microsoft.Azure.SignalR
                 {
                     await RestartFixedServiceConnectionCoreAsync(index);
                 }
+
                 // the rest are "on demand" and are only created upon request
                 else
                 {
                     RemoveOnDemandConnection(serviceConnection);
                 }
-            }
-        }
-
-        private async Task RestartFixedServiceConnectionCoreAsync(int index)
-        {
-            if (_terminated)
-            {
-                return;
-            }
-
-            Func<Task<bool>> tryNewConnection = async () =>
-            {
-                var connection = CreateServiceConnectionCore(InitialConnectionType);
-                ReplaceFixedConnection(index, connection);
-
-                _ = StartCoreAsync(connection);
-                await connection.ConnectionInitializedTask;
-
-                return connection.Status == ServiceConnectionStatus.Connected;
-            };
-            await _backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
-        }
-
-        private void ReplaceFixedConnection(int index, IServiceConnection serviceConnection)
-        {
-            lock (_lock)
-            {
-                var newImmutableConnections = ServiceConnections.ToList();
-                newImmutableConnections[index] = serviceConnection;
-                ServiceConnections = newImmutableConnections;
-            }
-        }
-
-        private void RemoveOnDemandConnection(IServiceConnection serviceConnection)
-        {
-            lock (_lock)
-            {
-                var newImmutableConnections = ServiceConnections.ToList();
-                Debug.Assert(newImmutableConnections.IndexOf(serviceConnection) >= FixedConnectionCount);
-                newImmutableConnections.Remove(serviceConnection);
-                ServiceConnections = newImmutableConnections;
             }
         }
 
@@ -426,36 +410,45 @@ namespace Microsoft.Azure.SignalR
             Log.TimeoutWaitingForFinAck(Logger, retry);
         }
 
-        internal bool GetServiceStatus(bool active, int checkWindow, TimeSpan checkTimeSpan)
+        private async Task RestartFixedServiceConnectionCoreAsync(int index)
         {
-            if (active)
+            if (_terminated)
             {
-                _inactiveInfo = (0, null);
-                return true;
+                return;
             }
-            else
-            {
-                var info = _inactiveInfo;
-                var last = info.last ?? DateTime.UtcNow;
-                var count = info.count;
-                count++;
-                _inactiveInfo = (count, last);
 
-                // Inactive it only when it checks over 5 times and elapsed for over 10 minutes
-                var inactive = count >= checkWindow && DateTime.UtcNow - last >= checkTimeSpan;
-                return !inactive;
+            Func<Task<bool>> tryNewConnection = async () =>
+            {
+                var connection = CreateServiceConnectionCore(InitialConnectionType);
+                ReplaceFixedConnection(index, connection);
+
+                _ = StartCoreAsync(connection);
+                await connection.ConnectionInitializedTask;
+
+                return connection.Status == ServiceConnectionStatus.Connected;
+            };
+            await _backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
+        }
+
+        private void ReplaceFixedConnection(int index, IServiceConnection serviceConnection)
+        {
+            lock (_lock)
+            {
+                var newImmutableConnections = ServiceConnections.ToList();
+                newImmutableConnections[index] = serviceConnection;
+                ServiceConnections = newImmutableConnections;
             }
         }
 
-        internal static TimeSpan GetRetryDelay(int retryCount)
+        private void RemoveOnDemandConnection(IServiceConnection serviceConnection)
         {
-            // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
-            // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
-            if (retryCount > 5)
+            lock (_lock)
             {
-                return TimeSpan.FromMinutes(1) + ReconnectInterval;
+                var newImmutableConnections = ServiceConnections.ToList();
+                Debug.Assert(newImmutableConnections.IndexOf(serviceConnection) >= FixedConnectionCount);
+                newImmutableConnections.Remove(serviceConnection);
+                ServiceConnections = newImmutableConnections;
             }
-            return TimeSpan.FromSeconds(1 << retryCount) + ReconnectInterval;
         }
 
         private void OnStatusChanged(StatusChange obj)
@@ -597,12 +590,17 @@ namespace Microsoft.Azure.SignalR
         protected internal sealed class CustomizedPingTimer : IDisposable
         {
             private readonly object _lock = new object();
+
             private readonly long _defaultPingTicks;
 
             private readonly string _pingName;
+
             private readonly Func<Task> _writePing;
+
             private readonly TimeSpan _dueTime;
+
             private readonly TimeSpan _intervalTime;
+
             private readonly ILogger _logger;
 
             // Considering parallel add endpoints to save time,
@@ -610,6 +608,7 @@ namespace Microsoft.Azure.SignalR
             private long _counter = 0;
 
             private long _lastSendTimestamp = 0;
+
             private TimerAwaitable _timer;
 
             public CustomizedPingTimer(ILogger logger, string pingName, Func<Task> writePing, TimeSpan dueTime, TimeSpan intervalTime)

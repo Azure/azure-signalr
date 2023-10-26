@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -154,7 +157,14 @@ namespace Microsoft.Azure.SignalR
                 catch (Exception e)
                 {
                     latest = e;
-                    await Task.Delay(AuthorizeRetryInterval);
+                    try
+                    {
+                        await Task.Delay(AuthorizeRetryInterval, ctoken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -169,7 +179,6 @@ namespace Microsoft.Azure.SignalR
             await new RestClient().SendAsync(
                 api,
                 HttpMethod.Get,
-                "",
                 handleExpectedResponseAsync: HandleHttpResponseAsync,
                 cancellationToken: ctoken);
         }

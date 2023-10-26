@@ -12,11 +12,10 @@ namespace Microsoft.Azure.SignalR
     internal class DefaultEndpointRouter : DefaultMessageRouter, IEndpointRouter
     {
         /// <summary>
-        /// Randomly select from the available endpoints
+        /// Select an endpoint for negotiate request
         /// </summary>
         /// <param name="context">The http context of the incoming request</param>
         /// <param name="endpoints">All the available endpoints</param>
-        /// <returns></returns>
         public ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
         {
             // get primary endpoints snapshot
@@ -28,7 +27,7 @@ namespace Microsoft.Azure.SignalR
         /// Only primary endpoints will be returned by client /negotiate
         /// If no primary endpoint is available, promote one secondary endpoint
         /// </summary>
-        /// <returns>The availbale endpoints</returns>
+        /// <returns>The available endpoints</returns>
         private ServiceEndpoint[] GetNegotiateEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             var primary = endpoints.Where(s => s.Online && s.EndpointType == EndpointType.Primary).ToArray();
@@ -49,8 +48,7 @@ namespace Microsoft.Azure.SignalR
 
         /// <summary>
         ///  Choose endpoint randomly by weight. 
-        ///  The weight is defined as the remaining connection quota.
-        ///  The least weight is set to 1. So instance with no connection quota still has chance.
+        ///  The weight is defined as (the remaining connection quota / the connection capacity).
         /// </summary>
         private ServiceEndpoint GetEndpointAccordingToWeight(ServiceEndpoint[] availableEndpoints)
         {
@@ -58,7 +56,7 @@ namespace Microsoft.Azure.SignalR
             if (availableEndpoints.Any(endpoint => endpoint.EndpointMetrics.ConnectionCapacity == 0) ||
                 availableEndpoints.Length == 1)
             {
-                return GetEndpointRandomly(availableEndpoints);
+                return availableEndpoints[StaticRandom.Next(availableEndpoints.Length)];
             }
 
             var we = new int[availableEndpoints.Length];
@@ -69,7 +67,7 @@ namespace Microsoft.Azure.SignalR
                 var remain = endpointMetrics.ConnectionCapacity -
                              (endpointMetrics.ClientConnectionCount +
                               endpointMetrics.ServerConnectionCount);
-                var weight = remain > 0 ? remain : 1;
+                var weight = Math.Max((int)((double)remain / endpointMetrics.ConnectionCapacity * 1000), 1);
                 totalCapacity += weight;
                 we[i] = totalCapacity;
             }
@@ -77,11 +75,6 @@ namespace Microsoft.Azure.SignalR
             var index = StaticRandom.Next(totalCapacity);
             
             return availableEndpoints[Array.FindLastIndex(we, x => x <= index) + 1];
-        }
-
-        private static ServiceEndpoint GetEndpointRandomly(ServiceEndpoint[] availableEndpoints)
-        {
-            return availableEndpoints[StaticRandom.Next(availableEndpoints.Length)];
         }
     }
 }
