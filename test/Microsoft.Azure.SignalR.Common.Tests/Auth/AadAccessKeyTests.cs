@@ -3,8 +3,9 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Core;
 using Azure.Identity;
-
+using Moq;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth
@@ -27,9 +28,12 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         [Fact]
         public async Task TestUpdateAccessKey()
         {
-            var credential = new DefaultAzureCredential();
-            var endpoint = "http://localhost";
-            var key = new AadAccessKey(new Uri(endpoint), credential);
+            var mockCredential = new Mock<TokenCredential>();
+            mockCredential.Setup(credential => credential.GetTokenAsync(
+                It.IsAny<TokenRequestContext>(),
+                It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("Mock GetTokenAsync throws an exception"));
+            var key = new AadAccessKey(new Uri("http://localhost"), mockCredential.Object);
 
             var audience = "http://localhost/chat";
             var claims = Array.Empty<Claim>();
@@ -57,8 +61,12 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         [InlineData(true, 56, false)]
         public async Task TestUpdateAccessKeyShouldSkip(bool isAuthorized, int timeElapsed, bool shouldSkip)
         {
-            var key = new AadAccessKey(new Uri("http://localhost"), new DefaultAzureCredential());
-
+            var mockCredential = new Mock<TokenCredential>();
+            mockCredential.Setup(credential => credential.GetTokenAsync(
+                It.IsAny<TokenRequestContext>(),
+                It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("Mock GetTokenAsync throws an exception"));
+            var key = new AadAccessKey(new Uri("http://localhost"), mockCredential.Object);
             var isAuthorizedField = typeof(AadAccessKey).GetField("_isAuthorized", BindingFlags.NonPublic | BindingFlags.Instance);
             isAuthorizedField.SetValue(key, isAuthorized);
             Assert.Equal(isAuthorized, (bool)isAuthorizedField.GetValue(key));
@@ -81,7 +89,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             }
             else
             {
-                await Assert.ThrowsAsync<TaskCanceledException>(async () => await key.UpdateAccessKeyAsync(source.Token));
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await key.UpdateAccessKeyAsync(source.Token));
                 Assert.False((bool)isAuthorizedField.GetValue(key));
                 Assert.True(lastUpdatedTime < (DateTime)lastUpdatedTimeField.GetValue(key));
                 Assert.True(initializedTcs.Task.IsCompleted);
@@ -91,8 +99,12 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         [Fact]
         public async Task TestInitializeFailed()
         {
-            var credential = new DefaultAzureCredential();
-            var key = new AadAccessKey(new Uri("http://localhost"), credential);
+            var mockCredential = new Mock<TokenCredential>();
+            mockCredential.Setup(credential => credential.GetTokenAsync(
+                It.IsAny<TokenRequestContext>(),
+                It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("Mock GetTokenAsync throws an exception"));
+            var key = new AadAccessKey(new Uri("http://localhost"), mockCredential.Object);
 
             var audience = "http://localhost/chat";
             var claims = Array.Empty<Claim>();
@@ -104,7 +116,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             );
 
             var source = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            await Assert.ThrowsAnyAsync<TaskCanceledException>(
+            await Assert.ThrowsAsync<InvalidOperationException>(
                 async () => await key.UpdateAccessKeyAsync(source.Token)
             );
 
