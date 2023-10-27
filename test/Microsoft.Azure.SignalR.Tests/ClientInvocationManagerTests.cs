@@ -6,11 +6,16 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Threading;
+using Castle.Core.Logging;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR
@@ -25,10 +30,45 @@ namespace Microsoft.Azure.SignalR
             },
             NullLogger<DefaultHubProtocolResolver>.Instance
         );
+        private const string CustomValue = "Endpoint=https://customconnectionstring;AccessKey=1";
+        private const string DefaultValue = "Endpoint=https://defaultconnectionstring;AccessKey=1";
+        private const string SecondaryValue = "Endpoint=https://secondaryconnectionstring;AccessKey=1";
+        private const string ConfigFile = "testappsettings.json";
 
         private static readonly List<string> TestConnectionIds = new() { "conn0", "conn1" };
         private static readonly List<string> TestInstanceIds = new() { "instance0", "instance1" };
         private static readonly List<string> TestServerIds = new() { "server1", "server2" };
+
+        private static ClientInvocationManager GetClientInvocationManager(int endpointCount = 1)
+        {
+            if (endpointCount == 1)
+            {
+                return new ClientInvocationManager(HubProtocolResolver);
+            }
+
+            // Create a ClientInvocationManager with multiple endpoints
+            var services = new ServiceCollection();
+
+            var endpoints = Enumerable
+                                .Range(0, endpointCount)
+                                .Select(i => new ServiceEndpoint($"Endpoint=https://test{i}connectionstring;AccessKey=1"))
+                                .ToArray();
+
+            var config = new ConfigurationBuilder()
+                                .AddJsonFile(ConfigFile, optional: false, reloadOnChange: true)
+                                .Build();
+
+            var serviceProvider = services.AddLogging()
+                .AddSignalR().AddAzureSignalR(o => o.Endpoints = endpoints)
+                .Services
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var manager = serviceProvider.GetService<IServiceEndpointManager>();
+
+            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver, manager, new DefaultEndpointRouter());
+            return clientInvocationManager;
+        }
 
         [Theory]
         [InlineData(true)]
@@ -42,15 +82,14 @@ namespace Microsoft.Azure.SignalR
          */
         public async void TestCompleteWithoutRouterServer(bool isCompletionWithResult)
         {
+            var clientInvocationManager = GetClientInvocationManager();
             var connectionId = TestConnectionIds[0];
-            var targetClientInstanceId = TestInstanceIds[0];
-            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
             var invocationId = clientInvocationManager.Caller.GenerateInvocationId(connectionId);
             var invocationResult = "invocation-correct-result";
 
             CancellationToken cancellationToken = new CancellationToken();
             // Server A knows the InstanceId of Client 2, so `instaceId` in `AddInvocation` is `targetClientInstanceId` 
-            var task = clientInvocationManager.Caller.AddInvocation<string>(connectionId, invocationId, cancellationToken);
+            var task = clientInvocationManager.Caller.AddInvocation<string>("TestHub", connectionId, invocationId, cancellationToken);
 
             var ret = clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out var t);
 
@@ -92,16 +131,15 @@ namespace Microsoft.Azure.SignalR
         {
             var serverIds = new string[] { TestServerIds[0], TestServerIds[1] };
             var invocationResult = "invocation-correct-result";
-            var ciManagers = new ClientInvocationManager[]
-            {
-                new ClientInvocationManager(HubProtocolResolver),
-                new ClientInvocationManager(HubProtocolResolver),
+            var ciManagers = new ClientInvocationManager[] {
+                GetClientInvocationManager(),
+                GetClientInvocationManager()
             };
             var invocationId = ciManagers[0].Caller.GenerateInvocationId(TestConnectionIds[0]);
 
             CancellationToken cancellationToken = new CancellationToken();
             // Server 1 doesn't know the InstanceId of Client 2, so `instaceId` is null for `AddInvocation`
-            var task = ciManagers[0].Caller.AddInvocation<string>(TestConnectionIds[0], invocationId, cancellationToken);
+            var task = ciManagers[0].Caller.AddInvocation<string>("TestHub", TestConnectionIds[0], invocationId, cancellationToken);
             ciManagers[0].Caller.AddServiceMapping(new ServiceMappingMessage(invocationId, TestConnectionIds[1], TestInstanceIds[1]));
             ciManagers[1].Router.AddInvocation(TestConnectionIds[1], invocationId, serverIds[0], new CancellationToken());
 
@@ -134,10 +172,10 @@ namespace Microsoft.Azure.SignalR
         [Fact]
         public void TestCallerManagerCancellation()
         {
-            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
+            var clientInvocationManager = GetClientInvocationManager();
             var invocationId = clientInvocationManager.Caller.GenerateInvocationId(TestConnectionIds[0]);
             var cts = new CancellationTokenSource();
-            var task = clientInvocationManager.Caller.AddInvocation<string>(TestConnectionIds[0], invocationId,  cts.Token);
+            var task = clientInvocationManager.Caller.AddInvocation<string>("TestHub", TestConnectionIds[0], invocationId, cts.Token);
 
             // Check if the invocation is existing
             Assert.True(clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out _));
@@ -148,6 +186,110 @@ namespace Microsoft.Azure.SignalR
             Assert.True(task.IsFaulted);
             // Check if the invocation was removed
             Assert.False(clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out _));
+        }
+
+
+        [Theory]
+        [InlineData(true, 2)]
+        [InlineData(false, 2)]
+        [InlineData(true, 3)]
+        [InlineData(false, 3)]
+        // isCompletionWithResult: the invocation is completed with result or error 
+        public async void TestCompleteWithMultiEndpointAtLast(bool isCompletionWithResult, int endpointsCount)
+        {
+            Assert.True(endpointsCount > 1);
+            var clientInvocationManager = GetClientInvocationManager(endpointsCount);
+            var connectionId = TestConnectionIds[0];
+            var invocationId = clientInvocationManager.Caller.GenerateInvocationId(connectionId);
+            var successCompleteResult = "error-result";
+            var errorCompleteResult = "error-result";
+
+            var cancellationToken = new CancellationToken();
+            // Server A knows the InstanceId of Client 2, so `instaceId` in `AddInvocation` is `targetClientInstanceId` 
+            var task = clientInvocationManager.Caller.AddInvocation<string>("TestHub", connectionId, invocationId, cancellationToken);
+
+            var ret = clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out var t);
+
+            Assert.True(ret);
+            Assert.Equal(typeof(string), t);
+
+            var completionMessage = CompletionMessage.WithResult(invocationId, successCompleteResult);
+            var errorCompletionMessage = CompletionMessage.WithError(invocationId, errorCompleteResult);
+
+            // The first `endpointsCount - 1` CompletionMessage complete the invocation with error
+            // The last one completes the invocation according to `isCompletionWithResult`
+            // The invocation should be uncompleted until the last one CompletionMessage
+            for (var i = 0; i < endpointsCount - 1; i++)
+            {
+                var currentCompletionMessage = errorCompletionMessage;
+                ret = clientInvocationManager.Caller.TryCompleteResult(connectionId, currentCompletionMessage);
+                Assert.False(ret);
+            }
+
+            ret = clientInvocationManager.Caller.TryCompleteResult(connectionId, isCompletionWithResult ? completionMessage : errorCompletionMessage);
+            Assert.True(ret);
+
+            try
+            {
+                await task;
+                Assert.True(isCompletionWithResult);
+                Assert.Equal(successCompleteResult, task.Result);
+            }
+            catch (Exception e)
+            {
+                Assert.False(isCompletionWithResult);
+                Assert.Equal(errorCompleteResult, e.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData(2)]
+        [InlineData(3)]
+        public async void TestCompleteWithMultiEndpointAtMiddle(int endpointsCount)
+        {
+            Assert.True(endpointsCount > 1);
+            var clientInvocationManager = GetClientInvocationManager(endpointsCount);
+            var connectionId = TestConnectionIds[0];
+            var invocationId = clientInvocationManager.Caller.GenerateInvocationId(connectionId);
+            var successCompleteResult = "success-result";
+            var errorCompleteResult = "error-result";
+
+            var cancellationToken = new CancellationToken();
+            // Server A knows the InstanceId of Client 2, so `instaceId` in `AddInvocation` is `targetClientInstanceId` 
+            var task = clientInvocationManager.Caller.AddInvocation<string>("TestHub", connectionId, invocationId, cancellationToken);
+
+            var ret = clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out var t);
+
+            Assert.True(ret);
+            Assert.Equal(typeof(string), t);
+
+            var successCompletionMessage = CompletionMessage.WithResult(invocationId, successCompleteResult);
+            var errorCompletionMessage = CompletionMessage.WithError(invocationId, errorCompleteResult);
+
+            // The first `endpointsCount - 2` CompletionMessage complete the invocation with error
+            // The next one completes the invocation with result
+            // The last one completes the invocation with error and it shouldn't change the invocation result
+            for (var i = 0; i < endpointsCount - 2; i++)
+            {
+                ret = clientInvocationManager.Caller.TryCompleteResult(connectionId, errorCompletionMessage);
+                Assert.False(ret);
+            }
+
+            ret = clientInvocationManager.Caller.TryCompleteResult(connectionId, successCompletionMessage);
+            Assert.True(ret);
+
+            ret = clientInvocationManager.Caller.TryCompleteResult(connectionId, errorCompletionMessage);
+            Assert.False(ret);
+
+            try
+            {
+                await task;
+                Assert.Equal(successCompleteResult, task.Result);
+            }
+            catch (Exception)
+            {
+                Assert.True(false);
+            }
         }
 
         internal static ReadOnlyMemory<byte> GetBytes(string proto, HubMessage message)

@@ -231,13 +231,13 @@ namespace Microsoft.Azure.SignalR
                     return _router.GetEndpointsForConnection(closeConnectionMessage.ConnectionId, endpoints);
 
                 case ClientInvocationMessage clientInvocationMessage:
-                    return SingleOrNotSupported(_router.GetEndpointsForConnection(clientInvocationMessage.ConnectionId, endpoints), clientInvocationMessage);
+                    return _router.GetEndpointsForBroadcast(endpoints);
 
                 case ServiceMappingMessage serviceMappingMessage:
-                    return SingleOrNotSupported(_router.GetEndpointsForConnection(serviceMappingMessage.ConnectionId, endpoints), serviceMappingMessage);
+                    return _router.GetEndpointsForBroadcast(endpoints);
 
                 case ServiceCompletionMessage serviceCompletionMessage:
-                    return SingleOrNotSupported(_router.GetEndpointsForConnection(serviceCompletionMessage.ConnectionId, endpoints), serviceCompletionMessage);
+                    return _router.GetEndpointsForBroadcast(endpoints);
 
                 default:
                     throw new NotSupportedException(message.GetType().Name);

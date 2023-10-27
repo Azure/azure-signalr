@@ -10,6 +10,9 @@ using System.Collections.Concurrent;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR;
+using System.Linq;
+
+#nullable enable
 
 namespace Microsoft.Azure.SignalR
 {
@@ -20,10 +23,18 @@ namespace Microsoft.Azure.SignalR
         private long _lastInvocationId = 0;
 
         private readonly IHubProtocolResolver _hubProtocolResolver;
+        private IEndpointRouter? _endpointRouter { get; }
+        private IServiceEndpointManager? _serviceEndpointManager { get; }
+        private readonly AckHandler _ackHandler = new();
 
-        public CallerClientResultsManager(IHubProtocolResolver hubProtocolResolver)
+        public CallerClientResultsManager(IHubProtocolResolver hubProtocolResolver, IServiceEndpointManager? serviceEndpointManager = null, IEndpointRouter? endpointRouter = null)
         {
             _hubProtocolResolver = hubProtocolResolver ?? throw new ArgumentNullException(nameof(hubProtocolResolver));
+            if (serviceEndpointManager == null && endpointRouter != null) throw new ArgumentNullException(nameof(serviceEndpointManager));
+            if (serviceEndpointManager != null && endpointRouter == null) throw new ArgumentNullException(nameof(endpointRouter));
+            _serviceEndpointManager = serviceEndpointManager;
+            _endpointRouter = endpointRouter;
+            
         }
 
         public string GenerateInvocationId(string connectionId)
@@ -31,23 +42,35 @@ namespace Microsoft.Azure.SignalR
             return $"{connectionId}-{_clientResultManagerId}-{Interlocked.Increment(ref _lastInvocationId)}";
         }
 
-        public Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken)
+        public Task<T> AddInvocation<T>(string hub, string connectionId, string invocationId, CancellationToken cancellationToken)
         {
             var tcs = new TaskCompletionSourceWithCancellation<T>(
                 cancellationToken,
                 () => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
+
+            var ackNumber = 1;
+            if (_serviceEndpointManager != null && _endpointRouter != null) {
+                var serviceEndpoints = _serviceEndpointManager.GetEndpoints(hub);
+                ackNumber = _endpointRouter.GetEndpointsForConnection(connectionId, serviceEndpoints).Count();
+            }
+
+            var multiAck = _ackHandler.CreateMultiAck(out var ackId);
+
+            _ackHandler.SetExpectedCount(ackId, ackNumber);
 
             // When the caller server is also the client router, Azure SignalR service won't send a ServiceMappingMessage to server.
             // To handle this condition, CallerClientResultsManager itself should record this mapping information rather than waiting for a ServiceMappingMessage sent by service. Only in this condition, this method is called with instanceId != null.
             var result = _pendingInvocations.TryAdd(invocationId,
                 new PendingInvocation(
                     typeof(T), connectionId, tcs,
+                    ackId,
+                    multiAck,
                     static (state, completionMessage) =>
                     {
                         var tcs = (TaskCompletionSourceWithCancellation<T>)state;
                         if (completionMessage.HasResult)
                         {
-                            tcs.TrySetResult((T)completionMessage.Result);
+                            tcs.TrySetResult((T)completionMessage.Result!);
                         }
                         else
                         {
@@ -101,21 +124,29 @@ namespace Microsoft.Azure.SignalR
 
         public bool TryCompleteResult(string connectionId, CompletionMessage message)
         {
-            if (_pendingInvocations.TryGetValue(message.InvocationId, out var item))
+            if (_pendingInvocations.TryGetValue(message.InvocationId!, out var item))
             {
                 if (item.ConnectionId != connectionId)
                 {
                     // Follow https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/common/Shared/ClientResultsManager.cs#L58
                     throw new InvalidOperationException($"Connection ID '{connectionId}' is not valid for invocation ID '{message.InvocationId}'.");
                 }
-
-                // if false the connection disconnected right after the above TryGetValue
-                // or someone else completed the invocation (likely a bad client)
-                // we'll ignore both cases
-                if (_pendingInvocations.TryRemove(message.InvocationId, out _))
+                
+                // Considering multiple endpoints, wait until 
+                // 1. Received a non-error CompletionMessage
+                // or 2. Receved messages from all endpoints
+                _ackHandler.TriggerAck(item.AckId);
+                if (message.HasResult || item.ackTask.IsCompletedSuccessfully)
                 {
-                    item.Complete(item.Tcs, message);
-                    return true;
+                    // if false the connection disconnected right after the above TryGetValue
+                    // or someone else completed the invocation (likely a bad client)
+                    // we'll ignore both cases
+                    if (_pendingInvocations.TryRemove(message.InvocationId!, out _))
+                    {
+                        item.Complete(item.Tcs, message);
+                        return true;
+                    }
+                    return false;
                 }
                 return false;
             }
@@ -174,7 +205,7 @@ namespace Microsoft.Azure.SignalR
                 type = item.Type;
                 return true;
             }
-            type = null;
+            type = null!;
             return false;
         }
 
@@ -189,9 +220,9 @@ namespace Microsoft.Azure.SignalR
         // Unused, here to honor the IInvocationBinder interface but should never be called
         public Type GetStreamItemType(string streamId) => throw new NotImplementedException();
 
-        private record PendingInvocation(Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)
+        private record PendingInvocation(Type Type, string ConnectionId, object Tcs, int AckId, Task ackTask, Action<object, CompletionMessage> Complete)
         {
-            public string RouterInstanceId { get; set; }
+            public string? RouterInstanceId { get; set; }
         }
     }
 }
