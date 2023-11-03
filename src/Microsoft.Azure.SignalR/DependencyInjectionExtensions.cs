@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.DependencyInjection
             // If a custom service event handler is added, do not add the default handler.
             builder.Services.TryAddSingleton<IServiceEventHandler, DefaultServiceEventHandler>();
 
-            // IEndpointRouter is required to build IClientInvocationManager.
+            // IEndpointRouter and IAccessKeySynchronizer is required to build ClientInvocationManager.
             builder.Services
 #if NET7_0_OR_GREATER
                 .AddSingleton<IClientInvocationManager, ClientInvocationManager>();
