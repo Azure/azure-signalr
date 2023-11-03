@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var blazorDetector = new DefaultBlazorDetector();
-            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
+            var clientInvocationManager = new DefaultClientInvocationManager();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
                 new ClientConnectionManager(), HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, blazorDetector, new DefaultServerNameProvider(), clientInvocationManager);
 
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var blazorDetector = new DefaultBlazorDetector();
-            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
+            var clientInvocationManager = new DefaultClientInvocationManager();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(
                 serviceConnectionManager,
                 new ClientConnectionManager(),
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var serviceConnectionManager = new ServiceConnectionManager<TestHub>();
             serviceConnectionManager.SetServiceConnection(proxy.ServiceConnectionContainer);
-            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
                 proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, blazorDetector, new DefaultServerNameProvider(), clientInvocationManager);
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.SignalR.Tests
             IOptions<HubOptions> globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "json", "messagepack", MockProtocol, "json" } });
             IOptions<HubOptions<TestHub>> localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "json", "messagepack", MockProtocol } });
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
-            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
+            var clientInvocationManager = new DefaultClientInvocationManager();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
                 new ClientConnectionManager(), protocolResolver, Logger, Marker, globalHubOptions, localHubOptions, blazorDetector, new DefaultServerNameProvider(), clientInvocationManager);
 
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.SignalR.Tests
             IOptions<HubOptions> globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { MockProtocol } });
             IOptions<HubOptions<TestHub>> localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { MockProtocol } });
 
-            var clientInvocationManager = new ClientInvocationManager(protocolResolver);
+            var clientInvocationManager = new DefaultClientInvocationManager();
 
             return new ServiceLifetimeManager<TestHub>(
                 serviceConnectionManager,
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.SignalR.Tests
             ServiceConnectionBase serviceConnection, 
             IServiceConnectionManager<TestHub> serviceConnectionManager, 
             ClientConnectionManager clientConnectionManager, 
-            ClientInvocationManager clientInvocationManager = null,
+            IClientInvocationManager clientInvocationManager = null,
             ClientConnectionContext clientConnectionContext = null,
             string protocol = "json"
             )
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // Create ServiceLifetimeManager
             return new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                clientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, null, new DefaultServerNameProvider(), clientInvocationManager ?? new ClientInvocationManager(HubProtocolResolver));
+                clientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, null, new DefaultServerNameProvider(), clientInvocationManager ?? new DefaultClientInvocationManager());
         }
 
         private static ClientConnectionContext GetClientConnectionContextWithConnection(string connectionId = null, string protocol = null)
@@ -329,7 +329,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var serviceConnection = new TestServiceConnection();
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
 
-            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
+            var clientInvocationManager = new DefaultClientInvocationManager();
             var clientConnectionContext = GetClientConnectionContextWithConnection(TestConnectionIds[1], protocol);
 
             var serviceLifetimeManager = GetTestClientInvocationServiceLifetimeManager(serviceConnection, serviceConnectionManager, new ClientConnectionManager(), clientInvocationManager, clientConnectionContext, protocol);
@@ -380,9 +380,9 @@ namespace Microsoft.Azure.SignalR.Tests
             var clientConnectionManager = new ClientConnectionManager();
 
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
-            var clientInvocationManagers = new List<ClientInvocationManager>() {
-                new ClientInvocationManager(HubProtocolResolver),
-                new ClientInvocationManager(HubProtocolResolver)
+            var clientInvocationManagers = new List<IClientInvocationManager>() {
+                new DefaultClientInvocationManager(),
+                new DefaultClientInvocationManager()
             };
 
             var serviceLifetimeManagers = new List<ServiceLifetimeManager<TestHub>>() {
