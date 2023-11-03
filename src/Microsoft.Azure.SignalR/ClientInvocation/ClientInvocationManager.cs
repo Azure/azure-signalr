@@ -13,14 +13,12 @@ namespace Microsoft.Azure.SignalR
         public ICallerClientResultsManager Caller { get; }
         public IRoutedClientResultsManager Router { get; }
 
-        public ClientInvocationManager(IHubProtocolResolver hubProtocolResolver, IServiceEndpointManager? serviceEndpointManager = null, IEndpointRouter? endpointRouter = null)
+        public ClientInvocationManager(IHubProtocolResolver hubProtocolResolver, IServiceEndpointManager serviceEndpointManager, IEndpointRouter endpointRouter)
         {
-            if (serviceEndpointManager == null && endpointRouter != null) throw new ArgumentNullException(nameof(serviceEndpointManager));
-            if (serviceEndpointManager != null && endpointRouter == null) throw new ArgumentNullException(nameof(endpointRouter));
             Caller = new CallerClientResultsManager(
                 hubProtocolResolver ?? throw new ArgumentNullException(nameof(hubProtocolResolver)),
-                serviceEndpointManager,
-                endpointRouter
+                serviceEndpointManager ?? throw new ArgumentNullException(nameof(serviceEndpointManager)),
+                endpointRouter ?? throw new ArgumentNullException(nameof(endpointRouter))
             );
             Router = new RoutedClientResultsManager();
         }

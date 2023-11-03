@@ -12,6 +12,7 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR
@@ -35,16 +36,10 @@ namespace Microsoft.Azure.SignalR
 
         private static ClientInvocationManager GetTestClientInvocationManager(int endpointCount = 1)
         {
-            if (endpointCount < 2)
-            {
-                return new ClientInvocationManager(HubProtocolResolver);
-            }
-
             var services = new ServiceCollection();
-
             var endpoints = Enumerable.Range(0, endpointCount)
-                            .Select(i => new ServiceEndpoint($"Endpoint=https://test{i}connectionstring;AccessKey=1"))
-                            .ToArray();
+                .Select(i => new ServiceEndpoint($"Endpoint=https://test{i}connectionstring;AccessKey=1"))
+                .ToArray();
 
             var config = new ConfigurationBuilder().Build();
 
@@ -55,8 +50,9 @@ namespace Microsoft.Azure.SignalR
                 .BuildServiceProvider();
 
             var manager = serviceProvider.GetService<IServiceEndpointManager>();
+            var endpointRouter = serviceProvider.GetService<IEndpointRouter>();
 
-            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver, manager, new DefaultEndpointRouter());
+            var clientInvocationManager = new ClientInvocationManager(HubProtocolResolver, manager, endpointRouter);
             return clientInvocationManager;
         }
 

@@ -23,17 +23,15 @@ namespace Microsoft.Azure.SignalR
         private long _lastInvocationId = 0;
 
         private readonly IHubProtocolResolver _hubProtocolResolver;
-        private IEndpointRouter? _endpointRouter { get; }
-        private IServiceEndpointManager? _serviceEndpointManager { get; }
+        private IEndpointRouter _endpointRouter { get; }
+        private IServiceEndpointManager _serviceEndpointManager { get; }
         private readonly AckHandler _ackHandler = new();
 
-        public CallerClientResultsManager(IHubProtocolResolver hubProtocolResolver, IServiceEndpointManager? serviceEndpointManager = null, IEndpointRouter? endpointRouter = null)
+        public CallerClientResultsManager(IHubProtocolResolver hubProtocolResolver, IServiceEndpointManager serviceEndpointManager, IEndpointRouter endpointRouter)
         {
             _hubProtocolResolver = hubProtocolResolver ?? throw new ArgumentNullException(nameof(hubProtocolResolver));
-            if (serviceEndpointManager == null && endpointRouter != null) throw new ArgumentNullException(nameof(serviceEndpointManager));
-            if (serviceEndpointManager != null && endpointRouter == null) throw new ArgumentNullException(nameof(endpointRouter));
-            _serviceEndpointManager = serviceEndpointManager;
-            _endpointRouter = endpointRouter;
+            _serviceEndpointManager = serviceEndpointManager ?? throw new ArgumentNullException(nameof(serviceEndpointManager));
+            _endpointRouter = endpointRouter ?? throw new ArgumentNullException(nameof(endpointRouter));
             
         }
 
@@ -134,7 +132,7 @@ namespace Microsoft.Azure.SignalR
                 
                 // Considering multiple endpoints, wait until 
                 // 1. Received a non-error CompletionMessage
-                // or 2. Receved messages from all endpoints
+                // or 2. Received messages from all endpoints
                 _ackHandler.TriggerAck(item.AckId);
                 if (message.HasResult || item.ackTask.IsCompletedSuccessfully)
                 {

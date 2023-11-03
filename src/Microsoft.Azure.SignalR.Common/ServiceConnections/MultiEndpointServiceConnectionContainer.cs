@@ -231,7 +231,7 @@ namespace Microsoft.Azure.SignalR
                     return _router.GetEndpointsForConnection(closeConnectionMessage.ConnectionId, endpoints);
 
                 case ClientInvocationMessage clientInvocationMessage:
-                    return _router.GetEndpointsForBroadcast(endpoints);
+                    return _router.GetEndpointsForConnection(clientInvocationMessage.ConnectionId, endpoints);
 
                 case ServiceMappingMessage serviceMappingMessage:
                     return _router.GetEndpointsForBroadcast(endpoints);
