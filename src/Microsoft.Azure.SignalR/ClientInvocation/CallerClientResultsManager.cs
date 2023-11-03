@@ -43,11 +43,8 @@ namespace Microsoft.Azure.SignalR
                 cancellationToken,
                 () => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
 
-            var ackNumber = 1;
-            if (_serviceEndpointManager != null && _endpointRouter != null) {
-                var serviceEndpoints = _serviceEndpointManager.GetEndpoints(hub);
-                ackNumber = _endpointRouter.GetEndpointsForConnection(connectionId, serviceEndpoints).Count();
-            }
+            var serviceEndpoints = _serviceEndpointManager.GetEndpoints(hub);
+            var ackNumber = _endpointRouter.GetEndpointsForConnection(connectionId, serviceEndpoints).Count();
 
             var multiAck = _ackHandler.CreateMultiAck(out var ackId);
 

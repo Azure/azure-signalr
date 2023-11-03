@@ -233,11 +233,10 @@ namespace Microsoft.Azure.SignalR
                 case ClientInvocationMessage clientInvocationMessage:
                     return _router.GetEndpointsForConnection(clientInvocationMessage.ConnectionId, endpoints);
 
-                case ServiceMappingMessage serviceMappingMessage:
-                    return _router.GetEndpointsForBroadcast(endpoints);
-
                 case ServiceCompletionMessage serviceCompletionMessage:
-                    return _router.GetEndpointsForBroadcast(endpoints);
+                    return _router.GetEndpointsForConnection(serviceCompletionMessage.ConnectionId, endpoints);
+
+                // ServiceMappingMessage should never be sent to the service
 
                 default:
                     throw new NotSupportedException(message.GetType().Name);
