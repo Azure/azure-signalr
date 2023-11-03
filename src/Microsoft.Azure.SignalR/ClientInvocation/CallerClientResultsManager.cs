@@ -12,8 +12,6 @@ using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR;
 using System.Linq;
 
-#nullable enable
-
 namespace Microsoft.Azure.SignalR
 {
     internal sealed class CallerClientResultsManager : ICallerClientResultsManager, IInvocationBinder
@@ -32,7 +30,6 @@ namespace Microsoft.Azure.SignalR
             _hubProtocolResolver = hubProtocolResolver ?? throw new ArgumentNullException(nameof(hubProtocolResolver));
             _serviceEndpointManager = serviceEndpointManager ?? throw new ArgumentNullException(nameof(serviceEndpointManager));
             _endpointRouter = endpointRouter ?? throw new ArgumentNullException(nameof(endpointRouter));
-            
         }
 
         public string GenerateInvocationId(string connectionId)
@@ -68,7 +65,7 @@ namespace Microsoft.Azure.SignalR
                         var tcs = (TaskCompletionSourceWithCancellation<T>)state;
                         if (completionMessage.HasResult)
                         {
-                            tcs.TrySetResult((T)completionMessage.Result!);
+                            tcs.TrySetResult((T)completionMessage.Result);
                         }
                         else
                         {
@@ -122,7 +119,7 @@ namespace Microsoft.Azure.SignalR
 
         public bool TryCompleteResult(string connectionId, CompletionMessage message)
         {
-            if (_pendingInvocations.TryGetValue(message.InvocationId!, out var item))
+            if (_pendingInvocations.TryGetValue(message.InvocationId, out var item))
             {
                 if (item.ConnectionId != connectionId)
                 {
@@ -139,7 +136,7 @@ namespace Microsoft.Azure.SignalR
                     // if false the connection disconnected right after the above TryGetValue
                     // or someone else completed the invocation (likely a bad client)
                     // we'll ignore both cases
-                    if (_pendingInvocations.TryRemove(message.InvocationId!, out _))
+                    if (_pendingInvocations.TryRemove(message.InvocationId, out _))
                     {
                         item.Complete(item.Tcs, message);
                         return true;
@@ -203,7 +200,7 @@ namespace Microsoft.Azure.SignalR
                 type = item.Type;
                 return true;
             }
-            type = null!;
+            type = null;
             return false;
         }
 
@@ -220,7 +217,7 @@ namespace Microsoft.Azure.SignalR
 
         private record PendingInvocation(Type Type, string ConnectionId, object Tcs, int AckId, Task ackTask, Action<object, CompletionMessage> Complete)
         {
-            public string? RouterInstanceId { get; set; }
+            public string RouterInstanceId { get; set; }
         }
     }
 }
