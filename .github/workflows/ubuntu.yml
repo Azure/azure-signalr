@@ -11,11 +11,8 @@ on:
 jobs:
   build_ubuntu:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        dotnet-version: [ '7.0.x' ]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - uses: dorny/paths-filter@v2.2.0
       id: filter
       with:
@@ -35,19 +32,25 @@ jobs:
     - name: Update SubModules
       run: git submodule update --init --recursive
       if: steps.filter.outputs.src == 'true'
-    - name: Setup dotnet ${{ matrix.dotnet-version }}
+    - name: Setup dotnet
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: ${{ matrix.dotnet-version }}
+        dotnet-version: |
+          7.0.x
+          6.0.x
+
+    - name: Set Dotnet Version
+      run: echo "DOTNET_VERSION=${{ steps.dotnet-setup.outputs.dotnet-version }}" >> $GITHUB_ENV
+
     - name: Build with dotnet
       run:  "dotnet build AzureSignalR.sln /p:DisableNet461Tests=true"
       if: steps.filter.outputs.src == 'true'
     - name: Test
-      run: dotnet test --no-build --logger trx --results-directory "TestResults-${{ matrix.dotnet-version }}"
+      run: dotnet test --no-build --logger trx --results-directory "TestResults-ubuntu-$DOTNET_VERSION"
     - name: Upload dotnet test results
       uses: actions/upload-artifact@v3
       with:
-        name: dotnet-results-${{ matrix.dotnet-version }}
-        path: TestResults-${{ matrix.dotnet-version }}
+        name: dotnet-results-$DOTNET_VERSION
+        path: TestResults-ubuntu-$DOTNET_VERSION
       # Use always() to always run this step to publish test results when there are test failures
       if: ${{ always() }}

@@ -12,7 +12,7 @@ jobs:
   build_osx:
     runs-on: macOS-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - uses: dorny/paths-filter@v2.2.0
       id: filter
       with:
@@ -39,8 +39,6 @@ jobs:
         dotnet-version: |
           7.0.x
           6.0.x
-          5.0.x
-        include-prerelease: true
     - name: Build with dotnet
       run:  "dotnet build AzureSignalR.sln /p:DisableNet461Tests=true"
       if: steps.filter.outputs.src == 'true'
