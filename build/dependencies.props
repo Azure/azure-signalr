@@ -22,7 +22,7 @@
     <SystemMemoryPackageVersion>4.5.4</SystemMemoryPackageVersion>
     <SystemRuntimeCompilerServicesUnsafePackageVersion>6.0.0</SystemRuntimeCompilerServicesUnsafePackageVersion>
     <SystemIdentityModelTokensJwtPackageVersion>5.5.0</SystemIdentityModelTokensJwtPackageVersion>
-    <AzureIdentityPackageVersion>1.10.3</AzureIdentityPackageVersion>
+    <AzureIdentityPackageVersion>1.10.4</AzureIdentityPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.1</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
@@ -45,7 +45,7 @@
     <SystemIOPipelinesPackage3_1Version>4.7.3</SystemIOPipelinesPackage3_1Version>
 
     <!-- SignalR Management -->
-    <AzureCorePackageVersion>1.35.0</AzureCorePackageVersion>
+    <AzureCorePackageVersion>1.36.0</AzureCorePackageVersion>
     <MicrosoftAzureCoreNewtonsoftJsonPackageVersion>1.0.0</MicrosoftAzureCoreNewtonsoftJsonPackageVersion>
     <MicrosoftConfigurationFileExtensionVersion>2.2.0</MicrosoftConfigurationFileExtensionVersion>
     <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>
@@ -63,7 +63,7 @@
     <!-- Samples -->
     <MicrosoftAspNetCorePackageVersion>2.1.0</MicrosoftAspNetCorePackageVersion>
     <MicrosoftAspNetCoreSignalRClientPackageVersion>3.1.24</MicrosoftAspNetCoreSignalRClientPackageVersion>
-    <MicrosoftOwinPackageVersion>2.1.0</MicrosoftOwinPackageVersion>
+    <MicrosoftOwinPackageVersion>4.2.2</MicrosoftOwinPackageVersion>
     <OwinPackageVersion>1.0.0</OwinPackageVersion>
 
     <!--Emulator -->
