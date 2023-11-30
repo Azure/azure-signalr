@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestServiceConnectionWithNormalApplicationTask()
         {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (StartVerifiableLog(out var loggerFactory))
             {
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestServiceConnectionErrorCleansAllClients()
         {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (StartVerifiableLog(out var loggerFactory))
             {
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task ClientConnectionContextAbortCanSendOutCloseMessage()
         {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Trace, expectedErrors: c => true,
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
                 logChecker: logs =>
                 {
                     return true;
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task ClientConnectionWithDiagnosticClientTagTest()
         {
-            using (StartVerifiableLog(out var loggerFactory))
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
