@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace Microsoft.Azure.SignalR.Common
 {
-    [Serializable]
     public class ServiceConnectionNotActiveException : AzureSignalRException
     {
         private const string NotActiveMessage = "The connection is not active, data cannot be sent to the service.";
@@ -20,11 +19,6 @@ namespace Microsoft.Azure.SignalR.Common
         public ServiceConnectionNotActiveException(string message) : base(string.IsNullOrEmpty(message) ? NotActiveMessage : message)
         {
 
-        }
-
-        protected ServiceConnectionNotActiveException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
         }
     }
 }

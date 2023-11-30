@@ -622,7 +622,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError("Failed to parse argument", ex);
+                _logger.LogError(ex, "Failed to parse argument");
                 return null;
             }
         }

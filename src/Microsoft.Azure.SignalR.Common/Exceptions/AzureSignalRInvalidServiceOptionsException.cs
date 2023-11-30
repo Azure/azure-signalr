@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.Serialization;
 
 namespace Microsoft.Azure.SignalR.Common
 {
@@ -11,10 +10,6 @@ namespace Microsoft.Azure.SignalR.Common
     {
         public AzureSignalRInvalidServiceOptionsException(string propertyName, string validScope) 
             : base($"Property '{propertyName}' value should be {validScope}.")
-        {
-        }
-
-        protected AzureSignalRInvalidServiceOptionsException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
     }
