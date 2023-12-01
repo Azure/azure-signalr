@@ -16,7 +16,7 @@ jobs:
         dotnet-version: [ '7.0.x', '6.0.x' ]
     steps:
     - uses: actions/checkout@v4
-    - uses: dorny/paths-filter@v2.2.0
+    - uses: dorny/paths-filter@v2
       id: filter
       with:
         filters: |
