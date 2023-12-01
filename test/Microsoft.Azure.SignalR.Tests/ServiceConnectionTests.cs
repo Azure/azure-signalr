@@ -56,10 +56,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
                 var clientConnectionId = Guid.NewGuid().ToString();
 
+                var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
 
-                var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
+                var clientConnection = await waitClientTask.OrTimeout();
 
                 await transportConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new CloseConnectionMessage(clientConnectionId)));
@@ -70,10 +71,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 // another connection comes in
                 clientConnectionId = Guid.NewGuid().ToString();
 
+                waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
 
-                clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
+                clientConnection = await waitClientTask.OrTimeout();
 
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
@@ -111,11 +113,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 await connection.ConnectionInitializedTask.OrTimeout();
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
                 var clientConnectionId = Guid.NewGuid().ToString();
-
+                var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
 
-                var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
+                var clientConnection = await waitClientTask.OrTimeout();
                 // Cancel pending read to end the server connection
                 transportConnection.Transport.Input.CancelPendingRead();
 
@@ -167,11 +169,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 await connection.ConnectionInitializedTask.OrTimeout();
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
                 var clientConnectionId = Guid.NewGuid().ToString();
-
+                var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
 
-                var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
+                var clientConnection = await waitClientTask.OrTimeout();
 
                 errorTcs.SetException(new InvalidOperationException("error operation"));
 
@@ -229,11 +231,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 // completed handshake
                 await connection.ConnectionInitializedTask.OrTimeout();
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
-
+                var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
 
-                var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
+                var clientConnection = await waitClientTask.OrTimeout();
 
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
@@ -286,11 +288,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 await connection.ConnectionInitializedTask.OrTimeout();
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
                 var clientConnectionId = Guid.NewGuid().ToString();
-
+                var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
 
-                var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
+                var clientConnection = await waitClientTask.OrTimeout();
 
                 clientConnection.CancelOutgoing();
 
@@ -344,10 +346,12 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
                 var clientConnectionId = Guid.NewGuid().ToString();
 
+                // make sure to register for wait first
+                var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
+
                 await transportConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
-
-                var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
+                var clientConnection = await waitClientTask.OrTimeout();
 
                 await clientConnection.LifetimeTask.OrTimeout();
 
@@ -405,7 +409,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 // completed handshake
                 await connection.ConnectionInitializedTask.OrTimeout();
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
-
+                var waitClientTask = Task.WhenAll(ccm.WaitForClientConnectionAsync(normalClientConnectionId),
+                    ccm.WaitForClientConnectionAsync(diagnosticClientConnectionId));
                 await transportConnection.Application.Output.WriteAsync(
                         protocol.GetMessageBytes(new OpenConnectionMessage(diagnosticClientConnectionId, null, new Dictionary<string, StringValues>
                         {
@@ -415,8 +420,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 await transportConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(normalClientConnectionId, null)));
 
-                var connections = await Task.WhenAll(ccm.WaitForClientConnectionAsync(normalClientConnectionId).OrTimeout(),
-                    ccm.WaitForClientConnectionAsync(diagnosticClientConnectionId).OrTimeout());
+                var connections = await waitClientTask.OrTimeout();
                 await Task.WhenAll(from c in connections select c.LifetimeTask.OrTimeout());
 
                 // complete reading to end the connection
@@ -465,10 +469,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
                 var clientConnectionId = Guid.NewGuid().ToString();
 
+                var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
 
-                var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
+                var clientConnection = await waitClientTask.OrTimeout();
 
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
