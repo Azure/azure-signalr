@@ -41,7 +41,7 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 |                                            |                    |                    |
 | Multiple SignalR service instances support | :x:                | :heavy_check_mark: |
 | [MessagePack clients support](#message-pack-serialization)  |  since v1.21.0 |  since v1.20.0     |
-| [Retry transient error](#retry-transient-error)                      | since v1.22.0      |  :x:               |
+| [Retry transient error](#http-requests-retry)                      | since v1.22.0      |  :x:               |
 
 **Features only come with new API**
 |                              | Transient          | Persistent  |
