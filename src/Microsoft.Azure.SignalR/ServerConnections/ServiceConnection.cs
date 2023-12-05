@@ -432,10 +432,8 @@ namespace Microsoft.Azure.SignalR
             }
             catch (ObjectDisposedException)
             {
-                // In current design, the server connection runs in the background
-                // and might still be running when the application is shutting down
-                // after IServiceProvider is already disposed
-                // catch the exception and stop the processing loop
+                // When the application shuts down and disposes IServiceProvider, HubConnectionHandler.RunHubAsync is still running and runs into _dispatcher.OnDisconnectedAsync
+                // no need to throw the error out
             }
             catch (Exception ex)
             {
