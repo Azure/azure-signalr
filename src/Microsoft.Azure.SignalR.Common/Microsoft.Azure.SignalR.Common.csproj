@@ -21,5 +21,9 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="$(MicrosoftAspNetCoreSignalRPackageVersion)" />
   </ItemGroup>
 	
+  <ItemGroup>
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="$(SystemDiaDiagnosticsDiagnosticSourcePackageVersion)" />
+  </ItemGroup>
+	
   <!-- New packages should be added to Directory.Build.props! -->
 </Project>

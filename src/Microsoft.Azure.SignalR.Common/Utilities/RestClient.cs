@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -90,6 +91,7 @@ namespace Microsoft.Azure.SignalR
 
         private async Task ThrowExceptionOnResponseFailureAsync(HttpResponseMessage response)
         {
+            using var activity = Telemetry.ReceiveResponseEvent(response);
             if (response.IsSuccessStatusCode)
             {
                 return;
@@ -104,6 +106,7 @@ namespace Microsoft.Azure.SignalR
             var innerException = new HttpRequestException(
                 $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})");
 #endif
+            activity?.SetStatus(ActivityStatusCode.Error, detail);
             throw response.StatusCode switch
             {
                 HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(response.RequestMessage?.RequestUri?.ToString(), innerException, detail),
@@ -124,6 +127,8 @@ namespace Microsoft.Azure.SignalR
         {
             using var httpClient = _httpClientFactory.CreateClient(httpClientName);
             using var request = BuildRequest(api, httpMethod, methodName, args);
+            
+            using var activity = Telemetry.SendRequestEvent(request);
 
             try
             {
@@ -142,6 +147,7 @@ namespace Microsoft.Azure.SignalR
             }
             catch (HttpRequestException ex)
             {
+                activity.SetStatus(ActivityStatusCode.Error, ex.Message);
                 throw new AzureSignalRException($"An error happened when making request to {request.RequestUri}", ex);
             }
         }

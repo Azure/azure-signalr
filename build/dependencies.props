@@ -19,6 +19,7 @@
     <MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>3.19.1</MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>
     <MicrosoftAzureKeyVaultPackageVersion>2.3.2</MicrosoftAzureKeyVaultPackageVersion>
     <SystemBuffersPackageVersion>4.5.1</SystemBuffersPackageVersion>
+    <SystemDiaDiagnosticsDiagnosticSourcePackageVersion>6.0.1</SystemDiaDiagnosticsDiagnosticSourcePackageVersion>
     <SystemMemoryPackageVersion>4.5.4</SystemMemoryPackageVersion>
     <SystemRuntimeCompilerServicesUnsafePackageVersion>6.0.0</SystemRuntimeCompilerServicesUnsafePackageVersion>
     <SystemIdentityModelTokensJwtPackageVersion>5.5.0</SystemIdentityModelTokensJwtPackageVersion>
