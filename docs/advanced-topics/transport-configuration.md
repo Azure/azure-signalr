@@ -1,4 +1,5 @@
 # Transport configuration
+
 Currently, Azure SignalR Service supports configuring the transport type between clients and service. You can specify the transport type for each client by setting `ServiceOptions.TransportTypeDetector`.
 The `TransportTypeDetector` is a function which takes the `HttpContext` during negotiation as parameter and returns a bit mask combining one or more transport type values.
 
