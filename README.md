@@ -59,7 +59,7 @@ Samples on how to use Azure SignalR Service can be found [here](https://github.c
 
 Package [Microsoft.Azure.SignalR.Management](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) is the one to use when you want to manage SignalR clients through Azure SignalR Service directly such as broadcast messages. This SDK can be but not limited to be used in [serverless](https://azure.microsoft.com/solutions/serverless/) environments. You can use this SDK to manage SignalR clients connected to your Azure SignalR Service in any environment, such as in a console app, in an Azure function or in an App Server.
 
-More details can be found [here](./docs/management-sdk-guide.md).
+More details can be found [here](https://learn.microsoft.com/azure/azure-signalr/signalr-howto-use-management-sdk).
 
 The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
 
@@ -67,12 +67,12 @@ The sample on how to use Management SDK to redirect SignalR clients to Azure Sig
 
 The following documents describe more details about Azure SignalR Service.
 
-- [Use Azure SignalR Service](./docs/use-signalr-service.md)
-- [REST API in Azure SignalR Service](./docs/rest-api.md)
-- [Internals of the Azure SignalR Service](./docs/internal.md)
-- [FAQ](./docs/faq.md)
-- [Troubleshooting Guide](./docs/tsg.md)
-- [Azure SignalR Local Emulator](./docs/emulator.md)
+- [Use Azure SignalR Service](https://docs.microsoft.com/azure/azure-signalr/signalr-howto-use)
+- [REST API in Azure SignalR Service](https://docs.microsoft.com/azure/azure-signalr/signalr-reference-data-plane-rest-api)
+- [Internals of the Azure SignalR Service](https://docs.microsoft.com/azure/azure-signalr/signalr-concept-internals)
+- [FAQ](https://docs.microsoft.com/azure/azure-signalr/signalr-resource-faq)
+- [Troubleshooting Guide](https://docs.microsoft.com/azure/azure-signalr/signalr-howto-troubleshoot-guide)
+- [Azure SignalR Local Emulator](https://learn.microsoft.com/azure/azure-signalr/signalr-howto-emulator)
 
 Contributions are highly welcome. Keep reading if you want to contribute to our repository.
 
@@ -96,4 +96,4 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 
 ## Performance
 
-See [Performance](./docs/performance-guide.md) for details.
+See [Performance](https://docs.microsoft.com/azure/azure-signalr/signalr-concept-performance) for details.
