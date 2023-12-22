@@ -37,6 +37,23 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
+        /// With named Azure SignalR, the connection string could be read from ConnectionStrings.{name}, the settings are loaded from Azure:SignalR:{name} section
+        /// </summary>
+        /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
+        /// <param name="name">The name of the Azure SignalR service that settings and connection strings are read from</param>
+        /// <param name="configure">A callback to configure the <see cref="ServiceOptions"/>.</param>
+        /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
+        public static ISignalRServerBuilder AddNamedAzureSignalR(this ISignalRServerBuilder builder, string name, Action<ServiceOptions> configure = null)
+        {
+            builder.Services.SetupOptions<ServiceOptions, ServiceOptionsSetup>(s => ActivatorUtilities.CreateInstance<ServiceOptionsSetup>(s, name));
+            if (configure != null)
+            {
+                builder.Services.Configure(configure).PostConfigure<ServiceOptions>(o => o.Validate());
+            }
+            return builder.AddAzureSignalRCore();
+        }
+
+        /// <summary>
         /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
         /// </summary>
         /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>

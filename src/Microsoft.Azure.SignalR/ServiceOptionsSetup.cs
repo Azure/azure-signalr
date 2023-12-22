@@ -12,17 +12,23 @@ namespace Microsoft.Azure.SignalR
     internal class ServiceOptionsSetup : IConfigureOptions<ServiceOptions>, IOptionsChangeTokenSource<ServiceOptions>
     {
         private readonly IConfiguration _configuration;
+        private readonly string _connectionName;
 
         public string Name => Options.DefaultName;
 
-        public ServiceOptionsSetup(IConfiguration configuration)
+        public ServiceOptionsSetup(IConfiguration configuration) : this(configuration, null)
+        {
+        }
+
+        public ServiceOptionsSetup(IConfiguration configuration, string connectionName)
         {
             _configuration = configuration;
+            _connectionName = connectionName;
         }
 
         public void Configure(ServiceOptions options)
         {
-            var configuration = ParseConfiguration();
+            var configuration = ParseConfiguration(_connectionName);
 
             options.ConnectionString = configuration.ConnectionString;
             options.Endpoints = configuration.Endpoints;
@@ -70,14 +76,14 @@ namespace Microsoft.Azure.SignalR
             return defaultValue;
         }
 
-        private (string AppName, string ConnectionString, ServiceEndpoint[] Endpoints, ConfigurableServiceOptions configurableOptions) ParseConfiguration()
+        private (string AppName, string ConnectionString, ServiceEndpoint[] Endpoints, ConfigurableServiceOptions configurableOptions) ParseConfiguration(string connectionName)
         {
-            var sectionKey = Constants.Keys.AzureSignalRSectionKey;
+            var sectionKey = string.IsNullOrEmpty(connectionName) ? Constants.Keys.AzureSignalRSectionKey : $"{Constants.Keys.AzureSignalRSectionKey}:{connectionName}";
             var options = _configuration.GetSection(sectionKey).Get<ConfigurableServiceOptions>();
 
             var appName = GetApplicationName(sectionKey);
 
-            var connectionString = GetConnectionString(sectionKey);
+            var connectionString = GetConnectionString(sectionKey, connectionName);
 
             var endpoints = GetEndpoints(sectionKey);
 
@@ -90,11 +96,17 @@ namespace Microsoft.Azure.SignalR
             return _configuration[$"{sectionKey}:ApplicationName:"] ?? _configuration[$"{sectionKey}:ApplicationName"];
         }
 
-        private string GetConnectionString(string sectionKey)
+        private string GetConnectionString(string sectionKey, string connectionName)
         {
+            // ConnectionStrings_connectionName takes the highest priority
+            if (!string.IsNullOrEmpty(connectionName) && _configuration.GetConnectionString(connectionName) is string connectionString)
+            {
+                return connectionString;
+            }
+
             var connectionStringKey = $"{sectionKey}:ConnectionString";
             // Fallback to ConnectionStrings:Azure:SignalR:ConnectionString format when the default one is not available
-            return _configuration[connectionStringKey] ?? _configuration.GetConnectionString(connectionStringKey);
+            return _configuration[connectionStringKey] ?? _configuration.GetConnectionString(connectionStringKey) ;
         }
 
         private ServiceEndpoint[] GetEndpoints(string sectionKey)

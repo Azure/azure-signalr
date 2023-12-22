@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
             configuration[key] = FakeConnectionString;
-            var setup = new ServiceOptionsSetup(configuration);
+            var setup = new ServiceOptionsSetup(configuration, "");
             var options = new ServiceOptions();
             setup.Configure(options);
 
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 configuration[ConfigurationPath.Combine(Constants.Keys.ConnectionStringDefaultKey, key)] = FakeConnectionString;
             }
 
-            var setup = new ServiceOptionsSetup(configuration);
+            var setup = new ServiceOptionsSetup(configuration, "");
             var options = new ServiceOptions();
             setup.Configure(options);
 
