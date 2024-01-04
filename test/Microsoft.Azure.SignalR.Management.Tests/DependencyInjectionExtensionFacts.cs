@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
     public class DependencyInjectionExtensionFacts
     {
         private const string Url = "https://abc";
-        private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
+        private const string AccessKey = "fake_key";
         private static readonly string TestConnectionString = $"Endpoint={Url};AccessKey={AccessKey};Version=1.0;";
 
         private readonly ITestOutputHelper _outputHelper;
@@ -254,7 +254,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
             {
                 // use http schema to avoid SSL handshake
-                o.ConnectionString = "Endpoint=http://abc;AccessKey=nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=;Version=1.0;";
+                o.ConnectionString = "Endpoint=http://abc;AccessKey=fake_key;Version=1.0;";
                 o.Proxy = new WebProxy(app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First());
             }).BuildServiceManager();
             Assert.True(await serviceManager.IsServiceHealthy(default));
