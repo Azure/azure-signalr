@@ -8,9 +8,9 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class IServiceCollectionExtension
     {
-        public static IServiceCollection SetupOptions<TOptions, TOptionsSetup>(this IServiceCollection services, TOptionsSetup setupInstance = null) where TOptions : class where TOptionsSetup : class, IConfigureOptions<TOptions>, IOptionsChangeTokenSource<TOptions>
+        public static IServiceCollection SetupOptions<TOptions, TOptionsSetup>(this IServiceCollection services) where TOptions : class where TOptionsSetup : class, IConfigureOptions<TOptions>, IOptionsChangeTokenSource<TOptions>
         {
-            return (setupInstance == null ? services.AddSingleton<TOptionsSetup>() : services.AddSingleton(setupInstance))
+            return services.AddSingleton<TOptionsSetup>()
                            .AddSingleton<IConfigureOptions<TOptions>>(sp => sp.GetService<TOptionsSetup>())
                            .AddSingleton<IOptionsChangeTokenSource<TOptions>>(sp => sp.GetService<TOptionsSetup>());
         }
