@@ -265,6 +265,10 @@ namespace Microsoft.Azure.SignalR
             {
                 SetCurrentThreadCulture(culture.FirstOrDefault());
             }
+            if (query.TryGetValue(Constants.QueryParameter.RequestUiCulture, out var uiCulture))
+            {
+                SetCurrentThreadUiCulture(uiCulture.FirstOrDefault());
+            }
             if (query.TryGetValue(Constants.QueryParameter.OriginalPath, out var path))
             {
                 originalPath = path.FirstOrDefault();
@@ -277,9 +281,22 @@ namespace Microsoft.Azure.SignalR
             {
                 try
                 {
-                    var requestCulture = new RequestCulture(cultureName);
-                    CultureInfo.CurrentCulture = requestCulture.Culture;
-                    CultureInfo.CurrentUICulture = requestCulture.UICulture;
+                    CultureInfo.CurrentCulture = new CultureInfo(cultureName);
+                }
+                catch (Exception)
+                {
+                    // skip invalid culture, normal won't hit.
+                }
+            }
+        }
+
+        private static void SetCurrentThreadUiCulture(string uiCultureName)
+        {
+            if (!string.IsNullOrEmpty(uiCultureName))
+            {
+                try
+                {
+                    CultureInfo.CurrentUICulture = new CultureInfo(uiCultureName);
                 }
                 catch (Exception)
                 {

@@ -80,6 +80,7 @@ namespace Microsoft.Azure.SignalR
             var claims = BuildClaims(context);
             var request = context.Request;
             var cultureName = context.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture.Name;
+            var uiCultureName = context.Features.Get<IRequestCultureFeature>()?.RequestCulture.UICulture.Name;
             var originalPath = GetOriginalPath(request.Path);
             var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(context, _endpointManager.GetEndpoints(_hubName)));
 
@@ -88,7 +89,11 @@ namespace Microsoft.Azure.SignalR
                 return null;
             }
 
-            var queryString = GetQueryString(request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null, cultureName);
+            var queryString = GetQueryString(
+                request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null,
+                cultureName,
+                uiCultureName
+            );
 
             return new NegotiationResponse
             {
@@ -99,7 +104,7 @@ namespace Microsoft.Azure.SignalR
             };
         }
 
-        private string GetQueryString(string originalQueryString, string cultureName)
+        private string GetQueryString(string originalQueryString, string cultureName, string uiCultureName)
         {
             var clientRequestId = _connectionRequestIdProvider.GetRequestId();
             if (clientRequestId != null)
@@ -111,6 +116,10 @@ namespace Microsoft.Azure.SignalR
             if (!string.IsNullOrEmpty(cultureName))
             {
                 queryString += $"&{Constants.QueryParameter.RequestCulture}={cultureName}";
+            }
+            if (!string.IsNullOrEmpty(uiCultureName))
+            {
+                queryString += $"&{Constants.QueryParameter.RequestUiCulture}={uiCultureName}";
             }
 
             return originalQueryString != null
