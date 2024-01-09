@@ -59,11 +59,8 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             ConnectionFactory = connectionFactoryCallback?.Invoke(ConnectionFactoryCallbackAsync) ?? new TestConnectionFactory(ConnectionFactoryCallbackAsync);
             ClientConnectionManager = new ClientConnectionManager();
-            ClientInvocationManager = new ClientInvocationManager(new DefaultHubProtocolResolver(new IHubProtocol[]
-                {
-                    new JsonHubProtocol(),
-                    new MessagePackHubProtocol(),
-                }, NullLogger<DefaultHubProtocolResolver>.Instance));
+            
+            ClientInvocationManager = new DefaultClientInvocationManager();
             _clientPipeOptions = clientPipeOptions;
             ConnectionDelegateCallback = callback ?? OnConnectionAsync;
 
