@@ -344,7 +344,7 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
-        private async Task ProcessOutgoingMessagesAsync(ClientConnectionContext connection, CancellationToken token = default)
+        private async Task ProcessOutgoingMessagesAsync(ClientConnectionContext connection, CancellationToken token)
         {
             try
             {
@@ -429,6 +429,11 @@ namespace Microsoft.Azure.SignalR
                 // Wait for the application task to complete
                 // application task can end when exception, or Context.Abort() from hub
                 await _connectionDelegate(connection);
+            }
+            catch (ObjectDisposedException)
+            {
+                // When the application shuts down and disposes IServiceProvider, HubConnectionHandler.RunHubAsync is still running and runs into _dispatcher.OnDisconnectedAsync
+                // no need to throw the error out
             }
             catch (Exception ex)
             {

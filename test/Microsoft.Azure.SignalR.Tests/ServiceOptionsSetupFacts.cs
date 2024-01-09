@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR.Tests
     {
         public const string FakeConnectionString = "Endpoint=http://fake;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
 
-        private static readonly string[] ConnectionStringKeyPrefixs = new string[] { Constants.Keys.ConnectionStringKeyPrefix, Constants.Keys.ConnectionStringSecondaryKeyPrefix };
+        private static readonly string[] ConnectionStringKeys = new[] { Constants.Keys.ConnectionStringDefaultKey, Constants.Keys.ConnectionStringSecondaryKey };
 
         private static readonly Dictionary<string, (string, EndpointType)> EndpointDict = new Dictionary<string, (string, EndpointType)>
         {
@@ -22,9 +22,9 @@ namespace Microsoft.Azure.SignalR.Tests
             {":secondary",(string.Empty,EndpointType.Secondary) }
         };
 
-        public static IEnumerable<object[]> ParseServiceEndpointData = from section in ConnectionStringKeyPrefixs
+        public static IEnumerable<object[]> ParseServiceEndpointData = from section in ConnectionStringKeys
                                                                        from tuple in EndpointDict
-                                                                       select new object[] { section + tuple.Key, tuple.Value.Item1, tuple.Value.Item2 };
+                                                                       select new object[] { section + ":" + tuple.Key, tuple.Value.Item1, tuple.Value.Item2 };
 
         [Theory]
         [MemberData(nameof(ParseServiceEndpointData))]

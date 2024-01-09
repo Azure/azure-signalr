@@ -23,6 +23,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientInvocationManager _clientInvocationManager;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly string _callerId;
+        private readonly string _hub;
 
         public ServiceLifetimeManager(
             IServiceConnectionManager<THub> serviceConnectionManager,
@@ -49,9 +50,10 @@ namespace Microsoft.Azure.SignalR
                 throw new InvalidOperationException(MarkerNotConfiguredError);
             }
 #endif
+            _hub = typeof(THub).Name;
             if (hubOptions.Value.SupportedProtocols != null && hubOptions.Value.SupportedProtocols.Any(x => x.Equals(Constants.Protocol.BlazorPack, StringComparison.OrdinalIgnoreCase)))
             {
-                blazorDetector?.TrySetBlazor(typeof(THub).Name, true);
+                blazorDetector?.TrySetBlazor(_hub, true);
             }
 
             _callerId = nameProvider?.GetName() ?? throw new ArgumentNullException(nameof(nameProvider));
@@ -128,7 +130,7 @@ namespace Microsoft.Azure.SignalR
             var invocationId = _clientInvocationManager.Caller.GenerateInvocationId(connectionId);
             var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, invocationId)));
             await WriteAsync(message);
-            var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, cancellationToken);
+            var task = _clientInvocationManager.Caller.AddInvocation<T>(_hub, connectionId, invocationId, cancellationToken);
 
             // Exception handling follows https://source.dot.net/#Microsoft.AspNetCore.SignalR.Core/DefaultHubLifetimeManager.cs,349
             try

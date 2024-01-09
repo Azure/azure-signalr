@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- major.minor.patch[.build] -->
-    <VersionPrefix>1.22.0</VersionPrefix>
+    <VersionPrefix>1.23.0</VersionPrefix>
     <VersionPrefix Condition="'$(MSBuildProjectName)' == 'Microsoft.Azure.SignalR.Emulator'">1.1.0</VersionPrefix>
     <VersionPrefix Condition="'$(MSBuildProjectName)' == 'Microsoft.Azure.SignalR.Serverless.Protocols'">1.9.0</VersionPrefix>
     <!-- Alphanumberic(+hyphen) string for PackageVersion and InformationalVersion-->

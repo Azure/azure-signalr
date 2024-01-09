@@ -108,6 +108,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             var count = ConfigurationManager.ConnectionStrings.Count;
             string connectionString = null;
             var endpoints = new List<ServiceEndpoint>();
+            var connectionStringKeyPrefix = $"{Constants.Keys.ConnectionStringDefaultKey}:";
             for (var i = 0; i < count; i++)
             {
                 var setting = ConfigurationManager.ConnectionStrings[i];
@@ -116,7 +117,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 {
                     connectionString = setting.ConnectionString;
                 }
-                else if (setting.Name.StartsWith(Constants.Keys.ConnectionStringKeyPrefix) && !string.IsNullOrEmpty(setting.ConnectionString))
+                else if (setting.Name.StartsWith(connectionStringKeyPrefix) && !string.IsNullOrEmpty(setting.ConnectionString))
                 {
                     endpoints.Add(new ServiceEndpoint(setting.Name, setting.ConnectionString));
                 }
@@ -131,7 +132,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                     {
                         connectionString = ConfigurationManager.AppSettings[key];
                     }
-                    else if (key.StartsWith(Constants.Keys.ConnectionStringKeyPrefix))
+                    else if (key.StartsWith(connectionStringKeyPrefix))
                     {
                         var value = ConfigurationManager.AppSettings[key];
                         if (!string.IsNullOrEmpty(value))

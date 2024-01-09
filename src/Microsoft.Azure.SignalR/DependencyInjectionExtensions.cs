@@ -88,11 +88,6 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
                 .AddSingleton<IHostedService, HeartBeat>()
                 .AddSingleton<IAccessKeySynchronizer, AccessKeySynchronizer>()
-#if NET7_0_OR_GREATER
-                .AddSingleton<IClientInvocationManager, ClientInvocationManager>()
-#else
-                .AddSingleton<IClientInvocationManager, DummyClientInvocationManager>()
-#endif
                 .AddSingleton(typeof(NegotiateHandler<>));
 
             // If a custom router is added, do not add the default router
@@ -101,6 +96,14 @@ namespace Microsoft.Extensions.DependencyInjection
 
             // If a custom service event handler is added, do not add the default handler.
             builder.Services.TryAddSingleton<IServiceEventHandler, DefaultServiceEventHandler>();
+
+            // IEndpointRouter and IAccessKeySynchronizer is required to build ClientInvocationManager.
+            builder.Services
+#if NET7_0_OR_GREATER
+                .AddSingleton<IClientInvocationManager, ClientInvocationManager>();
+#else
+                .AddSingleton<IClientInvocationManager, DummyClientInvocationManager>();
+#endif
 
 #if !NETSTANDARD2_0
             builder.Services.TryAddSingleton<AzureSignalRHostedService>();

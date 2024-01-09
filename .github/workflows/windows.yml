@@ -11,9 +11,12 @@ on:
 jobs:
   build_windows:
     runs-on: [windows-latest]
+    strategy:
+      matrix:
+        dotnet-version: [ '7.0.x', '6.0.x' ]
     steps:
-    - uses: actions/checkout@v2
-    - uses: dorny/paths-filter@v2.2.0
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v2
       id: filter
       with:
         filters: |
@@ -32,16 +35,21 @@ jobs:
     - name: Update SubModules
       run: git submodule update --init --recursive
       if: steps.filter.outputs.src == 'true'
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v2
+    - name: Setup dotnet ${{ matrix.dotnet-version }}
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: |
-          7.0.x
-          6.0.x
-          5.0.x
-        include-prerelease: true
-          
-    - name: Test
-      run: dotnet test
+        dotnet-version: ${{ matrix.dotnet-version }}
+    - name: Display dotnet version
+      run: dotnet --version
+    - name: Build with dotnet
+      run:  "dotnet build AzureSignalR.sln"
       if: steps.filter.outputs.src == 'true'
+    - name: Test
+      run: dotnet test --no-build --logger trx --results-directory "TestResults-ubuntu-${{ matrix.dotnet-version }}"
+    - name: Upload dotnet test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: dotnet-results-${{ matrix.dotnet-version }}
+        path: TestResults-ubuntu-${{ matrix.dotnet-version }}
+      # Use always() to always run this step to publish test results when there are test failures
+      if: ${{ always() }}

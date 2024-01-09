@@ -72,22 +72,42 @@ namespace Microsoft.Azure.SignalR
 
         private (string AppName, string ConnectionString, ServiceEndpoint[] Endpoints, ConfigurableServiceOptions configurableOptions) ParseConfiguration()
         {
-            var options = _configuration.GetSection(Constants.Keys.AzureSignalRSectionKey).Get<ConfigurableServiceOptions>();
+            var sectionKey = Constants.Keys.AzureSignalRSectionKey;
+            var options = _configuration.GetSection(sectionKey).Get<ConfigurableServiceOptions>();
 
-            // For backward compatability, first read from prefix
-            var appName = _configuration[Constants.Keys.ApplicationNameDefaultKeyPrefix] ?? _configuration[Constants.Keys.ApplicationNameDefaultKey];
+            var appName = GetApplicationName(sectionKey);
 
+            var connectionString = GetConnectionString(sectionKey);
+
+            var endpoints = GetEndpoints(sectionKey);
+
+            return (appName, connectionString, endpoints, options);
+        }
+
+        private string GetApplicationName(string sectionKey)
+        {
+            // A known issue in previous version that the key ended with ":"
+            return _configuration[$"{sectionKey}:ApplicationName:"] ?? _configuration[$"{sectionKey}:ApplicationName"];
+        }
+
+        private string GetConnectionString(string sectionKey)
+        {
+            var connectionStringKey = $"{sectionKey}:ConnectionString";
             // Fallback to ConnectionStrings:Azure:SignalR:ConnectionString format when the default one is not available
-            var connectionString = _configuration[Constants.Keys.ConnectionStringDefaultKey] ?? _configuration[Constants.Keys.ConnectionStringSecondaryKey];
+            return _configuration[connectionStringKey] ?? _configuration.GetConnectionString(connectionStringKey);
+        }
 
-            var endpoints = _configuration.GetEndpoints(Constants.Keys.ConnectionStringDefaultKey).ToArray();
+        private ServiceEndpoint[] GetEndpoints(string sectionKey)
+        {
+            var endpointKey = $"{sectionKey}:ConnectionString";
+            var endpoints = _configuration.GetEndpoints(endpointKey).ToArray();
 
             if (endpoints.Length == 0)
             {
-                endpoints = _configuration.GetEndpoints(Constants.Keys.ConnectionStringSecondaryKey).ToArray();
+                endpoints = _configuration.GetEndpoints($"ConnectionStrings:{endpointKey}").ToArray();
             }
 
-            return (appName, connectionString, endpoints, options);
+            return endpoints;
         }
 
         private record class ConfigurableGracefulShutdownOptions(

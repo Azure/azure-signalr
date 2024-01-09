@@ -15,11 +15,12 @@ namespace Microsoft.Azure.SignalR
         /// Add a invocation which is directly called by current server
         /// </summary>
         /// <typeparam name="T"></typeparam>
+        /// <param name="hub"></param>
         /// <param name="connectionId"></param>
         /// <param name="invocationId"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken);
+        Task<T> AddInvocation<T>(string hub, string connectionId, string invocationId, CancellationToken cancellationToken);
 
         void AddServiceMapping(ServiceMappingMessage serviceMappingMessage);
 

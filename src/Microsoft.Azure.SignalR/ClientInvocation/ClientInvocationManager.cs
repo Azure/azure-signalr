@@ -4,6 +4,8 @@
 using System;
 using Microsoft.AspNetCore.SignalR;
 
+#nullable enable
+
 namespace Microsoft.Azure.SignalR
 {
     internal sealed class ClientInvocationManager : IClientInvocationManager
@@ -11,9 +13,13 @@ namespace Microsoft.Azure.SignalR
         public ICallerClientResultsManager Caller { get; }
         public IRoutedClientResultsManager Router { get; }
 
-        public ClientInvocationManager(IHubProtocolResolver hubProtocolResolver)
+        public ClientInvocationManager(IHubProtocolResolver hubProtocolResolver, IServiceEndpointManager serviceEndpointManager, IEndpointRouter endpointRouter)
         {
-            Caller = new CallerClientResultsManager(hubProtocolResolver ?? throw new ArgumentNullException(nameof(hubProtocolResolver)));
+            Caller = new CallerClientResultsManager(
+                hubProtocolResolver ?? throw new ArgumentNullException(nameof(hubProtocolResolver)),
+                serviceEndpointManager ?? throw new ArgumentNullException(nameof(serviceEndpointManager)),
+                endpointRouter ?? throw new ArgumentNullException(nameof(endpointRouter))
+            );
             Router = new RoutedClientResultsManager();
         }
 
