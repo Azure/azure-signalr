@@ -24,19 +24,19 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    public class AddNamedAzureSignalRFacts : VerifiableLoggedTest
+    public class AddAzureSignalRWithConnectionNameFacts : VerifiableLoggedTest
     {
         private const string CustomValue = "Endpoint=https://customconnectionstring;AccessKey=1";
         private const string DefaultValue = "Endpoint=https://defaultconnectionstring;AccessKey=1";
         private const string SecondaryValue = "Endpoint=https://secondaryconnectionstring;AccessKey=1";
         private const string ConfigFile = "testappsettings.json";
 
-        public AddNamedAzureSignalRFacts(ITestOutputHelper output) : base(output)
+        public AddAzureSignalRWithConnectionNameFacts(ITestOutputHelper output) : base(output)
         {
         }
 
         [Fact]
-        public void AddNamedAzureSignalRReadsFromConnectionStringsCorrectly()
+        public void AddAzureSignalRWithConnectionNameReadsFromConnectionStringsCorrectly()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddNamedAzureSignalR("s1")
+                    .AddAzureSignalRWithConnectionName("s1")
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void AddNamedAzureSignalRConnectionStringCanBeSetInCode()
+        public void AddAzureSignalRWithConnectionNameConnectionStringCanBeSetInCode()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddNamedAzureSignalR("s1", s => s.ConnectionString = CustomValue)
+                    .AddAzureSignalRWithConnectionName("s1", s => s.ConnectionString = CustomValue)
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void AddNamedAzureSignalRConnectionNameWinsOverConfigSection()
+        public void AddAzureSignalRWithConnectionNameConnectionNameWinsOverConfigSection()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddNamedAzureSignalR("s1")
+                    .AddAzureSignalRWithConnectionName("s1")
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void AddNamedAzureSignalRReadsDefaultConfigurationKeyForConnectionString()
+        public void AddAzureSignalRWithConnectionNameReadsDefaultConfigurationKeyForConnectionString()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddNamedAzureSignalR("name1")
+                    .AddAzureSignalRWithConnectionName("name1")
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void AddNamedAzureSignalRReadsInvalidCongifurationThrows()
+        public void AddAzureSignalRWithConnectionNameReadsInvalidCongifurationThrows()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var config = new ConfigurationBuilder()
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddNamedAzureSignalR("name1", o =>
+                    .AddAzureSignalRWithConnectionName("name1", o =>
                     {
                         o.InitialHubServerConnectionCount = 15;
                         o.MaxHubServerConnectionCount = 3;
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void AddNamedAzureSignalRIgnoreDefaultConnectionString()
+        public void AddAzureSignalRWithConnectionNameIgnoreDefaultConnectionString()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddNamedAzureSignalR("name1")
+                    .AddAzureSignalRWithConnectionName("name1")
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -195,7 +195,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void AddNamedAzureSignalRIgnoreDefaultConnectionStringDefaultOneWins()
+        public void AddAzureSignalRWithConnectionNameIgnoreDefaultConnectionStringDefaultOneWins()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddNamedAzureSignalR("name1")
+                    .AddAzureSignalRWithConnectionName("name1")
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddNamedAzureSignalR("s1")
+                    .AddAzureSignalRWithConnectionName("s1")
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     .Build();
                 string capturedConnectionString = null;
                 var serviceProvider = services.AddSignalR()
-                    .AddNamedAzureSignalR("s2", o => { capturedConnectionString = o.ConnectionString; })
+                    .AddAzureSignalRWithConnectionName("s2", o => { capturedConnectionString = o.ConnectionString; })
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -298,7 +298,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(CustomValue, DefaultValue, SecondaryValue, CustomValue)]
         [InlineData(null, DefaultValue, SecondaryValue, DefaultValue)]
         [InlineData(null, null, SecondaryValue, SecondaryValue)]
-        public void AddNamedAzureSignalRLoadConnectionStringOrder(string customValue, string defaultValue,
+        public void AddAzureSignalRWithConnectionNameLoadConnectionStringOrder(string customValue, string defaultValue,
             string secondaryValue, string expected)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
@@ -312,7 +312,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddNamedAzureSignalR("s1", o =>
+                    .AddAzureSignalRWithConnectionName("s1", o =>
                     {
                         if (customValue != null)
                         {
@@ -334,7 +334,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(CustomValue, null, null, CustomValue)]
         [InlineData(CustomValue, DefaultValue, SecondaryValue, CustomValue)]
         [InlineData(null, DefaultValue, SecondaryValue, DefaultValue)]
-        public void AddNamedAzureSignalRReadServiceEndpointsFromConfig(string customValue, string defaultValue,
+        public void AddAzureSignalRWithConnectionNameReadServiceEndpointsFromConfig(string customValue, string defaultValue,
             string secondaryValue, string expected)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddNamedAzureSignalR("s1", o =>
+                    .AddAzureSignalRWithConnectionName("s1", o =>
                     {
                         if (customValue != null)
                         {
@@ -398,7 +398,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [InlineData(null, null, SecondaryValue, null)]
-        public void AddNamedAzureSignalRWithOnlySecondaryValueThrows(string customValue, string defaultValue,
+        public void AddAzureSignalRWithConnectionNameWithOnlySecondaryValueThrows(string customValue, string defaultValue,
             string secondaryValue, string expected)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
@@ -412,7 +412,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddNamedAzureSignalR("s1", o =>
+                    .AddAzureSignalRWithConnectionName("s1", o =>
                     {
                         if (customValue != null)
                         {
@@ -445,7 +445,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(DefaultValue, CustomValue, CustomValue, 2)]
         [InlineData(null, CustomValue, CustomValue, 2)]
         [InlineData(null, null, null, 2)]
-        public void AddNamedAzureSignalRCustomizeEndpointsOverridesConfigValue(string defaultValue, string customValue, string expected, int expectedCount)
+        public void AddAzureSignalRWithConnectionNameCustomizeEndpointsOverridesConfigValue(string defaultValue, string customValue, string expected, int expectedCount)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -458,7 +458,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddNamedAzureSignalR("s1", o =>
+                    .AddAzureSignalRWithConnectionName("s1", o =>
                     {
                         if (customValue != null)
                         {
