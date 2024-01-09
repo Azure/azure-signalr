@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.Tests
     public class ServiceEndpointProviderFacts
     {
         private const string Endpoint = "https://myendpoint";
-        private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
+        private const string AccessKey = "fake_key";
         private static readonly string HubName = nameof(TestHub).ToLower();
         private static readonly string AppName = "testapp";
 
