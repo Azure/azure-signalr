@@ -2,8 +2,7 @@ name: Line Endings Check
 on:
  pull_request:
    branches: 
-    - ci
-    - dev
+    - '**/**'
 jobs:
   line-endings-check:
     runs-on: ubuntu-latest
