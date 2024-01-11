@@ -2,11 +2,11 @@ name: Gated-OSX
 on: 
  push:
    branches: 
-    - main
+    - 'releases/**'
     - dev
  pull_request:
    branches: 
-    - main
+    - 'releases/**'
     - dev
 jobs:
   build_osx:

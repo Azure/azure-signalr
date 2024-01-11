@@ -2,11 +2,11 @@ name: Gated-Ubuntu
 on: 
  push:
    branches: 
-    - main
+    - 'releases/**'
     - dev
  pull_request:
    branches: 
-    - main
+    - 'releases/**'
     - dev
 jobs:
   build_ubuntu:
