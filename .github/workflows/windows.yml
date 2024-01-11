@@ -1,13 +1,13 @@
 name: Gated-Windows
 on: 
- push:
-   branches: 
-    - master
-    - dev
- pull_request:
-   branches: 
-    - master
-    - dev
+  push:
+    branches: 
+      - 'releases/**'
+      - dev
+  pull_request:
+    branches: 
+      - 'releases/**'
+      - dev
 jobs:
   build_windows:
     runs-on: [windows-latest]
