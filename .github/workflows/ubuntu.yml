@@ -1,13 +1,13 @@
 name: Gated-Ubuntu
 on: 
- push:
-   branches: 
-    - master
-    - dev
- pull_request:
-   branches: 
-    - master
-    - dev
+  push:
+    branches: 
+      - 'releases/**'
+      - dev
+  pull_request:
+    branches: 
+      - 'releases/**'
+      - dev
 jobs:
   build_ubuntu:
     runs-on: ubuntu-latest
