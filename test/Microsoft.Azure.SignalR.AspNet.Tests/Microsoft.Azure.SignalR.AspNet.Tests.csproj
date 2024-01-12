@@ -21,7 +21,7 @@
     <PackageReference Include="MessagePack" Version="$(MessagePackPackage3_1Version)" />
     <PackageReference Include="Microsoft.Extensions.Logging.Testing" Version="$(MicrosoftExtensionsLoggingPackageVersion)" />
     <PackageReference Include="Microsoft.Owin.Testing" Version="$(MicrosoftOwinTestingPackageVersion)" />
-	<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="$(SystemIdentityModelTokensJwtPackageVersion)" />
+	  <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="$(SystemIdentityModelTokensJwtPackageVersion)" />
     <PackageReference Include="Microsoft.Owin.Host.HttpListener" Version="$(MicrosoftOwinTestingPackageVersion)" />
   </ItemGroup>
 
