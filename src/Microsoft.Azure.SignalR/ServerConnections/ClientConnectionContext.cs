@@ -265,7 +265,7 @@ namespace Microsoft.Azure.SignalR
             {
                 SetCurrentThreadCulture(culture.FirstOrDefault());
             }
-            if (query.TryGetValue(Constants.QueryParameter.RequestUiCulture, out var uiCulture))
+            if (query.TryGetValue(Constants.QueryParameter.RequestUICulture, out var uiCulture))
             {
                 SetCurrentThreadUiCulture(uiCulture.FirstOrDefault());
             }

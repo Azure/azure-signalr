@@ -119,7 +119,7 @@ namespace Microsoft.Azure.SignalR
             }
             if (!string.IsNullOrEmpty(uiCultureName))
             {
-                queryString += $"&{Constants.QueryParameter.RequestUiCulture}={uiCultureName}";
+                queryString += $"&{Constants.QueryParameter.RequestUICulture}={uiCultureName}";
             }
 
             return originalQueryString != null
