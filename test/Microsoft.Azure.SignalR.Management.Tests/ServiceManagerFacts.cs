@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
     public class ServiceManagerFacts
     {
         private const string Endpoint = "https://abc";
-        private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
+        private const string AccessKey = "fake_key";
         private const string HubName = "signalrBench";
         private const string UserId = "UserA";
         private const string UserAgent = "userAgent";
