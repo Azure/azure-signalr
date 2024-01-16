@@ -21,7 +21,6 @@
     <SystemBuffersPackageVersion>4.5.1</SystemBuffersPackageVersion>
     <SystemMemoryPackageVersion>4.5.4</SystemMemoryPackageVersion>
     <SystemRuntimeCompilerServicesUnsafePackageVersion>6.0.0</SystemRuntimeCompilerServicesUnsafePackageVersion>
-    <SystemIdentityModelTokensJwtPackageVersion>5.7.0</SystemIdentityModelTokensJwtPackageVersion>
     <AzureIdentityPackageVersion>1.10.4</AzureIdentityPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.1</MicrosoftExtensionsPrimitivesPackageVersion>
@@ -72,6 +71,7 @@
     <EmulatorMicrosoftPackageVersion>6.0.9</EmulatorMicrosoftPackageVersion>
 
     <!--Testing -->
+    <SystemIdentityModelTokensJwtPackageVersion>5.7.0</SystemIdentityModelTokensJwtPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
     <MessagePackPackage3_1Version>1.9.11</MessagePackPackage3_1Version>
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>3.1.24</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
