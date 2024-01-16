@@ -36,6 +36,31 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        public void AddAzureSignalRWithConnectionNameWithEmptyConnectionName()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var services = new ServiceCollection();
+                var config = new ConfigurationBuilder()
+                    .AddInMemoryCollection(new Dictionary<string, string>
+                    {
+                    {"ConnectionStrings", DefaultValue},
+                    })
+                    .Build();
+                var serviceProvider = services.AddSignalR()
+                    .AddAzureSignalRWithConnectionName("")
+                    .Services
+                    .AddSingleton<IConfiguration>(config)
+                    .AddSingleton(loggerFactory)
+                    .BuildServiceProvider();
+
+                var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
+
+                Assert.Equal(DefaultValue, options.ConnectionString);
+            }
+        }
+
+        [Fact]
         public void AddAzureSignalRWithConnectionNameReadsFromConnectionStringsCorrectly()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
