@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw new ArgumentNullException(nameof(name));
+                throw name == null ? new ArgumentNullException(nameof(name)) : new ArgumentException("The value cannot be an empty string.", nameof(name));
             }
 
             builder.Services.SetupOptions<ServiceOptions, ServiceOptionsSetup>(s => ActivatorUtilities.CreateInstance<ServiceOptionsSetup>(s, name));
