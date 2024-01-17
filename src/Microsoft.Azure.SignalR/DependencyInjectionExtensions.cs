@@ -41,9 +41,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
         /// <param name="name">The name of the Azure SignalR service that settings and connection strings are read from</param>
-        /// <param name="configure">A callback to configure the <see cref="ServiceOptions"/>.</param>
         /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
-        public static ISignalRServerBuilder AddAzureSignalRWithConnectionName(this ISignalRServerBuilder builder, string name, Action<ServiceOptions> configure = null)
+        public static ISignalRServerBuilder AddAzureSignalRWithConnectionName(this ISignalRServerBuilder builder, string name)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -51,10 +50,6 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             builder.Services.SetupOptions<ServiceOptions, ServiceOptionsSetup>(s => ActivatorUtilities.CreateInstance<ServiceOptionsSetup>(s, name));
-            if (configure != null)
-            {
-                builder.Services.Configure(configure).PostConfigure<ServiceOptions>(o => o.Validate());
-            }
             return builder.AddAzureSignalRCore();
         }
 
@@ -81,8 +76,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, Action<ServiceOptions> configure)
         {
             builder.AddAzureSignalR()
-                   .Services.Configure(configure)
-                   .PostConfigure<ServiceOptions>(o => o.Validate());
+                   .Services.Configure(configure);
 
             return builder;
         }
@@ -97,6 +91,7 @@ namespace Microsoft.Extensions.DependencyInjection
         private static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)
         {
             builder.Services
+                .PostConfigure<ServiceOptions>(o => o.Validate())
                 .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManager<>))
                 .AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol))
                 .AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager))

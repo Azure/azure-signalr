@@ -98,8 +98,9 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s1", s => s.ConnectionString = CustomValue)
+                    .AddAzureSignalRWithConnectionName("s1")
                     .Services
+                    .Configure<ServiceOptions>(s => s.ConnectionString = CustomValue)
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
                     .BuildServiceProvider();
@@ -176,12 +177,13 @@ namespace Microsoft.Azure.SignalR.Tests
                 var config = new ConfigurationBuilder()
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("name1", o =>
+                    .AddAzureSignalRWithConnectionName("name1")
+                    .Services
+                    .Configure<ServiceOptions>(o =>
                     {
                         o.InitialHubServerConnectionCount = 15;
                         o.MaxHubServerConnectionCount = 3;
                     })
-                    .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
                     .BuildServiceProvider();
@@ -305,8 +307,9 @@ namespace Microsoft.Azure.SignalR.Tests
                     .Build();
                 string capturedConnectionString = null;
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s2", o => { capturedConnectionString = o.ConnectionString; })
+                    .AddAzureSignalRWithConnectionName("s2")
                     .Services
+                    .Configure<ServiceOptions>(o => { capturedConnectionString = o.ConnectionString; })
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
                     .BuildServiceProvider();
@@ -337,14 +340,15 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s1", o =>
+                    .AddAzureSignalRWithConnectionName("s1")
+                    .Services
+                    .Configure<ServiceOptions>(o =>
                     {
                         if (customValue != null)
                         {
                             o.ConnectionString = customValue;
                         }
                     })
-                    .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
                     .BuildServiceProvider();
@@ -373,14 +377,15 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s1", o =>
+                    .AddAzureSignalRWithConnectionName("s1")
+                    .Services
+                    .Configure<ServiceOptions>(o =>
                     {
                         if (customValue != null)
                         {
                             o.ConnectionString = customValue;
                         }
                     })
-                    .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
                     .BuildServiceProvider();
@@ -437,14 +442,15 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s1", o =>
+                    .AddAzureSignalRWithConnectionName("s1")
+                    .Services
+                    .Configure<ServiceOptions>(o =>
                     {
                         if (customValue != null)
                         {
                             o.ConnectionString = customValue;
                         }
                     })
-                    .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
                     .BuildServiceProvider();
@@ -483,7 +489,9 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s1", o =>
+                    .AddAzureSignalRWithConnectionName("s1")
+                    .Services
+                    .Configure<ServiceOptions>(o =>
                     {
                         if (customValue != null)
                         {
@@ -498,7 +506,6 @@ namespace Microsoft.Azure.SignalR.Tests
                             new ServiceEndpoint(SecondaryValue, EndpointType.Secondary),
                         };
                     })
-                    .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
                     .BuildServiceProvider();
