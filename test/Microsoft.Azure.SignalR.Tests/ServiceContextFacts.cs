@@ -199,9 +199,9 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        // When !isCultureValid, parsedCulture is ignored. Invalid culture won't change default value (typically en-US). So does UICulture.
-        // `CultureInfo` under Linux and Mac doesn't throw exception when invalid culture is set. Reference: https://github.com/dotnet/runtime/issues/11590
-        // Culture and UICulture by default is same as OS. Reference: https://learn.microsoft.com/en-us/dotnet/api/system.threading.thread.currentuiculture?view=net-8.0&redirectedfrom=MSDN#remarks
+        // For Linux and Mac, `CultureInfo` ctor doesn't treat invalid culture string as an invalid one. See https://github.com/dotnet/runtime/issues/11590
+        // If `CultureInfo` ctor treats the culture string as an invalid one, the default culture won't be changed and `parsedCulture` will be ignored.
+        // Culture / UICulture by default is same as OS, typically en-US. See https://learn.microsoft.com/en-us/dotnet/api/system.threading.thread.currentuiculture?view=net-8.0&redirectedfrom=MSDN#remarks
         [InlineData("&asrs_lang=ar-SA", true, "ar-SA", false, null)]
         [InlineData("&asrs_lang=zh-CN", true, "zh-CN", false, null)]
         [InlineData("&asrs_ui_lang=ar-SA", false, null, true, "ar-SA")]
