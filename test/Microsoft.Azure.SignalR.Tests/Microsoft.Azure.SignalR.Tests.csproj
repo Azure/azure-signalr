@@ -7,6 +7,10 @@
     <DefineConstants>MULTIFRAMEWORK</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <DefineConstants>OS_WINDOWS</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Azure.SignalR.Tests.Common\Microsoft.Azure.SignalR.Tests.Common.csproj" />
   </ItemGroup>
