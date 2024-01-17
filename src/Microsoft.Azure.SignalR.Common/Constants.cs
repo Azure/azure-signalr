@@ -77,6 +77,7 @@ namespace Microsoft.Azure.SignalR
             public const string OriginalPath = "asrs.op";
             public const string ConnectionRequestId = "asrs_request_id";
             public const string RequestCulture = "asrs_lang";
+            public const string RequestUICulture = "asrs_ui_lang";
         }
 
         public static class CustomizedPingTimer
@@ -113,6 +114,8 @@ namespace Microsoft.Azure.SignalR
         {
             public const string Resilient = "Resilient";
             public const string MessageResilient = "MessageResilient";
+            public const string UserDefault = "UserDefault";
+            public const string InternalDefault = "InternalDefault";
         }
     }
 }

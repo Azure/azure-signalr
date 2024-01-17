@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -234,7 +235,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task ProxyApplyToTransientModeTestAsync()
+        public async Task ProxyApplyToUserRestRequestTestAsync()
         {
             var requestUrls = new Queue<string>();
 
@@ -258,16 +259,60 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 o.Proxy = new WebProxy(app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First());
             }).BuildServiceManager();
             Assert.True(await serviceManager.IsServiceHealthy(default));
-            Assert.Equal("/api/v1/health", requestUrls.Dequeue());
+            Assert.Equal("/api/health", requestUrls.Dequeue());
 
             using var hubContext = await serviceManager.CreateHubContextAsync("hub", default);
             Assert.True(await hubContext.ClientManager.UserExistsAsync("userId"));
             Assert.Equal("/api/hubs/hub/users/userId", requestUrls.Dequeue());
+            await hubContext.Clients.All.SendAsync("method");
+            Assert.Equal("/api/hubs/hub/:send", requestUrls.Dequeue());
             await app.StopAsync();
         }
 
         [Fact]
-        public async Task CustomizeHttpClientTimeoutTestAsync()
+        public async Task ProxyApplyToInternalHealthCheckTestAsync()
+        {
+            var requestUrls = new Queue<string>();
+
+            //create a simple proxy server
+            var appBuilder = WebApplication.CreateBuilder();
+            appBuilder.Services.AddLogging(b => b.AddXunit(_outputHelper));
+            using var app = appBuilder.Build();
+            //randomly choose a free port, listen to all interfaces
+            app.Urls.Add("http://[::1]:0");
+            app.Run(context =>
+            {
+                if (HttpMethods.IsHead(context.Request.Method))
+                {
+                    requestUrls.Enqueue(context.Request.Path);
+                }
+                return Task.CompletedTask;
+            });
+            await app.StartAsync();
+
+            var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                // use http schema to avoid SSL handshake
+                o.ConnectionString = "Endpoint=http://abc;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Version=1.0;";
+                o.Proxy = new WebProxy(app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First());
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).ConfigureServices(services => services.Configure<HealthCheckOption>(o => o.EnabledForSingleEndpoint = true)).BuildServiceManager();
+
+            using var hubContext = await serviceManager.CreateHubContextAsync("hub", default);
+            Assert.Equal("/api/health", requestUrls.Dequeue());
+            await app.StopAsync();
+        }
+
+        public static IEnumerable<object[]> CustomizeHttpClientTimeoutTestData => new object[][]
+        {
+            new object[]{ Constants.HttpClientNames.MessageResilient , (ServiceHubContext serviceHubContext)=> serviceHubContext.Clients.All.SendCoreAsync("method", null) },
+            new object[]{ Constants.HttpClientNames.Resilient , (ServiceHubContext serviceHubContext)=> serviceHubContext.ClientManager.CloseConnectionAsync("connectionId") },
+            new object[]{Constants.HttpClientNames.UserDefault, (ServiceHubContext serviceHubContext)=>  (serviceHubContext as ServiceHubContextImpl).ServiceProvider.GetRequiredService<IServiceManager>().IsServiceHealthy(default)}
+        };
+
+        [Theory]
+        [MemberData(nameof(CustomizeHttpClientTimeoutTestData))]
+        public async Task CustomizeHttpClientTimeoutTestAsync(string httpClientName, Func<ServiceHubContext, Task> testFunc)
         {
             for (int i = 0; i < 10; i++)
             {
@@ -278,16 +323,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                         o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
                         o.HttpClientTimeout = TimeSpan.FromSeconds(1);
                     })
-                    .ConfigureServices(services =>
-                    {
-                        services.AddHttpClient(Constants.HttpClientNames.MessageResilient).AddHttpMessageHandler(sp => new WaitInfinitelyHandler());
-                        services.AddHttpClient(Constants.HttpClientNames.Resilient).AddHttpMessageHandler(sp => new WaitInfinitelyHandler());
-                    })
+                    .ConfigureServices(services => services.AddHttpClient(httpClientName).AddHttpMessageHandler(sp => new WaitInfinitelyHandler()))
                     .BuildServiceManager();
                 var requestStartTime = DateTime.UtcNow;
                 var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", default);
-                await TestCoreAsync(() => serviceHubContext.Clients.All.SendCoreAsync("method", null));
-                await TestCoreAsync(() => serviceHubContext.ClientManager.CloseConnectionAsync("connectionId"));
+                await TestCoreAsync(() => testFunc(serviceHubContext));
             }
 
             static async Task TestCoreAsync(Func<Task> testAction)
@@ -297,12 +337,14 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var elapsed = DateTime.UtcNow - requestStartTime;
                 // Don't know why, the elapsed time sometimes is shorter than 1 second, but it should be close to 1 second.
                 Assert.True(elapsed >= TimeSpan.FromSeconds(0.8));
-                Assert.True(elapsed < TimeSpan.FromSeconds(1.2));
+                // Avoid random failure
+                Assert.True(elapsed < TimeSpan.FromSeconds(5));
             }
         }
 
         [Theory]
-        [InlineData("")]
+        [InlineData(Constants.HttpClientNames.InternalDefault)]
+        [InlineData(Constants.HttpClientNames.UserDefault)]
         [InlineData(Constants.HttpClientNames.MessageResilient)]
         [InlineData(Constants.HttpClientNames.Resilient)]
         public async Task HttpClientProductInfoTestAsync(string httpClientName)

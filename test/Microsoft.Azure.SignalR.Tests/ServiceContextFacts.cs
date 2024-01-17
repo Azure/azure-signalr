@@ -199,26 +199,39 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [InlineData("&asrs_lang=ar-SA", true, "ar-SA")]
-        [InlineData("&asrs_lang=zh-CN", true, "zh-CN")]
-        [InlineData("", false, null)]
-        [InlineData("&arsa_lang=", false, null)]
-        [InlineData("&arsa_lang=123", false, null)] // invalid culture won't change default en-US
-        public void ServiceConnectionContextCultureTest(string cultureQuery, bool isValid, string result)
+        // When !isCultureValid, parsedCulture is ignored. Invalid culture won't change default value (typically en-US). So does UICulture.
+        // `CultureInfo` under Linux and Mac doesn't throw exception when invalid culture is set. Reference: https://github.com/dotnet/runtime/issues/11590
+        // Culture and UICulture by default is same as OS. Reference: https://learn.microsoft.com/en-us/dotnet/api/system.threading.thread.currentuiculture?view=net-8.0&redirectedfrom=MSDN#remarks
+        [InlineData("&asrs_lang=ar-SA", true, "ar-SA", false, null)]
+        [InlineData("&asrs_lang=zh-CN", true, "zh-CN", false, null)]
+        [InlineData("&asrs_ui_lang=ar-SA", false, null, true, "ar-SA")]
+        [InlineData("&asrs_ui_lang=zh-CN", false, null, true, "zh-CN")]
+        [InlineData("&asrs_lang=ar-SA&asrs_ui_lang=zh-CN", true, "ar-SA", true, "zh-CN")]
+        [InlineData("&asrs_lang=zh-CN&asrs_ui_lang=ar-SA", true, "zh-CN", true, "ar-SA")]
+#if OS_WINDOWS
+        [InlineData("", false, null, false, null)]
+        [InlineData("&arsa_lang=", false, null, false, null)]
+        [InlineData("&arsa_lang=123", false, null, false, null)]
+        [InlineData("&arsa_ui_lang=", false, null, false, null)]
+        [InlineData("&arsa_ui_lang=123", false, null, false, null)]
+        [InlineData("&asrs_lang=ar-SA&asrs_ui_lang=", true, "ar-SA", false, null)]
+        [InlineData("&asrs_lang=ar-SA&asrs_ui_lang=123", true, "ar-SA", false, null)]
+        [InlineData("&asrs_lang=&asrs_ui_lang=ar-SA", false, null, true, "ar-SA")]
+        [InlineData("&asrs_lang=123&asrs_ui_lang=ar-SA", false, null, true, "ar-SA")]
+#endif
+        public void ServiceConnectionContextCultureTest(string cultureQuery, bool isCultureValid, string parsedCulture, bool isUiCultureValid, string parsedUiCulture)
         {
             var queryString = $"?{cultureQuery}";
             var originalCulture = CultureInfo.CurrentCulture.Name;
+            var originalUiCulture = CultureInfo.CurrentUICulture.Name;
 
             _ = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
+            
+            var expectedCulture = isCultureValid ? parsedCulture : originalCulture;
+            var expectedUiCulture = isUiCultureValid ? parsedUiCulture : originalUiCulture;
 
-            if (isValid)
-            {
-                Assert.Equal(result, CultureInfo.CurrentCulture.Name);
-            }
-            else
-            {
-                Assert.Equal(originalCulture, CultureInfo.CurrentCulture.Name);
-            }
+            Assert.Equal(expectedCulture, CultureInfo.CurrentCulture.Name);
+            Assert.Equal(expectedUiCulture, CultureInfo.CurrentUICulture.Name);
         }
     }
 }
