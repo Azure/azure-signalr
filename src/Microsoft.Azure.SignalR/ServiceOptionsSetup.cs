@@ -22,13 +22,12 @@ namespace Microsoft.Azure.SignalR
 
         public void Configure(ServiceOptions options)
         {
-            var configuration = ParseConfiguration();
+            var sectionKey = Constants.Keys.AzureSignalRSectionKey;
 
-            options.ConnectionString = configuration.ConnectionString;
-            options.Endpoints = configuration.Endpoints;
-            options.ApplicationName = configuration.AppName;
-
-            var configurableOption = configuration.configurableOptions;
+            options.ConnectionString = GetConnectionString(sectionKey);
+            options.Endpoints = GetEndpoints(sectionKey);
+            options.ApplicationName = GetApplicationName(sectionKey);
+            var configurableOption = _configuration.GetSection(sectionKey).Get<ConfigurableServiceOptions>();
             if (configurableOption != null)
             {
                 options.ServerStickyMode = GetConfiguredEnum(configurableOption.ServerStickyMode, options.ServerStickyMode);
@@ -68,20 +67,6 @@ namespace Microsoft.Azure.SignalR
             }
 
             return defaultValue;
-        }
-
-        private (string AppName, string ConnectionString, ServiceEndpoint[] Endpoints, ConfigurableServiceOptions configurableOptions) ParseConfiguration()
-        {
-            var sectionKey = Constants.Keys.AzureSignalRSectionKey;
-            var options = _configuration.GetSection(sectionKey).Get<ConfigurableServiceOptions>();
-
-            var appName = GetApplicationName(sectionKey);
-
-            var connectionString = GetConnectionString(sectionKey);
-
-            var endpoints = GetEndpoints(sectionKey);
-
-            return (appName, connectionString, endpoints, options);
         }
 
         private string GetApplicationName(string sectionKey)
