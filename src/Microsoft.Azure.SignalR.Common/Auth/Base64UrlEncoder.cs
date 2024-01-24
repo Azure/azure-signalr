@@ -10,7 +10,6 @@
 
 using System;
 using System.Text;
-using Microsoft.IdentityModel.Logging;
 
 namespace Microsoft.Azure.SignalR
 {

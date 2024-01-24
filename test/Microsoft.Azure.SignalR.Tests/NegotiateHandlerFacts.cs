@@ -459,7 +459,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 QueryString = "?endpoint=chosen"
             };
             features.Set<IHttpRequestFeature>(requestFeature);
-            var customCulture = new RequestCulture("ar-SA");
+            var customCulture = new RequestCulture("ar-SA", "en-US");
             features.Set<IRequestCultureFeature>(
                 new RequestCultureFeature(customCulture,
                 new AcceptLanguageHeaderRequestCultureProvider()));
@@ -470,7 +470,9 @@ namespace Microsoft.Azure.SignalR.Tests
             var negotiateResponse = await handler.Process(httpContext);
 
             var queryContainsCulture = negotiateResponse.Url.Contains($"{Constants.QueryParameter.RequestCulture}=ar-SA");
+            var queryContainsUICulture = negotiateResponse.Url.Contains($"{Constants.QueryParameter.RequestUICulture}=en-US");
             Assert.True(queryContainsCulture);
+            Assert.True(queryContainsUICulture);
         }
 
         [Theory]

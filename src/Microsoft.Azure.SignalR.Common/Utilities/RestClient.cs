@@ -11,7 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 
 #nullable enable
@@ -63,7 +62,7 @@ namespace Microsoft.Azure.SignalR
             Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
             CancellationToken cancellationToken = default)
         {
-            return SendAsyncCore(Options.DefaultName, api, httpMethod, methodName, args, handleExpectedResponseAsync, cancellationToken);
+            return SendAsyncCore(Constants.HttpClientNames.UserDefault, api, httpMethod, methodName, args, handleExpectedResponseAsync, cancellationToken);
         }
 
         public Task SendWithRetryAsync(
