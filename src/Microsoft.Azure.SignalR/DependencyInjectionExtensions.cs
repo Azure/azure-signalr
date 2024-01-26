@@ -37,6 +37,23 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
+        /// Add Azure SignalR with specified connection name, the connection string could be read from ConnectionStrings_{name}, the settings are loaded from Azure:SignalR:{name} section
+        /// </summary>
+        /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
+        /// <param name="name">The name of the Azure SignalR service that settings and connection strings are read from</param>
+        /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
+        public static ISignalRServerBuilder AddAzureSignalRWithConnectionName(this ISignalRServerBuilder builder, string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw name == null ? new ArgumentNullException(nameof(name)) : new ArgumentException("The value cannot be an empty string.", nameof(name));
+            }
+
+            builder.Services.SetupOptions<ServiceOptions, ServiceOptionsSetup>(s => ActivatorUtilities.CreateInstance<ServiceOptionsSetup>(s, name));
+            return builder.AddAzureSignalRCore();
+        }
+
+        /// <summary>
         /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
         /// </summary>
         /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
@@ -59,8 +76,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, Action<ServiceOptions> configure)
         {
             builder.AddAzureSignalR()
-                   .Services.Configure(configure)
-                   .PostConfigure<ServiceOptions>(o => o.Validate());
+                   .Services.Configure(configure);
 
             return builder;
         }
@@ -75,6 +91,7 @@ namespace Microsoft.Extensions.DependencyInjection
         private static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)
         {
             builder.Services
+                .PostConfigure<ServiceOptions>(o => o.Validate())
                 .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManager<>))
                 .AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol))
                 .AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager))
