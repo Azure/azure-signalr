@@ -69,7 +69,6 @@
     <SignedPackageFile Include="$(PublishDir)Microsoft.Identity.Client.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
     <SignedPackageFile Include="$(PublishDir)Microsoft.Identity.Client.Extensions.Msal.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
     <SignedPackageFile Include="$(PublishDir)Microsoft.IdentityModel.Clients.ActiveDirectory.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
-    <SignedPackageFile Include="$(PublishDir)Microsoft.IdentityModel.JsonWebTokens.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.IdentityModel.Logging.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.IdentityModel.Protocols.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
@@ -77,7 +76,6 @@
     <SignedPackageFile Include="$(PublishDir)Newtonsoft.Json.Bson.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Newtonsoft.Json.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)System.IO.Pipelines.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
-    <SignedPackageFile Include="$(PublishDir)System.IdentityModel.Tokens.Jwt.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)System.Text.Encodings.Web.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)System.Memory.Data.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)System.Net.WebSockets.WebSocketProtocol.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />

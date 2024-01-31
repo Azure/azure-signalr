@@ -12,6 +12,7 @@
   
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryPackageVersion)" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
   </ItemGroup>
   
   <PropertyGroup>
