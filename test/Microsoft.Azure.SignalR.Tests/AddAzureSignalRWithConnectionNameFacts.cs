@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 Assert.Throws<ArgumentException>(() => services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("")
+                    .AddNamedAzureSignalR("")
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s1")
+                    .AddNamedAzureSignalR("s1")
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s1")
+                    .AddNamedAzureSignalR("s1")
                     .Services
                     .Configure<ServiceOptions>(s => s.ConnectionString = CustomValue)
                     .AddSingleton<IConfiguration>(config)
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s1")
+                    .AddNamedAzureSignalR("s1")
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("name1")
+                    .AddNamedAzureSignalR("name1")
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var config = new ConfigurationBuilder()
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("name1")
+                    .AddNamedAzureSignalR("name1")
                     .Services
                     .Configure<ServiceOptions>(o =>
                     {
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("name1")
+                    .AddNamedAzureSignalR("name1")
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -234,7 +234,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("name1")
+                    .AddNamedAzureSignalR("name1")
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -267,7 +267,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s1")
+                    .AddNamedAzureSignalR("s1")
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)
@@ -303,7 +303,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     .Build();
                 string capturedConnectionString = null;
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s2")
+                    .AddNamedAzureSignalR("s2")
                     .Services
                     .Configure<ServiceOptions>(o => { capturedConnectionString = o.ConnectionString; })
                     .AddSingleton<IConfiguration>(config)
@@ -336,7 +336,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s1")
+                    .AddNamedAzureSignalR("s1")
                     .Services
                     .Configure<ServiceOptions>(o =>
                     {
@@ -373,7 +373,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s1")
+                    .AddNamedAzureSignalR("s1")
                     .Services
                     .Configure<ServiceOptions>(o =>
                     {
@@ -438,7 +438,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s1")
+                    .AddNamedAzureSignalR("s1")
                     .Services
                     .Configure<ServiceOptions>(o =>
                     {
@@ -485,7 +485,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalRWithConnectionName("s1")
+                    .AddNamedAzureSignalR("s1")
                     .Services
                     .Configure<ServiceOptions>(o =>
                     {
