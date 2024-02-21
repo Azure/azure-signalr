@@ -7,6 +7,7 @@ using System.Linq;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Protocol;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -18,7 +19,14 @@ namespace Microsoft.Azure.SignalR
             "aud", // Audience claim, used by service to make sure token is matched with target resource.
             "exp", // Expiration time claims. A token is valid only before its expiration time.
             "iat", // Issued At claim. Added by default. It is not validated by service.
-            "nbf"  // Not Before claim. Added by default. It is not validated by service.
+            "nbf",  // Not Before claim. Added by default. It is not validated by service.
+            "iss",  // "iss" is a system claim. It is not validated by service.
+            "actort",
+            "acr",
+            "azp",
+            "c_hash",
+            "jti",
+            "nonce",
         };
 
         private static readonly ClaimsIdentity DefaultClaimsIdentity = new ClaimsIdentity();
@@ -115,14 +123,33 @@ namespace Microsoft.Azure.SignalR
             }
 
             // return customer's claims
-            var customerClaims = claimsProvider == null ? user?.Claims : claimsProvider.Invoke();
+            var customerClaims = (claimsProvider == null ? user?.Claims : claimsProvider.Invoke())?.ToArray();
             if (customerClaims != null)
             {
+                // According to the spec https://datatracker.ietf.org/doc/html/rfc7519#section-4.1
+                // the "sub" value is a case-sensitive string containing a StringOrURI value
+                // "sub" is used as the UserId if userId is not specified
+                // If "sub" exists, we here make sure only one "sub" is preserved, others will be renamed as user claim type
+                var hasSubClaim = false;
                 foreach (var claim in customerClaims)
                 {
+                    if (claim.Type == "sub")
+                    {
+                        if (hasSubClaim)
+                        {
+                            // only the first "sub" is preserved as "sub", others will be renamed as user claims
+                            yield return new Claim(Constants.ClaimType.AzureSignalRUserPrefix + claim.Type, claim.Value);
+                        }
+                        else
+                        {
+                            hasSubClaim = true;
+                            // The first "sub" would be also considered as "nameIdentifier" and used as SignalR's UserIdentifier
+                            yield return claim;
+                        }
+
+                    }
                     // Add AzureSignalRUserPrefix if customer's claim name is duplicated with SignalR system claims.
-                    // And split it when return from SignalR Service.
-                    if (SystemClaims.Contains(claim.Type))
+                    else if (SystemClaims.Contains(claim.Type))
                     {
                         yield return new Claim(Constants.ClaimType.AzureSignalRUserPrefix + claim.Type, claim.Value);
                     }
