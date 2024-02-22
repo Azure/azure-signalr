@@ -138,7 +138,7 @@ namespace Microsoft.Azure.SignalR
 #if NET6_0_OR_GREATER
             closeOnAuthenticationExpiration = _dispatcherOptions.CloseOnAuthenticationExpiration;
             var authResultFeature = context.Features.Get<IAuthenticateResultFeature>();
-            if (authResultFeature != null && authResultFeature.AuthenticateResult.Succeeded)
+            if (authResultFeature != null && authResultFeature.AuthenticateResult != null && authResultFeature.AuthenticateResult.Succeeded)
             {
                 authenticationExpiresOn = authResultFeature.AuthenticateResult.Properties.ExpiresUtc;
             }
