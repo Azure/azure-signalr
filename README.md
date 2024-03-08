@@ -15,13 +15,14 @@ This repository contains the open source subset of the .NET SDK.
 Azure SignalR Service SDK is supporting ASP.NET Core 3.0 from version `1.1.0-*`. Please find package information below.
 
 <div class="packageTable">
-  
+
 Package Name | Description | Target Frameworks | <img width=500/> Packages <img width=500/>
 ---|---|---|---
 Microsoft.Azure.SignalR.AspNet | The package to use when you are using **ASP.NET SignalR** | **.NETFramework 4.6.1** | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.AspNet.svg?label=NuGet)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.AspNet) <br/> [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.AspNet.svg?label=MyGet)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.AspNet)
 Microsoft.Azure.SignalR | The package to use when you are using **ASP.NET Core SignalR** | **.NET Standard 2.0**<br/> **.NET Core App 3.1**<br/> **.NET 5.0**<br/> **.NET 6.0**<br/> **.NET 7.0** |  [![Nuget](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.svg?label=NuGet)](https://www.nuget.org/packages/Microsoft.Azure.SignalR/) <br/> [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.svg?label=MyGet)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR)
 Microsoft.Azure.SignalR.Management | You can use the package to manage **ASP.NET Core SignalR** clients through Azure SignalR Service directly | **.NET Standard 2.0**<br/> **.NET Core App 3.1**<br/> **.NET 5.0**<br/> **.NET 6.0**<br/> **.NET 7.0**  | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Management.svg?label=NuGet)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) <br/>  [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Management.svg?label=MyGet)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management)
 | Microsoft.Azure.SignalR.Protocols | The package contains the data protocol between the SDK and the Azure SignalR Service | **.NET Standard 2.0** | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Protocols.svg?label=NuGet)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Protocols) <br/>  [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Protocols.svg?label=MyGet)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Protocols)
+| Microsoft.Azure.SignalR.Serverless.Protocols | .NET Standard SDK for Azure SignalR Service serverless protocol. | **.NET Standard 2.0** | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Serverless.Protocols.svg?label=NuGet)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Serverless.Protocols) <br/>  [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Serverless.Protocols.svg?label=MyGet)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Serverless.Protocols)
 | Microsoft.Azure.SignalR.Emulator | The emulator tool for serverless scenarios | **.NET 6.0** | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Emulator.svg?label=NuGet)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Emulator) <br/>  [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Emulator.svg?label=MyGet)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Emulator)
 </div>
 
@@ -38,7 +39,7 @@ Follow the tutorial at [here](https://aka.ms/signalr_service_doc) to get started
 More samples on how to use Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/).
 
 > Note
-> 
+>
 > There're two versions of SignalR: [ASP.NET SignalR](https://github.com/SignalR/SignalR) and [ASP.NET Core SignalR](https://github.com/aspnet/SignalR). The ASP.NET Core version is not a simple .NET Core port of the original SignalR, but a [rewrite](https://blogs.msdn.microsoft.com/webdev/2017/09/14/announcing-signalr-for-asp-net-core-2-0/) of the original version. As a result, [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) is not backward compatible with [ASP.NET SignalR](https://github.com/SignalR/SignalR) (API interfaces and behaviors are different). If it is the first time you try SignalR, we recommend you to use the [ASP.NET Core SignalR](https://github.com/aspnet/SignalR), it is **simpler, more reliable, and easier to use**.
 
 ### ASP.NET SignalR
@@ -53,8 +54,8 @@ Samples on how to use Azure SignalR Service can be found [here](https://github.c
 
 ### Management
 
-> Note: 
-> 
+> Note:
+>
 > Management API only supports **ASP.NET Core SignalR**.
 
 Package [Microsoft.Azure.SignalR.Management](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) is the one to use when you want to manage SignalR clients through Azure SignalR Service directly such as broadcast messages. This SDK can be but not limited to be used in [serverless](https://azure.microsoft.com/solutions/serverless/) environments. You can use this SDK to manage SignalR clients connected to your Azure SignalR Service in any environment, such as in a console app, in an Azure function or in an App Server.
