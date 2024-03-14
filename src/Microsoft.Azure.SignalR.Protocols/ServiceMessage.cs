@@ -28,6 +28,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         private const int Ttl = 2;
         private const int Protocol = 3;
         private const int Filter = 4;
+        private const int DataMessageType = 5;
+        private const int IsPartial = 6;
 
         internal void WriteExtensionMembers(ref MessagePackWriter writer)
         {
@@ -54,6 +56,18 @@ namespace Microsoft.Azure.SignalR.Protocol
                 count++;
             }
 
+            var dataMessageType = (this as IHasDataMessageType)?.Type ?? default;
+            if (dataMessageType != default)
+            {
+                count++;
+            }
+
+            var isPartial = (this as ICanPartial)?.IsPartial ?? false;
+            if (isPartial)
+            {
+                count++;
+            }
+
             // todo : count more optional fields.
             writer.WriteMapHeader(count);
             if (tracingId != null)
@@ -75,6 +89,16 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 writer.Write(Filter);
                 writer.Write(filter);
+            }
+            if (dataMessageType != default)
+            {
+                writer.Write(DataMessageType);
+                writer.Write((int)dataMessageType);
+            }
+            if (isPartial)
+            {
+                writer.Write(IsPartial);
+                writer.Write(isPartial);
             }
             // todo : write more optional fields.
         }
@@ -108,6 +132,18 @@ namespace Microsoft.Azure.SignalR.Protocol
                         if (this is IHasSubscriberFilter hasFilter)
                         {
                             hasFilter.Filter = reader.ReadString();
+                        }
+                        break;
+                    case DataMessageType:
+                        if (this is IHasDataMessageType hasDataMessageType)
+                        {
+                            hasDataMessageType.Type = (DataMessageType)reader.ReadInt32();
+                        }
+                        break;
+                    case IsPartial:
+                        if (this is ICanPartial canPartial)
+                        {
+                            canPartial.IsPartial = reader.ReadBoolean();
                         }
                         break;
                     // todo : more optional fields
