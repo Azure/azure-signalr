@@ -126,7 +126,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A connection data message.
     /// </summary>
-    public class ConnectionDataMessage : ConnectionMessage, IMessageWithTracingId, IHasDataMessageType, ICanPartial
+    public class ConnectionDataMessage : ConnectionMessage, IMessageWithTracingId, IHasDataMessageType, IPartializable
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionDataMessage"/> class.

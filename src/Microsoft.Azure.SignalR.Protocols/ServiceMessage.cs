@@ -62,7 +62,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 count++;
             }
 
-            var isPartial = (this as ICanPartial)?.IsPartial ?? false;
+            var isPartial = (this as IPartializable)?.IsPartial ?? false;
             if (isPartial)
             {
                 count++;
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                         }
                         break;
                     case IsPartial:
-                        if (this is ICanPartial canPartial)
+                        if (this is IPartializable canPartial)
                         {
                             canPartial.IsPartial = reader.ReadBoolean();
                         }

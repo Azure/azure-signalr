@@ -3,7 +3,7 @@
 
 namespace Microsoft.Azure.SignalR.Protocol
 {
-    public interface ICanPartial
+    public interface IPartializable
     {
         bool IsPartial { get; set; }
     }
