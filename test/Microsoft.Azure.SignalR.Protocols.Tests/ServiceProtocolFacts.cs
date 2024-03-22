@@ -373,6 +373,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}),
                 binary: "lAalY29ubjXEBwECAwQFBgeA"),
             new ProtocolTestData(
+                name: "ConnectionData_WithTypeAndPartial",
+                message: new ConnectionDataMessage("conn6", new byte[] {1, 2, 3, 4, 5, 6, 7}) { Type = DataMessageType.Invocation, IsPartial = true },
+                binary: "lAalY29ubjbEBwECAwQFBgeCBQIGww=="),
+            new ProtocolTestData(
+                name: "ConnectionReconnect",
+                message: new ConnectionReconnectMessage("conn7"),
+                binary: "kyalY29ubjeA"),
+            new ProtocolTestData(
                 name: "MultiConnectionData",
                 message: new MultiConnectionDataMessage(new [] {"conn6", "conn7"}, new Dictionary<string, ReadOnlyMemory<byte>>
                 {
