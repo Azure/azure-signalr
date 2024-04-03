@@ -49,4 +49,27 @@
         /// </summary>
         BufferFull,
     }
+
+    /// <summary>
+    /// The type of data message.
+    /// </summary>
+    public enum DataMessageType
+    {
+        /// <summary>
+        /// Unknown.
+        /// </summary>
+        Unknown = 0,
+        /// <summary>
+        /// Handshake request or handshake response.
+        /// </summary>
+        Handshake = 1,
+        /// <summary>
+        /// Any kind of invocations.
+        /// </summary>
+        Invocation = 2,
+        /// <summary>
+        /// Others, include ping, ack, sequence.
+        /// </summary>
+        Other = 3,
+    }
 }

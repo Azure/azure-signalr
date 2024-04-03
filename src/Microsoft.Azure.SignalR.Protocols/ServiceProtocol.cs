@@ -61,6 +61,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateCloseConnectionMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.ConnectionDataMessageType:
                     return CreateConnectionDataMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.ConnectionReconnectMessageType:
+                    return CreateConnectionReconnectMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.MultiConnectionDataMessageType:
                     return CreateMultiConnectionDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.UserDataMessageType:
@@ -208,6 +210,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                     break;
                 case ConnectionDataMessage connectionDataMessage:
                     WriteConnectionDataMessage(ref writer, connectionDataMessage);
+                    break;
+                case ConnectionReconnectMessage connectionReconnectMessage:
+                    WriteConnectionReconnectMessage(ref writer, connectionReconnectMessage);
                     break;
                 case MultiConnectionDataMessage multiConnectionDataMessage:
                     WriteMultiConnectionDataMessage(ref writer, multiConnectionDataMessage);
@@ -440,10 +445,15 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.ConnectionDataMessageType);
             writer.Write(message.ConnectionId);
-
-            /************ REVIEW ************/
-            // REVIEW : PREVIOUS CODE WAS writing every bytes manualy, not sure if this is the strict equivalent in term of serialization
             writer.Write(message.Payload);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteConnectionReconnectMessage(ref MessagePackWriter writer, ConnectionReconnectMessage message)
+        {
+            writer.WriteArrayHeader(3);
+            writer.Write(ServiceProtocolConstants.ConnectionReconnectMessageType);
+            writer.Write(message.ConnectionId);
             message.WriteExtensionMembers(ref writer);
         }
 
@@ -947,6 +957,15 @@ namespace Microsoft.Azure.SignalR.Protocol
             return result;
         }
 
+        private static ConnectionReconnectMessage CreateConnectionReconnectMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var connectionId = ReadString(ref reader, "connectionId");
+
+            var result = new ConnectionReconnectMessage(connectionId);
+            result.ReadExtensionMembers(ref reader);
+            return result;
+        }
+
         private static MultiConnectionDataMessage CreateMultiConnectionDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var connectionList = ReadStringArray(ref reader, "connectionList");
@@ -1323,6 +1342,18 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
 
             return new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static bool ReadBoolean(ref MessagePackReader reader, string field)
+        {
+            try
+            {
+                return reader.ReadBoolean();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidDataException($"Reading '{field}' as Boolean failed.", ex);
+            }
         }
 
         private static int ReadInt32(ref MessagePackReader reader, string field)

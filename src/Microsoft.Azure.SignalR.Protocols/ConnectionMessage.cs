@@ -126,7 +126,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A connection data message.
     /// </summary>
-    public class ConnectionDataMessage : ConnectionMessage, IMessageWithTracingId
+    public class ConnectionDataMessage : ConnectionMessage, IMessageWithTracingId, IHasDataMessageType, IPartializable
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionDataMessage"/> class.
@@ -161,6 +161,28 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the message ID
         /// </summary>
         public ulong? TracingId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type of payload.
+        /// </summary>
+        public DataMessageType Type { get; set; }
+
+        /// <summary>
+        /// Gets or sets the payload is partial or not.
+        /// </summary>
+        public bool IsPartial { get; set; }
+    }
+
+    /// <summary>
+    /// A signal for client connection reconnect.
+    /// </summary>
+    public class ConnectionReconnectMessage : ConnectionMessage
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConnectionReconnectMessage"/> class.
+        /// </summary>
+        /// <param name="connectionId">The connection Id.</param>
+        public ConnectionReconnectMessage(string connectionId) : base(connectionId) { }
     }
 
     /// <summary>
@@ -169,7 +191,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public abstract class ServiceCompletionMessage : ConnectionMessage, IMessageWithTracingId
     {
         public ServiceCompletionMessage(string invocationId, string connectionId, string callerServerId, ulong? tracingId = null)
-            :base(connectionId)
+            : base(connectionId)
         {
             InvocationId = invocationId;
             CallerServerId = callerServerId;
