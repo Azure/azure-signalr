@@ -93,7 +93,7 @@ namespace Microsoft.Azure.SignalR.Emulator
             }
             catch (Exception e)
             {
-                _logger.LogWarning($"Failed to write message during operation {operationName}: {e.Message}");
+                _logger.LogWarning($"Failed to write message during operation {operationName}: {e}");
                 return new HttpResponseMessage(HttpStatusCode.InternalServerError);
             }
         }
