@@ -550,9 +550,17 @@ namespace Microsoft.Azure.SignalR.Tests
                 await transportConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new ConnectionDataMessage(clientConnectionId, Encoding.UTF8.GetBytes("\"target\":\"method\"}\u001e"))));
                 await moveNextTask;
-                Assert.Equal("{\"type\":1,", enumerator.Current);
-                await enumerator.MoveNextAsync();
-                Assert.Equal("\"target\":\"method\"}\u001e", enumerator.Current);
+                if (enumerator.Current == "{\"type\":1,")
+                {
+                    Assert.Equal("{\"type\":1,", enumerator.Current);
+                    await enumerator.MoveNextAsync();
+                    Assert.Equal("\"target\":\"method\"}\u001e", enumerator.Current);
+                }
+                else
+                {
+                    // maybe merged into one message.
+                    Assert.Equal("{\"type\":1,\"target\":\"method\"}\u001e", enumerator.Current);
+                }
 
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
