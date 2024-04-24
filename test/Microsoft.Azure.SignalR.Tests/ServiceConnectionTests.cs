@@ -253,7 +253,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async Task ClientConnectionOutgoingAbortCanEndLifeTime()
+        public async Task TestClientConnectionOutgoingAbortCanEndLifeTime()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
                 logChecker: logs =>
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async Task ClientConnectionContextAbortCanSendOutCloseMessage()
+        public async Task TestClientConnectionContextAbortCanSendOutCloseMessage()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
                 logChecker: logs =>
@@ -377,7 +377,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async Task ClientConnectionWithDiagnosticClientTagTest()
+        public async Task TestClientConnectionWithDiagnosticClientTagTest()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -434,7 +434,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async Task ClientConnectionLastWillCanSendOut()
+        public async Task TestClientConnectionLastWillCanSendOut()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
                 logChecker: logs =>
@@ -479,6 +479,158 @@ namespace Microsoft.Azure.SignalR.Tests
                 transportConnection.Application.Output.Complete();
 
                 connectionHandler.CancellationToken.Cancel();
+
+                await clientConnection.LifetimeTask.OrTimeout();
+
+                // 1s for application task to timeout
+                await connectionTask.OrTimeout(1000);
+                Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
+                Assert.Empty(ccm.ClientConnections);
+            }
+        }
+
+        [Fact]
+        public async Task TestPartialMessagesShouldFlushCorrectly()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
+                logChecker: logs =>
+                {
+                    Assert.Empty(logs);
+                    return true;
+                }))
+            {
+                var ccm = new TestClientConnectionManager();
+                var ccf = new ClientConnectionFactory();
+                var protocol = new ServiceProtocol();
+                TestConnection transportConnection = null;
+                var connectionFactory = new TestConnectionFactory(conn =>
+                {
+                    transportConnection = conn;
+                    return Task.CompletedTask;
+                });
+                var services = new ServiceCollection();
+
+                var connectionHandler = new TextContentConnectionHandler();
+                services.AddSingleton(connectionHandler);
+                var builder = new ConnectionBuilder(services.BuildServiceProvider());
+                builder.UseConnectionHandler<TextContentConnectionHandler>();
+                ConnectionDelegate handler = builder.Build();
+                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(), closeTimeOutMilliseconds: 500);
+
+                var connectionTask = connection.StartAsync();
+
+                // completed handshake
+                await connection.ConnectionInitializedTask.OrTimeout();
+                Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
+                var clientConnectionId = Guid.NewGuid().ToString();
+
+                var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
+                await transportConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+
+                var clientConnection = await waitClientTask.OrTimeout();
+
+                var enumerator = connectionHandler.EnumerateContent().GetAsyncEnumerator();
+
+                // for normal message, it should flush immediately.
+                await transportConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new ConnectionDataMessage(clientConnectionId, Encoding.UTF8.GetBytes("{\"protocol\":\"json\",\"version\":1}\u001e"))));
+                await enumerator.MoveNextAsync();
+                Assert.Equal("{\"protocol\":\"json\",\"version\":1}\u001e", enumerator.Current);
+
+                // for partial message, it should wait for next message to complete.
+                await transportConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new ConnectionDataMessage(clientConnectionId, Encoding.UTF8.GetBytes("{\"type\":1,")) { IsPartial = true }));
+                var delay = Task.Delay(100);
+                var moveNextTask = enumerator.MoveNextAsync().AsTask();
+                Assert.Same(delay, await Task.WhenAny(delay, moveNextTask));
+
+                // when next message comes, it should complete the previous partial message.
+                await transportConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new ConnectionDataMessage(clientConnectionId, Encoding.UTF8.GetBytes("\"target\":\"method\"}\u001e"))));
+                await moveNextTask;
+                Assert.Equal("{\"type\":1,", enumerator.Current);
+                await enumerator.MoveNextAsync();
+                Assert.Equal("\"target\":\"method\"}\u001e", enumerator.Current);
+
+                // complete reading to end the connection
+                transportConnection.Application.Output.Complete();
+
+                await clientConnection.LifetimeTask.OrTimeout();
+
+                // 1s for application task to timeout
+                await connectionTask.OrTimeout(1000);
+                Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
+                Assert.Empty(ccm.ClientConnections);
+            }
+        }
+
+        [Fact]
+        public async Task TestPartialMessagesShouldBeRemovedWhenReconnected()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
+                logChecker: logs =>
+                {
+                    Assert.Empty(logs);
+                    return true;
+                }))
+            {
+                var ccm = new TestClientConnectionManager();
+                var ccf = new ClientConnectionFactory();
+                var protocol = new ServiceProtocol();
+                TestConnection transportConnection = null;
+                var connectionFactory = new TestConnectionFactory(conn =>
+                {
+                    transportConnection = conn;
+                    return Task.CompletedTask;
+                });
+                var services = new ServiceCollection();
+
+                var connectionHandler = new TextContentConnectionHandler();
+                services.AddSingleton(connectionHandler);
+                var builder = new ConnectionBuilder(services.BuildServiceProvider());
+                builder.UseConnectionHandler<TextContentConnectionHandler>();
+                ConnectionDelegate handler = builder.Build();
+                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(), closeTimeOutMilliseconds: 500);
+
+                var connectionTask = connection.StartAsync();
+
+                // completed handshake
+                await connection.ConnectionInitializedTask.OrTimeout();
+                Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
+                var clientConnectionId = Guid.NewGuid().ToString();
+
+                var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
+                await transportConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+
+                var clientConnection = await waitClientTask.OrTimeout();
+
+                var enumerator = connectionHandler.EnumerateContent().GetAsyncEnumerator();
+
+                // for partial message, it should wait for next message to complete.
+                await transportConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new ConnectionDataMessage(clientConnectionId, Encoding.UTF8.GetBytes("{\"type\":1,")) { IsPartial = true }));
+                var delay = Task.Delay(100);
+                var moveNextTask = enumerator.MoveNextAsync().AsTask();
+                Assert.Same(delay, await Task.WhenAny(delay, moveNextTask));
+
+                // for reconnect message, it should remove all partial messages for the connection.
+                await transportConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new ConnectionReconnectMessage(clientConnectionId)));
+                delay = Task.Delay(100);
+                Assert.Same(delay, await Task.WhenAny(delay, moveNextTask));
+
+                // when next message comes, there is no partial message.
+                await transportConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new ConnectionDataMessage(clientConnectionId, Encoding.UTF8.GetBytes("{\"type\":1,\"target\":\"method\"}\u001e"))));
+                await moveNextTask;
+                Assert.Equal("{\"type\":1,\"target\":\"method\"}\u001e", enumerator.Current);
+
+                // complete reading to end the connection
+                transportConnection.Application.Output.Complete();
 
                 await clientConnection.LifetimeTask.OrTimeout();
 
@@ -584,6 +736,64 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 Assert.Equal(ClientConnectionScope.IsDiagnosticClient, connection.ConnectionId == _diagnosticClient);
                 return Task.CompletedTask;
+            }
+        }
+
+        private sealed class TextContentConnectionHandler : ConnectionHandler
+        {
+            private TaskCompletionSource<object> _startedTcs = new TaskCompletionSource<object>();
+            private LinkedList<TaskCompletionSource<string>> _content = new LinkedList<TaskCompletionSource<string>>();
+
+            public TextContentConnectionHandler()
+            {
+                _content.AddFirst(new TaskCompletionSource<string>());
+            }
+
+            public Task Started => _startedTcs.Task;
+
+            public override async Task OnConnectedAsync(ConnectionContext connection)
+            {
+                _startedTcs.TrySetResult(null);
+
+                while (true)
+                {
+                    var result = await connection.Transport.Input.ReadAsync();
+
+                    try
+                    {
+                        if (!result.Buffer.IsEmpty)
+                        {
+                            var last = _content.Last.Value;
+                            _content.AddLast(new TaskCompletionSource<string>());
+                            var text = Encoding.UTF8.GetString(result.Buffer);
+                            last.TrySetResult(text);
+                        }
+
+                        if (result.IsCompleted)
+                        {
+                            _content.Last.Value.TrySetResult(null);
+                            break;
+                        }
+                    }
+                    finally
+                    {
+                        connection.Transport.Input.AdvanceTo(result.Buffer.End);
+                    }
+                }
+            }
+
+            public async IAsyncEnumerable<string> EnumerateContent()
+            {
+                while (true)
+                {
+                    var result = await _content.First.Value.Task;
+                    _content.RemoveFirst();
+                    if (result == null)
+                    {
+                        yield break;
+                    }
+                    yield return result;
+                }
             }
         }
 
