@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -48,6 +49,8 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientInvocationManager _clientInvocationManager;
 
         private readonly AckHandler _ackHandler;
+
+        private readonly Dictionary<string, List<IMemoryOwner<byte>>> _bufferingMessages = new Dictionary<string, List<IMemoryOwner<byte>>>();
 
         public Action<HttpContext> ConfigureContext { get; set; }
 
@@ -157,6 +160,7 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
+            _bufferingMessages.Remove(connectionId);
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
             {
                 if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
@@ -186,9 +190,43 @@ namespace Microsoft.Azure.SignalR
             {
                 try
                 {
-                    var payload = connectionDataMessage.Payload;
-                    Log.WriteMessageToApplication(Logger, payload.Length, connectionDataMessage.ConnectionId);
-                    await connection.WriteMessageAsync(payload);
+                    if (connectionDataMessage.IsPartial)
+                    {
+                        var owner = ExactSizeMemoryPool.Shared.Rent((int)connectionDataMessage.Payload.Length);
+                        connectionDataMessage.Payload.CopyTo(owner.Memory.Span);
+                        if (!_bufferingMessages.TryGetValue(connectionDataMessage.ConnectionId, out var list))
+                        {
+                            list = new List<IMemoryOwner<byte>>();
+                            _bufferingMessages[connectionDataMessage.ConnectionId] = list;
+                        }
+                        list.Add(owner);
+                    }
+                    else
+                    {
+                        if (_bufferingMessages.TryGetValue(connectionDataMessage.ConnectionId, out var list))
+                        {
+                            _bufferingMessages.Remove(connectionDataMessage.ConnectionId);
+                            long length = 0;
+                            foreach (var owner in list)
+                            {
+                                using (owner)
+                                {
+                                    await connection.WriteMessageAsync(new ReadOnlySequence<byte>(owner.Memory));
+                                    length += owner.Memory.Length;
+                                }
+                            }
+                            var payload = connectionDataMessage.Payload;
+                            length += payload.Length;
+                            Log.WriteMessageToApplication(Logger, length, connectionDataMessage.ConnectionId);
+                            await connection.WriteMessageAsync(payload);
+                        }
+                        else
+                        {
+                            var payload = connectionDataMessage.Payload;
+                            Log.WriteMessageToApplication(Logger, payload.Length, connectionDataMessage.ConnectionId);
+                            await connection.WriteMessageAsync(payload);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -211,6 +249,7 @@ namespace Microsoft.Azure.SignalR
                 ServiceMappingMessage serviceMappingMessage => OnServiceMappingAsync(serviceMappingMessage),
                 ClientCompletionMessage clientCompletionMessage => OnClientCompletionAsync(clientCompletionMessage),
                 ErrorCompletionMessage errorCompletionMessage => OnErrorCompletionAsync(errorCompletionMessage),
+                ConnectionReconnectMessage connectionReconnectMessage => OnConnectionReconnectAsync(connectionReconnectMessage),
                 _ => base.DispatchMessageAsync(message)
             };
         }
@@ -508,6 +547,12 @@ namespace Microsoft.Azure.SignalR
         private Task OnErrorCompletionAsync(ErrorCompletionMessage errorCompletionMessage)
         {
             _clientInvocationManager.Caller.TryCompleteResult(errorCompletionMessage.ConnectionId, errorCompletionMessage);
+            return Task.CompletedTask;
+        }
+
+        private Task OnConnectionReconnectAsync(ConnectionReconnectMessage connectionReconnectMessage)
+        {
+            _bufferingMessages.Remove(connectionReconnectMessage.ConnectionId);
             return Task.CompletedTask;
         }
     }
