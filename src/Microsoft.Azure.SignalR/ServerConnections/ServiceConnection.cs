@@ -50,6 +50,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly AckHandler _ackHandler;
 
+        // Performance: Do not use ConcurrentDictionary. There is no multi-threading scenario here, all operations are in the same logical thread.
         private readonly Dictionary<string, List<IMemoryOwner<byte>>> _bufferingMessages =
             new Dictionary<string, List<IMemoryOwner<byte>>>(StringComparer.Ordinal);
 
@@ -103,6 +104,7 @@ namespace Microsoft.Azure.SignalR
                     continue;
                 }
 
+                // make sure there is no await operation before _bufferingMessages.
                 _bufferingMessages.Remove(connection.Key);
                 // We should not wait until all the clients' lifetime ends to restart another service connection
                 _ = PerformDisconnectAsyncCore(connection.Key);
@@ -162,6 +164,7 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
+            // make sure there is no await operation before _bufferingMessages.
             _bufferingMessages.Remove(connectionId);
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
             {
@@ -196,6 +199,7 @@ namespace Microsoft.Azure.SignalR
                     {
                         var owner = ExactSizeMemoryPool.Shared.Rent((int)connectionDataMessage.Payload.Length);
                         connectionDataMessage.Payload.CopyTo(owner.Memory.Span);
+                        // make sure there is no await operation before _bufferingMessages.
                         if (!_bufferingMessages.TryGetValue(connectionDataMessage.ConnectionId, out var list))
                         {
                             list = new List<IMemoryOwner<byte>>();
@@ -205,6 +209,7 @@ namespace Microsoft.Azure.SignalR
                     }
                     else
                     {
+                        // make sure there is no await operation before _bufferingMessages.
                         if (_bufferingMessages.TryGetValue(connectionDataMessage.ConnectionId, out var list))
                         {
                             _bufferingMessages.Remove(connectionDataMessage.ConnectionId);
@@ -554,6 +559,7 @@ namespace Microsoft.Azure.SignalR
 
         private Task OnConnectionReconnectAsync(ConnectionReconnectMessage connectionReconnectMessage)
         {
+            // make sure there is no await operation before _bufferingMessages.
             _bufferingMessages.Remove(connectionReconnectMessage.ConnectionId);
             return Task.CompletedTask;
         }
