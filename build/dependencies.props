@@ -21,7 +21,7 @@
     <SystemBuffersPackageVersion>4.5.1</SystemBuffersPackageVersion>
     <SystemMemoryPackageVersion>4.5.4</SystemMemoryPackageVersion>
     <SystemRuntimeCompilerServicesUnsafePackageVersion>6.0.0</SystemRuntimeCompilerServicesUnsafePackageVersion>
-    <AzureIdentityPackageVersion>1.10.4</AzureIdentityPackageVersion>
+    <AzureIdentityPackageVersion>1.11.2</AzureIdentityPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.1</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
@@ -43,7 +43,7 @@
     <SystemIOPipelinesPackage3_1Version>4.7.3</SystemIOPipelinesPackage3_1Version>
 
     <!-- SignalR Management -->
-    <AzureCorePackageVersion>1.36.0</AzureCorePackageVersion>
+    <AzureCorePackageVersion>1.39.0</AzureCorePackageVersion>
     <MicrosoftAzureCoreNewtonsoftJsonPackageVersion>1.0.0</MicrosoftAzureCoreNewtonsoftJsonPackageVersion>
     <MicrosoftConfigurationFileExtensionVersion>2.2.0</MicrosoftConfigurationFileExtensionVersion>
     <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>
@@ -51,7 +51,7 @@
     <MicrosoftExtensionsHostingVersion>2.1.0</MicrosoftExtensionsHostingVersion>
 
     <!-- SignalR Serverless Protocols-->
-    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+    <NewtonsoftJsonPackageVersion>13.0.3</NewtonsoftJsonPackageVersion>
 
     <!-- Signing -->
     <MicrosoftVisualStudioEngMicroBuildCoreVersion>1.0.0</MicrosoftVisualStudioEngMicroBuildCoreVersion>
