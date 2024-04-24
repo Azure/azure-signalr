@@ -50,7 +50,8 @@ namespace Microsoft.Azure.SignalR
 
         private readonly AckHandler _ackHandler;
 
-        private readonly Dictionary<string, List<IMemoryOwner<byte>>> _bufferingMessages = new Dictionary<string, List<IMemoryOwner<byte>>>();
+        private readonly Dictionary<string, List<IMemoryOwner<byte>>> _bufferingMessages =
+            new Dictionary<string, List<IMemoryOwner<byte>>>(StringComparer.Ordinal);
 
         public Action<HttpContext> ConfigureContext { get; set; }
 
@@ -102,6 +103,7 @@ namespace Microsoft.Azure.SignalR
                     continue;
                 }
 
+                _bufferingMessages.Remove(connection.Key);
                 // We should not wait until all the clients' lifetime ends to restart another service connection
                 _ = PerformDisconnectAsyncCore(connection.Key);
             }
