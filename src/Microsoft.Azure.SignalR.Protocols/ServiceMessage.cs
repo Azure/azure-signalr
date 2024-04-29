@@ -148,6 +148,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                         break;
                     // todo : more optional fields
                     default:
+                        // bypass unknown member.
+                        reader.Skip();
                         break;
                 }
             }
