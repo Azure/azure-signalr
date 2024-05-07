@@ -87,6 +87,18 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new HandshakeRequestMessage(1) { MigrationLevel = 1},
                 binary: "lQEBAKAB"),
             new ProtocolTestData(
+                name: "HandshakeRequest_2",
+                message: new HandshakeRequestMessage(1),
+                binary: "lgEBAKAAgA=="),
+            new ProtocolTestData(
+                name: "HandshakeRequestWithProperty_2",
+                message: new HandshakeRequestMessage(1) { ConnectionType = 1, Target = "abc" },
+                binary: "lgEBAaNhYmMAgA=="),
+            new ProtocolTestData(
+                name: "HandshakeRequestWithMigratableStatus_2",
+                message: new HandshakeRequestMessage(1) { MigrationLevel = 1},
+                binary: "lgEBAKABgA=="),
+            new ProtocolTestData(
                 name: "HandshakeResponse_NoOptionalField",
                 message: new HandshakeResponseMessage(),
                 binary: "kgKg"),
@@ -276,15 +288,19 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             new ProtocolTestData(
                 name: "HandshakeRequest",
                 message: new HandshakeRequestMessage(1),
-                binary: "lgEBAKAAgA=="),
+                binary: "lwEBAKAAgMI="),
             new ProtocolTestData(
                 name: "HandshakeRequestWithProperty",
                 message: new HandshakeRequestMessage(1) { ConnectionType = 1, Target = "abc" },
-                binary: "lgEBAaNhYmMAgA=="),
+                binary: "lwEBAaNhYmMAgMI="),
             new ProtocolTestData(
                 name: "HandshakeRequestWithMigratableStatus",
                 message: new HandshakeRequestMessage(1) { MigrationLevel = 1},
-                binary: "lgEBAKABgA=="),
+                binary: "lwEBAKABgMI="),
+            new ProtocolTestData(
+                name: "HandshakeRequestWithStatefulReconnects",
+                message: new HandshakeRequestMessage(1) { AllowStatefulReconnects = true},
+                binary: "lwEBAKAAgMM="),
             new ProtocolTestData(
                 name: "HandshakeResponse",
                 message: new HandshakeResponseMessage(),

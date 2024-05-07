@@ -115,7 +115,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private bool HandshakeRequestMessagesEqual(HandshakeRequestMessage x, HandshakeRequestMessage y)
         {
-            return x.Version == y.Version;
+            return x.Version == y.Version &&
+                x.AllowStatefulReconnects == y.AllowStatefulReconnects &&
+                x.MigrationLevel == y.MigrationLevel &&
+                (x.Target ?? string.Empty) == (y.Target ?? string.Empty) &&
+                x.ConnectionType == y.ConnectionType;
         }
 
         private bool HandshakeResponseMessagesEqual(HandshakeResponseMessage x, HandshakeResponseMessage y)

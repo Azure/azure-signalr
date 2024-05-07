@@ -313,13 +313,14 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteHandshakeRequestMessage(ref MessagePackWriter writer, HandshakeRequestMessage message)
         {
-            writer.WriteArrayHeader(6);
+            writer.WriteArrayHeader(7);
             writer.Write(ServiceProtocolConstants.HandshakeRequestType);
             writer.Write(message.Version);
             writer.Write(message.ConnectionType);
             writer.Write(message.ConnectionType == 0 ? "" : message.Target ?? string.Empty);
-            writer.Write((int)message.MigrationLevel);
+            writer.Write(message.MigrationLevel);
             message.WriteExtensionMembers(ref writer);
+            writer.Write(message.AllowStatefulReconnects);
         }
 
         private static void WriteHandshakeResponseMessage(ref MessagePackWriter writer, HandshakeResponseMessage message)
@@ -799,6 +800,10 @@ namespace Microsoft.Azure.SignalR.Protocol
             if (arrayLength >= 6)
             {
                 result.ReadExtensionMembers(ref reader);
+            }
+            if (arrayLength >= 7)
+            {
+                result.AllowStatefulReconnects = ReadBoolean(ref reader, "enableStatefulReconnects");
             }
             return result;
         }

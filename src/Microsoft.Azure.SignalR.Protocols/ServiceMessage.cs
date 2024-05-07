@@ -291,6 +291,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         public int MigrationLevel { get; set; }
 
         /// <summary>
+        /// Gets or sets the allowing of client stateful reconnects.
+        /// </summary>
+        public bool AllowStatefulReconnects { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="HandshakeRequestMessage"/> class.
         /// </summary>
         /// <param name="version">version</param>
