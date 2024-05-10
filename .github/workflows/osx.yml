@@ -13,7 +13,7 @@ jobs:
     runs-on: macOS-latest
     strategy:
       matrix:
-        dotnet-version: [ '7.0', '6.0' ]
+        dotnet-version: [ '7.0.x', '6.0.x' ]
     steps:
     - uses: actions/checkout@v4
     - uses: dorny/paths-filter@v2
@@ -38,11 +38,11 @@ jobs:
     - name: Setup dotnet ${{ matrix.dotnet-version }}
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: ${{ matrix.dotnet-version }}.x
+        dotnet-version: ${{ matrix.dotnet-version }}
     - name: Display dotnet version
       run: dotnet --version
     - name: Build with dotnet
-      run:  "dotnet build AzureSignalR.sln -f net${{ matrix.dotnet-version }} /p:DisableNet461Tests=true"
+      run:  "dotnet build AzureSignalR.sln /p:DisableNet461Tests=true;TestNetVersion=${{ matrix.dotnet-version }}"
       if: steps.filter.outputs.src == 'true'
     - name: Test
       run: dotnet test --no-build --logger trx --results-directory "TestResults-ubuntu-${{ matrix.dotnet-version }}"
