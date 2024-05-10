@@ -42,7 +42,7 @@ jobs:
     - name: Display dotnet version
       run: dotnet --version
     - name: Build with dotnet
-      run: >
+      run: |
         if ['${{ matrix.dotnet-version }}'=='7.0.x']
         then
           dotnet sln AzureSignalR.sln remove test/Microsoft.Azure.SignalR.Protocols.Tests/Microsoft.Azure.SignalR.Protocols.Tests.csproj
