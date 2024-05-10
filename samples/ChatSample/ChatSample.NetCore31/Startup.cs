@@ -18,6 +18,7 @@ namespace ChatSample.CoreApp3
             services.AddSignalR()
                 .AddAzureSignalR(option =>
                 {
+                    option.ConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;Port=8080";
                     option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
                     option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(30);
 
