@@ -26,8 +26,4 @@
 		<PackageReference Include="xunit" Version="$(XunitPackageVersion)" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualStudioPackageVersion)" />
 	</ItemGroup>
-
-	<ItemGroup Condition="'$(SkipTest)'=='true'">
-		<Compile Remove="*.cs"/>
-	</ItemGroup>
 </Project>
