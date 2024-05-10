@@ -6,11 +6,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TestNetVersion)'=='7.0.x'">
-    <BuildProject>false</BuildProject>
-  </PropertyGroup>
-
-	<ItemGroup>
+  <ItemGroup>
     <Compile Include="..\..\src\Common\BinaryMessageFormatter.cs" Link="Internal\BinaryMessageFormatter.cs" />
     <Compile Include="..\..\src\Common\BinaryMessageParser.cs" Link="Internal\BinaryMessageParser.cs" />
     <Compile Include="..\..\src\Common\MemoryBufferWriter.cs" Link="Internal\MemoryBufferWriter.cs" />
