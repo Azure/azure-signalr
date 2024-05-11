@@ -57,13 +57,23 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Fact]
         public async Task TestRestHealthCheckServiceWithEndpointFromHealthyToUnhealthy()
         {
+            var tcs = new TaskCompletionSource<bool>();
             var handlerMock = new Mock<DelegatingHandler>();
             // mock health api calls first return healthy then unhealthy.
             handlerMock.Protected().SetupSequence<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK))
                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway))
                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway))
-               .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway));
+               .ReturnsAsync(() =>
+               {
+                   tcs.SetResult(true);
+                   return new HttpResponseMessage(HttpStatusCode.BadGateway);
+               })
+               .ReturnsAsync(() =>
+               {
+                   Assert.Fail("Unexpected invoke.");
+                   return default;
+               });
 
             var checkInterval = TimeSpan.FromSeconds(3);
             var retryInterval = TimeSpan.FromSeconds(0.5);
@@ -88,9 +98,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             //The first health check is OK
             Assert.True(endpoint.Online);
 
-            var retryTime = RestHealthCheckService.MaxRetries * retryInterval;
             //Wait until the next health check finish
-            await Task.Delay(checkInterval + retryTime + TimeSpan.FromSeconds(1));
+            await tcs.Task;
+            // let our handler handle the response.
+            await Task.Delay(1);
+
             Assert.False(endpoint.Online);
         }
 
