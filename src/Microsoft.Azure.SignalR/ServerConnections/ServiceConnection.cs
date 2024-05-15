@@ -15,7 +15,7 @@ using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
-using static System.Net.Mime.MediaTypeNames;
+
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
