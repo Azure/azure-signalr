@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
@@ -20,6 +21,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.Azure.SignalR.Tests.ServiceConnectionTests;
+using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
@@ -1555,13 +1557,13 @@ namespace Microsoft.Azure.SignalR.Tests
                 var endpoints = sem.GetEndpoints("hub");
                 var clientInvocationManager = new DefaultClientInvocationManager();
                 var connection1 = new ServiceConnection(protocol, ccm, connectionFactory1, loggerFactory, connectionDelegate, ccf,
-                                    "serverId", "server-conn-1", endpoints[0], endpoints[0].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, new AckHandler(), closeTimeOutMilliseconds: 500);
+                                    "serverId", "server-conn-1", endpoints[0], endpoints[0].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, new AckHandler(), new DefaultHubProtocolResolver(new[] { new SignalRProtocol.JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance), closeTimeOutMilliseconds: 500);
 
                 var connection2 = new ServiceConnection(protocol, ccm, connectionFactory2, loggerFactory, connectionDelegate, ccf,
-                                    "serverId", "server-conn-2", endpoints[1], endpoints[1].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, new AckHandler(), closeTimeOutMilliseconds: 500);
+                                    "serverId", "server-conn-2", endpoints[1], endpoints[1].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, new AckHandler(), new DefaultHubProtocolResolver(new[] { new SignalRProtocol.JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance), closeTimeOutMilliseconds: 500);
 
                 var connection22 = new ServiceConnection(protocol, ccm, connectionFactory22, loggerFactory, connectionDelegate, ccf,
-                                    "serverId", "server-conn-22", endpoints[1], endpoints[1].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, new AckHandler(), closeTimeOutMilliseconds: 500);
+                                    "serverId", "server-conn-22", endpoints[1], endpoints[1].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, new AckHandler(), new DefaultHubProtocolResolver(new[] { new SignalRProtocol.JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance), closeTimeOutMilliseconds: 500);
 
                 var router = new TestEndpointRouter();
 
@@ -1588,7 +1590,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     {
                         // a client connected
                         await transportConnection1.Application.Output.WriteAsync(
-                            protocol.GetMessageBytes(new OpenConnectionMessage("client1", null)));
+                            protocol.GetMessageBytes(new OpenConnectionMessage("client1", null) { Protocol = "json" }));
 
                         _ = await ccm.WaitForClientConnectionAsync("client1").OrTimeout();
 
@@ -1619,10 +1621,10 @@ namespace Microsoft.Azure.SignalR.Tests
                     {
                         // clients connected
                         await transportConnection2.Application.Output.WriteAsync(
-                            protocol.GetMessageBytes(new OpenConnectionMessage("client2", null)));
+                            protocol.GetMessageBytes(new OpenConnectionMessage("client2", null) { Protocol = "json" }));
 
                         await transportConnection22.Application.Output.WriteAsync(
-                            protocol.GetMessageBytes(new OpenConnectionMessage("client22", null)));
+                            protocol.GetMessageBytes(new OpenConnectionMessage("client22", null) { Protocol = "json" }));
 
                         _ = await ccm.WaitForClientConnectionAsync("client2").OrTimeout();
                         _ = await ccm.WaitForClientConnectionAsync("client22").OrTimeout();

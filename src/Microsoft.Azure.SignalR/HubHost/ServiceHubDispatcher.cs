@@ -31,6 +31,7 @@ namespace Microsoft.Azure.SignalR
         private readonly string _hubName;
         private readonly IServiceEventHandler _serviceEventHandler;
         private readonly IClientInvocationManager _clientInvocationManager;
+        private readonly IHubProtocolResolver _hubProtocolResolver;
 
         protected readonly IServerNameProvider _nameProvider;
 
@@ -47,7 +48,8 @@ namespace Microsoft.Azure.SignalR
             ServerLifetimeManager serverLifetimeManager,
             IClientConnectionFactory clientConnectionFactory,
             IClientInvocationManager clientInvocationManager,
-            IServiceEventHandler serviceEventHandler)
+            IServiceEventHandler serviceEventHandler,
+            IHubProtocolResolver hubProtocolResolver)
         {
             _serviceProtocol = serviceProtocol;
             _serviceConnectionManager = serviceConnectionManager;
@@ -67,6 +69,7 @@ namespace Microsoft.Azure.SignalR
             _clientInvocationManager = clientInvocationManager;
 
             serverLifetimeManager?.Register(ShutdownAsync);
+            _hubProtocolResolver = hubProtocolResolver;
         }
 
         public void Start(ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
@@ -154,7 +157,8 @@ namespace Microsoft.Azure.SignalR
                 _clientConnectionFactory,
                 _nameProvider,
                 _serviceEventHandler,
-                _clientInvocationManager)
+                _clientInvocationManager,
+                _hubProtocolResolver)
             {
                 ConfigureContext = contextConfig,
                 ShutdownMode = _options.GracefulShutdown.Mode
