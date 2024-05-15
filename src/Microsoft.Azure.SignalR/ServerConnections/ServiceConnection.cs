@@ -384,6 +384,7 @@ namespace Microsoft.Azure.SignalR
                             var next = buffer;
                             if (SignalRProtocol.HandshakeProtocol.TryParseResponseMessage(ref next, out var message))
                             {
+                                isHandshakeResponseParsed = true;
                                 if (!shouldSkipHandshakeResponse)
                                 {
                                     var forwardResult = await ForwardMessage(new ConnectionDataMessage(connection.ConnectionId, buffer.Slice(0, next.Start)) { Type = DataMessageType.Handshake });
@@ -391,11 +392,14 @@ namespace Microsoft.Azure.SignalR
                                     {
                                         case ForwardMessageResult.Success:
                                             connection.Application.Input.AdvanceTo(next.Start);
-                                            isHandshakeResponseParsed = true;
                                             break;
                                         default:
                                             return;
                                     }
+                                }
+                                else
+                                {
+                                    connection.Application.Input.AdvanceTo(next.Start);
                                 }
                             }
                             else
