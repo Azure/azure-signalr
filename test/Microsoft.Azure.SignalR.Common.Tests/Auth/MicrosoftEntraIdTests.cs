@@ -15,7 +15,7 @@ using Xunit;
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 {
     [Collection("Auth")]
-    public class AzureActiveDirectoryTests
+    public class MicrosoftEntraIdTests
     {
         private const string IssuerEndpoint = "https://sts.windows.net/";
 
@@ -29,8 +29,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         public async Task TestAcquireAccessToken()
         {
             var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
-            var key = new AadAccessKey(new Uri("https://localhost:8080"), options);
-            var token = await key.GenerateAadTokenAsync();
+            var key = new MicrosoftEntraAccessKey(new Uri("https://localhost:8080"), options);
+            var token = await key.GetMicrosoftEntraTokenAsync();
             Assert.NotNull(token);
         }
 
@@ -76,8 +76,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         internal async Task TestAuthenticateAsync()
         {
             var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
-            var key = new AadAccessKey(new Uri("https://localhost:8080"), options);
-            await key.UpdateAccessKeyAsync();
+            var key = new MicrosoftEntraAccessKey(new Uri("https://localhost:8080"), options);
+            await key.GetAccessKeyAsync();
 
             Assert.True(key.Authorized);
             Assert.NotNull(key.Id);

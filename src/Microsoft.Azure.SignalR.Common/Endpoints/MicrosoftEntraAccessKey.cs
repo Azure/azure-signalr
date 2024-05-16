@@ -17,33 +17,31 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class AadAccessKey : AccessKey
+    internal class MicrosoftEntraAccessKey : AccessKey
     {
-        internal const int AuthorizeIntervalInMinute = 55;
-
-        internal const int AuthorizeMaxRetryTimes = 3;
-
-        internal const int AuthorizeRetryIntervalInSec = 3;
-
         internal const int GetTokenMaxRetryTimes = 3;
 
-        internal static readonly TimeSpan AuthorizeTimeout = TimeSpan.FromSeconds(100);
+        internal const int GetAccessKeyMaxRetryTimes = 3;
+
+        internal static readonly TimeSpan GetAccessKeyTimeout = TimeSpan.FromSeconds(100);
 
         private const string DefaultScope = "https://signalr.azure.com/.default";
 
-        private static readonly TimeSpan AuthorizeInterval = TimeSpan.FromMinutes(AuthorizeIntervalInMinute);
-
         private static readonly TokenRequestContext DefaultRequestContext = new TokenRequestContext(new string[] { DefaultScope });
 
-        private static readonly TimeSpan AuthorizeIntervalWhenFailed = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan AuthorizeInterval = TimeSpan.FromMinutes(55);
 
-        private static readonly TimeSpan AuthorizeRetryInterval = TimeSpan.FromSeconds(AuthorizeRetryIntervalInSec);
+        private static readonly TimeSpan AuthorizeIntervalWhenUnauthorized = TimeSpan.FromMinutes(5);
+
+        private static readonly TimeSpan AuthorizeRetryInterval = TimeSpan.FromSeconds(3);
 
         private readonly TaskCompletionSource<object> _initializedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private volatile bool _isAuthorized = false;
 
         private DateTime _lastUpdatedTime = DateTime.MinValue;
+
+        private Exception _lastException;
 
         public bool Authorized
         {
@@ -60,18 +58,18 @@ namespace Microsoft.Azure.SignalR
 
         internal string AuthorizeUrl { get; }
 
-        internal bool HasExpired => DateTime.UtcNow - _lastUpdatedTime > TimeSpan.FromMinutes(AuthorizeIntervalInMinute * 2);
+        internal bool HasExpired => DateTime.UtcNow - _lastUpdatedTime > AuthorizeInterval + AuthorizeInterval;
 
         private Task<object> InitializedTask => _initializedTcs.Task;
 
-        public AadAccessKey(Uri endpoint, TokenCredential credential, Uri serverEndpoint = null) : base(endpoint)
+        public MicrosoftEntraAccessKey(Uri endpoint, TokenCredential credential, Uri serverEndpoint = null) : base(endpoint)
         {
             var authorizeUri = (serverEndpoint ?? endpoint).Append("/api/v1/auth/accessKey");
             AuthorizeUrl = authorizeUri.AbsoluteUri;
             TokenCredential = credential;
         }
 
-        public virtual async Task<string> GenerateAadTokenAsync(CancellationToken ctoken = default)
+        public virtual async Task<string> GetMicrosoftEntraTokenAsync(CancellationToken ctoken = default)
         {
             Exception latest = null;
             for (var i = 0; i < GetTokenMaxRetryTimes; i++)
@@ -101,18 +99,13 @@ namespace Microsoft.Azure.SignalR
             if (task == InitializedTask || InitializedTask.IsCompleted)
             {
                 await task;
-                if (Authorized)
-                {
-                    return await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm);
-                }
-                else
-                {
-                    throw new AzureSignalRAccessTokenNotAuthorizedException("The given AzureAD identity don't have the permission to generate access token.");
-                }
+                return Authorized
+                    ? await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm)
+                    : throw new AzureSignalRCredentialUnauthorizedException(TokenCredential, _lastException);
             }
             else
             {
-                throw new TaskCanceledException("Timeout reached when authorizing AzureAD identity.");
+                throw new TaskCanceledException("Timeout reached when generating access token.");
             }
         }
 
@@ -122,41 +115,36 @@ namespace Microsoft.Azure.SignalR
             Authorized = true;
         }
 
-        internal async Task UpdateAccessKeyAsync(CancellationToken ctoken = default)
+        internal async Task GetAccessKeyAsync(CancellationToken ctoken = default)
         {
             var delta = DateTime.UtcNow - _lastUpdatedTime;
             if (Authorized && delta < AuthorizeInterval)
             {
                 return;
             }
-            else if (!Authorized && delta < AuthorizeIntervalWhenFailed)
+            else if (!Authorized && delta < AuthorizeIntervalWhenUnauthorized)
             {
                 return;
             }
-            await AuthorizeWithRetryAsync(ctoken);
-        }
 
-        private async Task AuthorizeWithRetryAsync(CancellationToken ctoken = default)
-        {
-            Exception latest = null;
-            for (var i = 0; i < AuthorizeMaxRetryTimes; i++)
+            for (var i = 0; i < GetAccessKeyMaxRetryTimes; i++)
             {
-                var source = new CancellationTokenSource(AuthorizeTimeout);
+                var source = new CancellationTokenSource(GetAccessKeyTimeout);
                 var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(source.Token, ctoken);
                 try
                 {
-                    var token = await GenerateAadTokenAsync(linkedSource.Token);
-                    await AuthorizeWithTokenAsync(token, linkedSource.Token);
+                    var token = await GetMicrosoftEntraTokenAsync(linkedSource.Token);
+                    await GetAccessKeyInternalAsync(token, linkedSource.Token);
                     return;
                 }
                 catch (OperationCanceledException e)
                 {
-                    latest = e;
+                    _lastException = e;
                     break;
                 }
                 catch (Exception e)
                 {
-                    latest = e;
+                    _lastException = e;
                     try
                     {
                         await Task.Delay(AuthorizeRetryInterval, ctoken);
@@ -167,12 +155,10 @@ namespace Microsoft.Azure.SignalR
                     }
                 }
             }
-
             Authorized = false;
-            throw latest;
         }
 
-        private async Task AuthorizeWithTokenAsync(string accessToken, CancellationToken ctoken = default)
+        private async Task GetAccessKeyInternalAsync(string accessToken, CancellationToken ctoken = default)
         {
             var api = new RestApiEndpoint(AuthorizeUrl, accessToken);
 

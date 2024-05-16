@@ -86,7 +86,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     lock (_lock)
                     {
-                        _accessKey ??= new AadAccessKey(_serviceEndpoint, _tokenCredential, ServerEndpoint);
+                        _accessKey ??= new MicrosoftEntraAccessKey(_serviceEndpoint, _tokenCredential, ServerEndpoint);
                     }
                 }
                 return _accessKey;

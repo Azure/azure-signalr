@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal partial class AccessKeySynchronizer : IAccessKeySynchronizer, IDisposable
+    internal sealed class AccessKeySynchronizer : IAccessKeySynchronizer, IDisposable
     {
         private readonly ConcurrentDictionary<ServiceEndpoint, object> _endpoints = new ConcurrentDictionary<ServiceEndpoint, object>(ReferenceEqualityComparer.Instance);
 
@@ -42,9 +42,9 @@ namespace Microsoft.Azure.SignalR
 
         public void AddServiceEndpoint(ServiceEndpoint endpoint)
         {
-            if (endpoint.AccessKey is AadAccessKey aadKey)
+            if (endpoint.AccessKey is MicrosoftEntraAccessKey key)
             {
-                _ = UpdateAccessKeyAsync(aadKey);
+                _ = key.GetAccessKeyAsync();
             }
             _endpoints.TryAdd(endpoint, null);
         }
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.SignalR
 
         internal int ServiceEndpointsCount() => _endpoints.Count;
 
-        internal IEnumerable<AadAccessKey> FilterAadAccessKeys() => _endpoints.Select(e => e.Key.AccessKey).OfType<AadAccessKey>();
+        internal IEnumerable<MicrosoftEntraAccessKey> FilterMicrosoftEntraAccessKeys() => _endpoints.Select(e => e.Key.AccessKey).OfType<MicrosoftEntraAccessKey>();
 
         private async Task UpdateAccessKeyAsync()
         {
@@ -74,25 +74,11 @@ namespace Microsoft.Azure.SignalR
 
                 while (await _timer)
                 {
-                    foreach (var key in FilterAadAccessKeys())
+                    foreach (var key in FilterMicrosoftEntraAccessKeys())
                     {
-                        _ = UpdateAccessKeyAsync(key);
+                        _ = key.GetAccessKeyAsync();
                     }
                 }
-            }
-        }
-
-        private async Task UpdateAccessKeyAsync(AadAccessKey key)
-        {
-            var logger = _factory.CreateLogger<AadAccessKey>();
-            try
-            {
-                await key.UpdateAccessKeyAsync();
-                Log.SucceedToAuthorizeAccessKey(logger, key.AuthorizeUrl);
-            }
-            catch (Exception e)
-            {
-                Log.FailedToAuthorizeAccessKey(logger, key.AuthorizeUrl, e);
             }
         }
 

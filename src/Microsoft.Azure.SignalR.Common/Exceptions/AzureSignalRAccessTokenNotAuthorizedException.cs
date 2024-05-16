@@ -1,18 +1,20 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.Azure.SignalR.Common
+using System;
+
+namespace Microsoft.Azure.SignalR.Common;
+
+/// <summary>
+/// The exception throws when AccessKey is not authorized.
+/// </summary>
+[Obsolete]
+public class AzureSignalRAccessTokenNotAuthorizedException : AzureSignalRException
 {
-    /// <summary>
-    /// The exception throws when AccessKey is not authorized.
+     /// <summary>
+    /// Initializes a new instance of the <see cref="AzureSignalRAccessTokenNotAuthorizedException"/> class.
     /// </summary>
-    public class AzureSignalRAccessTokenNotAuthorizedException : AzureSignalRException
+    public AzureSignalRAccessTokenNotAuthorizedException(string message) : base(message)
     {
-         /// <summary>
-        /// Initializes a new instance of the <see cref="AzureSignalRAccessTokenNotAuthorizedException"/> class.
-        /// </summary>
-        public AzureSignalRAccessTokenNotAuthorizedException(string message) : base(message)
-        {
-        }
     }
 }

@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management;
 
@@ -18,12 +19,20 @@ namespace Microsoft.Azure.SignalR.Management;
 internal class ServiceManagerImpl : ServiceManager, IServiceManager
 {
     private readonly IServiceProvider _serviceProvider;
+
     private readonly RestClient _restClient;
+
     private readonly IReadOnlyCollection<ServiceDescriptor> _services;
+
     private readonly RestApiProvider _restApiEndpointProvider;
+
     private readonly IServiceEndpointProvider _serviceEndpointProvider;
 
-    public ServiceManagerImpl(IReadOnlyCollection<ServiceDescriptor> services, IServiceProvider serviceProvider, RestClient restClient, IServiceEndpointManager endpointManager)
+    public ServiceManagerImpl(IReadOnlyCollection<ServiceDescriptor> services,
+                              IServiceProvider serviceProvider,
+                              RestClient restClient,
+                              IOptions<ServiceManagerOptions> options,
+                              IServiceEndpointManager endpointManager)
     {
         _services = services;
         _serviceProvider = serviceProvider;

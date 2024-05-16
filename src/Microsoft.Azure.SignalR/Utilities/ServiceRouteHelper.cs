@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR
                 return;
             }
 
-            NegotiationResponse negotiateResponse = null;
+            NegotiationResponse negotiateResponse;
             try
             {
                 negotiateResponse = await handler.Process(context);
@@ -55,10 +55,10 @@ namespace Microsoft.Azure.SignalR
                 await context.Response.WriteAsync(ex.Message);
                 return;
             }
-            catch (AzureSignalRAccessTokenNotAuthorizedException ex)
+            catch (AzureSignalRCredentialUnauthorizedException ex)
             {
                 Log.NegotiateFailed(logger, ex.Message);
-                context.Response.StatusCode = 500;
+                context.Response.StatusCode = 403;
                 return;
             }
             catch (AzureSignalRNotConnectedException e)

@@ -11,7 +11,7 @@ using Xunit;
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 {
     [Collection("Auth")]
-    public class AadAccessKeyTests
+    public class MicrosoftEntraAccessKeyTests
     {
         private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         [InlineData("https://a.bc:443", "https://a.bc/api/v1/auth/accessKey")]
         public void TestConstructor(string endpoint, string expectedAuthorizeUrl)
         {
-            var key = new AadAccessKey(new Uri(endpoint), new DefaultAzureCredential());
+            var key = new MicrosoftEntraAccessKey(new Uri(endpoint), new DefaultAzureCredential());
             Assert.Equal(expectedAuthorizeUrl, key.AuthorizeUrl);
         }
 
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
                 It.IsAny<TokenRequestContext>(),
                 It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("Mock GetTokenAsync throws an exception"));
-            var key = new AadAccessKey(new Uri("http://localhost"), mockCredential.Object);
+            var key = new MicrosoftEntraAccessKey(new Uri("http://localhost"), mockCredential.Object);
 
             var audience = "http://localhost/chat";
             var claims = Array.Empty<Claim>();
@@ -66,30 +66,30 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
                 It.IsAny<TokenRequestContext>(),
                 It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("Mock GetTokenAsync throws an exception"));
-            var key = new AadAccessKey(new Uri("http://localhost"), mockCredential.Object);
-            var isAuthorizedField = typeof(AadAccessKey).GetField("_isAuthorized", BindingFlags.NonPublic | BindingFlags.Instance);
+            var key = new MicrosoftEntraAccessKey(new Uri("http://localhost"), mockCredential.Object);
+            var isAuthorizedField = typeof(MicrosoftEntraAccessKey).GetField("_isAuthorized", BindingFlags.NonPublic | BindingFlags.Instance);
             isAuthorizedField.SetValue(key, isAuthorized);
             Assert.Equal(isAuthorized, (bool)isAuthorizedField.GetValue(key));
 
             var lastUpdatedTime = DateTime.UtcNow - TimeSpan.FromMinutes(timeElapsed);
-            var lastUpdatedTimeField = typeof(AadAccessKey).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            var lastUpdatedTimeField = typeof(MicrosoftEntraAccessKey).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
             lastUpdatedTimeField.SetValue(key, lastUpdatedTime);
 
-            var initializedTcsField = typeof(AadAccessKey).GetField("_initializedTcs", BindingFlags.NonPublic | BindingFlags.Instance);
+            var initializedTcsField = typeof(MicrosoftEntraAccessKey).GetField("_initializedTcs", BindingFlags.NonPublic | BindingFlags.Instance);
             var initializedTcs = (TaskCompletionSource<object>)initializedTcsField.GetValue(key);
 
             var source = new CancellationTokenSource(TimeSpan.FromSeconds(1));
 
             if (shouldSkip)
             {
-                await key.UpdateAccessKeyAsync(source.Token);
+                await key.GetAccessKeyAsync(source.Token);
                 Assert.Equal(isAuthorized, (bool)isAuthorizedField.GetValue(key));
                 Assert.Equal(lastUpdatedTime, (DateTime)lastUpdatedTimeField.GetValue(key));
                 Assert.False(initializedTcs.Task.IsCompleted);
             }
             else
             {
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await key.UpdateAccessKeyAsync(source.Token));
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await key.GetAccessKeyAsync(source.Token));
                 Assert.False((bool)isAuthorizedField.GetValue(key));
                 Assert.True(lastUpdatedTime < (DateTime)lastUpdatedTimeField.GetValue(key));
                 Assert.True(initializedTcs.Task.IsCompleted);
@@ -104,23 +104,23 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
                 It.IsAny<TokenRequestContext>(),
                 It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("Mock GetTokenAsync throws an exception"));
-            var key = new AadAccessKey(new Uri("http://localhost"), mockCredential.Object);
+            var name = mockCredential.GetType().Name;
+            var key = new MicrosoftEntraAccessKey(new Uri("http://localhost"), mockCredential.Object);
 
             var audience = "http://localhost/chat";
             var claims = Array.Empty<Claim>();
             var lifetime = TimeSpan.FromHours(1);
             var algorithm = AccessTokenAlgorithm.HS256;
 
-            var task = Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(
+            var source = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await key.GetAccessKeyAsync(source.Token)
+            );
+
+            await Assert.ThrowsAsync<AzureSignalRCredentialUnauthorizedException>(
                 async () => await key.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm)
             );
-
-            var source = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                async () => await key.UpdateAccessKeyAsync(source.Token)
-            );
-
-            await task;
         }
     }
 }
