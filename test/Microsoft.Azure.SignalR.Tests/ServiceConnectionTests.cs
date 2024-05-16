@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +21,8 @@ using Microsoft.Extensions.Primitives;
 
 using Xunit;
 using Xunit.Abstractions;
+
+using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
@@ -433,6 +437,91 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
+        [Theory]
+        [InlineData(Constants.AsrsMigrateFrom, true)]
+        [InlineData("anotherheader", false)]
+        public async Task TestClientConnectionShouldSkipHandshakeWhenMigrateIn(string headerKey, bool shoudSkip)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
+            {
+                return true;
+            }))
+            {
+                var ccm = new TestClientConnectionManager();
+                var ccf = new ClientConnectionFactory();
+                var protocol = new ServiceProtocol();
+                TestConnection serviceConnection = null;
+                var connectionFactory = new TestConnectionFactory(conn =>
+                {
+                    serviceConnection = conn;
+                    return Task.CompletedTask;
+                });
+                var services = new ServiceCollection();
+
+                services.AddSingleton<ConnectionHandler, EndlessConnectionHandler>();
+                var builder = new ConnectionBuilder(services.BuildServiceProvider());
+                builder.UseConnectionHandler<EndlessConnectionHandler>();
+                var handler = builder.Build();
+                var connection = new ServiceConnection(protocol,
+                                                       ccm,
+                                                       connectionFactory,
+                                                       loggerFactory,
+                                                       handler,
+                                                       ccf,
+                                                       "serverId",
+                                                       Guid.NewGuid().ToString("N"),
+                                                       null,
+                                                       null,
+                                                       null,
+                                                       new DefaultClientInvocationManager(),
+                                                       new AckHandler(),
+                                                       closeTimeOutMilliseconds: 500);
+
+                var connectionTask = connection.StartAsync();
+                await connection.ConnectionInitializedTask.OrTimeout();
+                Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
+
+                // open a new connection with migrate header.
+                var clientConnectionId = Guid.NewGuid().ToString();
+                await serviceConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, Array.Empty<Claim>())
+                    {
+                        Headers = new Dictionary<string, StringValues>
+                        {
+                            [headerKey] = "serverId"
+                        }
+                    }));
+
+                // send a handshake response, should be skipped.
+                var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
+                var handshakeResponse = new SignalRProtocol.HandshakeResponseMessage(null);
+                HandshakeProtocol.WriteResponseMessage(handshakeResponse, clientConnection.Transport.Output);
+                await clientConnection.Transport.Output.FlushAsync();
+
+                // send a test message.
+                var payload = new byte[] { 1, 2, 3 };
+                await clientConnection.Transport.Output.WriteAsync(payload);
+
+                var result = await serviceConnection.Application.Input.ReadAsync();
+                var buffer = result.Buffer;
+                Assert.True(protocol.TryParseMessage(ref buffer, out var message));
+                var dataMessage = Assert.IsType<ConnectionDataMessage>(message);
+
+                if (shoudSkip)
+                {
+                    Assert.Equal(payload, dataMessage.Payload.ToArray());
+                }
+                else
+                {
+                    var dataPayload = dataMessage.Payload;
+                    Assert.True(HandshakeProtocol.TryParseResponseMessage(ref dataPayload, out _));
+                }
+
+                serviceConnection.Application.Output.Complete();
+                await connectionTask.OrTimeout();
+            }
+        }
+
         [Fact]
         public async Task TestClientConnectionLastWillCanSendOut()
         {
@@ -459,8 +548,20 @@ namespace Microsoft.Azure.SignalR.Tests
                 var builder = new ConnectionBuilder(services.BuildServiceProvider());
                 builder.UseConnectionHandler<EndlessConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
-                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(), closeTimeOutMilliseconds: 500);
+                var connection = new ServiceConnection(protocol,
+                                                       ccm,
+                                                       connectionFactory,
+                                                       loggerFactory,
+                                                       handler,
+                                                       ccf,
+                                                       "serverId",
+                                                       Guid.NewGuid().ToString("N"),
+                                                       null,
+                                                       null,
+                                                       null,
+                                                       new DefaultClientInvocationManager(),
+                                                       new AckHandler(),
+                                                       closeTimeOutMilliseconds: 500);
 
                 var connectionTask = connection.StartAsync();
 
@@ -469,11 +570,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
                 var clientConnectionId = Guid.NewGuid().ToString();
 
-                var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
-                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, Array.Empty<Claim>())));
 
-                var clientConnection = await waitClientTask.OrTimeout();
+                var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
 
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
@@ -649,6 +749,65 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
+        internal sealed class TestClientConnectionManager : IClientConnectionManager
+        {
+            private readonly ClientConnectionManager _ccm = new ClientConnectionManager();
+
+            private readonly ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>> _tcs =
+                new ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>>();
+
+            private readonly ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>> _tcsForRemoval
+                = new ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>>();
+
+            public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _ccm.ClientConnections;
+
+            public TestClientConnectionManager()
+            {
+            }
+
+            public Task<ClientConnectionContext> WaitForClientConnectionRemovalAsync(string id)
+            {
+                var tcs = _tcsForRemoval.GetOrAdd(id,
+                    s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
+                        .RunContinuationsAsynchronously));
+                return tcs.Task;
+            }
+
+            public Task<ClientConnectionContext> WaitForClientConnectionAsync(string id)
+            {
+                var tcs = _tcs.GetOrAdd(id,
+                    s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
+                        .RunContinuationsAsynchronously));
+                return tcs.Task;
+            }
+
+            public bool TryAddClientConnection(ClientConnectionContext connection)
+            {
+                var tcs = _tcs.GetOrAdd(connection.ConnectionId,
+                    s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
+                        .RunContinuationsAsynchronously));
+                var r = _ccm.TryAddClientConnection(connection);
+                tcs.SetResult(connection);
+                return r;
+            }
+
+            public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
+            {
+                var tcs = _tcsForRemoval.GetOrAdd(connectionId,
+                    s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
+                        .RunContinuationsAsynchronously));
+                _tcs.TryRemove(connectionId, out _);
+                var r = _ccm.TryRemoveClientConnection(connectionId, out connection);
+                tcs.TrySetResult(connection);
+                return r;
+            }
+
+            public Task WhenAllCompleted()
+            {
+                return Task.CompletedTask;
+            }
+        }
+
         private sealed class TestConnectionHandler : ConnectionHandler
         {
             private TaskCompletionSource<object> _startedTcs = new TaskCompletionSource<object>();
@@ -706,6 +865,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 CancellationToken = token;
             }
+
             public override async Task OnConnectedAsync(ConnectionContext connection)
             {
                 while (!CancellationToken.IsCancellationRequested)
@@ -750,14 +910,15 @@ namespace Microsoft.Azure.SignalR.Tests
         private sealed class TextContentConnectionHandler : ConnectionHandler
         {
             private TaskCompletionSource<object> _startedTcs = new TaskCompletionSource<object>();
+
             private LinkedList<TaskCompletionSource<string>> _content = new LinkedList<TaskCompletionSource<string>>();
+
+            public Task Started => _startedTcs.Task;
 
             public TextContentConnectionHandler()
             {
                 _content.AddFirst(new TaskCompletionSource<string>());
             }
-
-            public Task Started => _startedTcs.Task;
 
             public override async Task OnConnectedAsync(ConnectionContext connection)
             {
@@ -803,65 +964,6 @@ namespace Microsoft.Azure.SignalR.Tests
                     yield return result;
                 }
             }
-        }
-
-        internal sealed class TestClientConnectionManager : IClientConnectionManager
-        {
-            private readonly ClientConnectionManager _ccm = new ClientConnectionManager();
-
-            private readonly ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>> _tcs =
-                new ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>>();
-
-            private readonly ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>> _tcsForRemoval
-                = new ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>>();
-
-            public TestClientConnectionManager()
-            {
-            }
-
-            public Task<ClientConnectionContext> WaitForClientConnectionRemovalAsync(string id)
-            {
-                var tcs = _tcsForRemoval.GetOrAdd(id,
-                    s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
-                        .RunContinuationsAsynchronously));
-                return tcs.Task;
-            }
-
-            public Task<ClientConnectionContext> WaitForClientConnectionAsync(string id)
-            {
-                var tcs = _tcs.GetOrAdd(id,
-                    s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
-                        .RunContinuationsAsynchronously));
-                return tcs.Task;
-            }
-
-            public bool TryAddClientConnection(ClientConnectionContext connection)
-            {
-                var tcs = _tcs.GetOrAdd(connection.ConnectionId,
-                    s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
-                        .RunContinuationsAsynchronously));
-                var r = _ccm.TryAddClientConnection(connection);
-                tcs.SetResult(connection);
-                return r;
-            }
-
-            public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
-            {
-                var tcs = _tcsForRemoval.GetOrAdd(connectionId,
-                    s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
-                        .RunContinuationsAsynchronously));
-                _tcs.TryRemove(connectionId, out _);
-                var r = _ccm.TryRemoveClientConnection(connectionId, out connection);
-                tcs.TrySetResult(connection);
-                return r;
-            }
-
-            public Task WhenAllCompleted()
-            {
-                return Task.CompletedTask;
-            }
-
-            public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _ccm.ClientConnections;
         }
     }
 }
