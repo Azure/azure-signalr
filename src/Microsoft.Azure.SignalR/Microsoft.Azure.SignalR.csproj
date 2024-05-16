@@ -1,9 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>.NET Standard SDK for Azure SignalR.</Description>
-    <RootNamespace>Microsoft.Azure.SignalR</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>.NET Standard SDK for Azure SignalR.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <LangVersion>11</LangVersion>
+    <RootNamespace>Microsoft.Azure.SignalR</RootNamespace>
   </PropertyGroup>
   
   <PropertyGroup>
