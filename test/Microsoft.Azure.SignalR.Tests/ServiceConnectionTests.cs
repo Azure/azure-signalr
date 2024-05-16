@@ -525,6 +525,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 await serviceConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, Array.Empty<Claim>())
                     {
+                        Protocol = "json",
                         Headers = new Dictionary<string, StringValues>
                         {
                             [headerKey] = "serverId"
@@ -538,10 +539,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 await clientConnection.Transport.Output.FlushAsync();
 
                 // send a test message.
-                var payload = new byte[] { 1, 2, 3 };
-                await clientConnection.Transport.Output.WriteAsync(payload);
+                var payload = Encoding.UTF8.GetBytes("{\"type\":1,\"target\":\"method\",\"arguments\":[]}\u001e");
+                await clientConnection.Transport.Output.WriteAsync(payload).OrTimeout();
 
-                var result = await serviceConnection.Application.Input.ReadAsync();
+                var result = await serviceConnection.Application.Input.ReadAsync().OrTimeout();
                 var buffer = result.Buffer;
                 Assert.True(protocol.TryParseMessage(ref buffer, out var message));
                 var dataMessage = Assert.IsType<ConnectionDataMessage>(message);
