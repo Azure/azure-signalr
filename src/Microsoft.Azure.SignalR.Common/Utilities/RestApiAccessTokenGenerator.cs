@@ -27,9 +27,9 @@ namespace Microsoft.Azure.SignalR
 
         public Task<string> Generate(string audience, TimeSpan? lifetime = null)
         {
-            if (_accessKey is AadAccessKey key)
+            if (_accessKey is AccessKeyForMicrosoftEntra key)
             {
-                return key.GenerateAadTokenAsync();
+                return key.GetMicrosoftEntraTokenAsync();
             }
 
             return _accessKey.GenerateAccessTokenAsync(

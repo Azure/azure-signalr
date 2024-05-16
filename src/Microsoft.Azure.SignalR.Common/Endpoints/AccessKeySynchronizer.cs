@@ -19,19 +19,16 @@ namespace Microsoft.Azure.SignalR
 
         private readonly TimerAwaitable _timer = new TimerAwaitable(TimeSpan.Zero, TimeSpan.FromMinutes(1));
 
-        public AccessKeySynchronizer(
-            ILoggerFactory loggerFactory
-            ) : this(loggerFactory, true)
+        internal IEnumerable<AccessKeyForMicrosoftEntra> AccessKeyForMicrosoftEntraList => _endpoints.Select(e => e.Key.AccessKey).OfType<AccessKeyForMicrosoftEntra>();
+
+        public AccessKeySynchronizer(ILoggerFactory loggerFactory) : this(loggerFactory, true)
         {
         }
 
         /// <summary>
-        /// For test only.
+        /// Test only.
         /// </summary>
-        internal AccessKeySynchronizer(
-            ILoggerFactory loggerFactory,
-            bool start
-        )
+        internal AccessKeySynchronizer(ILoggerFactory loggerFactory, bool start)
         {
             if (start)
             {
@@ -42,9 +39,9 @@ namespace Microsoft.Azure.SignalR
 
         public void AddServiceEndpoint(ServiceEndpoint endpoint)
         {
-            if (endpoint.AccessKey is AadAccessKey aadKey)
+            if (endpoint.AccessKey is AccessKeyForMicrosoftEntra key)
             {
-                _ = UpdateAccessKeyAsync(aadKey);
+                _ = UpdateAccessKeyAsync(key);
             }
             _endpoints.TryAdd(endpoint, null);
         }
@@ -64,8 +61,6 @@ namespace Microsoft.Azure.SignalR
 
         internal int ServiceEndpointsCount() => _endpoints.Count;
 
-        internal IEnumerable<AadAccessKey> FilterAadAccessKeys() => _endpoints.Select(e => e.Key.AccessKey).OfType<AadAccessKey>();
-
         private async Task UpdateAccessKeyAsync()
         {
             using (_timer)
@@ -74,7 +69,7 @@ namespace Microsoft.Azure.SignalR
 
                 while (await _timer)
                 {
-                    foreach (var key in FilterAadAccessKeys())
+                    foreach (var key in AccessKeyForMicrosoftEntraList)
                     {
                         _ = UpdateAccessKeyAsync(key);
                     }
@@ -82,17 +77,17 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task UpdateAccessKeyAsync(AadAccessKey key)
+        private async Task UpdateAccessKeyAsync(AccessKeyForMicrosoftEntra key)
         {
-            var logger = _factory.CreateLogger<AadAccessKey>();
+            var logger = _factory.CreateLogger<AccessKeyForMicrosoftEntra>();
             try
             {
                 await key.UpdateAccessKeyAsync();
-                Log.SucceedToAuthorizeAccessKey(logger, key.AuthorizeUrl);
+                Log.SucceedToAuthorizeAccessKey(logger, key.GetAccessKeyUrl);
             }
             catch (Exception e)
             {
-                Log.FailedToAuthorizeAccessKey(logger, key.AuthorizeUrl, e);
+                Log.FailedToAuthorizeAccessKey(logger, key.GetAccessKeyUrl, e);
             }
         }
 

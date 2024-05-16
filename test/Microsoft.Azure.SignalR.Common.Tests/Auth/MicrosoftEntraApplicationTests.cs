@@ -1,21 +1,18 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Threading.Tasks;
-
 using Azure.Core;
 using Azure.Identity;
-
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
-
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 {
     [Collection("Auth")]
-    public class AzureActiveDirectoryTests
+    public class MicrosoftEntraApplicationTests
     {
         private const string IssuerEndpoint = "https://sts.windows.net/";
 
@@ -25,21 +22,21 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 
         private static readonly string[] DefaultScopes = new string[] { "https://signalr.azure.com/.default" };
 
-        [Fact(Skip = "Provide valid aad options")]
+        [Fact(Skip = "Provide valid Microsoft Entra application options")]
         public async Task TestAcquireAccessToken()
         {
             var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
-            var key = new AadAccessKey(new Uri("https://localhost:8080"), options);
-            var token = await key.GenerateAadTokenAsync();
+            var key = new AccessKeyForMicrosoftEntra(new Uri("https://localhost:8080"), options);
+            var token = await key.GetMicrosoftEntraTokenAsync();
             Assert.NotNull(token);
         }
 
-        [Fact(Skip = "Provide valid aad options")]
-        public async Task TestGetAzureAdTokenAndAuthenticate()
+        [Fact(Skip = "Provide valid Microsoft Entra application options")]
+        public async Task TestGetMicrosoftEntraTokenAndAuthenticate()
         {
             var credential = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
 
-            ConfigurationManager<OpenIdConnectConfiguration> configManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+            var configManager = new ConfigurationManager<OpenIdConnectConfiguration>(
                 "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration",
                 new OpenIdConnectConfigurationRetriever()
             );
@@ -72,11 +69,11 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             Assert.NotNull(validToken);
         }
 
-        [Fact(Skip = "Provide valid aad options")]
+        [Fact(Skip = "Provide valid Microsoft Entra application options")]
         internal async Task TestAuthenticateAsync()
         {
             var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
-            var key = new AadAccessKey(new Uri("https://localhost:8080"), options);
+            var key = new AccessKeyForMicrosoftEntra(new Uri("https://localhost:8080"), options);
             await key.UpdateAccessKeyAsync();
 
             Assert.True(key.Authorized);

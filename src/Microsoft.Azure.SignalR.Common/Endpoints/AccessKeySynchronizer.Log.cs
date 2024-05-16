@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR
         private static class Log
         {
             private static readonly Action<ILogger, string, Exception> _failedAuthorize =
-                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(2, "FailedAuthorizeAccessKey"), "Failed in authorizing AccessKey for '{endpoint}', will retry in " + AadAccessKey.AuthorizeRetryIntervalInSec + " seconds");
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(2, "FailedAuthorizeAccessKey"), "Failed in authorizing AccessKey for '{endpoint}', will retry in " + SignalR.AccessKeyForMicrosoftEntra.GetAccessKeyRetryIntervalInSec + " seconds");
 
             private static readonly Action<ILogger, string, Exception> _succeedAuthorize =
                 LoggerMessage.Define<string>(LogLevel.Information, new EventId(3, "SucceedAuthorizeAccessKey"), "Succeed in authorizing AccessKey for '{endpoint}'");

@@ -148,7 +148,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [InlineData(typeof(AccessKey))]
-        [InlineData(typeof(AadAccessKey))]
+        [InlineData(typeof(AccessKeyForMicrosoftEntra))]
         public async Task TestAccessKeyRequestMessage(Type keyType)
         {
             var endpoint = MockServiceEndpoint(keyType.Name);
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [InlineData(typeof(AccessKey))]
-        [InlineData(typeof(AadAccessKey))]
+        [InlineData(typeof(AccessKeyForMicrosoftEntra))]
         public async Task TestAccessKeyResponseMessage(Type keyType)
         {
             var endpoint = MockServiceEndpoint(keyType.Name);
@@ -222,9 +222,9 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 var endpoint = new TestHubServiceEndpoint(endpoint: new TestServiceEndpoint(new DefaultAzureCredential()));
 
-                if (endpoint.AccessKey is AadAccessKey key)
+                if (endpoint.AccessKey is AccessKeyForMicrosoftEntra key)
                 {
-                    var field = typeof(AadAccessKey).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+                    var field = typeof(AccessKeyForMicrosoftEntra).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
                     field.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(minutesElapsed));
                 }
 
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 case nameof(AccessKey):
                     return new ServiceEndpoint(_keyConnectionString);
 
-                case nameof(AadAccessKey):
+                case nameof(AccessKeyForMicrosoftEntra):
                     var endpoint = new ServiceEndpoint(_aadConnectionString);
                     var p = typeof(ServiceEndpoint).GetProperty("AccessKey", BindingFlags.NonPublic | BindingFlags.Instance);
                     p.SetValue(endpoint, new TestAadAccessKey());
@@ -324,7 +324,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private class TestAadAccessKey : AadAccessKey
+        private class TestAadAccessKey : AccessKeyForMicrosoftEntra
         {
             public string Token { get; } = Guid.NewGuid().ToString();
 
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
             }
 
-            public override Task<string> GenerateAadTokenAsync(CancellationToken ctoken = default)
+            public override Task<string> GetMicrosoftEntraTokenAsync(CancellationToken ctoken = default)
             {
                 return Task.FromResult(Token);
             }

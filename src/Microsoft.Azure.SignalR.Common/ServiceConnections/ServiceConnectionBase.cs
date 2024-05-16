@@ -162,7 +162,7 @@ namespace Microsoft.Azure.SignalR
                     TimerAwaitable syncTimer = null;
                     try
                     {
-                        if (HubEndpoint != null && HubEndpoint.AccessKey is AadAccessKey aadKey)
+                        if (HubEndpoint != null && HubEndpoint.AccessKey is AccessKeyForMicrosoftEntra aadKey)
                         {
                             syncTimer = new TimerAwaitable(TimeSpan.Zero, DefaultSyncAzureIdentityInterval);
                             _ = UpdateAzureIdentityAsync(aadKey, syncTimer);
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.SignalR
 
         private Task OnAccessKeyMessageAsync(AccessKeyResponseMessage keyMessage)
         {
-            if (HubEndpoint.AccessKey is AadAccessKey key)
+            if (HubEndpoint.AccessKey is AccessKeyForMicrosoftEntra key)
             {
                 if (string.IsNullOrEmpty(keyMessage.ErrorType))
                 {
@@ -474,7 +474,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task UpdateAzureIdentityAsync(AadAccessKey key, TimerAwaitable timer)
+        private async Task UpdateAzureIdentityAsync(AccessKeyForMicrosoftEntra key, TimerAwaitable timer)
         {
             using (timer)
             {
@@ -486,12 +486,12 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task SendAccessKeyRequestMessageAsync(AadAccessKey key)
+        private async Task SendAccessKeyRequestMessageAsync(AccessKeyForMicrosoftEntra key)
         {
             try
             {
-                var source = new CancellationTokenSource(AadAccessKey.AuthorizeTimeout);
-                var token = await key.GenerateAadTokenAsync(source.Token);
+                var source = new CancellationTokenSource(AccessKeyForMicrosoftEntra.GetAccessKeyTimeout);
+                var token = await key.GetMicrosoftEntraTokenAsync(source.Token);
                 var message = new AccessKeyRequestMessage(token);
                 await SafeWriteAsync(message);
             }

@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class AadTokenProvider : IAccessTokenProvider
+    internal class MicrosoftEntraTokenProvider : IAccessTokenProvider
     {
-        private readonly AadAccessKey _accessKey;
+        private readonly AccessKeyForMicrosoftEntra _accessKey;
 
-        public AadTokenProvider(AadAccessKey accessKey)
+        public MicrosoftEntraTokenProvider(AccessKeyForMicrosoftEntra accessKey)
         {
             _accessKey = accessKey ?? throw new ArgumentNullException(nameof(accessKey));
         }
 
-        public Task<string> ProvideAsync() => _accessKey.GenerateAadTokenAsync();
+        public Task<string> ProvideAsync() => _accessKey.GetMicrosoftEntraTokenAsync();
     }
 }
