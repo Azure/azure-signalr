@@ -46,16 +46,16 @@ namespace Microsoft.Azure.SignalR.Common
             var endpoint2 = new ServiceEndpoint($"Endpoint=http://endpoint2.net;AuthType=aad;ClientId=foo;ClientSecret=bar;TenantId={tenantId};Version=1.0");
 
             synchronizer.UpdateServiceEndpoints(new List<ServiceEndpoint>() { endpoint1 });
-            Assert.Empty(synchronizer.FilterAccessKeyForMicrosoftEntra());
+            Assert.Empty(synchronizer.AccessKeyForMicrosoftEntraList);
 
             synchronizer.UpdateServiceEndpoints(new List<ServiceEndpoint>() { endpoint1, endpoint2 });
-            Assert.Single(synchronizer.FilterAccessKeyForMicrosoftEntra());
+            Assert.Single(synchronizer.AccessKeyForMicrosoftEntraList);
 
             synchronizer.UpdateServiceEndpoints(new List<ServiceEndpoint>() { endpoint2 });
-            Assert.Single(synchronizer.FilterAccessKeyForMicrosoftEntra());
+            Assert.Single(synchronizer.AccessKeyForMicrosoftEntraList);
 
             synchronizer.UpdateServiceEndpoints(new List<ServiceEndpoint>() { });
-            Assert.Empty(synchronizer.FilterAccessKeyForMicrosoftEntra());
+            Assert.Empty(synchronizer.AccessKeyForMicrosoftEntraList);
         }
     }
 }

@@ -162,10 +162,10 @@ namespace Microsoft.Azure.SignalR
                     TimerAwaitable syncTimer = null;
                     try
                     {
-                        if (HubEndpoint != null && HubEndpoint.AccessKey is AccessKeyForMicrosoftEntra aadKey)
+                        if (HubEndpoint != null && HubEndpoint.AccessKey is AccessKeyForMicrosoftEntra key)
                         {
                             syncTimer = new TimerAwaitable(TimeSpan.Zero, DefaultSyncAzureIdentityInterval);
-                            _ = UpdateAzureIdentityAsync(aadKey, syncTimer);
+                            _ = UpdateAzureIdentityAsync(key, syncTimer);
                         }
                         await ProcessIncomingAsync(connection);
                     }
