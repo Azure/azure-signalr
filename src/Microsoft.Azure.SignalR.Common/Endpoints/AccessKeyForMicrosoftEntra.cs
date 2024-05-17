@@ -23,8 +23,6 @@ namespace Microsoft.Azure.SignalR
 
         internal const int GetAccessKeyMaxRetryTimes = 3;
 
-        internal const int GetAccessKeyRetryIntervalInSec = 3;
-
         internal const int GetMicrosoftEntraTokenMaxRetryTimes = 3;
 
         internal static readonly TimeSpan GetAccessKeyTimeout = TimeSpan.FromSeconds(100);
@@ -37,11 +35,13 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly TimeSpan GetAccessKeyIntervalWhenUnauthorized = TimeSpan.FromMinutes(5);
 
-        private static readonly TimeSpan GetAccessKeyRetryInterval = TimeSpan.FromSeconds(GetAccessKeyRetryIntervalInSec);
+        private static readonly TimeSpan GetAccessKeyRetryInterval = TimeSpan.FromSeconds(3);
 
         private readonly TaskCompletionSource<object> _initializedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private volatile bool _isAuthorized = false;
+
+        private Exception _lastException;
 
         private DateTime _lastUpdatedTime = DateTime.MinValue;
 
@@ -51,6 +51,7 @@ namespace Microsoft.Azure.SignalR
             private set
             {
                 _lastUpdatedTime = DateTime.UtcNow;
+                _lastException = value ? null : _lastException;
                 _isAuthorized = value;
                 _initializedTcs.TrySetResult(null);
             }
@@ -101,14 +102,9 @@ namespace Microsoft.Azure.SignalR
             if (task == InitializedTask || InitializedTask.IsCompleted)
             {
                 await task;
-                if (Authorized)
-                {
-                    return await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm);
-                }
-                else
-                {
-                    throw new AzureSignalRAccessTokenNotAuthorizedException("The given AzureAD identity don't have the permission to generate access token.");
-                }
+                return Authorized
+                    ? await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm)
+                    : throw new AzureSignalRCredentialUnauthorizedException(TokenCredential, _lastException);
             }
             else
             {
@@ -134,7 +130,6 @@ namespace Microsoft.Azure.SignalR
                 return;
             }
 
-            Exception latest = null;
             for (var i = 0; i < GetAccessKeyMaxRetryTimes; i++)
             {
                 var source = new CancellationTokenSource(GetAccessKeyTimeout);
@@ -147,12 +142,12 @@ namespace Microsoft.Azure.SignalR
                 }
                 catch (OperationCanceledException e)
                 {
-                    latest = e;
+                    _lastException = e;
                     break;
                 }
                 catch (Exception e)
                 {
-                    latest = e;
+                    _lastException = e;
                     try
                     {
                         await Task.Delay(GetAccessKeyRetryInterval, ctoken);
@@ -165,7 +160,6 @@ namespace Microsoft.Azure.SignalR
             }
 
             Authorized = false;
-            throw latest;
         }
 
         private async Task GetAccessKeyInternalAsync(string accessToken, CancellationToken ctoken = default)

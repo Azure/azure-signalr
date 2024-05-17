@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal partial class AccessKeySynchronizer : IAccessKeySynchronizer, IDisposable
+    internal sealed class AccessKeySynchronizer : IAccessKeySynchronizer, IDisposable
     {
         private readonly ConcurrentDictionary<ServiceEndpoint, object> _endpoints = new ConcurrentDictionary<ServiceEndpoint, object>(ReferenceEqualityComparer.Instance);
 
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (endpoint.AccessKey is AccessKeyForMicrosoftEntra key)
             {
-                _ = UpdateAccessKeyAsync(key);
+                _ = key.UpdateAccessKeyAsync();
             }
             _endpoints.TryAdd(endpoint, null);
         }
@@ -71,23 +71,9 @@ namespace Microsoft.Azure.SignalR
                 {
                     foreach (var key in AccessKeyForMicrosoftEntraList)
                     {
-                        _ = UpdateAccessKeyAsync(key);
+                        _ = key.UpdateAccessKeyAsync();
                     }
                 }
-            }
-        }
-
-        private async Task UpdateAccessKeyAsync(AccessKeyForMicrosoftEntra key)
-        {
-            var logger = _factory.CreateLogger<AccessKeyForMicrosoftEntra>();
-            try
-            {
-                await key.UpdateAccessKeyAsync();
-                Log.SucceedToAuthorizeAccessKey(logger, key.GetAccessKeyUrl);
-            }
-            catch (Exception e)
-            {
-                Log.FailedToAuthorizeAccessKey(logger, key.GetAccessKeyUrl, e);
             }
         }
 
