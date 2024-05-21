@@ -59,8 +59,7 @@ namespace Microsoft.Azure.SignalR
 
         private const int IdleState = 0;
 
-        private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
-            resumeWriterThreshold: 0,
+        private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(
             readerScheduler: PipeScheduler.ThreadPool,
             useSynchronizationContext: false);
 

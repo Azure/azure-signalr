@@ -234,6 +234,39 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        public async Task SendLargeMessageByConnectionPipe()
+        {
+            // default pauseWriterThreshold is 64KB.
+            var proxy = new ServiceConnectionProxy();
+
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
+            _ = proxy.StartAsync();
+            await serverTask.OrTimeout();
+
+            var task = proxy.WaitForConnectionAsync("1");
+            await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null) { Protocol = "json" });
+            var connection = await task.OrTimeout();
+
+            // Prepare 1MB message.
+            var outputMessage = "{\"type\":1,\"target\":\"hello\",\"arguments\":[\"" + new string('a', 1024 * 1024) + "\"]}\u001e";
+
+            var channel = proxy.ApplicationMessages;
+
+            await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("{}\u001e"));
+            await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes(outputMessage));
+            var message = Assert.IsType<ConnectionDataMessage>(await channel.Reader.ReadAsync());
+            Assert.Equal(DataMessageType.Handshake, message.Type);
+            Assert.Equal(connection.ConnectionId, message.ConnectionId);
+            Assert.Equal("{}\u001e", Encoding.ASCII.GetString(message.Payload.ToArray()));
+
+            message = Assert.IsType<ConnectionDataMessage>(await channel.Reader.ReadAsync());
+            Assert.Equal(message.ConnectionId, connection.ConnectionId);
+            Assert.Equal(outputMessage, Encoding.ASCII.GetString(message.Payload.ToArray()));
+
+            proxy.Stop();
+        }
+
+        [Fact]
         public async Task ServiceConnectionSendsPingMessage()
         {
             var proxy = new ServiceConnectionProxy();
