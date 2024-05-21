@@ -21,8 +21,8 @@ namespace Microsoft.Azure.SignalR.Common
         /// <summary>
         /// Initializes a new instance of the <see cref="AzureSignalRAccessTokenNotAuthorizedException"/> class.
         /// </summary>
-        public AzureSignalRAccessTokenNotAuthorizedException(TokenCredential credential, Exception innerException) :
-            base(credential.GetType().Name + Postfix, innerException)
+        public AzureSignalRAccessTokenNotAuthorizedException(string credentialName, Exception innerException) :
+            base(credentialName + Postfix, innerException)
         {
         }
     }

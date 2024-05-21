@@ -104,7 +104,7 @@ namespace Microsoft.Azure.SignalR
                 await task;
                 return Authorized
                     ? await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm)
-                    : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, _lastException);
+                    : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential.GetType().Name, _lastException);
             }
             else
             {
