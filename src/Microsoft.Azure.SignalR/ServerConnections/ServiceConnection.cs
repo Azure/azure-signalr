@@ -379,7 +379,6 @@ namespace Microsoft.Azure.SignalR
 
                     if (!buffer.IsEmpty)
                     {
-                        bool pendingHandshakeResponse = false;
                         if (!isHandshakeResponseParsed)
                         {
                             var next = buffer;
@@ -402,10 +401,9 @@ namespace Microsoft.Azure.SignalR
                             else
                             {
                                 // waiting for handshake response.
-                                pendingHandshakeResponse = true;
                             }
                         }
-                        if (!pendingHandshakeResponse)
+                        if (isHandshakeResponseParsed)
                         {
                             var next = buffer;
                             while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
