@@ -14,7 +14,7 @@ public class AzureSignalRExceptionTests
     {
         var credential = new DefaultAzureCredential();
         var inner = new Exception();
-        var exception = new AzureSignalRCredentialUnauthorizedException(credential, inner);
+        var exception = new AzureSignalRAccessTokenNotAuthorizedException(credential, inner);
         Assert.StartsWith(nameof(DefaultAzureCredential), exception.Message);
     }
 }

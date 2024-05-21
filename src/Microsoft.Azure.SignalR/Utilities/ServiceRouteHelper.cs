@@ -55,10 +55,10 @@ namespace Microsoft.Azure.SignalR
                 await context.Response.WriteAsync(ex.Message);
                 return;
             }
-            catch (AzureSignalRCredentialUnauthorizedException ex)
+            catch (AzureSignalRAccessTokenNotAuthorizedException ex)
             {
                 Log.NegotiateFailed(logger, ex.Message);
-                context.Response.StatusCode = 403;
+                context.Response.StatusCode = 500;
                 return;
             }
             catch (AzureSignalRNotConnectedException e)

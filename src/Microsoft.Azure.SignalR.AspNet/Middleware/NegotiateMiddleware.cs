@@ -184,10 +184,10 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 return GenerateClientAccessTokenAsync(provider, context, url, claims);
             }
-            catch (AzureSignalRCredentialUnauthorizedException e)
+            catch (AzureSignalRAccessTokenNotAuthorizedException e)
             {
                 Log.NegotiateFailed(_logger, e.Message);
-                context.Response.StatusCode = 403;
+                context.Response.StatusCode = 500;
                 return context.Response.End("");
             }
         }

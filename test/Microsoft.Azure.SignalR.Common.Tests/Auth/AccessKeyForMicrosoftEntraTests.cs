@@ -118,7 +118,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 
             await key.UpdateAccessKeyAsync();
 
-            var exception = await Assert.ThrowsAsync<AzureSignalRCredentialUnauthorizedException>(
+            var exception = await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(
                 async () => await key.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm)
             );
             Assert.IsType<InvalidOperationException>(exception.InnerException);
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 
             await key.UpdateAccessKeyAsync();
 
-            var exception = await Assert.ThrowsAsync<AzureSignalRCredentialUnauthorizedException>(
+            var exception = await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(
                 async () => await key.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm)
             );
             Assert.IsType<InvalidOperationException>(exception.InnerException);

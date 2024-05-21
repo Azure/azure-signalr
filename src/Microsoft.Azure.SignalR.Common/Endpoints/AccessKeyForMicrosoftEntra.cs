@@ -19,13 +19,13 @@ namespace Microsoft.Azure.SignalR
 {
     internal class AccessKeyForMicrosoftEntra : AccessKey
     {
-        internal const int GetAccessKeyIntervalInMinute = 55;
-
-        internal const int GetAccessKeyMaxRetryTimes = 3;
-
-        internal const int GetMicrosoftEntraTokenMaxRetryTimes = 3;
-
         internal static readonly TimeSpan GetAccessKeyTimeout = TimeSpan.FromSeconds(100);
+
+        private const int GetAccessKeyIntervalInMinute = 55;
+
+        private const int GetAccessKeyMaxRetryTimes = 3;
+
+        private const int GetMicrosoftEntraTokenMaxRetryTimes = 3;
 
         private const string DefaultScope = "https://signalr.azure.com/.default";
 
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.SignalR
                 await task;
                 return Authorized
                     ? await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm)
-                    : throw new AzureSignalRCredentialUnauthorizedException(TokenCredential, _lastException);
+                    : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, _lastException);
             }
             else
             {
