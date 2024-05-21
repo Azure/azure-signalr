@@ -379,6 +379,7 @@ namespace Microsoft.Azure.SignalR
 
                     if (!buffer.IsEmpty)
                     {
+                        bool pendingHandshakeResponse = false;
                         if (!isHandshakeResponseParsed)
                         {
                             var next = buffer;
@@ -391,23 +392,20 @@ namespace Microsoft.Azure.SignalR
                                     switch (forwardResult)
                                     {
                                         case ForwardMessageResult.Success:
-                                            connection.Application.Input.AdvanceTo(next.Start);
                                             break;
                                         default:
                                             return;
                                     }
                                 }
-                                else
-                                {
-                                    buffer = buffer.Slice(next.Start, 0);
-                                }
+                                buffer = buffer.Slice(next.Start);
                             }
                             else
                             {
                                 // waiting for handshake response.
+                                pendingHandshakeResponse = true;
                             }
                         }
-                        else
+                        if (!pendingHandshakeResponse)
                         {
                             var next = buffer;
                             while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
