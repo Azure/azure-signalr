@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR
 
         private DateTime _lastUpdatedTime = DateTime.MinValue;
 
-        public bool Authorized
+        public bool IsAuthorized
         {
             get => _isAuthorized;
             private set
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.SignalR
             if (task == InitializedTask || InitializedTask.IsCompleted)
             {
                 await task;
-                return Authorized
+                return IsAuthorized
                     ? await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm)
                     : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential.GetType().Name, _lastException);
             }
@@ -115,17 +115,17 @@ namespace Microsoft.Azure.SignalR
         internal void UpdateAccessKey(string kid, string accessKey)
         {
             Key = new Tuple<string, string>(kid, accessKey);
-            Authorized = true;
+            IsAuthorized = true;
         }
 
         internal async Task UpdateAccessKeyAsync(CancellationToken ctoken = default)
         {
             var delta = DateTime.UtcNow - _lastUpdatedTime;
-            if (Authorized && delta < GetAccessKeyInterval)
+            if (IsAuthorized && delta < GetAccessKeyInterval)
             {
                 return;
             }
-            else if (!Authorized && delta < GetAccessKeyIntervalWhenUnauthorized)
+            else if (!IsAuthorized && delta < GetAccessKeyIntervalWhenUnauthorized)
             {
                 return;
             }
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
-            Authorized = false;
+            IsAuthorized = false;
         }
 
         private async Task GetAccessKeyInternalAsync(string accessToken, CancellationToken ctoken = default)

@@ -76,7 +76,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             var key = new AccessKeyForMicrosoftEntra(new Uri("https://localhost:8080"), options);
             await key.UpdateAccessKeyAsync();
 
-            Assert.True(key.Authorized);
+            Assert.True(key.IsAuthorized);
             Assert.NotNull(key.Id);
             Assert.NotNull(key.Value);
         }

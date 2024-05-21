@@ -13,6 +13,10 @@ namespace Microsoft.Azure.SignalR.Common
     {
         private const string Postfix = " appears to lack the permission to generate access tokens, see innerException for more details.";
 
+        /// <summary>
+        /// Obsolete, please use (credentialName, innerException) instead.
+        /// </summary>
+        /// <param name="message"></param>
         [Obsolete("use (TokenCredential, Exception) instead.")]
         public AzureSignalRAccessTokenNotAuthorizedException(string message) : base(message)
         {
