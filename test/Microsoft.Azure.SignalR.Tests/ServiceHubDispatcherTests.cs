@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Internal;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -41,7 +43,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 null,
                 null,
                 null,
-                null
+                null,
+                new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance)
             );
 
             await dispatcher.ShutdownAsync();

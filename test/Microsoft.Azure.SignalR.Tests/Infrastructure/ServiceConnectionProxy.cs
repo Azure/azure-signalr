@@ -7,10 +7,12 @@ using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
@@ -34,6 +36,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public IServiceMessageHandler ServiceMessageHandler { get; }
 
+        public IHubProtocolResolver HubProtocolResolver { get; }
+
         public IServerNameProvider ServerNameProvider { get; }
 
         public ConnectionDelegate ConnectionDelegateCallback { get; }
@@ -50,6 +54,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
         private readonly ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>> _waitForServerConnection = new ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>>();
         private int _connectedServerConnectionCount;
+        private readonly ConcurrentDictionary<Type, Channel<ServiceMessage>> _applicationMessages = new();
 
         public ServiceConnectionProxy(
             ConnectionDelegate callback = null,
@@ -69,6 +74,7 @@ namespace Microsoft.Azure.SignalR.Tests
             // these two lines should be located in the end of this constructor.
             ServiceConnectionContainer = new StrongServiceConnectionContainer(this, connectionCount, null, new TestHubServiceEndpoint(), NullLogger.Instance);
             ServiceMessageHandler = (StrongServiceConnectionContainer) ServiceConnectionContainer;
+            HubProtocolResolver = new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger< DefaultHubProtocolResolver>.Instance);
         }
 
         public IServiceConnection Create(HubServiceEndpoint endpoint,
@@ -91,6 +97,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 null,
                 ClientInvocationManager,
                 ackHandler,
+                new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
                 type);
             ServiceConnections.TryAdd(connectionId, connection);
             return connection;
@@ -236,6 +243,8 @@ namespace Microsoft.Azure.SignalR.Tests
             return _waitForApplicationMessage.GetOrAdd(type, key => new TaskCompletionSource<ServiceMessage>()).Task;
         }
 
+        public Channel<ServiceMessage> ApplicationMessages { get; } = Channel.CreateUnbounded<ServiceMessage>();
+
         public Task<ConnectionContext> WaitForServerConnectionAsync(int count)
         {
             return _waitForServerConnection.GetOrAdd(count, key => new TaskCompletionSource<ConnectionContext>()).Task;
@@ -287,6 +296,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 tcs.TrySetResult(message);
             }
+            ApplicationMessages.Writer.TryWrite(message);
         }
 
         public Task WhenAllCompleted()

@@ -139,11 +139,11 @@ namespace Microsoft.Azure.SignalR.Tests
             var task = proxy.WaitForConnectionAsync("1");
             var closeMessageTask = proxy.WaitForApplicationMessageAsync(typeof(CloseConnectionMessage));
 
-            await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
+            await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null) { Protocol = "json" });
 
             var connection = await task.OrTimeout();
-            CloseConnectionMessage message = (CloseConnectionMessage) await closeMessageTask.OrTimeout();
-            
+            CloseConnectionMessage message = (CloseConnectionMessage)await closeMessageTask.OrTimeout();
+
             Assert.Equal(message.ConnectionId, connection.ConnectionId);
 
             proxy.Stop();
@@ -179,15 +179,23 @@ namespace Microsoft.Azure.SignalR.Tests
             await serverTask.OrTimeout();
 
             var task = proxy.WaitForConnectionAsync("1");
-            await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
+            await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null) { Protocol = "json" });
             var connection = await task.OrTimeout();
 
-            var dataMessageTask = proxy.WaitForApplicationMessageAsync(typeof(ConnectionDataMessage));
-            await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("Hello World"));
-            ConnectionDataMessage message = (ConnectionDataMessage) await dataMessageTask.OrTimeout();
-            
-            Assert.Equal(message.ConnectionId, connection.ConnectionId);
-            Assert.Equal("Hello World", Encoding.ASCII.GetString(message.Payload.ToArray()));
+            var channel = proxy.ApplicationMessages;
+            await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("{}\u001e"));
+
+            var message = Assert.IsType<ConnectionDataMessage>(await channel.Reader.ReadAsync());
+            Assert.Equal(DataMessageType.Handshake, message.Type);
+            Assert.Equal(connection.ConnectionId, message.ConnectionId);
+            Assert.Equal("{}\u001e", Encoding.ASCII.GetString(message.Payload.ToArray()));
+
+            await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("{\"type\":1,\"target\":\"hello\",\"arguments\":[]}\u001e"));
+
+            message = Assert.IsType<ConnectionDataMessage>(await channel.Reader.ReadAsync());
+            Assert.Equal(DataMessageType.Invocation, message.Type);
+            Assert.Equal(connection.ConnectionId, message.ConnectionId);
+            Assert.Equal("{\"type\":1,\"target\":\"hello\",\"arguments\":[]}\u001e", Encoding.ASCII.GetString(message.Payload.ToArray()));
 
             proxy.Stop();
         }
@@ -204,15 +212,21 @@ namespace Microsoft.Azure.SignalR.Tests
             await serverTask.OrTimeout();
 
             var task = proxy.WaitForConnectionAsync("1");
-            await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
+            await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null) { Protocol = "json" });
             var connection = await task.OrTimeout();
 
-            var outputMessage = "This message should be more than 10 bytes";
+            var outputMessage = "{\"type\":1,\"target\":\"hello\",\"arguments\":[\"This message should be more than 10 bytes\"]}\u001e";
 
-            var dataMessageTask = proxy.WaitForApplicationMessageAsync(typeof(ConnectionDataMessage));
+            var channel = proxy.ApplicationMessages;
+
+            await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("{}\u001e"));
             await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes(outputMessage));
-            ConnectionDataMessage message = (ConnectionDataMessage) await dataMessageTask.OrTimeout();
+            var message = Assert.IsType<ConnectionDataMessage>(await channel.Reader.ReadAsync());
+            Assert.Equal(DataMessageType.Handshake, message.Type);
+            Assert.Equal(connection.ConnectionId, message.ConnectionId);
+            Assert.Equal("{}\u001e", Encoding.ASCII.GetString(message.Payload.ToArray()));
 
+            message = Assert.IsType<ConnectionDataMessage>(await channel.Reader.ReadAsync());
             Assert.Equal(message.ConnectionId, connection.ConnectionId);
             Assert.Equal(outputMessage, Encoding.ASCII.GetString(message.Payload.ToArray()));
 
@@ -244,7 +258,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // Check server PingMessage will send after reveive service PingMessage
             await pingMessageTask.OrTimeout();
-            
+
             proxy.Stop();
         }
 
@@ -293,7 +307,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var list = proxy.ConnectionFactory.Times;
             // no delay before first retry
             Assert.True(TimeSpan.FromSeconds(0.9) > list[1] - list[0]);
-            
+
             Assert.True(TimeSpan.FromSeconds(0.9) < list[2] - list[1]);
             Assert.True(TimeSpan.FromSeconds(2.1) > list[2] - list[1]);
             Assert.True(TimeSpan.FromSeconds(1.9) < list[3] - list[2]);
@@ -403,7 +417,7 @@ namespace Microsoft.Azure.SignalR.Tests
             string target = "Target";
             await proxy.WriteMessageAsync(new PingMessage()
             {
-                Messages = new[] {"target", target}
+                Messages = new[] { "target", target }
             });
 
             var onDemandConnection = await serverTask2.OrTimeout();

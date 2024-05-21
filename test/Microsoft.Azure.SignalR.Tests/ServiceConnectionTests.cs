@@ -12,11 +12,13 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Primitives;
 
 using Xunit;
@@ -40,6 +42,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
+                var hubProtocol = new JsonHubProtocol();
                 TestConnection transportConnection = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
@@ -50,8 +53,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 var builder = new ConnectionBuilder(services.BuildServiceProvider());
                 builder.UseConnectionHandler<TestConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
-                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                                                       "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler());
+                var connection = new ServiceConnection(
+                    protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance));
 
                 var connectionTask = connection.StartAsync();
 
@@ -62,7 +67,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
-                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { }) { Protocol = hubProtocol.Name }));
 
                 var clientConnection = await waitClientTask.OrTimeout();
 
@@ -77,7 +82,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
-                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { }) { Protocol = hubProtocol.Name }));
 
                 clientConnection = await waitClientTask.OrTimeout();
 
@@ -98,6 +103,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
+                var hubProtocol = new JsonHubProtocol();
                 TestConnection transportConnection = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
@@ -108,8 +114,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 var builder = new ConnectionBuilder(services.BuildServiceProvider());
                 builder.UseConnectionHandler<TestConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
-                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                                                       "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler());
+                var connection = new ServiceConnection(
+                    protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance));
 
                 var connectionTask = connection.StartAsync();
 
@@ -119,7 +127,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var clientConnectionId = Guid.NewGuid().ToString();
                 var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
-                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { }) { Protocol = hubProtocol.Name }));
 
                 var clientConnection = await waitClientTask.OrTimeout();
                 // Cancel pending read to end the server connection
@@ -149,6 +157,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
+                var hubProtocol = new JsonHubProtocol();
                 TestConnection transportConnection = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
@@ -164,8 +173,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 builder.UseConnectionHandler<ErrorConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
 
-                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                                                       "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler());
+                var connection = new ServiceConnection(
+                    protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance));
 
                 var connectionTask = connection.StartAsync();
 
@@ -175,7 +186,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var clientConnectionId = Guid.NewGuid().ToString();
                 var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
-                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { }) { Protocol = hubProtocol.Name }));
 
                 var clientConnection = await waitClientTask.OrTimeout();
 
@@ -214,6 +225,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
+                var hubProtocol = new JsonHubProtocol();
                 TestConnection transportConnection = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
@@ -228,7 +240,9 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                     "serverId", Guid.NewGuid().ToString("N"),
-                    null, null, null, new DefaultClientInvocationManager(), new AckHandler(), closeTimeOutMilliseconds: 1);
+                    null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
+                    closeTimeOutMilliseconds: 1);
 
                 var connectionTask = connection.StartAsync();
 
@@ -237,7 +251,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
                 var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
-                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { }) { Protocol = hubProtocol.Name }));
 
                 var clientConnection = await waitClientTask.OrTimeout();
 
@@ -270,6 +284,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
+                var hubProtocol = new JsonHubProtocol();
                 TestConnection transportConnection = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
@@ -282,9 +297,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 var builder = new ConnectionBuilder(services.BuildServiceProvider());
                 builder.UseConnectionHandler<EndlessConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
-                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                                                       "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
-                                                       closeTimeOutMilliseconds: 500);
+                var connection = new ServiceConnection(
+                    protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
+                    closeTimeOutMilliseconds: 500);
 
                 var connectionTask = connection.StartAsync();
 
@@ -294,7 +311,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var clientConnectionId = Guid.NewGuid().ToString();
                 var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
-                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { }) { Protocol = hubProtocol.Name }));
 
                 var clientConnection = await waitClientTask.OrTimeout();
 
@@ -325,6 +342,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
+                var hubProtocol = new JsonHubProtocol();
                 TestConnection transportConnection = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
@@ -334,14 +352,17 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var services = new ServiceCollection();
                 var lastWill = "This is the last will";
-                var connectionHandler = new LastWillConnectionHandler(lastWill);
+                var connectionHandler = new LastWillConnectionHandler(hubProtocol, lastWill);
                 services.AddSingleton(connectionHandler);
                 var builder = new ConnectionBuilder(services.BuildServiceProvider());
                 builder.UseConnectionHandler<LastWillConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
 
-                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(), closeTimeOutMilliseconds: 500);
+                var connection = new ServiceConnection(
+                    protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance)
+                    , closeTimeOutMilliseconds: 500);
 
                 var connectionTask = connection.StartAsync();
 
@@ -354,7 +375,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
 
                 await transportConnection.Application.Output.WriteAsync(
-                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { }) { Protocol = hubProtocol.Name }));
                 var clientConnection = await waitClientTask.OrTimeout();
 
                 await clientConnection.LifetimeTask.OrTimeout();
@@ -362,13 +383,17 @@ namespace Microsoft.Azure.SignalR.Tests
                 transportConnection.Transport.Output.Complete();
                 var input = await transportConnection.Application.Input.ReadAsync();
                 var buffer = input.Buffer;
-                var canParse = protocol.TryParseMessage(ref buffer, out var msg);
-                Assert.True(canParse);
-                var message = msg as ConnectionDataMessage;
-                Assert.NotNull(message);
-
+                Assert.True(protocol.TryParseMessage(ref buffer, out var msg));
+                var message = Assert.IsType<ConnectionDataMessage>(msg);
+                Assert.Equal(DataMessageType.Handshake, message.Type);
                 Assert.Equal(clientConnectionId, message.ConnectionId);
-                Assert.Equal(lastWill, Encoding.UTF8.GetString(message.Payload.First.ToArray()));
+                Assert.Equal("{}\u001e", Encoding.UTF8.GetString(message.Payload.ToArray()));
+
+                Assert.True(protocol.TryParseMessage(ref buffer, out msg));
+                message = Assert.IsType<ConnectionDataMessage>(msg);
+                Assert.Equal(DataMessageType.Invocation, message.Type);
+                Assert.Equal(clientConnectionId, message.ConnectionId);
+                Assert.Equal($"{{\"type\":1,\"target\":\"{lastWill}\",\"arguments\":[]}}\u001e", Encoding.UTF8.GetString(message.Payload.ToArray()));
 
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
@@ -388,6 +413,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
+                var hubProtocol = new JsonHubProtocol();
                 TestConnection transportConnection = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
@@ -405,8 +431,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 builder.UseConnectionHandler<DiagnosticClientConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
 
-                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(), closeTimeOutMilliseconds: 500);
+                var connection = new ServiceConnection(
+                    protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
+                    closeTimeOutMilliseconds: 500);
 
                 var connectionTask = connection.StartAsync();
 
@@ -416,13 +445,21 @@ namespace Microsoft.Azure.SignalR.Tests
                 var waitClientTask = Task.WhenAll(ccm.WaitForClientConnectionAsync(normalClientConnectionId),
                     ccm.WaitForClientConnectionAsync(diagnosticClientConnectionId));
                 await transportConnection.Application.Output.WriteAsync(
-                        protocol.GetMessageBytes(new OpenConnectionMessage(diagnosticClientConnectionId, null, new Dictionary<string, StringValues>
-                        {
-                            { Constants.AsrsIsDiagnosticClient, "true"}
-                        }, null)));
+                        protocol.GetMessageBytes(
+                            new OpenConnectionMessage(
+                                diagnosticClientConnectionId,
+                                null,
+                                new Dictionary<string, StringValues>
+                                {
+                                    { Constants.AsrsIsDiagnosticClient, "true"}
+                                },
+                                null)
+                            {
+                                Protocol = hubProtocol.Name
+                            }));
 
                 await transportConnection.Application.Output.WriteAsync(
-                    protocol.GetMessageBytes(new OpenConnectionMessage(normalClientConnectionId, null)));
+                    protocol.GetMessageBytes(new OpenConnectionMessage(normalClientConnectionId, null) { Protocol = hubProtocol.Name }));
 
                 var connections = await waitClientTask.OrTimeout();
                 await Task.WhenAll(from c in connections select c.LifetimeTask.OrTimeout());
@@ -450,6 +487,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
+                var hubProtocol = new JsonHubProtocol();
                 TestConnection serviceConnection = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
@@ -475,6 +513,7 @@ namespace Microsoft.Azure.SignalR.Tests
                                                        null,
                                                        new DefaultClientInvocationManager(),
                                                        new AckHandler(),
+                                                       new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
                                                        closeTimeOutMilliseconds: 500);
 
                 var connectionTask = connection.StartAsync();
@@ -486,6 +525,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 await serviceConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, Array.Empty<Claim>())
                     {
+                        Protocol = "json",
                         Headers = new Dictionary<string, StringValues>
                         {
                             [headerKey] = "serverId"
@@ -499,10 +539,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 await clientConnection.Transport.Output.FlushAsync();
 
                 // send a test message.
-                var payload = new byte[] { 1, 2, 3 };
-                await clientConnection.Transport.Output.WriteAsync(payload);
+                var payload = Encoding.UTF8.GetBytes("{\"type\":1,\"target\":\"method\",\"arguments\":[]}\u001e");
+                await clientConnection.Transport.Output.WriteAsync(payload).OrTimeout();
 
-                var result = await serviceConnection.Application.Input.ReadAsync();
+                var result = await serviceConnection.Application.Input.ReadAsync().OrTimeout();
                 var buffer = result.Buffer;
                 Assert.True(protocol.TryParseMessage(ref buffer, out var message));
                 var dataMessage = Assert.IsType<ConnectionDataMessage>(message);
@@ -535,6 +575,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
+                var hubProtocol = new JsonHubProtocol();
                 TestConnection transportConnection = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
@@ -561,6 +602,7 @@ namespace Microsoft.Azure.SignalR.Tests
                                                        null,
                                                        new DefaultClientInvocationManager(),
                                                        new AckHandler(),
+                                                       new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
                                                        closeTimeOutMilliseconds: 500);
 
                 var connectionTask = connection.StartAsync();
@@ -571,7 +613,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var clientConnectionId = Guid.NewGuid().ToString();
 
                 await transportConnection.Application.Output.WriteAsync(
-                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, Array.Empty<Claim>())));
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, Array.Empty<Claim>()) { Protocol = hubProtocol.Name }));
 
                 var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
 
@@ -602,6 +644,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
+                var hubProtocol = new JsonHubProtocol();
                 TestConnection transportConnection = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
@@ -615,10 +658,13 @@ namespace Microsoft.Azure.SignalR.Tests
                 var builder = new ConnectionBuilder(services.BuildServiceProvider());
                 builder.UseConnectionHandler<TextContentConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
-                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(), closeTimeOutMilliseconds: 500);
+                var connection = new ServiceConnection(
+                    protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
+                    closeTimeOutMilliseconds: 500);
 
-                var connectionTask = connection.StartAsync();
+                var connectionTask = connection.StartAsync().OrTimeout();
 
                 // completed handshake
                 await connection.ConnectionInitializedTask.OrTimeout();
@@ -627,7 +673,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
-                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { }) { Protocol = hubProtocol.Name }));
 
                 var clientConnection = await waitClientTask.OrTimeout();
 
@@ -687,6 +733,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
+                var hubProtocol = new JsonHubProtocol();
                 TestConnection transportConnection = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
@@ -700,8 +747,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 var builder = new ConnectionBuilder(services.BuildServiceProvider());
                 builder.UseConnectionHandler<TextContentConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
-                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(), closeTimeOutMilliseconds: 500);
+                var connection = new ServiceConnection(
+                    protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
+                    closeTimeOutMilliseconds: 500);
 
                 var connectionTask = connection.StartAsync();
 
@@ -712,7 +762,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
                 await transportConnection.Application.Output.WriteAsync(
-                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { }) { Protocol = hubProtocol.Name }));
 
                 var clientConnection = await waitClientTask.OrTimeout();
 
@@ -839,16 +889,20 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private sealed class LastWillConnectionHandler : ConnectionHandler
         {
+            private readonly IHubProtocol _hubProtocol;
             private readonly string _lastWill;
 
-            public LastWillConnectionHandler(string lastWill)
+            public LastWillConnectionHandler(IHubProtocol hubProtocol, string lastWill)
             {
+                _hubProtocol = hubProtocol;
                 _lastWill = lastWill;
             }
 
             public override async Task OnConnectedAsync(ConnectionContext connection)
             {
-                await connection.Transport.Output.WriteAsync(Encoding.UTF8.GetBytes(_lastWill));
+                HandshakeProtocol.WriteResponseMessage(SignalRProtocol.HandshakeResponseMessage.Empty, connection.Transport.Output);
+                _hubProtocol.WriteMessage(new InvocationMessage(_lastWill, new object[0]), connection.Transport.Output);
+                await connection.Transport.Output.FlushAsync();
             }
         }
 

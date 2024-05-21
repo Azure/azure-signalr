@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -17,6 +18,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IServerNameProvider _nameProvider;
         private readonly IServiceEventHandler _serviceEventHandler;
         private readonly IClientInvocationManager _clientInvocationManager;
+        private readonly IHubProtocolResolver _hubProtocolResolver;
 
         public GracefulShutdownMode ShutdownMode { get; set; } = GracefulShutdownMode.Off;
 
@@ -31,7 +33,8 @@ namespace Microsoft.Azure.SignalR
             IClientConnectionFactory clientConnectionFactory,
             IServerNameProvider nameProvider,
             IServiceEventHandler serviceEventHandler,
-            IClientInvocationManager clientInvocationManager)
+            IClientInvocationManager clientInvocationManager,
+            IHubProtocolResolver hubProtocolResolver)
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
@@ -42,6 +45,7 @@ namespace Microsoft.Azure.SignalR
             _nameProvider = nameProvider;
             _serviceEventHandler = serviceEventHandler;
             _clientInvocationManager = clientInvocationManager;
+            _hubProtocolResolver = hubProtocolResolver;
         }
 
         public virtual IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, AckHandler ackHandler, ServiceConnectionType type)
@@ -60,6 +64,7 @@ namespace Microsoft.Azure.SignalR
                 _serviceEventHandler,
                 _clientInvocationManager,
                 ackHandler,
+                _hubProtocolResolver,
                 type,
                 ShutdownMode
             )
