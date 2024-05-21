@@ -50,8 +50,11 @@ namespace Microsoft.Azure.SignalR
             get => _isAuthorized;
             private set
             {
+                if (value)
+                {
+                    _lastException = null;
+                }
                 _lastUpdatedTime = DateTime.UtcNow;
-                _lastException = value ? null : _lastException;
                 _isAuthorized = value;
                 _initializedTcs.TrySetResult(null);
             }
