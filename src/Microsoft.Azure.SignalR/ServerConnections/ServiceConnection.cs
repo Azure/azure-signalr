@@ -399,15 +399,13 @@ namespace Microsoft.Azure.SignalR
                                 }
                                 else
                                 {
-                                    connection.Application.Input.AdvanceTo(next.Start);
+                                    buffer = buffer.Slice(next.Start, 0);
                                 }
                             }
                             else
                             {
                                 // waiting for handshake response.
-                                connection.Application.Input.AdvanceTo(buffer.Start, buffer.End);
                             }
-                            continue;
                         }
                         else
                         {
