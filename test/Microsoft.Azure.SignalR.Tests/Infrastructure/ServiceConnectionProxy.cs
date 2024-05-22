@@ -49,6 +49,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
 
+        public bool AllowStatefulReconnects { get; }
+
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
         private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
@@ -60,7 +62,8 @@ namespace Microsoft.Azure.SignalR.Tests
             ConnectionDelegate callback = null,
             PipeOptions clientPipeOptions = null,
             Func<Func<TestConnection, Task>, TestConnectionFactory> connectionFactoryCallback = null,
-            int connectionCount = 1)
+            int connectionCount = 1,
+            bool allowStatefulReconnects = false)
         {
             ConnectionFactory = connectionFactoryCallback?.Invoke(ConnectionFactoryCallbackAsync) ?? new TestConnectionFactory(ConnectionFactoryCallbackAsync);
             ClientConnectionManager = new ClientConnectionManager();
@@ -70,6 +73,8 @@ namespace Microsoft.Azure.SignalR.Tests
             ConnectionDelegateCallback = callback ?? OnConnectionAsync;
 
             ServerNameProvider = new DefaultServerNameProvider();
+
+            AllowStatefulReconnects = allowStatefulReconnects;
 
             // these two lines should be located in the end of this constructor.
             ServiceConnectionContainer = new StrongServiceConnectionContainer(this, connectionCount, null, new TestHubServiceEndpoint(), NullLogger.Instance);
@@ -98,7 +103,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 ClientInvocationManager,
                 ackHandler,
                 new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
-                type);
+                type,
+                allowStatefulReconnects: AllowStatefulReconnects);
             ServiceConnections.TryAdd(connectionId, connection);
             return connection;
         }

@@ -114,7 +114,8 @@ namespace Microsoft.Azure.SignalR
             IServiceEventHandler serviceEventHandler,
             ServiceConnectionType connectionType,
             ILogger logger,
-            GracefulShutdownMode mode = GracefulShutdownMode.Off)
+            GracefulShutdownMode mode = GracefulShutdownMode.Off,
+            bool allowStatefulReconnects = false)
         {
             ServiceProtocol = serviceProtocol;
             ServerId = serverId;
@@ -128,7 +129,7 @@ namespace Microsoft.Azure.SignalR
                 _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
 
                 var migrationLevel = mode == GracefulShutdownMode.MigrateClients ? 1 : 0;
-                _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType, migrationLevel);
+                _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType, migrationLevel) { AllowStatefulReconnects = allowStatefulReconnects };
             }
 
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));

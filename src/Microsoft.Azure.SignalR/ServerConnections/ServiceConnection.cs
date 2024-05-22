@@ -76,8 +76,9 @@ namespace Microsoft.Azure.SignalR
                                  IHubProtocolResolver hubProtocolResolver,
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
                                  GracefulShutdownMode mode = GracefulShutdownMode.Off,
-                                 int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds
-            ) : base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
+                                 int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds,
+                                 bool allowStatefulReconnects = false
+            ) : base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode, allowStatefulReconnects)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;

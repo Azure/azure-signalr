@@ -27,6 +27,20 @@ namespace Microsoft.Azure.SignalR.Tests
         private static readonly ServiceProtocol Protocol = new ServiceProtocol();
         private const int DefaultTimeoutInMilliSeconds = 1000;
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TestServiceConnectionSendingHandshakeRequest(bool allowStatefulReconnects)
+        {
+            var proxy = new ServiceConnectionProxy(allowStatefulReconnects: allowStatefulReconnects);
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
+            _ = proxy.StartAsync();
+            await serverTask.OrTimeout();
+            Assert.NotNull(proxy.ConnectionFactory.HandshakeRequest);
+            Assert.Equal(allowStatefulReconnects, proxy.ConnectionFactory.HandshakeRequest.AllowStatefulReconnects);
+            proxy.Stop();
+        }
+
         [Fact]
         public async Task ServiceConnectionStartsConnection()
         {

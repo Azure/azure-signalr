@@ -22,6 +22,8 @@ namespace Microsoft.Azure.SignalR
 
         public GracefulShutdownMode ShutdownMode { get; set; } = GracefulShutdownMode.Off;
 
+        public bool AllowStatefulReconnects { get; set; }
+
         public Action<HttpContext> ConfigureContext { get; set; }
 
         public ServiceConnectionFactory(
@@ -66,7 +68,8 @@ namespace Microsoft.Azure.SignalR
                 ackHandler,
                 _hubProtocolResolver,
                 type,
-                ShutdownMode
+                ShutdownMode,
+                allowStatefulReconnects: AllowStatefulReconnects
             )
             {
                 ConfigureContext = ConfigureContext
