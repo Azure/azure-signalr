@@ -123,8 +123,9 @@ namespace Microsoft.Azure.SignalR
 
         /// <summary>
         /// Allow clients enable stateful reconnects for connecting to service.
-        /// By default it is disabled
+        /// By default is disabled.
+        /// It can also be configurate <see cref="HttpConnectionDispatcherOptions"/> by hub in net 8.
         /// </summary>
-        public bool AllowStatefulReconnects { get; set; }
+        public bool? AllowStatefulReconnects { get; set; }
     }
 }
