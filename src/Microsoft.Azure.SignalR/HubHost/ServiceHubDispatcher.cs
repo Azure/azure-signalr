@@ -11,6 +11,12 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+
+#if NET8_0_OR_GREATER
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Http.Connections;
+#endif
+
 namespace Microsoft.Azure.SignalR
 {
     internal class ServiceHubDispatcher<THub> where THub : Hub
@@ -32,6 +38,9 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceEventHandler _serviceEventHandler;
         private readonly IClientInvocationManager _clientInvocationManager;
         private readonly IHubProtocolResolver _hubProtocolResolver;
+#if NET8_0_OR_GREATER
+        private readonly HttpConnectionDispatcherOptions _dispatcherOptions;
+#endif
 
         protected readonly IServerNameProvider _nameProvider;
 
@@ -49,7 +58,12 @@ namespace Microsoft.Azure.SignalR
             IClientConnectionFactory clientConnectionFactory,
             IClientInvocationManager clientInvocationManager,
             IServiceEventHandler serviceEventHandler,
-            IHubProtocolResolver hubProtocolResolver)
+            IHubProtocolResolver hubProtocolResolver
+#if NET6_0_OR_GREATER
+            ,
+            EndpointDataSource endpointDataSource
+#endif
+            )
         {
             _serviceProtocol = serviceProtocol;
             _serviceConnectionManager = serviceConnectionManager;
@@ -70,7 +84,30 @@ namespace Microsoft.Azure.SignalR
 
             serverLifetimeManager?.Register(ShutdownAsync);
             _hubProtocolResolver = hubProtocolResolver;
+#if NET8_0_OR_GREATER
+            _dispatcherOptions = GetDispatcherOptions(endpointDataSource, typeof(THub));
+#endif
         }
+
+#if NET8_0_OR_GREATER
+        private static HttpConnectionDispatcherOptions GetDispatcherOptions(EndpointDataSource source, Type hubType)
+        {
+            foreach (var endpoint in source.Endpoints)
+            {
+                var metaData = endpoint.Metadata;
+                if (metaData.GetMetadata<HubMetadata>()?.HubType == hubType)
+                {
+                    var options = metaData.GetMetadata<HttpConnectionDispatcherOptions>();
+                    if (options != null)
+                    {
+                        return options;
+                    }
+                }
+            }
+            // It's not expected to go here in production environment. Return a value for test.
+            return new();
+        }
+#endif
 
         public void Start(ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
         {
@@ -147,7 +184,7 @@ namespace Microsoft.Azure.SignalR
             ConnectionFactory connectionFactory,
             ConnectionDelegate connectionDelegate,
             Action<HttpContext> contextConfig)
-        { 
+        {
             return new ServiceConnectionFactory(
                 _serviceProtocol,
                 _clientConnectionManager,
@@ -163,7 +200,12 @@ namespace Microsoft.Azure.SignalR
                 ConfigureContext = contextConfig,
                 ShutdownMode = _options.GracefulShutdown.Mode,
                 // todo: read per hub configuration from HttpConnectionDispatcherOptions.AllowStatefulReconnects for net 8.
-                AllowStatefulReconnects = _options.AllowStatefulReconnects ?? false,
+                AllowStatefulReconnects = _options.AllowStatefulReconnects ??
+#if NET8_0_OR_GREATER
+                    _dispatcherOptions.AllowStatefulReconnects,
+#else
+                    false,
+#endif
             };
         }
 

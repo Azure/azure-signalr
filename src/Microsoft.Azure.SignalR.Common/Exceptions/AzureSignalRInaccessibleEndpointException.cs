@@ -17,6 +17,9 @@ namespace Microsoft.Azure.SignalR.Common
         {
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete]
+#endif
         protected AzureSignalRInaccessibleEndpointException(SerializationInfo info, StreamingContext context): base(info, context)
         {
         }

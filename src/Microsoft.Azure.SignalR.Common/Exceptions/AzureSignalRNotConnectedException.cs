@@ -23,6 +23,9 @@ namespace Microsoft.Azure.SignalR.Common
         /// <param name="context">The <see cref="StreamingContext"/> that contains contextual information about the source or destination.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="info"/> parameter is <c>null</c>.</exception>
         /// <exception cref="SerializationException">The class name is <c>null</c> or <see cref="Exception.HResult"/> is zero (0).</exception>
+#if NET8_0_OR_GREATER
+        [Obsolete]
+#endif
         protected AzureSignalRNotConnectedException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
