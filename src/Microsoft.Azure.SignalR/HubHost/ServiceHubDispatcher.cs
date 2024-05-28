@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR
             IClientInvocationManager clientInvocationManager,
             IServiceEventHandler serviceEventHandler,
             IHubProtocolResolver hubProtocolResolver
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
             ,
             EndpointDataSource endpointDataSource
 #endif
