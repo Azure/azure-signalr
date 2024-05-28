@@ -202,6 +202,13 @@ namespace Microsoft.Azure.SignalR
             {
                 try
                 {
+#if !NET8_0_OR_GREATER
+                    // do NOT write close message until net 8 or later.
+                    if (connectionDataMessage.Type == DataMessageType.Close)
+                    {
+                        return;
+                    }
+#endif
                     if (connectionDataMessage.IsPartial)
                     {
                         var owner = ExactSizeMemoryPool.Shared.Rent((int)connectionDataMessage.Payload.Length);
@@ -409,7 +416,8 @@ namespace Microsoft.Azure.SignalR
                             var next = buffer;
                             while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
                             {
-                                var messageType = message is SignalRProtocol.HubInvocationMessage ? DataMessageType.Invocation : DataMessageType.Other;
+                                var messageType = message is SignalRProtocol.HubInvocationMessage ? DataMessageType.Invocation :
+                                    message is SignalRProtocol.CloseMessage ? DataMessageType.Close : DataMessageType.Other;
                                 var forwardResult = await ForwardMessage(new ConnectionDataMessage(connection.ConnectionId, buffer.Slice(0, next.Start)) { Type = messageType });
                                 switch (forwardResult)
                                 {

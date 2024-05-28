@@ -71,5 +71,9 @@
         /// Others, include ping, ack, sequence.
         /// </summary>
         Other = 3,
+        /// <summary>
+        /// Close message.
+        /// </summary>
+        Close = 4,
     }
 }
