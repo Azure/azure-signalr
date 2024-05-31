@@ -69,6 +69,8 @@ namespace Microsoft.Azure.SignalR
 
         private readonly object _heartbeatLock = new object();
 
+        private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
+
         private int _connectionState = IdleState;
 
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
@@ -162,33 +164,41 @@ namespace Microsoft.Azure.SignalR
 
         public async Task WriteMessageAsync(ReadOnlySequence<byte> payload)
         {
-            var previousState = Interlocked.CompareExchange(ref _connectionState, WritingState, IdleState);
-
-            // Write should not be called from multiple threads
-            Debug.Assert(previousState != WritingState);
-
-            if (previousState == CompletedState)
-            {
-                // already completing, don't write anymore
-                return;
-            }
-
+            await _writeLock.WaitAsync();
             try
             {
-                _lastMessageReceivedAt = DateTime.UtcNow.Ticks;
-                _receivedBytes += payload.Length;
+                var previousState = Interlocked.CompareExchange(ref _connectionState, WritingState, IdleState);
 
-                // Start write
-                await WriteMessageAsyncCore(payload);
+                // Write should not be called from multiple threads
+                Debug.Assert(previousState != WritingState);
+
+                if (previousState == CompletedState)
+                {
+                    // already completing, don't write anymore
+                    return;
+                }
+
+                try
+                {
+                    _lastMessageReceivedAt = DateTime.UtcNow.Ticks;
+                    _receivedBytes += payload.Length;
+
+                    // Start write
+                    await WriteMessageAsyncCore(payload);
+                }
+                finally
+                {
+                    // Try to set the connection to idle if it is in writing state, if it is in complete state, complete the tcs
+                    previousState = Interlocked.CompareExchange(ref _connectionState, IdleState, WritingState);
+                    if (previousState == CompletedState)
+                    {
+                        Application.Output.Complete();
+                    }
+                }
             }
             finally
             {
-                // Try to set the connection to idle if it is in writing state, if it is in complete state, complete the tcs
-                previousState = Interlocked.CompareExchange(ref _connectionState, IdleState, WritingState);
-                if (previousState == CompletedState)
-                {
-                    Application.Output.Complete();
-                }
+                _writeLock.Release();
             }
         }
 
