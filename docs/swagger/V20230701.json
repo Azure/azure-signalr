@@ -1,0 +1,1927 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Azure SignalR Service REST API",
+    "version": "2023-07-01"
+  },
+  "paths": {
+    "/api/auth/accessKey": {
+      "get": {
+        "tags": [
+          "signalr"
+        ],
+        "operationId": "Auth_GetAccessKey",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/AccessKeyResponse"
+            }
+          },
+          "default": {
+            "description": "Error response"
+          }
+        },
+        "x-ms-examples": {
+          "Auth_GetAccessKey": {
+            "$ref": "./examples/Auth_GetAccessKey.json"
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "head": {
+        "tags": [
+          "general"
+        ],
+        "summary": "Get service health status.",
+        "operationId": "HealthApi_GetServiceStatus",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The service is healthy"
+          },
+          "default": {
+            "description": "Error response"
+          }
+        },
+        "x-ms-examples": {
+          "HealthApi_GetServiceStatus": {
+            "$ref": "./examples/HealthApi_GetServiceStatus.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/:closeConnections": {
+      "post": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Close all of the connections in the hub.",
+        "operationId": "SignalR_CloseConnections",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "excluded",
+            "description": "Exclude these connectionIds when closing the connections in the hub.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "in": "query",
+            "name": "reason",
+            "description": "The reason closing the client connections.",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_CloseConnections": {
+            "$ref": "./examples/SignalR_CloseConnections.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/:execute": {
+      "post": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Execute commands in transaction for all of connections.",
+        "operationId": "HubProxyV20230701_Execute",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "filter",
+            "description": "Following OData filter syntax to filter out the subscribers.",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "commands",
+            "description": "Commands to execute in transaction.",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/SignalRCommand"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "HubProxyV20230701_Execute": {
+            "$ref": "./examples/HubProxyV20230701_Execute.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/:generateToken": {
+      "post": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Generate token for the client to connect Azure SignalR service.",
+        "operationId": "HubProxyV20221101_GenerateClientToken",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "userId",
+            "description": "User Id.",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "minutesToExpire",
+            "description": "The expire time of the generated token.",
+            "type": "integer",
+            "format": "int32",
+            "default": 60,
+            "minimum": 1
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/ClientTokenResponse"
+            }
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "HubProxyV20221101_GenerateClientToken": {
+            "$ref": "./examples/HubProxyV20221101_GenerateClientToken.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/:send": {
+      "post": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Broadcast a message to all clients connected to target hub.",
+        "operationId": "SignalR_Broadcast",
+        "consumes": [
+          "application/json",
+          "application/x-msgpack",
+          "application/octet-stream"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "excluded",
+            "description": "Excluded connection Ids",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "payload",
+            "description": "The payload message.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PayloadMessage"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "schema": {
+              "$ref": "#/definitions/ServiceResponse"
+            }
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_Broadcast": {
+            "$ref": "./examples/SignalR_Broadcast.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/connections/{connectionId}": {
+      "delete": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Close the client connection",
+        "operationId": "SignalR_CloseConnection",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "description": "The connection Id.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "reason",
+            "description": "The reason of the connection close.",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/ServiceResponse"
+            }
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_CloseConnection": {
+            "$ref": "./examples/SignalR_CloseConnection.json"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Check if the connection with the given connectionId exists",
+        "operationId": "SignalR_CheckConnectionExistence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "description": "The connection Id.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "default": {
+            "description": "Error response",
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_CheckConnectionExistence": {
+            "$ref": "./examples/SignalR_CheckConnectionExistence.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/connections/{connectionId}/:send": {
+      "post": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Send message to the specific connection.",
+        "operationId": "SignalR_SendToConnection",
+        "consumes": [
+          "application/json",
+          "application/x-msgpack",
+          "application/octet-stream"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "description": "The connection Id.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "payload",
+            "description": "The payload message.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PayloadMessage"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "schema": {
+              "$ref": "#/definitions/ServiceResponse"
+            }
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_SendToConnection": {
+            "$ref": "./examples/SignalR_SendToConnection.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/connections/{connectionId}/groups": {
+      "delete": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Remove a connection from all groups",
+        "operationId": "SignalR_RemoveConnectionFromAllGroups",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "description": "Target connection Id",
+            "required": true,
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/ServiceResponse"
+            }
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_RemoveConnectionFromAllGroups": {
+            "$ref": "./examples/SignalR_RemoveConnectionFromAllGroups.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/groups/{group}": {
+      "head": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Check if there are any client connections inside the given group",
+        "operationId": "SignalR_CheckGroupExistence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "group",
+            "description": "Target group name, which length should be greater than 0 and less than 1025.",
+            "required": true,
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^(?!\\s+$).+$"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "default": {
+            "description": "Error response",
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_CheckGroupExistence": {
+            "$ref": "./examples/SignalR_CheckGroupExistence.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/groups/{group}/:closeConnections": {
+      "post": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Close connections in the specific group.",
+        "operationId": "SignalR_CloseGroupConnections",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "group",
+            "description": "Target group name, which length should be greater than 0 and less than 1025.",
+            "required": true,
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^(?!\\s+$).+$"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "excluded",
+            "description": "Exclude these connectionIds when closing the connections in the hub.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "in": "query",
+            "name": "reason",
+            "description": "The reason closing the client connections.",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_CloseGroupConnections": {
+            "$ref": "./examples/SignalR_CloseGroupConnections.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/groups/{group}/:send": {
+      "post": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Broadcast a message to all clients within the target group.",
+        "operationId": "SignalR_GroupBroadcast",
+        "consumes": [
+          "application/json",
+          "application/x-msgpack",
+          "application/octet-stream"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "group",
+            "description": "Target group name, which length should be greater than 0 and less than 1025.",
+            "required": true,
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "excluded",
+            "description": "Excluded connection Ids",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "payload",
+            "description": "The payload message.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PayloadMessage"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "schema": {
+              "$ref": "#/definitions/ServiceResponse"
+            }
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_GroupBroadcast": {
+            "$ref": "./examples/SignalR_GroupBroadcast.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/groups/{group}/connections/{connectionId}": {
+      "delete": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Remove a connection from the target group.",
+        "operationId": "SignalR_RemoveConnectionFromGroup",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "group",
+            "description": "Target group name, which length should be greater than 0 and less than 1025.",
+            "required": true,
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "description": "Target connection Id",
+            "required": true,
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/ServiceResponse"
+            }
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_RemoveConnectionFromGroup": {
+            "$ref": "./examples/SignalR_RemoveConnectionFromGroup.json"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Add a connection to the target group.",
+        "operationId": "SignalR_AddConnectionToGroup",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "group",
+            "description": "Target group name, which length should be greater than 0 and less than 1025.",
+            "required": true,
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^(?!\\s+$).+$"
+          },
+          {
+            "in": "path",
+            "name": "connectionId",
+            "description": "Target connection Id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/ServiceResponse"
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_AddConnectionToGroup": {
+            "$ref": "./examples/SignalR_AddConnectionToGroup.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/users/{user}": {
+      "head": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Check if there are any client connections connected for the given user",
+        "operationId": "SignalR_CheckUserExistence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "user",
+            "description": "The user Id.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "default": {
+            "description": "Error response",
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_CheckUserExistence": {
+            "$ref": "./examples/SignalR_CheckUserExistence.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/users/{user}/:closeConnections": {
+      "post": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Close connections for the specific user.",
+        "operationId": "SignalR_CloseUserConnections",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "user",
+            "description": "The user Id.",
+            "required": true,
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "excluded",
+            "description": "Exclude these connectionIds when closing the connections in the hub.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "in": "query",
+            "name": "reason",
+            "description": "The reason closing the client connections.",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_CloseUserConnections": {
+            "$ref": "./examples/SignalR_CloseUserConnections.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/users/{user}/:send": {
+      "post": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Broadcast a message to all clients belong to the target user.",
+        "operationId": "SignalR_SendToUser",
+        "consumes": [
+          "application/json",
+          "application/x-msgpack",
+          "application/octet-stream"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "user",
+            "description": "The user Id.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "payload",
+            "description": "The payload message.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PayloadMessage"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "schema": {
+              "$ref": "#/definitions/ServiceResponse"
+            }
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_SendToUser": {
+            "$ref": "./examples/SignalR_SendToUser.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/users/{user}/groups": {
+      "delete": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Remove a user from all groups.",
+        "operationId": "SignalR_RemoveUserFromAllGroups",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "user",
+            "description": "Target user Id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_RemoveUserFromAllGroups": {
+            "$ref": "./examples/SignalR_RemoveUserFromAllGroups.json"
+          }
+        }
+      }
+    },
+    "/api/hubs/{hub}/users/{user}/groups/{group}": {
+      "delete": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Remove a user from the target group.",
+        "operationId": "SignalR_RemoveUserFromGroup",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "group",
+            "description": "Target group name, which length should be greater than 0 and less than 1025.",
+            "required": true,
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^(?!\\s+$).+$"
+          },
+          {
+            "in": "path",
+            "name": "user",
+            "description": "Target user Id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_RemoveUserFromGroup": {
+            "$ref": "./examples/SignalR_RemoveUserFromGroup.json"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Check whether a user exists in the target group.",
+        "operationId": "SignalR_CheckUserExistenceInGroup",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "group",
+            "description": "Target group name, which length should be greater than 0 and less than 1025.",
+            "required": true,
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^(?!\\s+$).+$"
+          },
+          {
+            "in": "path",
+            "name": "user",
+            "description": "Target user Id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "default": {
+            "description": "Error response",
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_CheckUserExistenceInGroup": {
+            "$ref": "./examples/SignalR_CheckUserExistenceInGroup.json"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "signalr"
+        ],
+        "summary": "Add a user to the target group.",
+        "operationId": "SignalR_AddUserToGroup",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hub",
+            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "required": true,
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "path",
+            "name": "group",
+            "description": "Target group name, which length should be greater than 0 and less than 1025.",
+            "required": true,
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^(?!\\s+$).+$"
+          },
+          {
+            "in": "path",
+            "name": "user",
+            "description": "Target user Id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "application",
+            "description": "Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+          },
+          {
+            "in": "query",
+            "name": "ttl",
+            "description": "Specifies the seconds that the user exists in the group. If not set, the user lives in the group for 1 year at most. If a user is added to some groups without ttl limitation, only the latest updated 100 groups will be reserved among all groups the user joined without TTL. If ttl = 0, only the current connected connections of the target user will be added to the target group.",
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "in": "query",
+            "name": "api-version",
+            "description": "The version of the REST APIs.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/ServiceResponse"
+            }
+          },
+          "default": {
+            "description": "Error response",
+            "schema": {
+              "$ref": "#/definitions/ErrorDetail"
+            },
+            "x-ms-error-response": true,
+            "headers": {
+              "x-ms-error-code": {
+                "x-ms-client-name": "ErrorCode",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-ms-examples": {
+          "SignalR_AddUserToGroup": {
+            "$ref": "./examples/SignalR_AddUserToGroup.json"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "AccessKeyResponse": {
+      "description": "The response object containing the dynamic access key for signing client tokens.",
+      "type": "object",
+      "properties": {
+        "AccessKey": {
+          "type": "string"
+        },
+        "KeyId": {
+          "type": "string"
+        }
+      }
+    },
+    "ByteReadOnlyMemoryIAsyncEnumerable": {
+      "type": "object"
+    },
+    "ClientTokenResponse": {
+      "description": "The response object containing the token for the client",
+      "type": "object",
+      "properties": {
+        "token": {
+          "description": "The token value for the WebSocket client to connect to the service",
+          "type": "string"
+        }
+      }
+    },
+    "CloseConnection": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SignalRCommand"
+        }
+      ],
+      "properties": {
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "ErrorDetail": {
+      "description": "The error object.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "One of a server-defined set of error codes.",
+          "type": "string"
+        },
+        "message": {
+          "description": "A human-readable representation of the error.",
+          "type": "string"
+        },
+        "target": {
+          "description": "The target of the error.",
+          "type": "string"
+        },
+        "details": {
+          "description": "An array of details about specific errors that led to this reported error.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ErrorDetail"
+          }
+        },
+        "inner": {
+          "$ref": "#/definitions/InnerError"
+        }
+      }
+    },
+    "InnerError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "A more specific error code than was provided by the containing error.",
+          "type": "string"
+        },
+        "inner": {
+          "$ref": "#/definitions/InnerError"
+        }
+      }
+    },
+    "JoinGroup": {
+      "required": [
+        "group"
+      ],
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SignalRCommand"
+        }
+      ],
+      "properties": {
+        "group": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "type": "string"
+        }
+      }
+    },
+    "LeaveGroup": {
+      "required": [
+        "group"
+      ],
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SignalRCommand"
+        }
+      ],
+      "properties": {
+        "group": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "type": "string"
+        }
+      }
+    },
+    "PayloadMessage": {
+      "required": [
+        "target"
+      ],
+      "type": "object",
+      "properties": {
+        "target": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "description": "It can be any type"
+          }
+        }
+      }
+    },
+    "SendMessage": {
+      "required": [
+        "message"
+      ],
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SignalRCommand"
+        }
+      ],
+      "properties": {
+        "message": {
+          "$ref": "#/definitions/PayloadMessage"
+        }
+      }
+    },
+    "ServiceResponse": {
+      "type": "object",
+      "properties": {
+        "statusCode": {
+          "format": "int32",
+          "enum": [
+            100,
+            101,
+            102,
+            103,
+            200,
+            201,
+            202,
+            203,
+            204,
+            205,
+            206,
+            207,
+            208,
+            226,
+            300,
+            301,
+            302,
+            303,
+            304,
+            305,
+            306,
+            307,
+            308,
+            400,
+            401,
+            402,
+            403,
+            404,
+            405,
+            406,
+            407,
+            408,
+            409,
+            410,
+            411,
+            412,
+            413,
+            414,
+            415,
+            416,
+            417,
+            421,
+            422,
+            423,
+            424,
+            426,
+            428,
+            429,
+            431,
+            451,
+            500,
+            501,
+            502,
+            503,
+            504,
+            505,
+            506,
+            507,
+            508,
+            510,
+            511
+          ],
+          "type": "integer",
+          "x-ms-enum": {
+            "name": "HttpStatusCode",
+            "modelAsString": true
+          }
+        },
+        "code": {
+          "type": "string"
+        },
+        "level": {
+          "enum": [
+            "Info",
+            "Warning",
+            "Error"
+          ],
+          "type": "string",
+          "x-ms-enum": {
+            "name": "CodeLevel",
+            "modelAsString": true
+          }
+        },
+        "scope": {
+          "enum": [
+            "Unknown",
+            "Request",
+            "Connection",
+            "User",
+            "Group"
+          ],
+          "type": "string"
+        },
+        "errorKind": {
+          "enum": [
+            "Unknown",
+            "NotExisted",
+            "NotInGroup",
+            "Invalid"
+          ],
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "jsonObject": {},
+        "isSuccess": {
+          "type": "boolean"
+        },
+        "stream": {
+          "$ref": "#/definitions/ByteReadOnlyMemoryIAsyncEnumerable"
+        }
+      }
+    },
+    "SignalRCommand": {
+      "required": [
+        "type"
+      ],
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "SendMessage",
+            "JoinGroup",
+            "LeaveGroup",
+            "CloseConnection"
+          ],
+          "type": "string",
+          "x-ms-enum": {
+            "name": "CommandType",
+            "modelAsString": true
+          }
+        }
+      }
+    }
+  },
+  "x-ms-parameterized-host": {
+    "hostTemplate": "{endpoint}",
+    "useSchemePrefix": false,
+    "parameters": [
+      {
+        "name": "endpoint",
+        "description": "HTTP or HTTPS endpoint for the Web PubSub service instance.",
+        "x-ms-parameter-location": "client",
+        "required": true,
+        "type": "string",
+        "format": "url",
+        "in": "path",
+        "x-ms-skip-url-encoding": true
+      }
+    ]
+  }
+}
