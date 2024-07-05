@@ -134,6 +134,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public void Dispose()
         {
+            StopAsync().GetAwaiter().GetResult();
         }
 
         private async Task ConnectionInitializedAsync()
