@@ -23,9 +23,9 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(3, 1, 0)]
         public async Task TestServersPing(int startCount, int stopCount, int expectedWarn)
         {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, logChecker: logs =>
             {
-                var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
+                var warns = logs.Where(s => s.Write.EventId.Name == "TimerAlreadyStopped").ToList();
                 Assert.Equal(expectedWarn, warns.Count);
                 if (expectedWarn > 0)
                 {
@@ -84,9 +84,9 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(1, 3, 2, 2, 2)] // first time error stop won't break second time write.
         public async Task TestServersPingWorkSecondTime(int firstStart, int firstStop, int secondStart, int secondStop, int expectedWarn)
         {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, logChecker: logs =>
             {
-                var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
+                var warns = logs.Where(s => s.Write.EventId.Name == "TimerAlreadyStopped").ToList();
                 Assert.Equal(expectedWarn, warns.Count);
                 if (expectedWarn > 0)
                 {
