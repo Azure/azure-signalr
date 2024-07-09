@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -62,6 +63,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         }
 
         [Fact]
+        [OSSkipCondition(OperatingSystems.Linux | OperatingSystems.MacOSX, "Flacky tests due to slow machine")]
         public async Task StartStopStartStop()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
@@ -84,14 +86,9 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         }
 
         [Fact]
+        [OSSkipCondition(OperatingSystems.Linux | OperatingSystems.MacOSX, "Flacky tests due to slow machine")]
         public async Task StartStopDispose_StartDisposeStop()
         {
-            if (Environment.OSVersion.Platform == PlatformID.Unix)
-            {
-                // it will fail in osx in github action, due to slow machine.
-                // skip it for now.
-                return;
-            }
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
             {
                 var callbackCount = 0;
