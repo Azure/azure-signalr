@@ -15,7 +15,6 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Text;
 using System.Security.Cryptography;
-using Microsoft.IdentityModel.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -51,7 +50,6 @@ namespace Microsoft.Azure.SignalR
                 if (!notBefore.HasValue)
                     notBefore = now;
             }
-            LogHelper.LogVerbose("IDX12721: Creating JwtSecurityToken: Issuer: '{0}', Audience: '{1}'", (audience ?? "null"), (issuer ?? "null"));
 
             JwtPayload payload = new JwtPayload(issuer, audience, (subject == null ? null : OutboundClaimTypeTransform(subject.Claims)), notBefore, expires, issuedAt);
             JwtHeader header = new JwtHeader(kid, algorithm);

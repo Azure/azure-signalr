@@ -13,6 +13,9 @@ namespace Microsoft.Azure.SignalR.Common
         {
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete]
+#endif
         protected AzureSignalRConfigurationNoEndpointException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

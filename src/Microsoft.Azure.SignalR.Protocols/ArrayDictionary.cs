@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 #nullable enable
 
@@ -93,7 +92,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public void Add(KeyValuePair<TKey, TValue> item) =>
             Add(item.Key, item.Value);
 
-        public void Clear() => throw new System.NotImplementedException();
+        public void Clear() => throw new NotImplementedException();
 
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
@@ -128,16 +127,19 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() =>
+        // Add this method to avoid boxing for `foreach` statement.
+        public Enumerator GetEnumerator() =>
             new Enumerator(this);
+
+        IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() => GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public bool Remove(TKey key) =>
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
 
         public bool Remove(KeyValuePair<TKey, TValue> item) =>
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
 
         public bool TryGetValue(TKey key, out TValue value)
         {
@@ -153,15 +155,15 @@ namespace Microsoft.Azure.SignalR.Protocol
             return false;
         }
 
-        private struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>
+        public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>
         {
             private readonly ArrayDictionary<TKey, TValue> _dictionary;
             private int _position;
 
             public Enumerator(ArrayDictionary<TKey, TValue> dictionary)
             {
-                this._dictionary = dictionary;
-                this._position = -1;
+                _dictionary = dictionary;
+                _position = -1;
             }
 
             public KeyValuePair<TKey, TValue> Current =>

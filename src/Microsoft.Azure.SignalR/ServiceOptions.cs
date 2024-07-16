@@ -8,7 +8,6 @@ using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -76,8 +75,8 @@ namespace Microsoft.Azure.SignalR
         public TimeSpan AccessTokenLifetime { get; set; } = Constants.Periods.DefaultAccessTokenLifetime;
 
         /// <summary>
-        /// Gets or sets the access token generate algorithm, supports <see cref="SecurityAlgorithms.HmacSha256"/> or <see cref="SecurityAlgorithms.HmacSha512"/>
-        /// Default value is <see cref="SecurityAlgorithms.HmacSha256"/>
+        /// Gets or sets the access token generate algorithm, supports HmacSha256 or HmacSha512
+        /// Default value is HmacSha256
         /// </summary>
         public AccessTokenAlgorithm AccessTokenAlgorithm { get; set; } = AccessTokenAlgorithm.HS256;
 
@@ -121,5 +120,15 @@ namespace Microsoft.Azure.SignalR
         /// Gets or sets a function which accepts <see cref="HttpContext"/> and returns a bitmask combining one or more <see cref="HttpTransportType"/> values that specify what transports the service should use to receive HTTP requests.
         /// </summary>
         public Func<HttpContext, HttpTransportType> TransportTypeDetector { get; set; } = null;
+
+        /// <summary>
+        /// Allow clients enable stateful reconnects for all hubs.
+        /// By default is disabled.
+        /// It can also configurate <see cref="HttpConnectionDispatcherOptions"/> by hub in net 8.
+        /// Enable stateful reconnection in client side:
+        /// * Make sure client sdk is net8 or later.
+        /// * Enable stateful reconnect in client side, e.g.: <code>builder.withStatefulReconnect()</code>
+        /// </summary>
+        public bool? AllowStatefulReconnects { get; set; }
     }
 }

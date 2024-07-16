@@ -49,6 +49,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return CloseGroupConnectionsWithAckMessagesEqual(closeGroupConnectionsWithAckMessage, (CloseGroupConnectionsWithAckMessage)y);
                 case ConnectionDataMessage connectionDataMessage:
                     return ConnectionDataMessagesEqual(connectionDataMessage, (ConnectionDataMessage)y);
+                case ConnectionReconnectMessage connectionReconnectMessage:
+                    return ConnectionReconnectMessagesEqual(connectionReconnectMessage, (ConnectionReconnectMessage)y);
                 case MultiConnectionDataMessage multiConnectionDataMessage:
                     return MultiConnectionDataMessagesEqual(multiConnectionDataMessage, (MultiConnectionDataMessage)y);
                 case UserDataMessage userDataMessage:
@@ -113,7 +115,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private bool HandshakeRequestMessagesEqual(HandshakeRequestMessage x, HandshakeRequestMessage y)
         {
-            return x.Version == y.Version;
+            return x.Version == y.Version &&
+                x.AllowStatefulReconnects == y.AllowStatefulReconnects &&
+                x.MigrationLevel == y.MigrationLevel &&
+                (x.Target ?? string.Empty) == (y.Target ?? string.Empty) &&
+                x.ConnectionType == y.ConnectionType;
         }
 
         private bool HandshakeResponseMessagesEqual(HandshakeResponseMessage x, HandshakeResponseMessage y)
@@ -181,7 +187,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) &&
                 SequenceEqual(x.Payload.ToArray(), y.Payload.ToArray()) &&
-                x.TracingId == y.TracingId;
+                x.TracingId == y.TracingId &&
+                x.Type == y.Type &&
+                x.IsPartial == y.IsPartial;
+        }
+
+        private bool ConnectionReconnectMessagesEqual(ConnectionReconnectMessage x, ConnectionReconnectMessage y)
+        {
+            return StringEqual(x.ConnectionId, y.ConnectionId);
         }
 
         private bool MultiConnectionDataMessagesEqual(MultiConnectionDataMessage x, MultiConnectionDataMessage y)

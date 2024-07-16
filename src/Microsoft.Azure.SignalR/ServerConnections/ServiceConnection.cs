@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,10 +10,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
+
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
@@ -49,6 +52,12 @@ namespace Microsoft.Azure.SignalR
 
         private readonly AckHandler _ackHandler;
 
+        private readonly IHubProtocolResolver _hubProtocolResolver;
+
+        // Performance: Do not use ConcurrentDictionary. There is no multi-threading scenario here, all operations are in the same logical thread.
+        private readonly Dictionary<string, List<IMemoryOwner<byte>>> _bufferingMessages =
+            new Dictionary<string, List<IMemoryOwner<byte>>>(StringComparer.Ordinal);
+
         public Action<HttpContext> ConfigureContext { get; set; }
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
@@ -64,10 +73,12 @@ namespace Microsoft.Azure.SignalR
                                  IServiceEventHandler serviceEventHandler,
                                  IClientInvocationManager clientInvocationManager,
                                  AckHandler ackHandler,
+                                 IHubProtocolResolver hubProtocolResolver,
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
                                  GracefulShutdownMode mode = GracefulShutdownMode.Off,
-                                 int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds
-            ) : base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
+                                 int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds,
+                                 bool allowStatefulReconnects = false
+            ) : base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode, allowStatefulReconnects)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
@@ -76,6 +87,7 @@ namespace Microsoft.Azure.SignalR
             _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
             _clientInvocationManager = clientInvocationManager;
             _ackHandler = ackHandler;
+            _hubProtocolResolver = hubProtocolResolver;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -99,6 +111,8 @@ namespace Microsoft.Azure.SignalR
                     continue;
                 }
 
+                // make sure there is no await operation before _bufferingMessages.
+                _bufferingMessages.Remove(connection.Key);
                 // We should not wait until all the clients' lifetime ends to restart another service connection
                 _ = PerformDisconnectAsyncCore(connection.Key);
             }
@@ -139,7 +153,7 @@ namespace Microsoft.Azure.SignalR
 
             using (new ClientConnectionScope(endpoint: HubEndpoint, outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
             {
-                _ = ProcessClientConnectionAsync(connection);
+                _ = ProcessClientConnectionAsync(connection, _hubProtocolResolver.GetProtocol(message.Protocol, null));
             }
 
             if (connection.IsMigrated)
@@ -157,6 +171,8 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
+            // make sure there is no await operation before _bufferingMessages.
+            _bufferingMessages.Remove(connectionId);
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
             {
                 if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
@@ -186,9 +202,52 @@ namespace Microsoft.Azure.SignalR
             {
                 try
                 {
-                    var payload = connectionDataMessage.Payload;
-                    Log.WriteMessageToApplication(Logger, payload.Length, connectionDataMessage.ConnectionId);
-                    await connection.WriteMessageAsync(payload);
+#if !NET8_0_OR_GREATER
+                    // do NOT write close message until net 8 or later.
+                    if (connectionDataMessage.Type == DataMessageType.Close)
+                    {
+                        return;
+                    }
+#endif
+                    if (connectionDataMessage.IsPartial)
+                    {
+                        var owner = ExactSizeMemoryPool.Shared.Rent((int)connectionDataMessage.Payload.Length);
+                        connectionDataMessage.Payload.CopyTo(owner.Memory.Span);
+                        // make sure there is no await operation before _bufferingMessages.
+                        if (!_bufferingMessages.TryGetValue(connectionDataMessage.ConnectionId, out var list))
+                        {
+                            list = new List<IMemoryOwner<byte>>();
+                            _bufferingMessages[connectionDataMessage.ConnectionId] = list;
+                        }
+                        list.Add(owner);
+                    }
+                    else
+                    {
+                        // make sure there is no await operation before _bufferingMessages.
+                        if (_bufferingMessages.TryGetValue(connectionDataMessage.ConnectionId, out var list))
+                        {
+                            _bufferingMessages.Remove(connectionDataMessage.ConnectionId);
+                            long length = 0;
+                            foreach (var owner in list)
+                            {
+                                using (owner)
+                                {
+                                    await connection.WriteMessageAsync(new ReadOnlySequence<byte>(owner.Memory));
+                                    length += owner.Memory.Length;
+                                }
+                            }
+                            var payload = connectionDataMessage.Payload;
+                            length += payload.Length;
+                            Log.WriteMessageToApplication(Logger, length, connectionDataMessage.ConnectionId);
+                            await connection.WriteMessageAsync(payload);
+                        }
+                        else
+                        {
+                            var payload = connectionDataMessage.Payload;
+                            Log.WriteMessageToApplication(Logger, payload.Length, connectionDataMessage.ConnectionId);
+                            await connection.WriteMessageAsync(payload);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -211,6 +270,7 @@ namespace Microsoft.Azure.SignalR
                 ServiceMappingMessage serviceMappingMessage => OnServiceMappingAsync(serviceMappingMessage),
                 ClientCompletionMessage clientCompletionMessage => OnClientCompletionAsync(clientCompletionMessage),
                 ErrorCompletionMessage errorCompletionMessage => OnErrorCompletionAsync(errorCompletionMessage),
+                ConnectionReconnectMessage connectionReconnectMessage => OnConnectionReconnectAsync(connectionReconnectMessage),
                 _ => base.DispatchMessageAsync(message)
             };
         }
@@ -229,12 +289,12 @@ namespace Microsoft.Azure.SignalR
             return base.OnPingMessageAsync(pingMessage);
         }
 
-        private async Task ProcessClientConnectionAsync(ClientConnectionContext connection)
+        private async Task ProcessClientConnectionAsync(ClientConnectionContext connection, SignalRProtocol.IHubProtocol protocol)
         {
             try
             {
                 // Writing from the application to the service
-                var transport = ProcessOutgoingMessagesAsync(connection, connection.OutgoingAborted);
+                var transport = ProcessOutgoingMessagesAsync(connection, protocol, connection.OutgoingAborted);
 
                 // Waiting for the application to shutdown so we can clean up the connection
                 var app = ProcessApplicationTaskAsyncCore(connection);
@@ -307,60 +367,12 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task<bool> SkipHandshakeResponse(ClientConnectionContext connection, CancellationToken token)
+        private async Task ProcessOutgoingMessagesAsync(ClientConnectionContext connection, SignalRProtocol.IHubProtocol protocol, CancellationToken token)
         {
             try
             {
-                while (true)
-                {
-                    var result = await connection.Application.Input.ReadAsync(token);
-                    if (result.IsCanceled || token.IsCancellationRequested)
-                    {
-                        return false;
-                    }
-
-                    var buffer = result.Buffer;
-                    if (buffer.IsEmpty)
-                    {
-                        continue;
-                    }
-
-                    if (SignalRProtocol.HandshakeProtocol.TryParseResponseMessage(ref buffer, out var message))
-                    {
-                        connection.Application.Input.AdvanceTo(buffer.Start);
-                        return true;
-                    }
-
-                    if (result.IsCompleted)
-                    {
-                        return false;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.ErrorSkippingHandshakeResponse(Logger, ex);
-            }
-            return false;
-        }
-
-        private async Task ProcessOutgoingMessagesAsync(ClientConnectionContext connection, CancellationToken token = default)
-        {
-            try
-            {
-                if (connection.IsMigrated)
-                {
-                    using var timeoutToken = new CancellationTokenSource(DefaultHandshakeTimeout);
-                    using var source = CancellationTokenSource.CreateLinkedTokenSource(token, timeoutToken.Token);
-
-                    // A handshake response is not expected to be given
-                    // if the connection was migrated from another server,
-                    // since the connection hasn't been `dropped` from the client point of view.
-                    if (!await SkipHandshakeResponse(connection, source.Token))
-                    {
-                        return;
-                    }
-                }
+                bool isHandshakeResponseParsed = false;
+                bool shouldSkipHandshakeResponse = connection.IsMigrated;
 
                 while (true)
                 {
@@ -375,19 +387,47 @@ namespace Microsoft.Azure.SignalR
 
                     if (!buffer.IsEmpty)
                     {
-                        try
+                        if (!isHandshakeResponseParsed)
                         {
-                            // Forward the message to the service
-                            await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, buffer));
+                            var next = buffer;
+                            if (SignalRProtocol.HandshakeProtocol.TryParseResponseMessage(ref next, out var message))
+                            {
+                                isHandshakeResponseParsed = true;
+                                if (!shouldSkipHandshakeResponse)
+                                {
+                                    var forwardResult = await ForwardMessage(new ConnectionDataMessage(connection.ConnectionId, buffer.Slice(0, next.Start)) { Type = DataMessageType.Handshake });
+                                    switch (forwardResult)
+                                    {
+                                        case ForwardMessageResult.Success:
+                                            break;
+                                        default:
+                                            return;
+                                    }
+                                }
+                                buffer = buffer.Slice(next.Start);
+                            }
+                            else
+                            {
+                                // waiting for handshake response.
+                            }
                         }
-                        catch (ServiceConnectionNotActiveException)
+                        if (isHandshakeResponseParsed)
                         {
-                            // Service connection not active means the transport layer for this connection is closed, no need to continue processing
-                            break;
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.ErrorSendingMessage(Logger, ex);
+                            var next = buffer;
+                            while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
+                            {
+                                var messageType = message is SignalRProtocol.HubInvocationMessage ? DataMessageType.Invocation :
+                                    message is SignalRProtocol.CloseMessage ? DataMessageType.Close : DataMessageType.Other;
+                                var forwardResult = await ForwardMessage(new ConnectionDataMessage(connection.ConnectionId, buffer.Slice(0, next.Start)) { Type = messageType });
+                                switch (forwardResult)
+                                {
+                                    case ForwardMessageResult.Fatal:
+                                        return;
+                                    default:
+                                        buffer = next;
+                                        break;
+                                }
+                            }
                         }
                     }
 
@@ -397,7 +437,7 @@ namespace Microsoft.Azure.SignalR
                         break;
                     }
 
-                    connection.Application.Input.AdvanceTo(buffer.End);
+                    connection.Application.Input.AdvanceTo(buffer.Start, buffer.End);
                 }
             }
             catch (Exception ex)
@@ -411,6 +451,29 @@ namespace Microsoft.Azure.SignalR
             finally
             {
                 connection.Application.Input.Complete();
+            }
+        }
+
+        /// <summary>
+        /// Forward message to service
+        /// </summary>
+        private async Task<ForwardMessageResult> ForwardMessage(ConnectionDataMessage data)
+        {
+            try
+            {
+                // Forward the message to the service
+                await WriteAsync(data);
+                return ForwardMessageResult.Success;
+            }
+            catch (ServiceConnectionNotActiveException)
+            {
+                // Service connection not active means the transport layer for this connection is closed, no need to continue processing
+                return ForwardMessageResult.Fatal;
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorSendingMessage(Logger, ex);
+                return ForwardMessageResult.Error;
             }
         }
 
@@ -429,6 +492,11 @@ namespace Microsoft.Azure.SignalR
                 // Wait for the application task to complete
                 // application task can end when exception, or Context.Abort() from hub
                 await _connectionDelegate(connection);
+            }
+            catch (ObjectDisposedException)
+            {
+                // When the application shuts down and disposes IServiceProvider, HubConnectionHandler.RunHubAsync is still running and runs into _dispatcher.OnDisconnectedAsync
+                // no need to throw the error out
             }
             catch (Exception ex)
             {
@@ -504,6 +572,31 @@ namespace Microsoft.Azure.SignalR
         {
             _clientInvocationManager.Caller.TryCompleteResult(errorCompletionMessage.ConnectionId, errorCompletionMessage);
             return Task.CompletedTask;
+        }
+
+        private Task OnConnectionReconnectAsync(ConnectionReconnectMessage connectionReconnectMessage)
+        {
+            // make sure there is no await operation before _bufferingMessages.
+            _bufferingMessages.Remove(connectionReconnectMessage.ConnectionId);
+            return Task.CompletedTask;
+        }
+
+        private sealed class FakeInvocationBinder : IInvocationBinder
+        {
+            public static readonly FakeInvocationBinder Instance = new FakeInvocationBinder();
+
+            public IReadOnlyList<Type> GetParameterTypes(string methodName) => Type.EmptyTypes;
+
+            public Type GetReturnType(string invocationId) => typeof(object);
+
+            public Type GetStreamItemType(string streamId) => typeof(object);
+        }
+
+        private enum ForwardMessageResult
+        {
+            Success,
+            Error,
+            Fatal,
         }
     }
 }

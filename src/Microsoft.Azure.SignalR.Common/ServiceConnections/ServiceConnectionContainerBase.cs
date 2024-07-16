@@ -261,6 +261,7 @@ namespace Microsoft.Azure.SignalR
         // Ready for scalable containers
         public void Dispose()
         {
+            StopAsync().GetAwaiter().GetResult();
             _statusPing.Dispose();
             _serversPing.Dispose();
             Dispose(true);
@@ -726,7 +727,7 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define<ServiceEndpoint, string>(LogLevel.Debug, new EventId(9, "ReceivedServersTagPing"), "Received a servers tag ping from {endpoint} for hub {hub}.");
 
             private static readonly Action<ILogger, string, Exception> _timerAlreadyStopped =
-                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(10, "TimerAlreadyStopped"), "Failed to stop {pingName} timer as it's not started");
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(10, "TimerAlreadyStopped"), "Failed to stop {pingName} timer as it's not started");
 
             public static void EndpointOnline(ILogger logger, HubServiceEndpoint endpoint)
             {

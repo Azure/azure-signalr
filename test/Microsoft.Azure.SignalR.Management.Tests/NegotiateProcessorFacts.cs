@@ -17,7 +17,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 {
     public class NegotiateProcessorFacts
     {
-        private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
+        private const string AccessKey = "fake_key";
         private const string HubName = "signalrBench";
         private const string UserId = "UserA";
         private static readonly TimeSpan _tokenLifeTime = TimeSpan.FromSeconds(99);

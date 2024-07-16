@@ -50,5 +50,80 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 
             Assert.Equal(expectedClaimsCount, ci.Claims.Count());
         }
+
+        [Fact]
+        public void TestGetPreservedSystemClaims()
+        {
+            // preserved system claims are renamed and reverted back
+            var claims = ClaimsUtility.BuildJwtClaims(
+                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim("iss", "A"), new Claim("jti", "B") })), null, null).ToArray();
+            Assert.Equal("asrs.u.iss", claims[0].Type);
+            Assert.Equal("asrs.u.jti", claims[1].Type);
+
+            var resultIdentity = ClaimsUtility.GetUserPrincipal(claims).Identity;
+
+            var ci = resultIdentity as ClaimsIdentity;
+            Assert.NotNull(ci);
+            Assert.Equal(2, ci.Claims.Count());
+            Assert.True(ci.HasClaim("iss", "A"));
+            Assert.True(ci.HasClaim("jti", "B"));
+        }
+
+        [Fact]
+        public void TestGetSubjectClaims()
+        {
+            // only the first sub claim is considered as valid to the service
+            var claims = ClaimsUtility.BuildJwtClaims(
+                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim("sub", "A"), new Claim("sub", "B") })), null, null).ToArray();
+            Assert.Equal("sub", claims[0].Type);
+            Assert.Equal("asrs.u.sub", claims[1].Type);
+
+            var resultIdentity = ClaimsUtility.GetUserPrincipal(claims).Identity;
+
+            var ci = resultIdentity as ClaimsIdentity;
+            Assert.NotNull(ci);
+            Assert.Equal(2, ci.Claims.Count());
+            Assert.True(ci.HasClaim("sub", "A"));
+            Assert.True(ci.HasClaim("sub", "B"));
+
+            claims = ClaimsUtility.BuildJwtClaims(
+                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim("sub", "A"), new Claim("sub", "B") })), "C", null).ToArray();
+            Assert.Equal("asrs.s.uid", claims[0].Type);
+            Assert.Equal("sub", claims[1].Type);
+            Assert.Equal("asrs.u.sub", claims[2].Type);
+
+            resultIdentity = ClaimsUtility.GetUserPrincipal(claims).Identity;
+
+            ci = resultIdentity as ClaimsIdentity;
+            Assert.NotNull(ci);
+            Assert.Equal(2, ci.Claims.Count());
+            Assert.True(ci.HasClaim("sub", "A"));
+            Assert.True(ci.HasClaim("sub", "B"));
+
+            // single sub claim is considered as valid
+            claims = ClaimsUtility.BuildJwtClaims(
+                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim("sub", "A") })), null, null).ToArray();
+            Assert.Single(claims);
+            Assert.Equal("sub", claims[0].Type);
+
+            resultIdentity = ClaimsUtility.GetUserPrincipal(claims).Identity;
+
+            ci = resultIdentity as ClaimsIdentity;
+            Assert.NotNull(ci);
+            Assert.Single(ci.Claims);
+            Assert.True(ci.HasClaim("sub", "A"));
+
+            claims = ClaimsUtility.BuildJwtClaims(
+                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim("sub", "A") })), "C", null).ToArray();
+            Assert.Equal("asrs.s.uid", claims[0].Type);
+            Assert.Equal("sub", claims[1].Type);
+
+            resultIdentity = ClaimsUtility.GetUserPrincipal(claims).Identity;
+
+            ci = resultIdentity as ClaimsIdentity;
+            Assert.NotNull(ci);
+            Assert.Single(ci.Claims);
+            Assert.True(ci.HasClaim("sub", "A"));
+        }
     }
 }

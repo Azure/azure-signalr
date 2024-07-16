@@ -10,8 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Security.Claims;
-using Microsoft.IdentityModel.Logging;
-using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR

@@ -11,6 +11,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure.Identity;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Internal;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout();
 
-            var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>());
+            var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>()) { Protocol = "json" };
             openConnectionMessage.Headers.Add(Constants.AsrsMigrateFrom, "another-server");
             _ = connection.WriteFromServiceAsync(openConnectionMessage);
             await connection.ClientConnectedTask.OrTimeout();
@@ -80,7 +83,7 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
-            var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>());
+            var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>()) { Protocol = "json" };
             _ = connection.WriteFromServiceAsync(openConnectionMessage);
             await connection.ClientConnectedTask;
 
@@ -117,11 +120,13 @@ namespace Microsoft.Azure.SignalR.Tests
             var clientConnectionFactory = new TestClientConnectionFactory();
             var clientInvocationManager = new DefaultClientInvocationManager();
 
-            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"), clientInvocationManager: clientInvocationManager);
+            const string LastWill = "{\"type\":1,\"target\":\"test\",\"arguments\":[\"last will\"]}\u001e";
+
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, LastWill), clientInvocationManager: clientInvocationManager);
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout(1000);
 
-            var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>());
+            var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>()) { Protocol = "json" };
             _ = connection.WriteFromServiceAsync(openConnectionMessage);
             await connection.ClientConnectedTask;
 
@@ -129,8 +134,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var clientConnection = clientConnectionFactory.Connections[0];
 
             // write a signalr handshake response
-            var message = new SignalRProtocol.HandshakeResponseMessage("");
-            SignalRProtocol.HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
+            SignalRProtocol.HandshakeProtocol.WriteResponseMessage(SignalRProtocol.HandshakeResponseMessage.Empty, clientConnection.Transport.Output);
 
             // write close connection message
             await connection.WriteFromServiceAsync(new CloseConnectionMessage(clientConnection.ConnectionId));
@@ -140,7 +144,7 @@ namespace Microsoft.Azure.SignalR.Tests
             await clientConnection.LifetimeTask;
 
             await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout(1000);
-            await connection.ExpectStringMessage("foobar").OrTimeout(1000);
+            await connection.ExpectStringMessage(LastWill).OrTimeout(1000);
             await connection.ExpectSignalRMessage(SignalRProtocol.CloseMessage.Empty).OrTimeout(1000);
 
             await connection.StopAsync();
@@ -148,7 +152,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [InlineData(typeof(AccessKey))]
-        [InlineData(typeof(AadAccessKey))]
+        [InlineData(typeof(AccessKeyForMicrosoftEntra))]
         public async Task TestAccessKeyRequestMessage(Type keyType)
         {
             var endpoint = MockServiceEndpoint(keyType.Name);
@@ -173,7 +177,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [InlineData(typeof(AccessKey))]
-        [InlineData(typeof(AadAccessKey))]
+        [InlineData(typeof(AccessKeyForMicrosoftEntra))]
         public async Task TestAccessKeyResponseMessage(Type keyType)
         {
             var endpoint = MockServiceEndpoint(keyType.Name);
@@ -222,9 +226,9 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 var endpoint = new TestHubServiceEndpoint(endpoint: new TestServiceEndpoint(new DefaultAzureCredential()));
 
-                if (endpoint.AccessKey is AadAccessKey key)
+                if (endpoint.AccessKey is AccessKeyForMicrosoftEntra key)
                 {
-                    var field = typeof(AadAccessKey).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+                    var field = typeof(AccessKeyForMicrosoftEntra).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
                     field.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(minutesElapsed));
                 }
 
@@ -302,6 +306,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 messageHandler ?? new TestServiceMessageHandler(),
                 eventHandler ?? new TestServiceEventHandler(),
                 clientInvocationManager,
+                new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
                 mode: mode ?? GracefulShutdownMode.Off
             );
         }
@@ -313,7 +318,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 case nameof(AccessKey):
                     return new ServiceEndpoint(_keyConnectionString);
 
-                case nameof(AadAccessKey):
+                case nameof(AccessKeyForMicrosoftEntra):
                     var endpoint = new ServiceEndpoint(_aadConnectionString);
                     var p = typeof(ServiceEndpoint).GetProperty("AccessKey", BindingFlags.NonPublic | BindingFlags.Instance);
                     p.SetValue(endpoint, new TestAadAccessKey());
@@ -324,7 +329,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private class TestAadAccessKey : AadAccessKey
+        private class TestAadAccessKey : AccessKeyForMicrosoftEntra
         {
             public string Token { get; } = Guid.NewGuid().ToString();
 
@@ -332,7 +337,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
             }
 
-            public override Task<string> GenerateAadTokenAsync(CancellationToken ctoken = default)
+            public override Task<string> GetMicrosoftEntraTokenAsync(CancellationToken ctoken = default)
             {
                 return Task.FromResult(Token);
             }
@@ -454,6 +459,7 @@ namespace Microsoft.Azure.SignalR.Tests
                                          IServiceMessageHandler serviceMessageHandler,
                                          IServiceEventHandler serviceEventHandler,
                                          IClientInvocationManager clientInvocationManager,
+                                         IHubProtocolResolver hubProtocolResolver,
                                          ServiceConnectionType connectionType = ServiceConnectionType.Default,
                                          GracefulShutdownMode mode = GracefulShutdownMode.Off,
                                          int closeTimeOutMilliseconds = 10000) : base(
@@ -470,6 +476,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     serviceEventHandler,
                     clientInvocationManager,
                     new AckHandler(),
+                    hubProtocolResolver,
                     connectionType: connectionType,
                     mode: mode,
                     closeTimeOutMilliseconds: closeTimeOutMilliseconds)

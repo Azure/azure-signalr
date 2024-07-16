@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
@@ -9,7 +10,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
+    internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionManager<THub> where THub : Hub
     {
         private IServiceConnectionContainer _serviceConnection = null;
 
@@ -51,6 +52,11 @@ namespace Microsoft.Azure.SignalR
             }
 
             return _serviceConnection.WriteAckableMessageAsync(seviceMessage, cancellationToken);
+        }
+
+        public void Dispose()
+        {
+            StopAsync().GetAwaiter().GetResult();
         }
     }
 }

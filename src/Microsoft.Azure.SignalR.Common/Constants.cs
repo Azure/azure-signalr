@@ -10,17 +10,12 @@ namespace Microsoft.Azure.SignalR
         public static class Keys
         {
             public const string AzureSignalRSectionKey = "Azure:SignalR";
-            public const string ServerStickyModeDefaultKey = "Azure:SignalR:ServerStickyMode";
-            public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
-            public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
-            public const string AzureSignalREnabledKey = "Azure:SignalR:Enabled";
-            public const string AzureSignalREndpointsKey = "Azure:SignalR:Endpoints";
+            public const string ConnectionStringDefaultKey = $"{AzureSignalRSectionKey}:ConnectionString";
+            public const string AzureSignalREnabledKey = $"{AzureSignalRSectionKey}:Enabled";
+            public const string AzureSignalREndpointsKey = $"{AzureSignalRSectionKey}:Endpoints";
 
             public static readonly string ConnectionStringSecondaryKey =
                 $"ConnectionStrings:{ConnectionStringDefaultKey}";
-            public static readonly string ConnectionStringKeyPrefix = $"{ConnectionStringDefaultKey}:";
-            public static readonly string ApplicationNameDefaultKeyPrefix = $"{ApplicationNameDefaultKey}:";
-            public static readonly string ConnectionStringSecondaryKeyPrefix = $"{ConnectionStringSecondaryKey}:";
         }
 
         public const string AsrsMigrateFrom = "Asrs-Migrate-From";
@@ -82,6 +77,7 @@ namespace Microsoft.Azure.SignalR
             public const string OriginalPath = "asrs.op";
             public const string ConnectionRequestId = "asrs_request_id";
             public const string RequestCulture = "asrs_lang";
+            public const string RequestUICulture = "asrs_ui_lang";
         }
 
         public static class CustomizedPingTimer
@@ -118,6 +114,8 @@ namespace Microsoft.Azure.SignalR
         {
             public const string Resilient = "Resilient";
             public const string MessageResilient = "MessageResilient";
+            public const string UserDefault = "UserDefault";
+            public const string InternalDefault = "InternalDefault";
         }
     }
 }

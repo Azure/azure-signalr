@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
@@ -26,6 +27,8 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             _connectCallback = connectCallback;
         }
+
+        public HandshakeRequestMessage HandshakeRequest { get; set; }
 
         public async Task<ConnectionContext> ConnectAsync(HubServiceEndpoint endpoint,
                                                           TransferFormat transferFormat,
@@ -72,7 +75,7 @@ namespace Microsoft.Azure.SignalR.Tests
         /// </summary>
         protected virtual async Task DoHandshakeAsync(TestConnection connection)
         {
-            await HandshakeUtils.ReceiveHandshakeRequestAsync(connection.Application.Input);
+            HandshakeRequest = await HandshakeUtils.ReceiveHandshakeRequestAsync(connection.Application.Input);
             await HandshakeUtils.SendHandshakeResponseAsync(connection.Application.Output);
         }
 

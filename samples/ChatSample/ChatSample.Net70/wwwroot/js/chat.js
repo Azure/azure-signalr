@@ -1,6 +1,26 @@
 ﻿"use strict";
 
-var connection = new signalR.HubConnectionBuilder().withUrl("/chat").build();
+function getRandomDelay() {
+    function getRandom(min, max) {
+        return Math.floor(Math.random() * (max - min + 1) + min);
+    }
+    return getRandom(1000, 2000);
+}
+
+function delay(time) {
+    return new Promise((resolve) => {
+        setTimeout(() => resolve(), time);
+    });
+}
+
+var connection = new signalR.HubConnectionBuilder()
+    .withUrl("/chat")
+    .withAutomaticReconnect({
+        nextRetryDelayInMilliseconds: function (retryContext) {
+            return getRandomDelay();
+        }
+    })
+    .build();
 
 //Disable the send button until connection is established.
 document.getElementById("getButton").disabled = true;
@@ -30,11 +50,23 @@ connection.on("GetMessage", async function () {
     return res;
 });
 
-connection.start().then(function () {
-    document.getElementById("getButton").disabled = false;
-}).catch(function (err) {
-    return console.error(err.toString());
-});
+async function startConnection() {
+    let count = 0;
+    do {
+        try {
+            count++;
+            console.log(`Attempt ${count}`);
+            await connection.start();
+            document.getElementById("getButton").disabled = false;
+            break;
+        } catch (err) {
+            await delay(getRandomDelay());
+            console.error(err.toString());
+        }
+    } while (true);
+}
+
+startConnection();
 
 document.getElementById("getButton").addEventListener("click", async function (event) {
     var id = document.getElementById("IDInput").value;

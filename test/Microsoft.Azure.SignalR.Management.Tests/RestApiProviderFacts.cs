@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
     public class RestApiProviderFacts
     {
         private const string _endpoint = "https://abc";
-        private const string _accessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
+        private const string _accessKey = "fake_key";
 
         private static readonly string _connectionString = $"Endpoint={_endpoint};AccessKey={_accessKey};Version=1.0;";
 

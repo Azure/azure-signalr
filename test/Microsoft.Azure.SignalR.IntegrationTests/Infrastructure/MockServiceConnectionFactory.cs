@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,8 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
             ConnectionDelegate connectionDelegate,
             IClientConnectionFactory clientConnectionFactory,
             IClientInvocationManager clientInvocationManager,   
-            IServerNameProvider nameProvider)
+            IServerNameProvider nameProvider,
+            IHubProtocolResolver hubProtocolResolver)
             : base(
                   serviceProtocol,
                   clientConnectionManager,
@@ -30,7 +32,8 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
                   clientConnectionFactory,
                   nameProvider,
                   null,
-                  clientInvocationManager)
+                  clientInvocationManager,
+                  hubProtocolResolver)
         {
             _mockService = mockService;
         }

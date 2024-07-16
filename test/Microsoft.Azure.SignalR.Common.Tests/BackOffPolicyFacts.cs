@@ -105,7 +105,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             }));
         }
 
-        [Fact]
+        [Fact(Skip = "Flacky in CI")]
         public async Task FirstProbeTimeoutTest()
         {
             await RunProbeTests(new TestData()

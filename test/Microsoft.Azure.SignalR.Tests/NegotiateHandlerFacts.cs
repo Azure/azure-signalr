@@ -35,10 +35,10 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string CustomClaimType = "custom.claim";
         private const string CustomUserId = "customUserId";
         private const string DefaultUserId = "nameId";
-        private const string DefaultConnectionString = "Endpoint=https://localhost;AccessKey=nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=;ClientEndpoint=http://redirect";
-        private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
-        private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
-        private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+        private const string DefaultConnectionString = "Endpoint=https://localhost;AccessKey=fake_key;ClientEndpoint=http://redirect";
+        private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=fake_key;";
+        private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=fake_key;";
+        private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=fake_key;";
 
         private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
 
@@ -459,7 +459,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 QueryString = "?endpoint=chosen"
             };
             features.Set<IHttpRequestFeature>(requestFeature);
-            var customCulture = new RequestCulture("ar-SA");
+            var customCulture = new RequestCulture("ar-SA", "en-US");
             features.Set<IRequestCultureFeature>(
                 new RequestCultureFeature(customCulture,
                 new AcceptLanguageHeaderRequestCultureProvider()));
@@ -470,7 +470,9 @@ namespace Microsoft.Azure.SignalR.Tests
             var negotiateResponse = await handler.Process(httpContext);
 
             var queryContainsCulture = negotiateResponse.Url.Contains($"{Constants.QueryParameter.RequestCulture}=ar-SA");
+            var queryContainsUICulture = negotiateResponse.Url.Contains($"{Constants.QueryParameter.RequestUICulture}=en-US");
             Assert.True(queryContainsCulture);
+            Assert.True(queryContainsUICulture);
         }
 
         [Theory]

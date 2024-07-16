@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(5);
         private static readonly IServiceProtocol ServiceProtocol = new ServiceProtocol();
 
-        public static async Task ReceiveHandshakeRequestAsync(PipeReader input)
+        public static async Task<HandshakeRequestMessage> ReceiveHandshakeRequestAsync(PipeReader input)
         {
             using (var cts = new CancellationTokenSource(DefaultHandshakeTimeout))
             {
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Tests
                                     throw new InvalidDataException("Protocol version not supported.");
                                 }
 
-                                break;
+                                return handshakeRequest;
                             }
                         }
 

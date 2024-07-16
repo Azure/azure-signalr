@@ -3,13 +3,10 @@
 
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using System.Text;
 using Azure.Identity;
-using Microsoft.IdentityModel.Tokens;
 
 using Xunit;
 
@@ -19,7 +16,9 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
     public class AuthUtilityTests
     {
         private const string Audience = "https://localhost/aspnetclient?hub=testhub";
+
         private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
         private static readonly TimeSpan DefaultLifetime = TimeSpan.FromHours(1);
 
         [Fact]
@@ -42,7 +41,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             public IEnumerator<object[]> GetEnumerator()
             {
                 yield return new object[] { new AccessKey("http://localhost:443", SigningKey), true };
-                var key = new AadAccessKey(new Uri("http://localhost"), new DefaultAzureCredential());
+                var key = new AccessKeyForMicrosoftEntra(new Uri("http://localhost"), new DefaultAzureCredential());
                 key.UpdateAccessKey("foo", SigningKey);
                 yield return new object[] { key, false };
             }

@@ -61,6 +61,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateCloseConnectionMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.ConnectionDataMessageType:
                     return CreateConnectionDataMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.ConnectionReconnectMessageType:
+                    return CreateConnectionReconnectMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.MultiConnectionDataMessageType:
                     return CreateMultiConnectionDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.UserDataMessageType:
@@ -209,6 +211,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ConnectionDataMessage connectionDataMessage:
                     WriteConnectionDataMessage(ref writer, connectionDataMessage);
                     break;
+                case ConnectionReconnectMessage connectionReconnectMessage:
+                    WriteConnectionReconnectMessage(ref writer, connectionReconnectMessage);
+                    break;
                 case MultiConnectionDataMessage multiConnectionDataMessage:
                     WriteMultiConnectionDataMessage(ref writer, multiConnectionDataMessage);
                     break;
@@ -308,13 +313,14 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteHandshakeRequestMessage(ref MessagePackWriter writer, HandshakeRequestMessage message)
         {
-            writer.WriteArrayHeader(6);
+            writer.WriteArrayHeader(7);
             writer.Write(ServiceProtocolConstants.HandshakeRequestType);
             writer.Write(message.Version);
             writer.Write(message.ConnectionType);
             writer.Write(message.ConnectionType == 0 ? "" : message.Target ?? string.Empty);
-            writer.Write((int)message.MigrationLevel);
+            writer.Write(message.MigrationLevel);
             message.WriteExtensionMembers(ref writer);
+            writer.Write(message.AllowStatefulReconnects);
         }
 
         private static void WriteHandshakeResponseMessage(ref MessagePackWriter writer, HandshakeResponseMessage message)
@@ -440,10 +446,15 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.ConnectionDataMessageType);
             writer.Write(message.ConnectionId);
-
-            /************ REVIEW ************/
-            // REVIEW : PREVIOUS CODE WAS writing every bytes manualy, not sure if this is the strict equivalent in term of serialization
             writer.Write(message.Payload);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteConnectionReconnectMessage(ref MessagePackWriter writer, ConnectionReconnectMessage message)
+        {
+            writer.WriteArrayHeader(3);
+            writer.Write(ServiceProtocolConstants.ConnectionReconnectMessageType);
+            writer.Write(message.ConnectionId);
             message.WriteExtensionMembers(ref writer);
         }
 
@@ -790,6 +801,10 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 result.ReadExtensionMembers(ref reader);
             }
+            if (arrayLength >= 7)
+            {
+                result.AllowStatefulReconnects = ReadBoolean(ref reader, "enableStatefulReconnects");
+            }
             return result;
         }
 
@@ -944,6 +959,15 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 result.ReadExtensionMembers(ref reader);
             }
+            return result;
+        }
+
+        private static ConnectionReconnectMessage CreateConnectionReconnectMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var connectionId = ReadString(ref reader, "connectionId");
+
+            var result = new ConnectionReconnectMessage(connectionId);
+            result.ReadExtensionMembers(ref reader);
             return result;
         }
 
@@ -1323,6 +1347,18 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
 
             return new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static bool ReadBoolean(ref MessagePackReader reader, string field)
+        {
+            try
+            {
+                return reader.ReadBoolean();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidDataException($"Reading '{field}' as Boolean failed.", ex);
+            }
         }
 
         private static int ReadInt32(ref MessagePackReader reader, string field)

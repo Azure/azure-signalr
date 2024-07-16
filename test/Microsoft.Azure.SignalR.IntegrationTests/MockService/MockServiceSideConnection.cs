@@ -72,7 +72,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
             MockServiceSideClientConnection clientConn = new MockServiceSideClientConnection(clientConnId, this);
             ClientConnections.Add(clientConn);
 
-            var openClientConnMsg = new OpenConnectionMessage(clientConnId, new System.Security.Claims.Claim[] { });
+            var openClientConnMsg = new OpenConnectionMessage(clientConnId, new System.Security.Claims.Claim[] { }) { Protocol = "json" };
             _servicePro.WriteMessage(openClientConnMsg, MockServicePipe.Output);
             var flushResult = _lastFlushResult = await MockServicePipe.Output.FlushAsync();
 

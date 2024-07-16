@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
@@ -16,43 +17,40 @@ namespace Microsoft.Azure.SignalR.Management
         internal const int MaxRetries = 2;
 
         //An acceptable time to wait before retry when clients negotiate fail
-        private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(2);
+        private readonly TimeSpan _checkInterval;
 
-        private readonly TimeSpan _retryInterval = TimeSpan.FromSeconds(3);
+        private readonly TimeSpan _httpTimeout;
+        private readonly TimeSpan _retryInterval;
 
-        private readonly RestClientFactory _clientFactory;
         private readonly IServiceEndpointManager _serviceEndpointManager;
         private readonly ILogger<RestHealthCheckService> _logger;
         private readonly string _hubName;
 
         private readonly TimerAwaitable _timer;
-        private readonly bool _enable;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly bool _enabledForSingleEndpoint;
 
-        public RestHealthCheckService(RestClientFactory clientFactory, IServiceEndpointManager serviceEndpointManager, ILogger<RestHealthCheckService> logger, string hubName, IOptions<HealthCheckOption> options)
+        public RestHealthCheckService(IServiceEndpointManager serviceEndpointManager, ILogger<RestHealthCheckService> logger, string hubName, IOptions<HealthCheckOption> options, IHttpClientFactory httpClientFactory)
         {
             var checkOptions = options.Value;
-            _enable = serviceEndpointManager.Endpoints.Count > 1 || checkOptions.EnabledForSingleEndpoint;
-            if (_enable)
-            {
-                _clientFactory = clientFactory;
-                _serviceEndpointManager = serviceEndpointManager;
-                _logger = logger;
-                _hubName = hubName;
-                
-                _checkInterval = checkOptions.CheckInterval.GetValueOrDefault(_checkInterval);
-                _retryInterval = checkOptions.RetryInterval.GetValueOrDefault(_retryInterval);
-                _timer = new TimerAwaitable(_checkInterval, _checkInterval);
-            }
+            _serviceEndpointManager = serviceEndpointManager;
+            _logger = logger;
+            _hubName = hubName;
+
+            _checkInterval = checkOptions.CheckInterval;
+            _retryInterval = checkOptions.RetryInterval;
+            _httpTimeout = checkOptions.HttpTimeout;
+
+            _timer = new TimerAwaitable(_checkInterval, _checkInterval);
+            _httpClientFactory = httpClientFactory;
+            _enabledForSingleEndpoint = checkOptions.EnabledForSingleEndpoint;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            if (_enable)
-            {
-                // wait for the first health check finished
-                await CheckEndpointHealthAsync();
-                _ = LoopAsync();
-            }
+            // wait for the first health check finished
+            await CheckEndpointHealthAsync();
+            _ = LoopAsync();
         }
 
         public Task StopAsync(CancellationToken _)
@@ -63,32 +61,33 @@ namespace Microsoft.Azure.SignalR.Management
 
         private async Task CheckEndpointHealthAsync()
         {
-            await Task.WhenAll(_serviceEndpointManager.GetEndpoints(_hubName).Select(async endpoint =>
+            if (_serviceEndpointManager.Endpoints.Count > 1 || _enabledForSingleEndpoint ||
+                // If there is only one unhealthy endpoint, we still need to check its health to give it a chance to become healthy again.
+                _serviceEndpointManager.Endpoints.Any(e => !e.Key.Online))
             {
-                var retry = 0;
-                var isHealthy = false;
-                bool needRetry;
-                do
+                await Task.WhenAll(_serviceEndpointManager.GetEndpoints(_hubName).Select(async endpoint =>
                 {
-                    try
+                    var retry = 0;
+                    var isHealthy = false;
+                    bool needRetry;
+                    do
                     {
-                        using var client = _clientFactory.Create(endpoint);
-                        isHealthy = await client.IsServiceHealthy(default);
-                    }
-                    catch (Exception ex)
+                        isHealthy = await IsServiceHealthy(endpoint);
+                        needRetry = !isHealthy && retry < MaxRetries;
+                        if (needRetry)
+                        {
+                            Log.WillRetryHealthCheck(_logger, endpoint.Endpoint, _retryInterval);
+                            await Task.Delay(_retryInterval);
+                        }
+                        retry++;
+                    } while (needRetry);
+                    endpoint.Online = isHealthy;
+                    if (!isHealthy)
                     {
-                        //Hard to tell if it is transient error, retry anyway.
-                        Log.RestHealthCheckFailed(_logger, endpoint.Endpoint, ex, retry == MaxRetries, _retryInterval);
+                        Log.RestHealthCheckFailed(_logger, endpoint.Endpoint);
                     }
-                    needRetry = !isHealthy && retry < MaxRetries;
-                    if (needRetry)
-                    {
-                        await Task.Delay(_retryInterval);
-                    }
-                    retry++;
-                } while (needRetry);
-                endpoint.Online = isHealthy;
-            }));
+                }));
+            }
         }
 
         private async Task LoopAsync()
@@ -103,22 +102,46 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
+        private async Task<bool> IsServiceHealthy(ServiceEndpoint endpoint)
+        {
+            using var httpClient = _httpClientFactory.CreateClient(Constants.HttpClientNames.InternalDefault);
+            try
+            {
+                httpClient.BaseAddress = endpoint.ServerEndpoint;
+                httpClient.Timeout = _httpTimeout;
+                var request = new HttpRequestMessage(HttpMethod.Head, RestApiProvider.HealthApiPath);
+                using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                response.EnsureSuccessStatusCode();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                //Hard to tell if it is transient error, retry anyway.
+                Log.RestHealthCheckGetUnexpectedResult(_logger, endpoint.Endpoint, ex);
+                return false;
+            }
+        }
+
         private static class Log
         {
-            private static readonly Action<ILogger, string, TimeSpan, Exception> _restHealthCheckFailed = LoggerMessage.Define<string, TimeSpan>(LogLevel.Information, new EventId(1, nameof(RestHealthCheckFailed)), "Will retry health check for endpoint {endpoint} after a delay of {retryInterval} due to exception.");
+            private static readonly Action<ILogger, string, Exception> _restHealthCheckGetUnexpectedResult = LoggerMessage.Define<string>(LogLevel.Information, new EventId(1, nameof(RestHealthCheckGetUnexpectedResult)), "Got unexpected result when checking health of endpoint {endpoint}. It may be transient.");
 
-            private static readonly Action<ILogger, string, Exception> _finalRestHealthCheckFailed = LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, nameof(RestHealthCheckFailed)), "Failed to check health state for endpoint {endpoint}.");
+            private static readonly Action<ILogger, string, Exception> _restHealthyCheckFailed = LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, nameof(RestHealthCheckFailed)), "Service {endpoint} is unhealthy.");
 
-            public static void RestHealthCheckFailed(ILogger logger, string endpoint, Exception exception, bool lastRetry, TimeSpan retryInterval)
+            private static readonly Action<ILogger, string, TimeSpan, Exception> _willRetryHealthCheck = LoggerMessage.Define<string, TimeSpan>(LogLevel.Information, new EventId(3, nameof(RestHealthCheckFailed)), "Will retry health check for endpoint {endpoint} after a delay of {retryInterval} due to exception.");
+
+            public static void WillRetryHealthCheck(ILogger logger, string endpoint, TimeSpan retryInterval)
             {
-                if (lastRetry)
-                {
-                    _finalRestHealthCheckFailed(logger, endpoint, exception);
-                }
-                else
-                {
-                    _restHealthCheckFailed(logger, endpoint, retryInterval, exception);
-                }
+                _willRetryHealthCheck(logger, endpoint, retryInterval, null);
+            }
+
+            public static void RestHealthCheckGetUnexpectedResult(ILogger logger, string endpoint, Exception exception)
+            {
+                _restHealthCheckGetUnexpectedResult(logger, endpoint, exception);
+            }
+            public static void RestHealthCheckFailed(ILogger logger, string endpoint)
+            {
+                _restHealthyCheckFailed(logger, endpoint, null);
             }
         }
     }

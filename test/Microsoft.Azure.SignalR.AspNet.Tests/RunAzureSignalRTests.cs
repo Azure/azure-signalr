@@ -902,7 +902,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var newSettings = additionalSettings.Select(
                     s =>
                     new KeyValuePair<string, string>(
-                        Constants.Keys.ConnectionStringKeyPrefix + Guid.NewGuid().ToString("N")
+                        Constants.Keys.ConnectionStringDefaultKey + ":" + Guid.NewGuid().ToString("N")
                         , s))
                     .ToList();
                 _originalAdditonalSettings = newSettings.Select(s =>

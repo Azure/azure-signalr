@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
         public async Task TestHttpRequestExceptionWithStatusCodeSetAsync()
         {
             var httpClientFactory = new ServiceCollection()
-                .AddHttpClient("").ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(HttpStatusCode.InsufficientStorage)).Services
+                .AddHttpClient(Constants.HttpClientNames.UserDefault).ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(HttpStatusCode.InsufficientStorage)).Services
                 .BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
             var client = new RestClient(httpClientFactory);
             var apiEndpoint = new RestApiEndpoint("https://localhost.test.com", "token");
@@ -29,7 +29,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
             var httpRequestException = Assert.IsType<HttpRequestException>(exception.InnerException);
             Assert.Equal(HttpStatusCode.InsufficientStorage, httpRequestException.StatusCode);
         }
-
 #endif
     }
 }
