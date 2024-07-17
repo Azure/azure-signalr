@@ -43,5 +43,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         public const int ErrorCompletionMessageType = 36;
         public const int ServiceMappingMessageType = 37;
         public const int ConnectionReconnectMessageType = 38;
+        public const int ConnectionFlowControlMessageType = 39;
     }
 }

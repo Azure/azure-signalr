@@ -102,6 +102,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return ErrorCompletionMessageEqual(errorCompletionMessage, (ErrorCompletionMessage)y);
                 case ServiceMappingMessage serviceMappingMessage:
                     return ServiceMappingMessageEqual(serviceMappingMessage, (ServiceMappingMessage)y);
+                case ConnectionFlowControlMessage connectionFlowControlMessage:
+                    return ConnectionFlowControlMessageEqual(connectionFlowControlMessage, (ConnectionFlowControlMessage)y);
                 default:
                     throw new InvalidOperationException($"Unknown message type: {x.GetType().FullName}");
             }
@@ -384,6 +386,13 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return StringEqual(x.InvocationId, y.InvocationId) &&
                 StringEqual(x.ConnectionId, y.ConnectionId) &&
                 StringEqual(x.InstanceId, y.InstanceId);
+        }
+
+        private bool ConnectionFlowControlMessageEqual(ConnectionFlowControlMessage x, ConnectionFlowControlMessage y)
+        {
+            return StringEqual(x.ConnectionId, y.ConnectionId) &&
+                Equals(x.ConnectionType, y.ConnectionType) &&
+                Equals(x.Operation, y.Operation);
         }
 
         private static bool StringEqual(string x, string y)
