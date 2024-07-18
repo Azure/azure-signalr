@@ -475,7 +475,6 @@ namespace Microsoft.Azure.SignalR.Tests
                     serviceMessageHandler,
                     serviceEventHandler,
                     clientInvocationManager,
-                    new AckHandler(),
                     hubProtocolResolver,
                     connectionType: connectionType,
                     mode: mode,

@@ -6,47 +6,46 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR.AspNet
+namespace Microsoft.Azure.SignalR.AspNet;
+
+internal class ClientConnectionContext
 {
-    internal class ClientConnectionContext
+    private readonly CancellationTokenSource _source = new CancellationTokenSource();
+
+    private readonly IServiceConnection _serviceConnection;
+
+    public Task ApplicationTask { get; set; }
+
+    public CancellationToken CancellationToken => _source.Token;
+
+    public string ConnectionId { get; }
+
+    public ChannelReader<ServiceMessage> Input { get; }
+
+    public string InstanceId { get; }
+
+    public ChannelWriter<ServiceMessage> Output { get; }
+
+    public IServiceTransport Transport { get; set; }
+
+    public ClientConnectionContext(IServiceConnection sc, string connectionId, string instanceId = null)
     {
-        private readonly CancellationTokenSource _source = new CancellationTokenSource();
+        _serviceConnection = sc;
 
-        private readonly IServiceConnection _serviceConnection;
+        ConnectionId = connectionId;
+        InstanceId = instanceId;
+        var channel = Channel.CreateUnbounded<ServiceMessage>();
+        Input = channel.Reader;
+        Output = channel.Writer;
+    }
 
-        public Task ApplicationTask { get; set; }
+    public async Task WriteMessageAsync(ConnectionDataMessage message)
+    {
+        await _serviceConnection.WriteAsync(message);
+    }
 
-        public CancellationToken CancellationToken => _source.Token;
-
-        public string ConnectionId { get; }
-
-        public ChannelReader<ServiceMessage> Input { get; }
-
-        public string InstanceId { get; }
-
-        public ChannelWriter<ServiceMessage> Output { get; }
-
-        public IServiceTransport Transport { get; set; }
-
-        public ClientConnectionContext(IServiceConnection sc, string connectionId, string instanceId = null)
-        {
-            _serviceConnection = sc;
-
-            ConnectionId = connectionId;
-            InstanceId = instanceId;
-            var channel = Channel.CreateUnbounded<ServiceMessage>();
-            Input = channel.Reader;
-            Output = channel.Writer;
-        }
-
-        public async Task WriteMessageAsync(ConnectionDataMessage message)
-        {
-            await _serviceConnection.WriteAsync(message);
-        }
-
-        public void CancelPendingRead()
-        {
-            _source.Cancel();
-        }
+    public void CancelPendingRead()
+    {
+        _source.Cancel();
     }
 }

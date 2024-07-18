@@ -101,7 +101,6 @@ namespace Microsoft.Azure.SignalR.Tests
                 serviceMessageHandler,
                 null,
                 ClientInvocationManager,
-                ackHandler,
                 new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
                 type,
                 allowStatefulReconnects: AllowStatefulReconnects);

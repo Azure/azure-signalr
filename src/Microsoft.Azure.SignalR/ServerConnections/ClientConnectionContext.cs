@@ -19,374 +19,365 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Features.Authentication;
-using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+/// <summary>
+/// The client connection context
+/// </summary>
+/// <code>
+///   ------------------------- Client Connection-------------------------------                   ------------Service Connection---------
+///  |                                      Transport              Application  |                 |   Transport              Application  |
+///  | ========================            =============         ============   |                 |  =============         ============   |
+///  | |                      |            |   Input   |         |   Output |   |                 |  |   Input   |         |   Output |   |
+///  | |      User's          |  /-------  |     |---------------------|    |   |    /-------     |  |     |---------------------|    |   |
+///  | |      Delegated       |  \-------  |     |---------------------|    |   |    \-------     |  |     |---------------------|    |   |
+///  | |      Handler         |            |           |         |          |   |                 |  |           |         |          |   |
+///  | |                      |            |           |         |          |   |                 |  |           |         |          |   |
+///  | |                      |  -------\  |     |---------------------|    |   |    -------\     |  |     |---------------------|    |   |
+///  | |                      |  -------/  |     |---------------------|    |   |    -------/     |  |     |---------------------|    |   |
+///  | |                      |            |   Output  |         |   Input  |   |                 |  |   Output  |         |   Input  |   |
+///  | ========================            ============         ============    |                 |  ============         ============    |
+///   --------------------------------------------------------------------------                   ---------------------------------------
+/// </code>
+internal class ClientConnectionContext : ConnectionContext,
+                                          IConnectionUserFeature,
+                                          IConnectionItemsFeature,
+                                          IConnectionIdFeature,
+                                          IConnectionTransportFeature,
+                                          IConnectionHeartbeatFeature,
+                                          IHttpContextFeature,
+                                          IConnectionStatFeature
 {
-    /// <summary>
-    /// The client connection context
-    /// </summary>
-    /// <code>
-    ///   ------------------------- Client Connection-------------------------------                   ------------Service Connection---------
-    ///  |                                      Transport              Application  |                 |   Transport              Application  |
-    ///  | ========================            =============         ============   |                 |  =============         ============   |
-    ///  | |                      |            |   Input   |         |   Output |   |                 |  |   Input   |         |   Output |   |
-    ///  | |      User's          |  /-------  |     |---------------------|    |   |    /-------     |  |     |---------------------|    |   |
-    ///  | |      Delegated       |  \-------  |     |---------------------|    |   |    \-------     |  |     |---------------------|    |   |
-    ///  | |      Handler         |            |           |         |          |   |                 |  |           |         |          |   |
-    ///  | |                      |            |           |         |          |   |                 |  |           |         |          |   |
-    ///  | |                      |  -------\  |     |---------------------|    |   |    -------\     |  |     |---------------------|    |   |
-    ///  | |                      |  -------/  |     |---------------------|    |   |    -------/     |  |     |---------------------|    |   |
-    ///  | |                      |            |   Output  |         |   Input  |   |                 |  |   Output  |         |   Input  |   |
-    ///  | ========================            ============         ============    |                 |  ============         ============    |
-    ///   --------------------------------------------------------------------------                   ---------------------------------------
-    /// </code>
-    internal class ClientConnectionContext : ConnectionContext,
-                                              IConnectionUserFeature,
-                                              IConnectionItemsFeature,
-                                              IConnectionIdFeature,
-                                              IConnectionTransportFeature,
-                                              IConnectionHeartbeatFeature,
-                                              IHttpContextFeature,
-                                              IConnectionStatFeature
+    private const int WritingState = 1;
+
+    private const int CompletedState = 2;
+
+    private const int IdleState = 0;
+
+    private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(
+        readerScheduler: PipeScheduler.ThreadPool,
+        useSynchronizationContext: false);
+
+    private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
+
+    private readonly object _heartbeatLock = new object();
+
+    private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
+
+    private int _connectionState = IdleState;
+
+    private List<(Action<object> handler, object state)> _heartbeatHandlers;
+
+    private volatile bool _abortOnClose = true;
+
+    private long _lastMessageReceivedAt;
+
+    private long _receivedBytes;
+
+    public bool IsMigrated { get; }
+
+    public string Protocol { get; }
+
+    public string InstanceId { get; }
+
+    // Send "Abort" to service on close except that Service asks SDK to close
+    public bool AbortOnClose
     {
-        private const int WritingState = 1;
+        get => _abortOnClose;
+        set => _abortOnClose = value;
+    }
 
-        private const int CompletedState = 2;
+    public override string ConnectionId { get; set; }
 
-        private const int IdleState = 0;
+    public override IFeatureCollection Features { get; }
 
-        private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(
-            readerScheduler: PipeScheduler.ThreadPool,
-            useSynchronizationContext: false);
+    public override IDictionary<object, object> Items { get; set; } = new ConnectionItems(new ConcurrentDictionary<object, object>());
 
-        private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+    public override IDuplexPipe Transport { get; set; }
 
-        private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
+    public IDuplexPipe Application { get; set; }
 
-        private readonly object _heartbeatLock = new object();
+    public ClaimsPrincipal User { get; set; }
 
-        private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
+    public Task LifetimeTask => _connectionEndTcs.Task;
 
-        private int _connectionState = IdleState;
+    public ServiceConnectionBase ServiceConnection { get; set; }
 
-        private List<(Action<object> handler, object state)> _heartbeatHandlers;
+    public HttpContext HttpContext { get; set; }
 
-        private volatile bool _abortOnClose = true;
+    public CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
 
-        private long _lastMessageReceivedAt;
+    public DateTime LastMessageReceivedAtUtc => new DateTime(Volatile.Read(ref _lastMessageReceivedAt), DateTimeKind.Utc);
 
-        private long _receivedBytes;
+    public DateTime StartedAtUtc { get; } = DateTime.UtcNow;
 
-        public bool IsMigrated { get; }
+    public long ReceivedBytes => Volatile.Read(ref _receivedBytes);
 
-        public string Protocol { get; }
+    public ClientConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
+    {
+        ConnectionId = serviceMessage.ConnectionId;
+        Protocol = serviceMessage.Protocol;
+        User = serviceMessage.GetUserPrincipal();
+        InstanceId = GetInstanceId(serviceMessage.Headers);
 
-        public string InstanceId { get; }
+        // Create the Duplix Pipeline for the virtual connection
+        transportPipeOptions ??= DefaultPipeOptions;
+        appPipeOptions ??= DefaultPipeOptions;
 
-        // Send "Abort" to service on close except that Service asks SDK to close
-        public bool AbortOnClose
+        var pair = DuplexPipe.CreateConnectionPair(transportPipeOptions, appPipeOptions);
+        Transport = pair.Application;
+        Application = pair.Transport;
+
+        HttpContext = BuildHttpContext(serviceMessage);
+        configureContext?.Invoke(HttpContext);
+
+        Features = BuildFeatures(serviceMessage);
+
+        if (serviceMessage.Headers.TryGetValue(Constants.AsrsMigrateFrom, out _))
         {
-            get => _abortOnClose;
-            set => _abortOnClose = value;
+            IsMigrated = true;
         }
+    }
 
-        public override string ConnectionId { get; set; }
+    public void CompleteIncoming()
+    {
+        // always set the connection state to completing when this method is called
+        var previousState =
+            Interlocked.Exchange(ref _connectionState, CompletedState);
 
-        public override IFeatureCollection Features { get; }
+        Application.Output.CancelPendingFlush();
 
-        public override IDictionary<object, object> Items { get; set; } = new ConnectionItems(new ConcurrentDictionary<object, object>());
-
-        public override IDuplexPipe Transport { get; set; }
-
-        public IDuplexPipe Application { get; set; }
-
-        public ClaimsPrincipal User { get; set; }
-
-        public Task LifetimeTask => _connectionEndTcs.Task;
-
-        public ServiceConnectionBase ServiceConnection { get; set; }
-
-        public HttpContext HttpContext { get; set; }
-
-        public CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
-
-        public DateTime LastMessageReceivedAtUtc => new DateTime(Volatile.Read(ref _lastMessageReceivedAt), DateTimeKind.Utc);
-
-        public DateTime StartedAtUtc { get; } = DateTime.UtcNow;
-
-        public long ReceivedBytes => Volatile.Read(ref _receivedBytes);
-
-        public ClientConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
+        // If it is idle, complete directly
+        // If it is completing already, complete directly
+        if (previousState != WritingState)
         {
-            ConnectionId = serviceMessage.ConnectionId;
-            Protocol = serviceMessage.Protocol;
-            User = serviceMessage.GetUserPrincipal();
-            InstanceId = GetInstanceId(serviceMessage.Headers);
+            Application.Output.Complete();
+        }
+    }
 
-            // Create the Duplix Pipeline for the virtual connection
-            transportPipeOptions = transportPipeOptions ?? DefaultPipeOptions;
-            appPipeOptions = appPipeOptions ?? DefaultPipeOptions;
+    public async Task WriteMessageAsync(ReadOnlySequence<byte> payload)
+    {
+        await _writeLock.WaitAsync();
+        try
+        {
+            var previousState = Interlocked.CompareExchange(ref _connectionState, WritingState, IdleState);
 
-            var pair = DuplexPipe.CreateConnectionPair(transportPipeOptions, appPipeOptions);
-            Transport = pair.Application;
-            Application = pair.Transport;
+            // Write should not be called from multiple threads
+            Debug.Assert(previousState != WritingState);
 
-            HttpContext = BuildHttpContext(serviceMessage);
-            configureContext?.Invoke(HttpContext);
-
-            Features = BuildFeatures(serviceMessage);
-
-            if (serviceMessage.Headers.TryGetValue(Constants.AsrsMigrateFrom, out _))
+            if (previousState == CompletedState)
             {
-                IsMigrated = true;
+                // already completing, don't write anymore
+                return;
             }
-        }
 
-        public void CompleteIncoming()
-        {
-            // always set the connection state to completing when this method is called
-            var previousState =
-                Interlocked.Exchange(ref _connectionState, CompletedState);
-
-            Application.Output.CancelPendingFlush();
-
-            // If it is idle, complete directly
-            // If it is completing already, complete directly
-            if (previousState != WritingState)
-            {
-                Application.Output.Complete();
-            }
-        }
-
-        public async Task WriteMessageAsync(ReadOnlySequence<byte> payload)
-        {
-            await _writeLock.WaitAsync();
             try
             {
-                var previousState = Interlocked.CompareExchange(ref _connectionState, WritingState, IdleState);
+                _lastMessageReceivedAt = DateTime.UtcNow.Ticks;
+                _receivedBytes += payload.Length;
 
-                // Write should not be called from multiple threads
-                Debug.Assert(previousState != WritingState);
-
-                if (previousState == CompletedState)
-                {
-                    // already completing, don't write anymore
-                    return;
-                }
-
-                try
-                {
-                    _lastMessageReceivedAt = DateTime.UtcNow.Ticks;
-                    _receivedBytes += payload.Length;
-
-                    // Start write
-                    await WriteMessageAsyncCore(payload);
-                }
-                finally
-                {
-                    // Try to set the connection to idle if it is in writing state, if it is in complete state, complete the tcs
-                    previousState = Interlocked.CompareExchange(ref _connectionState, IdleState, WritingState);
-                    if (previousState == CompletedState)
-                    {
-                        Application.Output.Complete();
-                    }
-                }
+                // Start write
+                await WriteMessageAsyncCore(payload);
             }
             finally
             {
-                _writeLock.Release();
-            }
-        }
-
-        public void OnCompleted()
-        {
-            _connectionEndTcs.TrySetResult(null);
-        }
-
-        public void OnHeartbeat(Action<object> action, object state)
-        {
-            lock (_heartbeatLock)
-            {
-                if (_heartbeatHandlers == null)
+                // Try to set the connection to idle if it is in writing state, if it is in complete state, complete the tcs
+                previousState = Interlocked.CompareExchange(ref _connectionState, IdleState, WritingState);
+                if (previousState == CompletedState)
                 {
-                    _heartbeatHandlers = new List<(Action<object> handler, object state)>();
-                }
-                _heartbeatHandlers.Add((action, state));
-            }
-        }
-
-        public void TickHeartbeat()
-        {
-            lock (_heartbeatLock)
-            {
-                if (_heartbeatHandlers == null)
-                {
-                    return;
-                }
-
-                foreach (var (handler, state) in _heartbeatHandlers)
-                {
-                    handler(state);
+                    Application.Output.Complete();
                 }
             }
         }
-
-        /// <summary>
-        /// Cancel the outgoing process
-        /// </summary>
-        public void CancelOutgoing(int millisecondsDelay = 0)
+        finally
         {
-            if (millisecondsDelay <= 0)
-            {
-                _abortOutgoingCts.Cancel();
-            }
-            else
-            {
-                _abortOutgoingCts.CancelAfter(millisecondsDelay);
-            }
+            _writeLock.Release();
         }
+    }
 
-        internal static bool TryGetRemoteIpAddress(IHeaderDictionary headers, out IPAddress address)
+    public void OnCompleted()
+    {
+        _connectionEndTcs.TrySetResult(null);
+    }
+
+    public void OnHeartbeat(Action<object> action, object state)
+    {
+        lock (_heartbeatLock)
         {
-            var forwardedFor = headers.GetCommaSeparatedValues("X-Forwarded-For");
-            if (forwardedFor.Length > 0 && IPAddress.TryParse(forwardedFor[0], out address))
-            {
-                return true;
-            }
-            address = null;
-            return false;
+            _heartbeatHandlers ??= new List<(Action<object> handler, object state)>();
+            _heartbeatHandlers.Add((action, state));
         }
+    }
 
-        private static void ProcessQuery(string queryString, out string originalPath)
+    public void TickHeartbeat()
+    {
+        lock (_heartbeatLock)
         {
-            originalPath = string.Empty;
-            var query = QueryHelpers.ParseNullableQuery(queryString);
-            if (query == null)
+            if (_heartbeatHandlers == null)
             {
                 return;
             }
 
-            if (query.TryGetValue(Constants.QueryParameter.RequestCulture, out var culture))
+            foreach (var (handler, state) in _heartbeatHandlers)
             {
-                SetCurrentThreadCulture(culture.FirstOrDefault());
-            }
-            if (query.TryGetValue(Constants.QueryParameter.RequestUICulture, out var uiCulture))
-            {
-                SetCurrentThreadUiCulture(uiCulture.FirstOrDefault());
-            }
-            if (query.TryGetValue(Constants.QueryParameter.OriginalPath, out var path))
-            {
-                originalPath = path.FirstOrDefault();
+                handler(state);
             }
         }
+    }
 
-        private static void SetCurrentThreadCulture(string cultureName)
+    /// <summary>
+    /// Cancel the outgoing process
+    /// </summary>
+    public void CancelOutgoing(int millisecondsDelay = 0)
+    {
+        if (millisecondsDelay <= 0)
         {
-            if (!string.IsNullOrEmpty(cultureName))
+            _abortOutgoingCts.Cancel();
+        }
+        else
+        {
+            _abortOutgoingCts.CancelAfter(millisecondsDelay);
+        }
+    }
+
+    internal static bool TryGetRemoteIpAddress(IHeaderDictionary headers, out IPAddress address)
+    {
+        var forwardedFor = headers.GetCommaSeparatedValues("X-Forwarded-For");
+        if (forwardedFor.Length > 0 && IPAddress.TryParse(forwardedFor[0], out address))
+        {
+            return true;
+        }
+        address = null;
+        return false;
+    }
+
+    private static void ProcessQuery(string queryString, out string originalPath)
+    {
+        originalPath = string.Empty;
+        var query = QueryHelpers.ParseNullableQuery(queryString);
+        if (query == null)
+        {
+            return;
+        }
+
+        if (query.TryGetValue(Constants.QueryParameter.RequestCulture, out var culture))
+        {
+            SetCurrentThreadCulture(culture.FirstOrDefault());
+        }
+        if (query.TryGetValue(Constants.QueryParameter.RequestUICulture, out var uiCulture))
+        {
+            SetCurrentThreadUiCulture(uiCulture.FirstOrDefault());
+        }
+        if (query.TryGetValue(Constants.QueryParameter.OriginalPath, out var path))
+        {
+            originalPath = path.FirstOrDefault();
+        }
+    }
+
+    private static void SetCurrentThreadCulture(string cultureName)
+    {
+        if (!string.IsNullOrEmpty(cultureName))
+        {
+            try
             {
-                try
+                CultureInfo.CurrentCulture = new CultureInfo(cultureName);
+            }
+            catch (Exception)
+            {
+                // skip invalid culture, normal won't hit.
+            }
+        }
+    }
+
+    private static void SetCurrentThreadUiCulture(string uiCultureName)
+    {
+        if (!string.IsNullOrEmpty(uiCultureName))
+        {
+            try
+            {
+                CultureInfo.CurrentUICulture = new CultureInfo(uiCultureName);
+            }
+            catch (Exception)
+            {
+                // skip invalid culture, normal won't hit.
+            }
+        }
+    }
+
+    private static string GetInstanceId(IDictionary<string, StringValues> header)
+    {
+        return header.TryGetValue(Constants.AsrsInstanceId, out var instanceId) ? (string)instanceId : string.Empty;
+    }
+
+    private FeatureCollection BuildFeatures(OpenConnectionMessage serviceMessage)
+    {
+        var features = new FeatureCollection();
+        features.Set<IConnectionHeartbeatFeature>(this);
+        features.Set<IConnectionUserFeature>(this);
+        features.Set<IConnectionItemsFeature>(this);
+        features.Set<IConnectionIdFeature>(this);
+        features.Set<IConnectionTransportFeature>(this);
+        features.Set<IHttpContextFeature>(this);
+        features.Set<IConnectionStatFeature>(this);
+
+        var userIdClaim = serviceMessage.Claims?.FirstOrDefault(c => c.Type == Constants.ClaimType.UserId);
+        if (userIdClaim != default)
+        {
+            features.Set(new ServiceUserIdFeature(userIdClaim.Value));
+        }
+        return features;
+    }
+
+    private async Task WriteMessageAsyncCore(ReadOnlySequence<byte> payload)
+    {
+        if (payload.IsSingleSegment)
+        {
+            // Write the raw connection payload to the pipe let the upstream handle it
+            await Application.Output.WriteAsync(payload.First);
+        }
+        else
+        {
+            var position = payload.Start;
+            while (payload.TryGet(ref position, out var memory))
+            {
+                var result = await Application.Output.WriteAsync(memory);
+                if (result.IsCanceled)
                 {
-                    CultureInfo.CurrentCulture = new CultureInfo(cultureName);
-                }
-                catch (Exception)
-                {
-                    // skip invalid culture, normal won't hit.
+                    // IsCanceled when CancelPendingFlush is called
+                    break;
                 }
             }
         }
+    }
 
-        private static void SetCurrentThreadUiCulture(string uiCultureName)
+    private DefaultHttpContext BuildHttpContext(OpenConnectionMessage message)
+    {
+        var httpContextFeatures = new FeatureCollection();
+        ProcessQuery(message.QueryString, out var originalPath);
+        var requestFeature = new HttpRequestFeature
         {
-            if (!string.IsNullOrEmpty(uiCultureName))
-            {
-                try
-                {
-                    CultureInfo.CurrentUICulture = new CultureInfo(uiCultureName);
-                }
-                catch (Exception)
-                {
-                    // skip invalid culture, normal won't hit.
-                }
-            }
+            Headers = new HeaderDictionary((Dictionary<string, StringValues>)message.Headers),
+            QueryString = message.QueryString,
+            Path = originalPath
+        };
+
+        httpContextFeatures.Set<IHttpRequestFeature>(requestFeature);
+        httpContextFeatures.Set<IHttpAuthenticationFeature>(new HttpAuthenticationFeature
+        {
+            User = User
+        });
+
+        if (TryGetRemoteIpAddress(requestFeature.Headers, out var address))
+        {
+            httpContextFeatures.Set<IHttpConnectionFeature>(new HttpConnectionFeature { RemoteIpAddress = address });
         }
 
-        private FeatureCollection BuildFeatures(OpenConnectionMessage serviceMessage)
-        {
-            var features = new FeatureCollection();
-            features.Set<IConnectionHeartbeatFeature>(this);
-            features.Set<IConnectionUserFeature>(this);
-            features.Set<IConnectionItemsFeature>(this);
-            features.Set<IConnectionIdFeature>(this);
-            features.Set<IConnectionTransportFeature>(this);
-            features.Set<IHttpContextFeature>(this);
-            features.Set<IConnectionStatFeature>(this);
-
-            var userIdClaim = serviceMessage.Claims?.FirstOrDefault(c => c.Type == Constants.ClaimType.UserId);
-            if (userIdClaim != default)
-            {
-                features.Set(new ServiceUserIdFeature(userIdClaim.Value));
-            }
-            return features;
-        }
-
-        private async Task WriteMessageAsyncCore(ReadOnlySequence<byte> payload)
-        {
-            if (payload.IsSingleSegment)
-            {
-                // Write the raw connection payload to the pipe let the upstream handle it
-                await Application.Output.WriteAsync(payload.First);
-            }
-            else
-            {
-                var position = payload.Start;
-                while (payload.TryGet(ref position, out var memory))
-                {
-                    var result = await Application.Output.WriteAsync(memory);
-                    if (result.IsCanceled)
-                    {
-                        // IsCanceled when CancelPendingFlush is called
-                        break;
-                    }
-                }
-            }
-        }
-
-        private HttpContext BuildHttpContext(OpenConnectionMessage message)
-        {
-            var httpContextFeatures = new FeatureCollection();
-            ProcessQuery(message.QueryString, out var originalPath);
-            var requestFeature = new HttpRequestFeature
-            {
-                Headers = new HeaderDictionary((Dictionary<string, StringValues>)message.Headers),
-                QueryString = message.QueryString,
-                Path = originalPath
-            };
-
-            httpContextFeatures.Set<IHttpRequestFeature>(requestFeature);
-            httpContextFeatures.Set<IHttpAuthenticationFeature>(new HttpAuthenticationFeature
-            {
-                User = User
-            });
-
-            if (TryGetRemoteIpAddress(requestFeature.Headers, out var address))
-            {
-                httpContextFeatures.Set<IHttpConnectionFeature>(new HttpConnectionFeature { RemoteIpAddress = address });
-            }
-
-            return new DefaultHttpContext(httpContextFeatures);
-        }
-
-        private string GetInstanceId(IDictionary<string, StringValues> header)
-        {
-            if (header.TryGetValue(Constants.AsrsInstanceId, out var instanceId))
-            {
-                return instanceId;
-            }
-            return string.Empty;
-        }
+        return new DefaultHttpContext(httpContextFeatures);
     }
 }

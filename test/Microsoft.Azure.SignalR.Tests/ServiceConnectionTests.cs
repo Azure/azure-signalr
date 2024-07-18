@@ -55,7 +55,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(
                     protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
                     new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance));
 
                 var connectionTask = connection.StartAsync();
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(
                     protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
                     new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance));
 
                 var connectionTask = connection.StartAsync();
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var connection = new ServiceConnection(
                     protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
                     new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance));
 
                 var connectionTask = connection.StartAsync();
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                     "serverId", Guid.NewGuid().ToString("N"),
-                    null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    null, null, null, new DefaultClientInvocationManager(),
                     new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
                     closeTimeOutMilliseconds: 1);
 
@@ -299,7 +299,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(
                     protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
                     new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
                     closeTimeOutMilliseconds: 500);
 
@@ -360,7 +360,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var connection = new ServiceConnection(
                     protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
                     new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance)
                     , closeTimeOutMilliseconds: 500);
 
@@ -433,7 +433,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var connection = new ServiceConnection(
                     protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
                     new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
                     closeTimeOutMilliseconds: 500);
 
@@ -512,7 +512,7 @@ namespace Microsoft.Azure.SignalR.Tests
                                                        null,
                                                        null,
                                                        new DefaultClientInvocationManager(),
-                                                       new AckHandler(),
+                                                      
                                                        new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
                                                        closeTimeOutMilliseconds: 500);
 
@@ -601,7 +601,7 @@ namespace Microsoft.Azure.SignalR.Tests
                                                        null,
                                                        null,
                                                        new DefaultClientInvocationManager(),
-                                                       new AckHandler(),
+                                                      
                                                        new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
                                                        closeTimeOutMilliseconds: 500);
 
@@ -660,7 +660,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(
                     protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
                     new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
                     closeTimeOutMilliseconds: 500);
 
@@ -749,7 +749,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(
                     protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(), new AckHandler(),
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
                     new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
                     closeTimeOutMilliseconds: 500);
 

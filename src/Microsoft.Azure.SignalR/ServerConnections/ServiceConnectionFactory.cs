@@ -65,7 +65,6 @@ namespace Microsoft.Azure.SignalR
                 serviceMessageHandler,
                 _serviceEventHandler,
                 _clientInvocationManager,
-                ackHandler,
                 _hubProtocolResolver,
                 type,
                 ShutdownMode,
