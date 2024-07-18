@@ -7,6 +7,53 @@ using MessagePack;
 
 namespace Microsoft.Azure.SignalR.Protocol
 {
+    public enum ConnectionFlowControlOperation
+    {
+        /// <summary>
+        /// Send from ASRS to the app server.
+        /// Asking the client connection to pause sending messages towards ASRS.
+        /// </summary>
+        Pause = 1,
+
+        /// <summary>
+        /// Reply from the app server to ASRS.
+        /// Ackknowledge that the message sending towards ASRS has been pasued.
+        /// </summary>
+        PauseAck = 2,
+
+        /// <summary>
+        /// Send from ASRS to the app server.
+        /// Asking the client connection to resume sending messages towards ASRS.
+        /// </summary>
+        Resume = 3,
+
+        /// <summary>
+        /// Send from ASRS to the app server.
+        /// Asking the app server to send messages through other server connections.
+        /// </summary>
+        Offline = 4,
+    }
+
+    public enum ConnectionType
+    {
+        /// <summary>
+        /// Client connection
+        /// </summary>
+        Client = 1,
+        /// <summary>
+        /// Server connection
+        /// </summary>
+        Server = 2,
+    }
+
+    /// <summary>
+    /// Interface of ack-able message
+    /// </summary>
+    public interface IAckableMessage
+    {
+        int AckId { get; set; }
+    }
+
     /// <summary>
     /// Base class of messages between Azure SignalR Service and SDK.
     /// </summary>
@@ -25,8 +72,11 @@ namespace Microsoft.Azure.SignalR.Protocol
     public abstract class ExtensibleServiceMessage : ServiceMessage
     {
         private const int TracingId = 1;
+
         private const int Ttl = 2;
+
         private const int Protocol = 3;
+
         private const int Filter = 4;
         private const int DataMessageType = 5;
         private const int IsPartial = 6;
@@ -157,11 +207,17 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
-    /// Interface of ack-able message 
+    /// The ASRS send it to the source server connection to initiate a client connection migration.
+    /// Indicates that incoming messages are blocked.
     /// </summary>
-    public interface IAckableMessage
+    /// <param name="connectionId">The client connection ID</param>
+    /// <param name="op">The operation</param>
+    /// <param name="type">The connection type</param>
+    public class ConnectionFlowControlMessage(string connectionId, ConnectionFlowControlOperation op, ConnectionType type = ConnectionType.Client) : ConnectionMessage(connectionId)
     {
-        int AckId { get; set; }
+        public ConnectionFlowControlOperation Operation { get; } = op;
+
+        public ConnectionType ConnectionType { get; } = type;
     }
 
     /// <summary>
@@ -176,7 +232,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         /// <summary>
         /// Gets or sets the key Id.
-        /// <c>null</c> 
+        /// <c>null</c>
         /// </summary>
         public string Kid { get; set; }
 
