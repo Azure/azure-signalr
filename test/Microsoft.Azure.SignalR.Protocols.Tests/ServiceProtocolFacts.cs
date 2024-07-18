@@ -283,6 +283,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         }.ToDictionary(t => t.Name);
 
 #pragma warning disable CS0618 // Type or member is obsolete
+
         public static IDictionary<string, ProtocolTestData> TestData => new[]
         {
             new ProtocolTestData(
@@ -693,7 +694,16 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "ServiceMappingMessage",
                 message: new ServiceMappingMessage("invocationId", "conn1", "instance1"),
                 binary: "lSWsaW52b2NhdGlvbklkpWNvbm4xqWluc3RhbmNlMYA="),
+            new ProtocolTestData(
+                name: nameof(ConnectionFlowControlMessage) + "-1",
+                message: new ConnectionFlowControlMessage("conn1", ConnectionFlowControlOperation.Pause, ConnectionType.Client),
+                binary: "lSelY29ubjHSAAAAAdIAAAABgA=="),
+            new ProtocolTestData(
+                name: nameof(ConnectionFlowControlMessage) + "-2",
+                message: new ConnectionFlowControlMessage("conn2", ConnectionFlowControlOperation.Offline, ConnectionType.Server),
+                binary: "lSelY29ubjLSAAAAAtIAAAAEgA=="),
         }.ToDictionary(t => t.Name);
+
 #pragma warning restore CS0618 // Type or member is obsolete
 
         [Theory]
@@ -840,7 +850,9 @@ Please verify the MsgPack output and update the baseline");
         public class ProtocolTestData
         {
             public string Name { get; private set; }
+
             public string Binary { get; private set; }
+
             public ServiceMessage Message { get; private set; }
 
             public ProtocolTestData(string name, ServiceMessage message, string binary)

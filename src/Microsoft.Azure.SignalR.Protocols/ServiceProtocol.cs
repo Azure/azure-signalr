@@ -123,6 +123,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateErrorCompletionMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.ServiceMappingMessageType:
                     return CreateServiceMappingMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.ConnectionFlowControlMessageType:
+                    return CreateConnectionFlowControlMessage(ref reader, arrayLength);
                 default:
                     // Future protocol changes can add message types, old clients can ignore them
                     return null;
@@ -302,6 +304,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                     break;
                 case ServiceMappingMessage serviceMappingMessage:
                     WriteServiceMappingMessage(ref writer, serviceMappingMessage);
+                    break;
+                case ConnectionFlowControlMessage connectionFlowControlMessage:
+                    WriteConnectionFlowControlMessage(ref writer, connectionFlowControlMessage);
                     break;
                 default:
                     throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
@@ -697,6 +702,16 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.Write(message.InvocationId);
             writer.Write(message.ConnectionId);
             writer.Write(message.InstanceId);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteConnectionFlowControlMessage(ref MessagePackWriter writer, ConnectionFlowControlMessage message)
+        {
+            writer.WriteArrayHeader(5);
+            writer.Write(ServiceProtocolConstants.ConnectionFlowControlMessageType);
+            writer.Write(message.ConnectionId);
+            writer.WriteInt32((int)message.ConnectionType);
+            writer.WriteInt32((int)message.Operation);
             message.WriteExtensionMembers(ref writer);
         }
 
@@ -1283,6 +1298,39 @@ namespace Microsoft.Azure.SignalR.Protocol
             var result = new ServiceMappingMessage(invocationId, connectionId, instanceId);
 
             result.ReadExtensionMembers(ref reader);
+            return result;
+        }
+
+        private static ConnectionFlowControlMessage CreateConnectionFlowControlMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var connectionId = ReadString(ref reader, "connectionId");
+            var connectionType = ReadInt32(ref reader, "connectionType");
+            var operation = ReadInt32(ref reader, "operation");
+
+            switch (connectionType)
+            {
+                case (int)ConnectionType.Client:
+                case (int)ConnectionType.Server:
+                    break;
+                default:
+                    throw new InvalidDataException($"Unsupported connection type: {connectionType}");
+            }
+
+            switch (operation)
+            {
+                case (int)ConnectionFlowControlOperation.Pause:
+                case (int)ConnectionFlowControlOperation.PauseAck:
+                case (int)ConnectionFlowControlOperation.Resume:
+                case (int)ConnectionFlowControlOperation.Offline:
+                    break;
+                default:
+                    throw new InvalidDataException($"Unsupported operation: {operation}");
+            }
+
+            var result = new ConnectionFlowControlMessage(
+                connectionId,
+                (ConnectionFlowControlOperation)operation,
+                (ConnectionType)connectionType);
             return result;
         }
 
