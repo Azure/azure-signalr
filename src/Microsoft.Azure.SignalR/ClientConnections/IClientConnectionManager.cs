@@ -3,14 +3,13 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal interface IClientConnectionManager : IClientConnectionLifetimeManager
 {
-    internal interface IClientConnectionManager : IClientConnectionLifetimeManager
-    {
-        IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections { get; }
+    IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections { get; }
 
-        bool TryAddClientConnection(ClientConnectionContext connection);
+    bool TryAddClientConnection(ClientConnectionContext connection);
 
-        bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection);
-    }
+    bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection);
 }

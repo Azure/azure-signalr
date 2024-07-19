@@ -6,20 +6,19 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal interface IServiceConnectionManager<THub> where THub : Hub
 {
-    internal interface IServiceConnectionManager<THub> where THub : Hub
-    {
-        void SetServiceConnection(IServiceConnectionContainer serviceConnection);
+    void SetServiceConnection(IServiceConnectionContainer serviceConnection);
 
-        Task StartAsync();
+    Task StartAsync();
 
-        Task StopAsync();
+    Task StopAsync();
 
-        Task OfflineAsync(GracefulShutdownMode mode);
+    Task OfflineAsync(GracefulShutdownMode mode);
 
-        Task WriteAsync(ServiceMessage seviceMessage);
+    Task WriteAsync(ServiceMessage seviceMessage);
 
-        Task<bool> WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default);
-    }
+    Task<bool> WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default);
 }
