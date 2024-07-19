@@ -9,22 +9,17 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
-internal sealed class TestClientConnectionManager : IClientConnectionManager
+internal sealed class TestClientConnectionManager(IServiceConnection serviceConnection = null) : IClientConnectionManager
 {
-    private readonly IServiceConnection _serviceConnection;
+    private readonly IServiceConnection _serviceConnection = serviceConnection;
 
     private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
 
     public ConcurrentDictionary<string, TestTransport> CurrentTransports = new ConcurrentDictionary<string, TestTransport>();
 
-    private ConcurrentDictionary<string, ClientConnectionContext> _connections = new ConcurrentDictionary<string, ClientConnectionContext>();
+    private readonly ConcurrentDictionary<string, ClientConnectionContext> _connections = new ConcurrentDictionary<string, ClientConnectionContext>();
 
     public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _connections;
-
-    public TestClientConnectionManager(IServiceConnection serviceConnection = null)
-    {
-        _serviceConnection = serviceConnection;
-    }
 
     public Task WhenAllCompleted()
     {

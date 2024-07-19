@@ -7,46 +7,30 @@ using System.IO.Pipelines;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Features;
 
-namespace Microsoft.Azure.SignalR.Tests
+namespace Microsoft.Azure.SignalR.Tests;
+
+public class TestConnection : ConnectionContext
 {
-    public class TestConnection : ConnectionContext
+    public override string ConnectionId { get; set; }
+
+    public override IFeatureCollection Features { get; }
+
+    public override IDictionary<object, object> Items { get; set; }
+
+    public override IDuplexPipe Transport { get; set; }
+
+    public IDuplexPipe Application { get; set; }
+
+    public string Target { get; set; }
+
+    public TestConnection()
     {
-        public override string ConnectionId { get; set; }
+        Features = new FeatureCollection();
+        Items = new ConcurrentDictionary<object, object>();
 
-        public override IFeatureCollection Features { get; }
-
-        public override IDictionary<object, object> Items { get; set; }
-
-        public override IDuplexPipe Transport { get; set; }
-
-        public IDuplexPipe Application { get; set; }
-
-        public string Target { get; set; }
-
-        public TestConnection()
-        {
-            Features = new FeatureCollection();
-            Items = new ConcurrentDictionary<object, object>();
-
-            var pipeOptions = new PipeOptions();
-            var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
-            Transport = pair.Transport;
-            Application = pair.Application;
-        }
-    }
-
-    public class TestRequestIdProvider : IConnectionRequestIdProvider
-    {
-        private readonly string _id;
-
-        public TestRequestIdProvider(string id)
-        {
-            _id = id;
-        }
-
-        public string GetRequestId()
-        {
-            return _id;
-        }
+        var pipeOptions = new PipeOptions();
+        var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+        Transport = pair.Transport;
+        Application = pair.Application;
     }
 }

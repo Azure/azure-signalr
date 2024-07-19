@@ -80,26 +80,21 @@ internal class ClientConnectionManager : IClientConnectionManager
     internal static string GetContentAndDispose(MemoryStream stream)
     {
         stream.Seek(0, SeekOrigin.Begin);
-        using (var reader = new StreamReader(stream))
-        {
-            return reader.ReadToEnd();
-        }
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
     }
 
     internal HostContext GetHostContext(OpenConnectionMessage message, Stream responseStream)
     {
-        var connectionId = message.ConnectionId;
         var context = new OwinContext();
         var response = context.Response;
         var request = context.Request;
 
         response.Body = responseStream;
-
-        var user = request.User = message.GetUserPrincipal();
-
+        request.User = message.GetUserPrincipal();
         request.Path = new PathString("/");
 
-        string queryString = message.QueryString;
+        var queryString = message.QueryString;
         if (queryString.Length > 0)
         {
             // The one from Azure SignalR always contains a leading '?' character however the Owin one does not
