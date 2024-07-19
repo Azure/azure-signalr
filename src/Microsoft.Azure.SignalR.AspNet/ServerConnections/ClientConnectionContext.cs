@@ -8,21 +8,21 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.AspNet;
 
-internal class ClientConnectionContext
+internal class ClientConnectionContext : IClientConnection
 {
     private readonly CancellationTokenSource _source = new CancellationTokenSource();
 
-    private readonly IServiceConnection _serviceConnection;
+    public string ConnectionId { get; }
+
+    public string InstanceId { get; }
+
+    public IServiceConnection ServiceConnection { get; }
 
     public Task ApplicationTask { get; set; }
 
     public CancellationToken CancellationToken => _source.Token;
 
-    public string ConnectionId { get; }
-
     public ChannelReader<ServiceMessage> Input { get; }
-
-    public string InstanceId { get; }
 
     public ChannelWriter<ServiceMessage> Output { get; }
 
@@ -30,8 +30,7 @@ internal class ClientConnectionContext
 
     public ClientConnectionContext(IServiceConnection sc, string connectionId, string instanceId = null)
     {
-        _serviceConnection = sc;
-
+        ServiceConnection = sc;
         ConnectionId = connectionId;
         InstanceId = instanceId;
         var channel = Channel.CreateUnbounded<ServiceMessage>();
@@ -41,7 +40,7 @@ internal class ClientConnectionContext
 
     public async Task WriteMessageAsync(ConnectionDataMessage message)
     {
-        await _serviceConnection.WriteAsync(message);
+        await ServiceConnection.WriteAsync(message);
     }
 
     public void CancelPendingRead()

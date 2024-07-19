@@ -44,6 +44,7 @@ namespace Microsoft.Azure.SignalR;
 ///   --------------------------------------------------------------------------                   ---------------------------------------
 /// </code>
 internal class ClientConnectionContext : ConnectionContext,
+                                          IClientConnection,
                                           IConnectionUserFeature,
                                           IConnectionItemsFeature,
                                           IConnectionIdFeature,
@@ -80,11 +81,15 @@ internal class ClientConnectionContext : ConnectionContext,
 
     private long _receivedBytes;
 
+    public override string ConnectionId { get; set; }
+
+    public string InstanceId { get; }
+
+    public IServiceConnection ServiceConnection { get; set; }
+
     public bool IsMigrated { get; }
 
     public string Protocol { get; }
-
-    public string InstanceId { get; }
 
     // Send "Abort" to service on close except that Service asks SDK to close
     public bool AbortOnClose
@@ -92,8 +97,6 @@ internal class ClientConnectionContext : ConnectionContext,
         get => _abortOnClose;
         set => _abortOnClose = value;
     }
-
-    public override string ConnectionId { get; set; }
 
     public override IFeatureCollection Features { get; }
 
@@ -107,8 +110,6 @@ internal class ClientConnectionContext : ConnectionContext,
 
     public Task LifetimeTask => _connectionEndTcs.Task;
 
-    public ServiceConnectionBase ServiceConnection { get; set; }
-
     public HttpContext HttpContext { get; set; }
 
     public CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
@@ -119,7 +120,10 @@ internal class ClientConnectionContext : ConnectionContext,
 
     public long ReceivedBytes => Volatile.Read(ref _receivedBytes);
 
-    public ClientConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
+    public ClientConnectionContext(OpenConnectionMessage serviceMessage,
+                                   Action<HttpContext> configureContext = null,
+                                   PipeOptions transportPipeOptions = null,
+                                   PipeOptions appPipeOptions = null)
     {
         ConnectionId = serviceMessage.ConnectionId;
         Protocol = serviceMessage.Protocol;
