@@ -10,14 +10,23 @@ namespace Microsoft.Azure.SignalR
     internal class ServiceConnectionFactory : IServiceConnectionFactory
     {
         private readonly IServiceProtocol _serviceProtocol;
+
         private readonly IClientConnectionManager _clientConnectionManager;
+
         private readonly IConnectionFactory _connectionFactory;
+
         private readonly ILoggerFactory _loggerFactory;
+
         private readonly ConnectionDelegate _connectionDelegate;
+
         private readonly IClientConnectionFactory _clientConnectionFactory;
+
         private readonly IServerNameProvider _nameProvider;
+
         private readonly IServiceEventHandler _serviceEventHandler;
+
         private readonly IClientInvocationManager _clientInvocationManager;
+
         private readonly IHubProtocolResolver _hubProtocolResolver;
 
         public GracefulShutdownMode ShutdownMode { get; set; } = GracefulShutdownMode.Off;

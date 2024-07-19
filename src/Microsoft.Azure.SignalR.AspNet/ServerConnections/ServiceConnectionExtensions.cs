@@ -11,11 +11,11 @@ namespace Microsoft.Azure.SignalR.AspNet
     internal static class ServiceConnectionExtensions
     {
         public static Task WriteAsync(
-            this ClientConnectionContext connection, 
-            string connectionId, 
-            object value, 
-            IServiceProtocol protocol, 
-            JsonSerializer serializer, 
+            this ClientConnectionContext connection,
+            string connectionId,
+            object value,
+            IServiceProtocol protocol,
+            JsonSerializer serializer,
             IMemoryPool pool)
         {
             using var writer = new MemoryPoolTextWriter(pool);

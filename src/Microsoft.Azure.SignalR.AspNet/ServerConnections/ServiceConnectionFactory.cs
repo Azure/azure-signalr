@@ -7,10 +7,15 @@ namespace Microsoft.Azure.SignalR.AspNet
     internal class ServiceConnectionFactory : IServiceConnectionFactory
     {
         private readonly IServiceProtocol _serviceProtocol;
+
         private readonly IClientConnectionManager _clientConnectionManager;
+
         private readonly IConnectionFactory _connectionFactory;
+
         private readonly ILoggerFactory _logger;
+
         private readonly IServerNameProvider _nameProvider;
+
         private readonly IServiceEventHandler _serviceEventHandler;
 
         public ServiceConnectionFactory(

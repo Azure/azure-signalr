@@ -6,6 +6,7 @@ namespace Microsoft.Azure.SignalR
     public interface IConnectionMigrationFeature
     {
         string MigrateFrom { get; }
+
         string MigrateTo { get; }
     }
 }

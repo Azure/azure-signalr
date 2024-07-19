@@ -19,9 +19,12 @@ namespace Microsoft.Azure.SignalR.AspNet
     internal class ClientConnectionManager : IClientConnectionManager
     {
         private readonly HubConfiguration _configuration;
+
         private readonly ILogger _logger;
 
         private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections = new ConcurrentDictionary<string, ClientConnectionContext>();
+
+        public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _clientConnections;
 
         public ClientConnectionManager(HubConfiguration configuration, ILoggerFactory loggerFactory)
         {
@@ -72,7 +75,16 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _clientConnections.TryGetValue(connectionId, out connection);
         }
 
-        public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _clientConnections;
+        public Task WhenAllCompleted() => Task.CompletedTask;
+
+        internal static string GetContentAndDispose(MemoryStream stream)
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+            using (var reader = new StreamReader(stream))
+            {
+                return reader.ReadToEnd();
+            }
+        }
 
         internal HostContext GetHostContext(OpenConnectionMessage message, Stream responseStream)
         {
@@ -109,17 +121,16 @@ namespace Microsoft.Azure.SignalR.AspNet
             return new HostContext(context.Environment);
         }
 
-        internal static string GetContentAndDispose(MemoryStream stream)
+        private static class Log
         {
-            stream.Seek(0, SeekOrigin.Begin);
-            using (var reader = new StreamReader(stream))
+            private static readonly Action<ILogger, string, string, Exception> _processRequestError =
+                LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(1, "ProcessRequestError"), "ProcessRequest for {connectionId} fails with {queryString} ");
+
+            public static void ProcessRequestError(ILogger logger, string connectionId, string queryString)
             {
-                return reader.ReadToEnd();
+                _processRequestError(logger, connectionId, queryString, null);
             }
         }
-
-        public Task WhenAllCompleted() => Task.CompletedTask;
-
 
         private sealed class ClientConnectionHubDispatcher : HubDispatcher
         {
@@ -136,17 +147,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                 message = null;
                 statusCode = 200;
                 return true;
-            }
-        }
-
-        private static class Log
-        {
-            private static readonly Action<ILogger, string, string, Exception> _processRequestError =
-                LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(1, "ProcessRequestError"), "ProcessRequest for {connectionId} fails with {queryString} ");
-
-            public static void ProcessRequestError(ILogger logger, string connectionId, string queryString)
-            {
-                _processRequestError(logger, connectionId, queryString, null);
             }
         }
     }

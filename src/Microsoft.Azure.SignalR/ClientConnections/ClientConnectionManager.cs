@@ -13,6 +13,8 @@ namespace Microsoft.Azure.SignalR
         private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections =
             new ConcurrentDictionary<string, ClientConnectionContext>();
 
+        public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _clientConnections;
+
         public bool TryAddClientConnection(ClientConnectionContext connection)
         {
             return _clientConnections.TryAdd(connection.ConnectionId, connection);
@@ -24,7 +26,5 @@ namespace Microsoft.Azure.SignalR
         }
 
         public Task WhenAllCompleted() => Task.WhenAll(_clientConnections.Select(c => c.Value.LifetimeTask));
-
-        public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _clientConnections;
     }
 }

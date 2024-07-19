@@ -75,7 +75,6 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, int, string, Exception> _closingClientConnections =
                 LoggerMessage.Define<int, string>(LogLevel.Information, new EventId(25, "ClosingClientConnections"), "Closing {ClientCount} client connection(s) for server connection {ServerConnectionId}.");
 
-
             private static readonly Action<ILogger, string, Exception> _detectedLongRunningApplicationTask =
                 LoggerMessage.Define<string>(LogLevel.Warning, new EventId(26, "DetectedLongRunningApplicationTask"), "The connection {TransportConnectionId} has a long running application logic that prevents the connection from complete.");
 
