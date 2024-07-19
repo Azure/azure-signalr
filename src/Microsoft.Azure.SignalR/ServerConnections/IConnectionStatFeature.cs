@@ -3,14 +3,13 @@
 
 using System;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+public interface IConnectionStatFeature
 {
-    public interface IConnectionStatFeature
-    {
-        DateTime StartedAtUtc { get; }
+    DateTime StartedAtUtc { get; }
 
-        DateTime LastMessageReceivedAtUtc { get; }
+    DateTime LastMessageReceivedAtUtc { get; }
 
-        long ReceivedBytes { get; }
-    }
+    long ReceivedBytes { get; }
 }

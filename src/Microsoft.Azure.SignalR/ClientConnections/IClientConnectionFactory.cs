@@ -5,10 +5,9 @@ using System;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal interface IClientConnectionFactory
 {
-    internal interface IClientConnectionFactory
-    {
-        ClientConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null);
-    }
+    ClientConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null);
 }
