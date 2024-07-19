@@ -11,11 +11,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
 internal sealed class TestClientConnectionManager : IClientConnectionManager
 {
+    public ConcurrentDictionary<string, TestTransport> CurrentTransports = new ConcurrentDictionary<string, TestTransport>();
+
     private readonly IServiceConnection _serviceConnection;
 
     private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
-
-    public ConcurrentDictionary<string, TestTransport> CurrentTransports = new ConcurrentDictionary<string, TestTransport>();
 
     private ConcurrentDictionary<string, ClientConnectionContext> _connections = new ConcurrentDictionary<string, ClientConnectionContext>();
 

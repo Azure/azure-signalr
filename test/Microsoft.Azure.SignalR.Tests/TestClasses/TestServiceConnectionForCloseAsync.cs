@@ -10,9 +10,6 @@ internal class TestServiceConnectionForCloseAsync : TestServiceConnection
     {
     }
 
-    /**
-     * Register an outgoing Task.
-     */
     protected override Task OnClientConnectedAsync(OpenConnectionMessage openConnectionMessage)
     {
         return Task.CompletedTask;

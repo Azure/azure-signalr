@@ -52,7 +52,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var services = new ServiceCollection();
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<TestConnectionHandler>();
-            ConnectionDelegate handler = builder.Build();
+            var handler = builder.Build();
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                 "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
@@ -113,7 +113,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var services = new ServiceCollection();
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<TestConnectionHandler>();
-            ConnectionDelegate handler = builder.Build();
+            var handler = builder.Build();
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                 "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
@@ -171,7 +171,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
 
             builder.UseConnectionHandler<ErrorConnectionHandler>();
-            ConnectionDelegate handler = builder.Build();
+            var handler = builder.Build();
 
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
@@ -237,7 +237,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             services.AddSingleton(connectionHandler);
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<EndlessConnectionHandler>();
-            ConnectionDelegate handler = builder.Build();
+            var handler = builder.Build();
             var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                 "serverId", Guid.NewGuid().ToString("N"),
                 null, null, null, new DefaultClientInvocationManager(),
@@ -296,7 +296,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             services.AddSingleton(connectionHandler);
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<EndlessConnectionHandler>();
-            ConnectionDelegate handler = builder.Build();
+            var handler = builder.Build();
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                 "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
@@ -356,7 +356,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             services.AddSingleton(connectionHandler);
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<LastWillConnectionHandler>();
-            ConnectionDelegate handler = builder.Build();
+            var handler = builder.Build();
 
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
@@ -429,7 +429,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             services.AddSingleton(connectionHandler);
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<DiagnosticClientConnectionHandler>();
-            ConnectionDelegate handler = builder.Build();
+            var handler = builder.Build();
 
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
@@ -512,7 +512,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    null,
                                                    new DefaultClientInvocationManager(),
-                                                  
+
                                                    new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
                                                    closeTimeOutMilliseconds: 500);
 
@@ -588,7 +588,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             services.AddSingleton(connectionHandler);
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<EndlessConnectionHandler>();
-            ConnectionDelegate handler = builder.Build();
+            var handler = builder.Build();
             var connection = new ServiceConnection(protocol,
                                                    ccm,
                                                    connectionFactory,
@@ -601,7 +601,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    null,
                                                    new DefaultClientInvocationManager(),
-                                                  
+
                                                    new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
                                                    closeTimeOutMilliseconds: 500);
 
@@ -657,7 +657,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             services.AddSingleton(connectionHandler);
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<TextContentConnectionHandler>();
-            ConnectionDelegate handler = builder.Build();
+            var handler = builder.Build();
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                 "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
@@ -746,7 +746,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             services.AddSingleton(connectionHandler);
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<TextContentConnectionHandler>();
-            ConnectionDelegate handler = builder.Build();
+            var handler = builder.Build();
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                 "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
@@ -860,7 +860,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
 
     private sealed class TestConnectionHandler : ConnectionHandler
     {
-        private TaskCompletionSource<object> _startedTcs = new TaskCompletionSource<object>();
+        private readonly TaskCompletionSource<object> _startedTcs = new TaskCompletionSource<object>();
 
         public Task Started => _startedTcs.Task;
 
@@ -890,6 +890,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     private sealed class LastWillConnectionHandler : ConnectionHandler
     {
         private readonly IHubProtocol _hubProtocol;
+
         private readonly string _lastWill;
 
         public LastWillConnectionHandler(IHubProtocol hubProtocol, string lastWill)
@@ -947,7 +948,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
 
     private sealed class DiagnosticClientConnectionHandler : ConnectionHandler
     {
-        private string _diagnosticClient;
+        private readonly string _diagnosticClient;
 
         public DiagnosticClientConnectionHandler(string diagnosticClient)
         {
@@ -963,9 +964,9 @@ public class ServiceConnectionTests : VerifiableLoggedTest
 
     private sealed class TextContentConnectionHandler : ConnectionHandler
     {
-        private TaskCompletionSource<object> _startedTcs = new TaskCompletionSource<object>();
+        private readonly TaskCompletionSource<object> _startedTcs = new TaskCompletionSource<object>();
 
-        private LinkedList<TaskCompletionSource<string>> _content = new LinkedList<TaskCompletionSource<string>>();
+        private readonly LinkedList<TaskCompletionSource<string>> _content = new LinkedList<TaskCompletionSource<string>>();
 
         public Task Started => _startedTcs.Task;
 

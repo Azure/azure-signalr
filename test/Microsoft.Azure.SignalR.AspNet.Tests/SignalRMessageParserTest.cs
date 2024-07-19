@@ -19,8 +19,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests;
 public class SignalRMessageParserTest
 {
     private readonly IDependencyResolver _resolver = GetDefaultResolver();
-    private readonly MemoryPool _pool = new MemoryPool();
-    private readonly JsonSerializer _serializer = new JsonSerializer();
 
     [Theory]
     [InlineData("")]
@@ -131,7 +129,6 @@ public class SignalRMessageParserTest
         var msgs = parser.GetMessages(message).ToList();
         Assert.Empty(msgs);
     }
-
 
     [Theory]
     [InlineData("connection1", "msg")]
@@ -268,11 +265,6 @@ public class SignalRMessageParserTest
         Assert.Equal("hub1.h.hub2.user1", msg.UserId);
     }
 
-    private string GenerateRandomName()
-    {
-        return Guid.NewGuid().ToString("N");
-    }
-
     private static IDependencyResolver GetDefaultResolver()
     {
         var config = new HubConfiguration();
@@ -285,11 +277,11 @@ public class SignalRMessageParserTest
 
     private static string GetFilter(IList<string> excludedSignals)
     {
-        if (excludedSignals != null)
-        {
-            return string.Join("|", excludedSignals);
-        }
+        return excludedSignals != null ? string.Join("|", excludedSignals) : null;
+    }
 
-        return null;
+    private string GenerateRandomName()
+    {
+        return Guid.NewGuid().ToString("N");
     }
 }

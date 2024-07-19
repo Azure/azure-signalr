@@ -17,12 +17,12 @@ internal sealed class TestServiceConnectionContainer : ServiceConnectionContaine
 
     public bool MockOffline { get; set; } = false;
 
+    public List<IServiceConnection> Connections { get => ServiceConnections; }
+
     public TestServiceConnectionContainer(List<IServiceConnection> serviceConnections, HubServiceEndpoint endpoint = null, AckHandler ackHandler = null, IServiceConnectionFactory factory = null, ILogger logger = null)
-        : base(factory, 0, endpoint, serviceConnections, ackHandler: ackHandler, logger: logger ?? NullLogger.Instance)
+            : base(factory, 0, endpoint, serviceConnections, ackHandler: ackHandler, logger: logger ?? NullLogger.Instance)
     {
     }
-
-    public List<IServiceConnection> Connections { get => ServiceConnections; }
 
     public void ShutdownForTest()
     {
@@ -53,11 +53,6 @@ internal sealed class TestServiceConnectionContainer : ServiceConnectionContaine
         return base.HandlePingAsync(pingMessage);
     }
 
-    protected override Task OnConnectionComplete(IServiceConnection connection)
-    {
-        return Task.CompletedTask;
-    }
-
     public Task OnConnectionCompleteForTestShutdown(IServiceConnection connection)
     {
         return base.OnConnectionComplete(connection);
@@ -79,5 +74,10 @@ internal sealed class TestServiceConnectionContainer : ServiceConnectionContaine
     {
         var ping = new PingMessage { Messages = new[] { "status", isActive ? "1" : "0", "clientcount", clientCount.ToString() } };
         return base.HandlePingAsync(ping);
+    }
+
+    protected override Task OnConnectionComplete(IServiceConnection connection)
+    {
+        return Task.CompletedTask;
     }
 }

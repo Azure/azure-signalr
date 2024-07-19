@@ -14,8 +14,11 @@ namespace Microsoft.Azure.SignalR.Tests;
 public class ServiceEndpointProviderFacts
 {
     private const string Endpoint = "https://myendpoint";
+
     private const string AccessKey = "fake_key";
+
     private static readonly string HubName = nameof(TestHub).ToLower();
+
     private static readonly string AppName = "testapp";
 
     private static readonly string ConnectionStringWithoutVersion =
@@ -27,6 +30,7 @@ public class ServiceEndpointProviderFacts
     private static readonly string ConnectionStringWithV1Version = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0";
 
     private static readonly ServiceOptions _optionsWithoutAppName = Options.Create(new ServiceOptions()).Value;
+
     private static readonly ServiceOptions _optionsWithAppName = Options.Create(new ServiceOptions { ApplicationName = AppName }).Value;
 
     private static readonly ServiceEndpointProvider[] EndpointProviderArray =
@@ -70,6 +74,32 @@ public class ServiceEndpointProviderFacts
 
     public static IEnumerable<object[]> DefaultEndpointProvidersPlusPrefix =>
         EndpointProviderArrayWithPrefix.Select(provider => new object[] { provider });
+
+    [Theory]
+    [InlineData(AccessTokenAlgorithm.HS256)]
+    [InlineData(AccessTokenAlgorithm.HS512)]
+    public async Task GenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+    {
+        var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+        var serverToken = await provider.GetServerAccessTokenProvider("hub1", "user1").ProvideAsync();
+
+        var token = JwtTokenHelper.JwtHandler.ReadJwtToken(serverToken);
+
+        Assert.Equal(algorithm.ToString(), token.SignatureAlgorithm);
+    }
+
+    [Theory]
+    [InlineData(AccessTokenAlgorithm.HS256)]
+    [InlineData(AccessTokenAlgorithm.HS512)]
+    public async Task GenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+    {
+        var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+        var generatedToken = await provider.GenerateClientAccessTokenAsync("hub1");
+
+        var token = JwtTokenHelper.JwtHandler.ReadJwtToken(generatedToken);
+
+        Assert.Equal(algorithm.ToString(), token.SignatureAlgorithm);
+    }
 
     [Theory]
     [MemberData(nameof(DefaultEndpointProviders))]
@@ -203,31 +233,5 @@ public class ServiceEndpointProviderFacts
         );
 
         Assert.Equal(expectedTokenString, tokenString);
-    }
-
-    [Theory]
-    [InlineData(AccessTokenAlgorithm.HS256)]
-    [InlineData(AccessTokenAlgorithm.HS512)]
-    public async Task GenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
-    {
-        var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
-        var serverToken = await provider.GetServerAccessTokenProvider("hub1", "user1").ProvideAsync();
-
-        var token = JwtTokenHelper.JwtHandler.ReadJwtToken(serverToken);
-
-        Assert.Equal(algorithm.ToString(), token.SignatureAlgorithm);
-    }
-
-    [Theory]
-    [InlineData(AccessTokenAlgorithm.HS256)]
-    [InlineData(AccessTokenAlgorithm.HS512)]
-    public async Task GenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
-    {
-        var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
-        var generatedToken = await provider.GenerateClientAccessTokenAsync("hub1");
-
-        var token = JwtTokenHelper.JwtHandler.ReadJwtToken(generatedToken);
-
-        Assert.Equal(algorithm.ToString(), token.SignatureAlgorithm);
     }
 }

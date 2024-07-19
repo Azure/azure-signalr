@@ -27,8 +27,11 @@ namespace Microsoft.Azure.SignalR.Tests;
 public class AddAzureSignalRFacts : VerifiableLoggedTest
 {
     private const string CustomValue = "Endpoint=https://customconnectionstring;AccessKey=1";
+
     private const string DefaultValue = "Endpoint=https://defaultconnectionstring;AccessKey=1";
+
     private const string SecondaryValue = "Endpoint=https://secondaryconnectionstring;AccessKey=1";
+
     private const string ConfigFile = "testappsettings.json";
 
     public AddAzureSignalRFacts(ITestOutputHelper output) : base(output)
@@ -76,7 +79,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
             var config = new ConfigurationBuilder()
                 .Build();
             var serviceProvider = services.AddSignalR()
-                .AddAzureSignalR( o =>
+                .AddAzureSignalR(o =>
                 {
                     o.InitialHubServerConnectionCount = 15;
                     o.MaxHubServerConnectionCount = 3;
@@ -224,7 +227,6 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
         }
     }
 
-
     [Theory]
     [InlineData(null, ServerStickyMode.Disabled)]
     [InlineData("invalid", ServerStickyMode.Disabled)]
@@ -243,9 +245,9 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
                     {"Azure:SignalR:ServerStickyMode", modeFromConfig }
                 })
                 .Build();
-            ServerStickyMode capturedMode = ServerStickyMode.Disabled;
+            var capturedMode = ServerStickyMode.Disabled;
             var serviceProvider = services.AddSignalR()
-                .AddAzureSignalR(o => 
+                .AddAzureSignalR(o =>
                 {
                     capturedMode = o.ServerStickyMode;
                 })
@@ -337,7 +339,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
                 Assert.Single(options.Endpoints);
                 Assert.Equal(secondaryValue, options.Endpoints[0].ConnectionString);
             }
-            
+
             // Endpoints from Endpoints and ConnectionString config are merged inside the EndpointManager
             var endpoints = serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.Keys.ToArray();
             if (secondaryValue == null)
@@ -529,7 +531,6 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
         }
     }
 
-
     [Fact(Skip = "Manual run for CI stable")]
     public async Task AddAzureSignalRHotReloadConfigValue()
     {
@@ -555,7 +556,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
             // All EPs including code and config with total 3
             Assert.Equal(3, manager.Endpoints.Count);
 
-            // Update config file to add a new endpoint ConnectionString	
+            // Update config file to add a new endpoint ConnectionString
             var customeCS = "Endpoint=https://customconnectionstring;AccessKey=1";
             var text = File.ReadAllText(ConfigFile);
             var jsonObj = JsonConvert.DeserializeObject<JObject>(text);
@@ -569,7 +570,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
             var output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented);
             File.WriteAllText(ConfigFile, output);
 
-            // give a few delay for change detected	
+            // give a few delay for change detected
             await Task.Delay(1000);
 
             // Reload includes all endpoints

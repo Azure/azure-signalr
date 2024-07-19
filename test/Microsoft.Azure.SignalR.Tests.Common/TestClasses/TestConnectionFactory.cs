@@ -10,7 +10,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common;
 
 internal sealed class TestConnectionFactory : IConnectionFactory
 {
-    private TaskCompletionSource<TestConnectionContext> _waitForServerConnection = new TaskCompletionSource<TestConnectionContext>();
+    private readonly TaskCompletionSource<TestConnectionContext> _waitForServerConnection = new TaskCompletionSource<TestConnectionContext>();
 
     public Task<ConnectionContext> ConnectAsync(HubServiceEndpoint endpoint, TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default, IDictionary<string, string> headers = null)
     {

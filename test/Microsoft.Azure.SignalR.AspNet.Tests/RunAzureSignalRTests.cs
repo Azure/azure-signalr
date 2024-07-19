@@ -34,21 +34,25 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
-public class RunAzureSignalRTests : VerifiableLoggedTest
+public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTest(output)
 {
-    private static readonly Version VersionSupportingApplicationNamePrefix = new Version(1, 0, 9);
-
     private const string ServiceUrl = "http://localhost:8086";
+
     private const string ConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+
     private const string ConnectionStringWithRedirect = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;ClientEndpoint=http://redirect";
+
     private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+
     private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+
     private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+
     private const string AppName = "AzureSignalRTest";
 
-    public RunAzureSignalRTests(ITestOutputHelper output) : base(output)
-    {
-    }
+    private static readonly Version VersionSupportingApplicationNamePrefix = new Version(1, 0, 9);
+
+    private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
 
     [Fact]
     public void TestRunAzureSignalRWithDefaultOptions()
@@ -303,7 +307,7 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
         {
             var hubConfig = Utility.GetTestHubConfig(loggerFactory);
             using (WebApp.Start(ServiceUrl,
-                app => app.RunAzureSignalR(AppName, hubConfig, 
+                app => app.RunAzureSignalR(AppName, hubConfig,
                     s =>
                     {
                         s.ConnectionString = ConnectionString;
@@ -838,6 +842,7 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
     private sealed class TestLoggerProvider : ILoggerProvider
     {
         public List<string> Loggers { get; } = new List<string>();
+
         public void Dispose()
         {
         }
@@ -877,6 +882,7 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
     private sealed class TestServerNameProvider : IServerNameProvider
     {
         private readonly string _serverName;
+
         public TestServerNameProvider(string serverName)
         {
             _serverName = serverName;
@@ -911,7 +917,6 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
                 ConfigurationManager.AppSettings[s.Key] = s.Value;
                 return new KeyValuePair<string, string>(s.Key, original);
             }).ToList();
-
         }
 
         public void Dispose()
@@ -939,8 +944,6 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
             return "hello";
         }
     }
-
-    private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
 
     private sealed class ResponseMessage
     {

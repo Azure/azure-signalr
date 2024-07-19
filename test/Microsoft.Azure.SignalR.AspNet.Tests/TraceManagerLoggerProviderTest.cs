@@ -13,6 +13,18 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
 public class TraceManagerLoggerProviderTest
 {
+    public static async Task<ConnectionContext> ConnectAsync(ILoggerFactory lf)
+    {
+        // Await to enforce it run in another thread
+        await Task.Yield();
+        var httpConnectionOptions = new HttpConnectionOptions
+        {
+            Url = new Uri("http://locolhost"),
+        };
+
+        return new HttpConnection(httpConnectionOptions, lf);
+    }
+
     /// <summary>
     /// TraceManagerLoggerProvider throws when its CreateLogger returns TraceSourceLogger when using HttpConnections.Client 1.0.0
     /// </summary>
@@ -30,17 +42,5 @@ public class TraceManagerLoggerProviderTest
         var connection = await ConnectAsync(lf);
         // var connection = Connect(lf);
         await ((HttpConnection)connection).DisposeAsync();
-    }
-
-    public static async Task<ConnectionContext> ConnectAsync(ILoggerFactory lf)
-    {
-        // Await to enforce it run in another thread
-        await Task.Yield();
-        var httpConnectionOptions = new HttpConnectionOptions
-        {
-            Url = new Uri("http://locolhost"),
-        };
-
-        return new HttpConnection(httpConnectionOptions, lf);
     }
 }

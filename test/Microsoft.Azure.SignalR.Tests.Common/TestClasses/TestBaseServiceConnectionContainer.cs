@@ -9,15 +9,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests.Common;
 
-internal sealed class TestBaseServiceConnectionContainer : ServiceConnectionContainerBase
+internal sealed class TestBaseServiceConnectionContainer(List<IServiceConnection> serviceConnections,
+                                                         HubServiceEndpoint endpoint = null,
+                                                         ILogger logger = null) : ServiceConnectionContainerBase(null, 0, endpoint, serviceConnections, logger: logger ?? NullLogger.Instance)
 {
-    public TestBaseServiceConnectionContainer(List<IServiceConnection> serviceConnections, HubServiceEndpoint endpoint = null, ILogger logger = null)
-        : base(null, 0, endpoint, serviceConnections, logger: logger ?? NullLogger.Instance)
-    {
-    }
-
-    public override Task HandlePingAsync(PingMessage pingMessage)
-    {
-        return Task.CompletedTask;
-    }
+    public override Task HandlePingAsync(PingMessage pingMessage) => Task.CompletedTask;
 }

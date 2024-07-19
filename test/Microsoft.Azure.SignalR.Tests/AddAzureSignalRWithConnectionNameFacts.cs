@@ -18,8 +18,11 @@ namespace Microsoft.Azure.SignalR.Tests;
 public class AddAzureSignalRWithConnectionNameFacts : VerifiableLoggedTest
 {
     private const string CustomValue = "Endpoint=https://customconnectionstring;AccessKey=1";
+
     private const string DefaultValue = "Endpoint=https://defaultconnectionstring;AccessKey=1";
+
     private const string SecondaryValue = "Endpoint=https://secondaryconnectionstring;AccessKey=1";
+
     private const string ConfigFile = "testappsettings.json";
 
     public AddAzureSignalRWithConnectionNameFacts(ITestOutputHelper output) : base(output)
@@ -386,7 +389,7 @@ public class AddAzureSignalRWithConnectionNameFacts : VerifiableLoggedTest
                 Assert.Single(options.Endpoints);
                 Assert.Equal(secondaryValue, options.Endpoints[0].ConnectionString);
             }
-            
+
             // Endpoints from Endpoints and ConnectionString config are merged inside the EndpointManager
             var endpoints = serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.Keys.ToArray();
             if (secondaryValue == null)

@@ -24,8 +24,9 @@ namespace Microsoft.Azure.SignalR.Tests;
 
 public class ServiceConnectionFacts
 {
-    private static readonly ServiceProtocol Protocol = new ServiceProtocol();
     private const int DefaultTimeoutInMilliSeconds = 1000;
+
+    private static readonly ServiceProtocol Protocol = new ServiceProtocol();
 
     [Theory]
     [InlineData(true)]
@@ -156,7 +157,7 @@ public class ServiceConnectionFacts
         await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null) { Protocol = "json" });
 
         var connection = await task.OrTimeout();
-        CloseConnectionMessage message = (CloseConnectionMessage)await closeMessageTask.OrTimeout();
+        var message = (CloseConnectionMessage)await closeMessageTask.OrTimeout();
 
         Assert.Equal(message.ConnectionId, connection.ConnectionId);
 
@@ -172,7 +173,7 @@ public class ServiceConnectionFacts
         _ = proxy.StartAsync();
         await serverTask.OrTimeout();
 
-        string errorMessage = "Maximum message count limit reached: 100000";
+        var errorMessage = "Maximum message count limit reached: 100000";
 
         await proxy.WriteMessageAsync(new ServiceErrorMessage(errorMessage));
         await Task.Delay(200);
@@ -372,7 +373,6 @@ public class ServiceConnectionFacts
         var serverTask = proxy.WaitForServerConnectionAsync(1);
         _ = proxy.StartAsync();
 
-
         await Task.Delay(10 * 1000);
         // No server connection will be connected
         AssertTimeout(serverTask);
@@ -461,7 +461,7 @@ public class ServiceConnectionFacts
         // Try to send a ping message to ask for a on-demand connection
         var serverTask2 = proxy.WaitForServerConnectionAsync(2);
 
-        string target = "Target";
+        var target = "Target";
         await proxy.WriteMessageAsync(new PingMessage()
         {
             Messages = new[] { "target", target }
@@ -495,7 +495,7 @@ public class ServiceConnectionFacts
         // Try to send a ping message to ask for an on-demand connection
         var serverTask2 = proxy.WaitForServerConnectionAsync(2);
 
-        string target = "Target";
+        var target = "Target";
         await proxy.WriteMessageAsync(new PingMessage()
         {
             Messages = new[] { "target", target }

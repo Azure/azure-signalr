@@ -12,41 +12,33 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests.Common;
 
-internal class TestServiceConnection : ServiceConnectionBase
+internal class TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected,
+                                     bool throws = false,
+                                     ILogger logger = null,
+                                     IServiceMessageHandler serviceMessageHandler = null,
+                                     IServiceEventHandler serviceEventHandler = null) : ServiceConnectionBase(
+                                         new ServiceProtocol(),
+                                         "serverId",
+                                         Guid.NewGuid().ToString(),
+                                         new TestHubServiceEndpoint(),
+                                         serviceMessageHandler,
+                                         serviceEventHandler,
+                                         ServiceConnectionType.Default,
+                                         logger ?? NullLogger.Instance)
 {
     private readonly TaskCompletionSource<object> _created = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private readonly bool _throws;
+    private readonly bool _throws = throws;
 
     private ConnectionContext _connection;
 
-    private ServiceConnectionStatus _expectedStatus;
+    private ServiceConnectionStatus _expectedStatus = status;
 
     public IDuplexPipe Application { get; private set; }
 
     public Task ConnectionCreated => _created.Task;
 
     public ConcurrentQueue<ServiceMessage> ReceivedMessages { get; } = new();
-
-    public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false,
-        ILogger logger = null,
-        IServiceMessageHandler serviceMessageHandler = null,
-        IServiceEventHandler serviceEventHandler = null,
-        IClientInvocationManager clientInvocationManager = null
-        ) : base(
-        new ServiceProtocol(),
-        "serverId",
-        Guid.NewGuid().ToString(),
-        new TestHubServiceEndpoint(),
-        serviceMessageHandler,
-        serviceEventHandler,
-        ServiceConnectionType.Default,
-        logger ?? NullLogger.Instance
-    )
-    {
-        _expectedStatus = status;
-        _throws = throws;
-    }
 
     public void SetStatus(ServiceConnectionStatus status)
     {
@@ -90,6 +82,7 @@ internal class TestServiceConnection : ServiceConnectionBase
         await Task.Yield();
         return _expectedStatus == ServiceConnectionStatus.Connected;
     }
+
     protected override Task OnClientConnectedAsync(OpenConnectionMessage openConnectionMessage)
     {
         return Task.CompletedTask;

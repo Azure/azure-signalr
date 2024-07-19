@@ -17,44 +17,74 @@ public class ServiceMessageBusTests
 {
     private const string AppName = nameof(ServiceMessageBusTests);
 
+    public static IEnumerable<object[]> BroadcastTestMessages =>
+        [
+            // hub connection "c1" gets this connection message
+            [
+                "h-c1", "hello", new string[] { "h-c1", "h", "c1" }, new string[] { "c1" }
+            ],
+            // hub connection "a.b" gets this connection message
+            [
+                "h-a.b", "hello", new string[] { "h-c1", "h", "a.b" }, new string[] { "a.b" },
+            ],
+            // hub connection "..." gets this connection message
+            [
+                "h-...", "hello", new string[] { "h-c1", "h", "a.b", "...", "..", "." }, new string[] { "..." },
+            ]
+        ];
+
+    public static IEnumerable<object[]> ConnectionDataTestMessages =>
+        [
+            // app connection gets this connection message
+            [
+                "hc-hub1.c1", "hello", new string[] { "hc", "hc-", "hub1", "hub1.c", "hub1.c1" }, new string[] { AppName }, new string[] { "c1" }
+            ],
+            // app connection gets this connection message
+            [
+                "hc-hub1.bi.conn1", "hello", new string[] { "hc", "hc-hub1", "hub1", "hub1.bi", "hub1.bi.conn" }, new string[] { AppName }, new string[] { "conn1" }
+            ]
+        ];
+
+    public static IEnumerable<object[]> GroupBroadcastTestMessages =>
+        [
+            // app connection gets this connection message
+            [
+                // For groups, group name as a whole is considered as the group name
+                "hg-h1.group1", "hello", new string[] { "hg-h1", "hg", "h1" }, new string[] { AppName }, new string[] { "hg-h1.group1" }
+            ],
+            // app connection gets this connection message
+            [
+                "hg-h1.a1.group1", "hello", new string[] { "hg-h1", "hg", "h1", "h1.a1" }, new string[] { AppName }, new string[] { "hg-h1.a1.group1" }
+            ]
+        ];
+
+    public static IEnumerable<object[]> UserDataTestMessages =>
+        [
+            // hub connection "hub1" gets this connection message
+            [
+                "hu-hub1.user1", "hello", new string[] { "hu", "hu-", "hub1", "hub1.u", "hub1.user1" }, new string[] { "hub1" }, new string[] { "user1" }
+            ],
+            // hub connection "hub1" & "hub1.bi" gets this connection message
+            [
+                "hu-hub1.bi.user1", "hello", new string[] { "hu", "hu-hub1", "hub1", "hub1.bi", "hub1.bi.user" }, new string[] { "hub1", "hub1.bi" }, new string[] { "bi.user1", "user1" }
+            ]
+        ];
+
     [Fact]
     public async Task PublishInvalidMessageThrows()
     {
-        var dr = GetDefaultResolver(new string[] { }, out _);
-        using (var bus = new ServiceMessageBus(dr, NullLogger<ServiceMessageBus>.Instance))
-        {
-            await Assert.ThrowsAsync<NotSupportedException>(() => bus.Publish("test", "key", "1"));
-        }
+        var dr = GetDefaultResolver([], out _);
+        using var bus = new ServiceMessageBus(dr, NullLogger<ServiceMessageBus>.Instance);
+        await Assert.ThrowsAsync<NotSupportedException>(() => bus.Publish("test", "key", "1"));
     }
 
     [Fact]
     public async Task PublishMessageToNotExistHubThrows()
     {
-        var dr = GetDefaultResolver(new string[] { }, out _);
-        using (var bus = new ServiceMessageBus(dr, NullLogger<ServiceMessageBus>.Instance))
-        {
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => bus.Publish("test", "h-key", "1"));
-        }
+        var dr = GetDefaultResolver([], out _);
+        using var bus = new ServiceMessageBus(dr, NullLogger<ServiceMessageBus>.Instance);
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => bus.Publish("test", "h-key", "1"));
     }
-
-    public static IEnumerable<object[]> BroadcastTestMessages => new object[][]
-        {
-            // hub connection "c1" gets this connection message
-            new object[]
-            {
-                "h-c1", "hello", new string[] { "h-c1", "h", "c1" }, new string[] { "c1" }
-            },
-            // hub connection "a.b" gets this connection message
-            new object[]
-            {
-                "h-a.b", "hello", new string[] { "h-c1", "h", "a.b" }, new string[] { "a.b" },
-            },
-            // hub connection "..." gets this connection message
-            new object[]
-            {
-                "h-...", "hello", new string[] { "h-c1", "h", "a.b", "...", "..", "." }, new string[] { "..." },
-            }
-        };
 
     [Theory]
     [MemberData(nameof(BroadcastTestMessages))]
@@ -79,20 +109,6 @@ public class ServiceMessageBusTests
             Assert.Equal(messageValue, message.Payloads["json"].GetJsonMessageFromSingleFramePayload<string>());
         }
     }
-
-    public static IEnumerable<object[]> ConnectionDataTestMessages => new object[][]
-        {
-            // app connection gets this connection message
-            new object[]
-            {
-                "hc-hub1.c1", "hello", new string[] { "hc", "hc-", "hub1", "hub1.c", "hub1.c1" }, new string[] { AppName }, new string[] { "c1" }
-            },
-            // app connection gets this connection message
-            new object[]
-            {
-                "hc-hub1.bi.conn1", "hello", new string[] { "hc", "hc-hub1", "hub1", "hub1.bi", "hub1.bi.conn" }, new string[] { AppName }, new string[] { "conn1" }
-            }
-        };
 
     [Theory]
     [MemberData(nameof(ConnectionDataTestMessages))]
@@ -161,21 +177,6 @@ public class ServiceMessageBusTests
         }
     }
 
-    public static IEnumerable<object[]> GroupBroadcastTestMessages => new object[][]
-        {
-            // app connection gets this connection message
-            new object[]
-            {
-                // For groups, group name as a whole is considered as the group name
-                "hg-h1.group1", "hello", new string[] { "hg-h1", "hg", "h1" }, new string[] { AppName }, new string[] { "hg-h1.group1" }
-            },
-            // app connection gets this connection message
-            new object[]
-            {
-                "hg-h1.a1.group1", "hello", new string[] { "hg-h1", "hg", "h1", "h1.a1" }, new string[] { AppName }, new string[] { "hg-h1.a1.group1" }
-            }
-        };
-
     [Theory]
     [MemberData(nameof(GroupBroadcastTestMessages))]
     public async Task PublishGroupBroadcastDataMessagesTest(string messageKey, string messageValue, string[] availableHubs, string[] expectedHubs, string[] expectedGroups)
@@ -201,20 +202,6 @@ public class ServiceMessageBusTests
             Assert.Equal(messageValue, message.Payloads["json"].GetJsonMessageFromSingleFramePayload<string>());
         }
     }
-
-    public static IEnumerable<object[]> UserDataTestMessages => new object[][]
-        {
-            // hub connection "hub1" gets this connection message
-            new object[]
-            {
-                "hu-hub1.user1", "hello", new string[] { "hu", "hu-", "hub1", "hub1.u", "hub1.user1" }, new string[] { "hub1" }, new string[] { "user1" }
-            },
-            // hub connection "hub1" & "hub1.bi" gets this connection message
-            new object[]
-            {
-                "hu-hub1.bi.user1", "hello", new string[] { "hu", "hu-hub1", "hub1", "hub1.bi", "hub1.bi.user" }, new string[] { "hub1", "hub1.bi" }, new string[] { "bi.user1", "user1" }
-            }
-        };
 
     [Theory]
     [MemberData(nameof(UserDataTestMessages))]

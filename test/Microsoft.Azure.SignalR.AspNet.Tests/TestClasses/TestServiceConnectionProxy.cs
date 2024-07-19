@@ -18,8 +18,10 @@ internal class TestServiceConnectionProxy : ServiceConnection, IDisposable
 
     private readonly ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>> _waitForOutgoingMessage = new ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>>();
 
-    private  readonly  TaskCompletionSource<object> _connectionClosedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object> _connectionClosedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
     public TestConnectionContext TestConnectionContext { get; private set; }
+
     public Task WaitForConnectionClose => _connectionClosedTcs.Task;
 
     public TestServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null, IServiceMessageHandler serviceMessageHandler = null) :
@@ -44,44 +46,6 @@ internal class TestServiceConnectionProxy : ServiceConnection, IDisposable
         await ConnectionInitializedTask;
     }
 
-    protected override async Task<ConnectionContext> CreateConnection(string target = null)
-    {
-        TestConnectionContext = await base.CreateConnection() as TestConnectionContext;
-
-        await WriteMessageAsync(new HandshakeResponseMessage());
-        return TestConnectionContext;
-    }
-
-    protected override async Task CleanupConnectionsAsyncCore(string instanceId = null)
-    {
-        try
-        {
-            await base.CleanupConnectionsAsyncCore(instanceId);
-            _connectionClosedTcs.SetResult(null);
-        }
-        catch (Exception e)
-        {
-            _connectionClosedTcs.SetException(e);
-        } 
-    }
-
-    protected override async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
-    {
-        var result = await base.SafeWriteAsync(serviceMessage);
-
-        if (serviceMessage is ConnectionDataMessage cdm)
-        {
-            var tcs = _waitForOutgoingMessage.GetOrAdd(cdm.ConnectionId, t => new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
-            tcs.TrySetResult(serviceMessage);
-        }
-        else if (serviceMessage is CloseConnectionMessage ccm)
-        {
-            var tcs = _waitForOutgoingMessage.GetOrAdd(ccm.ConnectionId, t => new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
-            tcs.TrySetResult(serviceMessage);
-        }
-        return result;
-    }
-
     public Task<ServiceMessage> WaitForOutgoingMessageAsync(string connectionId)
     {
         var tcs = _waitForOutgoingMessage.GetOrAdd(connectionId, i => new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
@@ -103,5 +67,43 @@ internal class TestServiceConnectionProxy : ServiceConnection, IDisposable
     public void Dispose()
     {
         _ = StopAsync();
+    }
+
+    protected override async Task<ConnectionContext> CreateConnection(string target = null)
+    {
+        TestConnectionContext = await base.CreateConnection() as TestConnectionContext;
+
+        await WriteMessageAsync(new HandshakeResponseMessage());
+        return TestConnectionContext;
+    }
+
+    protected override async Task CleanupConnectionsAsyncCore(string instanceId = null)
+    {
+        try
+        {
+            await base.CleanupConnectionsAsyncCore(instanceId);
+            _connectionClosedTcs.SetResult(null);
+        }
+        catch (Exception e)
+        {
+            _connectionClosedTcs.SetException(e);
+        }
+    }
+
+    protected override async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
+    {
+        var result = await base.SafeWriteAsync(serviceMessage);
+
+        if (serviceMessage is ConnectionDataMessage cdm)
+        {
+            var tcs = _waitForOutgoingMessage.GetOrAdd(cdm.ConnectionId, t => new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
+            tcs.TrySetResult(serviceMessage);
+        }
+        else if (serviceMessage is CloseConnectionMessage ccm)
+        {
+            var tcs = _waitForOutgoingMessage.GetOrAdd(ccm.ConnectionId, t => new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
+            tcs.TrySetResult(serviceMessage);
+        }
+        return result;
     }
 }

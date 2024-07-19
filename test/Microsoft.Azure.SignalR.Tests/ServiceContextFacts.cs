@@ -218,7 +218,6 @@ public class ServiceContextFacts
     [InlineData("&asrs_lang=ar-SA&asrs_ui_lang=123", true, "ar-SA", false, null)]
     [InlineData("&asrs_lang=&asrs_ui_lang=ar-SA", false, null, true, "ar-SA")]
     [InlineData("&asrs_lang=123&asrs_ui_lang=ar-SA", false, null, true, "ar-SA")]
-#endif
     public void ServiceConnectionContextCultureTest(string cultureQuery, bool isCultureValid, string parsedCulture, bool isUiCultureValid, string parsedUiCulture)
     {
         var queryString = $"?{cultureQuery}";
@@ -226,7 +225,7 @@ public class ServiceContextFacts
         var originalUiCulture = CultureInfo.CurrentUICulture.Name;
 
         _ = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
-        
+
         var expectedCulture = isCultureValid ? parsedCulture : originalCulture;
         var expectedUiCulture = isUiCultureValid ? parsedUiCulture : originalUiCulture;
 

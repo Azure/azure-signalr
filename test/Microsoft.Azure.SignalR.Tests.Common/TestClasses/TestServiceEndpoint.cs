@@ -5,11 +5,11 @@ namespace Microsoft.Azure.SignalR.Tests.Common;
 
 internal class TestServiceEndpoint : ServiceEndpoint
 {
-    private static Uri DefaultEndpoint = new Uri("https://localhost");
+    private const string DefaultConnectionString = "Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ;Version=1.0";
 
-    private const string _defaultConnectionString = "Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ;Version=1.0";
+    private static readonly Uri DefaultEndpoint = new Uri("https://localhost");
 
-    public TestServiceEndpoint(string name = "", string connectionString = null) : base(connectionString ?? _defaultConnectionString, name: name)
+    public TestServiceEndpoint(string name = "", string connectionString = null) : base(connectionString ?? DefaultConnectionString, name: name)
     {
     }
 

@@ -13,8 +13,6 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
 {
     private readonly Action<(ServiceMessage, IServiceConnectionContainer)> _validator;
 
-    public event Action<StatusChange> ConnectionStatusChanged;
-
     public string HubName { get; }
 
     public ServiceConnectionStatus Status { get; }
@@ -39,6 +37,8 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
         _validator = validator;
         HubName = name;
     }
+
+    public event Action<StatusChange> ConnectionStatusChanged;
 
     public Task StartAsync()
     {

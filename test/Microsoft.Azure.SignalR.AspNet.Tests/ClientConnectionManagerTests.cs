@@ -19,18 +19,6 @@ public class ClientConnectionManagerTests
 {
     private readonly ClientConnectionManager _clientConnectionManager;
 
-    private ClientConnectionManager CreateClientConnectionManager()
-    {
-        var hubConfig = new HubConfiguration
-        {
-            Resolver = new DefaultDependencyResolver()
-        };
-        var transport = new AzureTransportManager(hubConfig.Resolver);
-        hubConfig.Resolver.Register(typeof(ITransportManager), () => transport);
-
-        return new ClientConnectionManager(hubConfig, null);
-    }
-
     public ClientConnectionManagerTests()
     {
         _clientConnectionManager = CreateClientConnectionManager();
@@ -111,5 +99,17 @@ public class ClientConnectionManagerTests
         }
 
         return type;
+    }
+
+    private ClientConnectionManager CreateClientConnectionManager()
+    {
+        var hubConfig = new HubConfiguration
+        {
+            Resolver = new DefaultDependencyResolver()
+        };
+        var transport = new AzureTransportManager(hubConfig.Resolver);
+        hubConfig.Resolver.Register(typeof(ITransportManager), () => transport);
+
+        return new ClientConnectionManager(hubConfig, null);
     }
 }

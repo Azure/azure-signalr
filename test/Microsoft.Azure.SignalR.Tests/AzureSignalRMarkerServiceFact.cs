@@ -63,7 +63,7 @@ public class AzureSignalRMarkerServiceFact
             .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
             .AddSingleton<IConfiguration>(config)
             .BuildServiceProvider();
-    
+
         var app = new ApplicationBuilder(serviceProvider);
         app.UseRouting();
         app.UseEndpoints(routes =>

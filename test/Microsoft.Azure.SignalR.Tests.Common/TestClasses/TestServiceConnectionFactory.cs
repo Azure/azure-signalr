@@ -7,16 +7,11 @@ using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR.Tests.Common;
 
-internal sealed class TestServiceConnectionFactory : IServiceConnectionFactory
+internal sealed class TestServiceConnectionFactory(Func<ServiceEndpoint, IServiceConnection> generator = null) : IServiceConnectionFactory
 {
-    private readonly Func<ServiceEndpoint, IServiceConnection> _generator;
+    private readonly Func<ServiceEndpoint, IServiceConnection> _generator = generator;
 
     public ConcurrentDictionary<HubServiceEndpoint, List<IServiceConnection>> CreatedConnections { get; } = new();
-
-    public TestServiceConnectionFactory(Func<ServiceEndpoint, IServiceConnection> generator = null)
-    {
-        _generator = generator;
-    }
 
     public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, AckHandler ackHandler, ServiceConnectionType type)
     {

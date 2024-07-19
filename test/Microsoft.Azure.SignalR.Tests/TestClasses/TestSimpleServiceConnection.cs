@@ -10,16 +10,15 @@ namespace Microsoft.Azure.SignalR.Tests;
 
 internal sealed class TestSimpleServiceConnection : IServiceConnection
 {
+    private readonly bool _throws;
+
+    private readonly TaskCompletionSource<object> _writeAsyncTcs = null;
+
     public ServiceConnectionStatus Status { get; }
 
     public Task ConnectionInitializedTask => Task.CompletedTask;
 
     public Task ConnectionOfflineTask => Task.CompletedTask;
-
-    private readonly bool _throws;
-    private readonly TaskCompletionSource<object> _writeAsyncTcs = null;
-
-    public event Action<StatusChange> ConnectionStatusChanged;
 
     public TestSimpleServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false, TaskCompletionSource<object> writeAsyncTcs = null)
     {
@@ -27,6 +26,8 @@ internal sealed class TestSimpleServiceConnection : IServiceConnection
         _throws = throws;
         _writeAsyncTcs = writeAsyncTcs;
     }
+
+    public event Action<StatusChange> ConnectionStatusChanged;
 
     public Task StartAsync(string target = null)
     {

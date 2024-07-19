@@ -6,14 +6,9 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests.Common;
 
-internal class TestServiceConnectionContainerFactory : IServiceConnectionContainerFactory
+internal class TestServiceConnectionContainerFactory(SortedList<string, ServiceMessage> output) : IServiceConnectionContainerFactory
 {
-    private readonly SortedList<string, ServiceMessage> _messages;
-
-    public TestServiceConnectionContainerFactory(SortedList<string, ServiceMessage> output)
-    {
-        _messages = output;
-    }
+    private readonly SortedList<string, ServiceMessage> _messages = output;
 
     public IServiceConnectionContainer Create(string hub)
     {
