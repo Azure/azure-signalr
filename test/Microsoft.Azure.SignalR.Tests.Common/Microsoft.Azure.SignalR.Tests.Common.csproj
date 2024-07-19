@@ -18,8 +18,9 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="$(MicrosoftConfigurationEnvironmentVariablesVersion)" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="$(MicrosoftConfigurationUserSecretVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging.Testing" Version="$(MicrosoftExtensionsLoggingPackageVersion)" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
     <PackageReference Include="Moq" Version="$(MoqPackageVersion)" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="$(SystemIdentityModelTokensJwtPackageVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
 
   <ItemGroup>

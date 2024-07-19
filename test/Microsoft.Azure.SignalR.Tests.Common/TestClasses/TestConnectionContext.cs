@@ -7,31 +7,30 @@ using System.IO.Pipelines;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Features;
 
-namespace Microsoft.Azure.SignalR.Tests.Common
+namespace Microsoft.Azure.SignalR.Tests.Common;
+
+internal sealed class TestConnectionContext : ConnectionContext
 {
-    internal sealed class TestConnectionContext : ConnectionContext
+    public TestConnectionContext()
     {
-        public TestConnectionContext()
-        {
-            Features = new FeatureCollection();
-            Items = new ConcurrentDictionary<object, object>();
+        Features = new FeatureCollection();
+        Items = new ConcurrentDictionary<object, object>();
 
-            var pipeOptions = new PipeOptions();
-            var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
-            var proxyToApplication = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+        var pipeOptions = new PipeOptions();
+        var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+        var proxyToApplication = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
 
-            Transport = pair.Transport;
-            Application = pair.Application;
-        }
-
-        public override string ConnectionId { get; set; }
-
-        public override IFeatureCollection Features { get; }
-
-        public override IDictionary<object, object> Items { get; set; }
-
-        public override IDuplexPipe Transport { get; set; }
-
-        public IDuplexPipe Application { get; set; }
+        Transport = pair.Transport;
+        Application = pair.Application;
     }
+
+    public override string ConnectionId { get; set; }
+
+    public override IFeatureCollection Features { get; }
+
+    public override IDictionary<object, object> Items { get; set; }
+
+    public override IDuplexPipe Transport { get; set; }
+
+    public IDuplexPipe Application { get; set; }
 }

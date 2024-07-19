@@ -6,10 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Microsoft.Azure.SignalR.Tests\JwtTokenHelper.cs" Link="JwtTokenHelper.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkPackageVersion)" />
     <PackageReference Include="xunit" Version="$(XunitPackageVersion)" />

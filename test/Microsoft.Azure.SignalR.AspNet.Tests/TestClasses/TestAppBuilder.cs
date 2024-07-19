@@ -5,28 +5,27 @@ using System;
 using System.Collections.Generic;
 using Owin;
 
-namespace Microsoft.Azure.SignalR.AspNet.Tests
+namespace Microsoft.Azure.SignalR.AspNet.Tests;
+
+internal sealed class TestAppBuilder : IAppBuilder
 {
-    internal sealed class TestAppBuilder : IAppBuilder
+    public IDictionary<string, object> Properties { get; } = new Dictionary<string, object>()
     {
-        public IDictionary<string, object> Properties { get; } = new Dictionary<string, object>()
-        {
-            ["builder.AddSignatureConversion"] = new Action<Delegate>(e => { })
-        };
+        ["builder.AddSignatureConversion"] = new Action<Delegate>(e => { })
+    };
 
-        public object Build(Type returnType)
-        {
-            return null;
-        }
+    public object Build(Type returnType)
+    {
+        return null;
+    }
 
-        public IAppBuilder New()
-        {
-            return null;
-        }
+    public IAppBuilder New()
+    {
+        return null;
+    }
 
-        public IAppBuilder Use(object middleware, params object[] args)
-        {
-            return this;
-        }
+    public IAppBuilder Use(object middleware, params object[] args)
+    {
+        return this;
     }
 }

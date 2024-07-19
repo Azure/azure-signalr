@@ -13,177 +13,176 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.Tests
+namespace Microsoft.Azure.SignalR.Tests;
+
+public class AzureSignalRMarkerServiceFact
 {
-    public class AzureSignalRMarkerServiceFact
+    private const string DefaultValue = "Endpoint=https://abc;AccessKey=abc123;";
+
+    [Fact]
+    [Obsolete]
+    public void UseAzureSignalRWithAddAzureSignalR()
     {
-        private const string DefaultValue = "Endpoint=https://abc;AccessKey=abc123;";
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string>
+            {
+                {"Azure:SignalR:ConnectionString", DefaultValue}
+            })
+            .Build();
+        var serviceProvider = services.AddLogging()
+            .AddSignalR()
+            .AddAzureSignalR()
+            .Services
+            .AddSingleton<IConfiguration>(config)
+            .BuildServiceProvider();
 
-        [Fact]
-        [Obsolete]
-        public void UseAzureSignalRWithAddAzureSignalR()
+        var app = new ApplicationBuilder(serviceProvider);
+        app.UseAzureSignalR(routes =>
         {
-            var services = new ServiceCollection();
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
-                {
-                    {"Azure:SignalR:ConnectionString", DefaultValue}
-                })
-                .Build();
-            var serviceProvider = services.AddLogging()
-                .AddSignalR()
-                .AddAzureSignalR()
-                .Services
-                .AddSingleton<IConfiguration>(config)
-                .BuildServiceProvider();
+            routes.MapHub<TestHub>("/chat");
+        });
 
-            var app = new ApplicationBuilder(serviceProvider);
-            app.UseAzureSignalR(routes =>
-            {
-                routes.MapHub<TestHub>("/chat");
-            });
-
-            Assert.NotNull(serviceProvider.GetService<HubLifetimeManager<TestHub>>());
-        }
-
-        [SkipIfTargetNetstandard]
-        public void UseEndpointsWithAddAzureSignalR()
-        {
-            var services = new ServiceCollection();
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
-                {
-                    {"Azure:SignalR:ConnectionString", DefaultValue}
-                })
-                .Build();
-            var serviceProvider = services.AddLogging()
-                .AddSignalR()
-                .AddAzureSignalR()
-                .Services
-                .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
-                .AddSingleton<IConfiguration>(config)
-                .BuildServiceProvider();
-        
-            var app = new ApplicationBuilder(serviceProvider);
-            app.UseRouting();
-            app.UseEndpoints(routes =>
-            {
-                routes.MapHub<TestHub>("/chat");
-            });
-
-            Assert.NotNull(serviceProvider.GetService<HubLifetimeManager<TestHub>>());
-        }
-
-        [Fact]
-        [Obsolete]
-        public void UseAzureSignalRWithAddSignalR()
-        {
-            var services = new ServiceCollection();
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
-                {
-                    {"Azure:SignalR:ConnectionString", DefaultValue}
-                })
-                .Build();
-            var serviceProvider = services.AddLogging()
-                .AddSignalR()
-                .AddMessagePackProtocol()
-                .Services
-                .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
-                .AddSingleton<IConfiguration>(config)
-                .BuildServiceProvider();
-
-            var app = new ApplicationBuilder(serviceProvider);
-            Assert.Throws<InvalidOperationException>(() => app.UseAzureSignalR(routes =>
-            {
-                routes.MapHub<TestHub>("/chat");
-            }));
-        }
-
-        [Fact]
-        [Obsolete]
-        public void UseAzureSignalRWithInvalidConnectionString()
-        {
-            var services = new ServiceCollection();
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
-                {
-                    {"Azure:SignalR:ConnectionString", "A=b;c=d"}
-                })
-                .Build();
-            var serviceProvider = services.AddLogging()
-                .AddSignalR()
-                .AddAzureSignalR()
-                .AddMessagePackProtocol()
-                .Services
-                .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
-                .AddSingleton<IConfiguration>(config)
-                .BuildServiceProvider();
-
-            var app = new ApplicationBuilder(serviceProvider);
-            var exception = Assert.Throws<ArgumentException>(() => app.UseAzureSignalR(routes =>
-            {
-                routes.MapHub<TestHub>("/chat");
-            }));
-            Assert.StartsWith("Connection string missing required properties endpoint.", exception.Message);
-        }
-
-        [Fact]
-        [Obsolete]
-        public void UseAzureSignalRWithConnectionStringNotSpecified()
-        {
-            var services = new ServiceCollection();
-            var config = new ConfigurationBuilder().Build();
-            var serviceProvider = services.AddLogging()
-                .AddSignalR()
-                .AddAzureSignalR()
-                .AddMessagePackProtocol()
-                .Services
-                .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
-                .AddSingleton<IConfiguration>(config)
-                .BuildServiceProvider();
-
-            var app = new ApplicationBuilder(serviceProvider);
-            var exception = Assert.Throws<AzureSignalRConfigurationNoEndpointException>(() => app.UseAzureSignalR(routes =>
-            {
-                routes.MapHub<TestHub>("/chat");
-            }));
-            Assert.StartsWith("No connection string was specified.", exception.Message);
-        }
-
-        private sealed class SkipIfTargetNetstandard : FactAttribute
-        {
-            public SkipIfTargetNetstandard()
-            {
-                if (IsTargetNetStandard())
-                {
-                    Skip = "Not applicable in netstandard 2.0.";
-                }
-            }
-
-            private static bool IsTargetNetStandard()
-            {
-                var attribute = typeof(ServiceOptions).Assembly.GetCustomAttributes(typeof(TargetFrameworkAttribute), inherit: true);
-                var frameworkAttribute = (TargetFrameworkAttribute)attribute.GetValue(0);
-                if (frameworkAttribute.FrameworkName.Contains(".NETStandard", StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-                return false;
-            }
-        }
+        Assert.NotNull(serviceProvider.GetService<HubLifetimeManager<TestHub>>());
     }
 
-    public class EmptyApplicationLifetime : IHostApplicationLifetime
+    [SkipIfTargetNetstandard]
+    public void UseEndpointsWithAddAzureSignalR()
     {
-        public CancellationToken ApplicationStarted => CancellationToken.None;
-
-        public CancellationToken ApplicationStopping => CancellationToken.None;
-
-        public CancellationToken ApplicationStopped => CancellationToken.None;
-
-        public void StopApplication()
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string>
+            {
+                {"Azure:SignalR:ConnectionString", DefaultValue}
+            })
+            .Build();
+        var serviceProvider = services.AddLogging()
+            .AddSignalR()
+            .AddAzureSignalR()
+            .Services
+            .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
+            .AddSingleton<IConfiguration>(config)
+            .BuildServiceProvider();
+    
+        var app = new ApplicationBuilder(serviceProvider);
+        app.UseRouting();
+        app.UseEndpoints(routes =>
         {
+            routes.MapHub<TestHub>("/chat");
+        });
+
+        Assert.NotNull(serviceProvider.GetService<HubLifetimeManager<TestHub>>());
+    }
+
+    [Fact]
+    [Obsolete]
+    public void UseAzureSignalRWithAddSignalR()
+    {
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string>
+            {
+                {"Azure:SignalR:ConnectionString", DefaultValue}
+            })
+            .Build();
+        var serviceProvider = services.AddLogging()
+            .AddSignalR()
+            .AddMessagePackProtocol()
+            .Services
+            .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
+            .AddSingleton<IConfiguration>(config)
+            .BuildServiceProvider();
+
+        var app = new ApplicationBuilder(serviceProvider);
+        Assert.Throws<InvalidOperationException>(() => app.UseAzureSignalR(routes =>
+        {
+            routes.MapHub<TestHub>("/chat");
+        }));
+    }
+
+    [Fact]
+    [Obsolete]
+    public void UseAzureSignalRWithInvalidConnectionString()
+    {
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string>
+            {
+                {"Azure:SignalR:ConnectionString", "A=b;c=d"}
+            })
+            .Build();
+        var serviceProvider = services.AddLogging()
+            .AddSignalR()
+            .AddAzureSignalR()
+            .AddMessagePackProtocol()
+            .Services
+            .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
+            .AddSingleton<IConfiguration>(config)
+            .BuildServiceProvider();
+
+        var app = new ApplicationBuilder(serviceProvider);
+        var exception = Assert.Throws<ArgumentException>(() => app.UseAzureSignalR(routes =>
+        {
+            routes.MapHub<TestHub>("/chat");
+        }));
+        Assert.StartsWith("Connection string missing required properties endpoint.", exception.Message);
+    }
+
+    [Fact]
+    [Obsolete]
+    public void UseAzureSignalRWithConnectionStringNotSpecified()
+    {
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder().Build();
+        var serviceProvider = services.AddLogging()
+            .AddSignalR()
+            .AddAzureSignalR()
+            .AddMessagePackProtocol()
+            .Services
+            .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
+            .AddSingleton<IConfiguration>(config)
+            .BuildServiceProvider();
+
+        var app = new ApplicationBuilder(serviceProvider);
+        var exception = Assert.Throws<AzureSignalRConfigurationNoEndpointException>(() => app.UseAzureSignalR(routes =>
+        {
+            routes.MapHub<TestHub>("/chat");
+        }));
+        Assert.StartsWith("No connection string was specified.", exception.Message);
+    }
+
+    private sealed class SkipIfTargetNetstandard : FactAttribute
+    {
+        public SkipIfTargetNetstandard()
+        {
+            if (IsTargetNetStandard())
+            {
+                Skip = "Not applicable in netstandard 2.0.";
+            }
         }
+
+        private static bool IsTargetNetStandard()
+        {
+            var attribute = typeof(ServiceOptions).Assembly.GetCustomAttributes(typeof(TargetFrameworkAttribute), inherit: true);
+            var frameworkAttribute = (TargetFrameworkAttribute)attribute.GetValue(0);
+            if (frameworkAttribute.FrameworkName.Contains(".NETStandard", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            return false;
+        }
+    }
+}
+
+public class EmptyApplicationLifetime : IHostApplicationLifetime
+{
+    public CancellationToken ApplicationStarted => CancellationToken.None;
+
+    public CancellationToken ApplicationStopping => CancellationToken.None;
+
+    public CancellationToken ApplicationStopped => CancellationToken.None;
+
+    public void StopApplication()
+    {
     }
 }

@@ -7,71 +7,70 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR.AspNet.Tests
+namespace Microsoft.Azure.SignalR.AspNet.Tests;
+
+internal sealed class TestClientConnectionManager : IClientConnectionManager
 {
-    internal sealed class TestClientConnectionManager : IClientConnectionManager
+    private readonly IServiceConnection _serviceConnection;
+
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
+
+    public ConcurrentDictionary<string, TestTransport> CurrentTransports = new ConcurrentDictionary<string, TestTransport>();
+
+    private ConcurrentDictionary<string, ClientConnectionContext> _connections = new ConcurrentDictionary<string, ClientConnectionContext>();
+
+    public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _connections;
+
+    public TestClientConnectionManager(IServiceConnection serviceConnection = null)
     {
-        private readonly IServiceConnection _serviceConnection;
+        _serviceConnection = serviceConnection;
+    }
 
-        private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
+    public Task WhenAllCompleted()
+    {
+        return Task.CompletedTask;
+    }
 
-        public ConcurrentDictionary<string, TestTransport> CurrentTransports = new ConcurrentDictionary<string, TestTransport>();
-
-        private ConcurrentDictionary<string, ClientConnectionContext> _connections = new ConcurrentDictionary<string, ClientConnectionContext>();
-
-        public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _connections;
-
-        public TestClientConnectionManager(IServiceConnection serviceConnection = null)
+    public Task<IServiceTransport> CreateConnection(OpenConnectionMessage message)
+    {
+        var transport = new TestTransport
         {
-            _serviceConnection = serviceConnection;
-        }
+            ConnectionId = message.ConnectionId
+        };
+        CurrentTransports.TryAdd(message.ConnectionId, transport);
 
-        public Task WhenAllCompleted()
+        var tcs = _waitForConnectionOpen.GetOrAdd(message.ConnectionId, i => new TaskCompletionSource<ConnectionContext>(TaskCreationOptions.RunContinuationsAsynchronously));
+
+        tcs.TrySetResult(null);
+
+        return Task.FromResult<IServiceTransport>(transport);
+    }
+
+    public bool TryAddClientConnection(ClientConnectionContext connection)
+    {
+        return _connections.TryAdd(connection.ConnectionId, connection);
+    }
+
+    public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
+    {
+        connection = null;
+        return CurrentTransports.TryRemove(connectionId, out _);
+    }
+
+    public bool TryGetClientConnection(string connectionId, out ClientConnectionContext connection)
+    {
+        if (_serviceConnection != null)
         {
-            return Task.CompletedTask;
+            connection = new ClientConnectionContext(_serviceConnection, connectionId);
+            return true;
         }
+        return _connections.TryGetValue(connectionId, out connection);
+    }
 
-        public Task<IServiceTransport> CreateConnection(OpenConnectionMessage message)
-        {
-            var transport = new TestTransport
-            {
-                ConnectionId = message.ConnectionId
-            };
-            CurrentTransports.TryAdd(message.ConnectionId, transport);
+    public Task WaitForClientConnectAsync(string connectionId)
+    {
+        var tcs = _waitForConnectionOpen.GetOrAdd(connectionId, i => new TaskCompletionSource<ConnectionContext>(TaskCreationOptions.RunContinuationsAsynchronously));
 
-            var tcs = _waitForConnectionOpen.GetOrAdd(message.ConnectionId, i => new TaskCompletionSource<ConnectionContext>(TaskCreationOptions.RunContinuationsAsynchronously));
-
-            tcs.TrySetResult(null);
-
-            return Task.FromResult<IServiceTransport>(transport);
-        }
-
-        public bool TryAddClientConnection(ClientConnectionContext connection)
-        {
-            return _connections.TryAdd(connection.ConnectionId, connection);
-        }
-
-        public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
-        {
-            connection = null;
-            return CurrentTransports.TryRemove(connectionId, out _);
-        }
-
-        public bool TryGetClientConnection(string connectionId, out ClientConnectionContext connection)
-        {
-            if (_serviceConnection != null)
-            {
-                connection = new ClientConnectionContext(_serviceConnection, connectionId);
-                return true;
-            }
-            return _connections.TryGetValue(connectionId, out connection);
-        }
-
-        public Task WaitForClientConnectAsync(string connectionId)
-        {
-            var tcs = _waitForConnectionOpen.GetOrAdd(connectionId, i => new TaskCompletionSource<ConnectionContext>(TaskCreationOptions.RunContinuationsAsynchronously));
-
-            return tcs.Task;
-        }
+        return tcs.Task;
     }
 }

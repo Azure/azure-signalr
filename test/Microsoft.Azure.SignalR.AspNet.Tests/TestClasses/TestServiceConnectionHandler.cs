@@ -8,59 +8,58 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR.AspNet.Tests
+namespace Microsoft.Azure.SignalR.AspNet.Tests;
+
+internal sealed class TestServiceConnectionHandler : ServiceConnectionManager
 {
-    internal sealed class TestServiceConnectionHandler : ServiceConnectionManager
+    private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForTransportOutputMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
+
+    public TestServiceConnectionHandler(): this(null, null)
     {
-        private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForTransportOutputMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
+    }
 
-        public TestServiceConnectionHandler(): this(null, null)
+    public TestServiceConnectionHandler(string appName, IReadOnlyList<string> hubs) : base(appName, hubs)
+    {
+    }
+
+    public override Task WriteAsync(ServiceMessage serviceMessage)
+    {
+        if (_waitForTransportOutputMessage.TryGetValue(serviceMessage.GetType(), out var tcs))
         {
+            tcs.SetResult(serviceMessage);
         }
 
-        public TestServiceConnectionHandler(string appName, IReadOnlyList<string> hubs) : base(appName, hubs)
+        return Task.CompletedTask;
+    }
+
+    public override Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
+    {
+        if (_waitForTransportOutputMessage.TryGetValue(serviceMessage.GetType(), out var tcs))
         {
+            tcs.SetResult(serviceMessage);
+        }
+        else
+        {
+            throw new InvalidOperationException("Not expected to write before tcs is inited");
         }
 
-        public override Task WriteAsync(ServiceMessage serviceMessage)
-        {
-            if (_waitForTransportOutputMessage.TryGetValue(serviceMessage.GetType(), out var tcs))
-            {
-                tcs.SetResult(serviceMessage);
-            }
+        return Task.FromResult(true);
+    }
 
-            return Task.CompletedTask;
+    public Task<ServiceMessage> WaitForTransportOutputMessageAsync(Type messageType)
+    {
+        if (_waitForTransportOutputMessage.TryGetValue(messageType, out var tcs))
+        {
+            tcs.TrySetCanceled();
         }
 
-        public override Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
-        {
-            if (_waitForTransportOutputMessage.TryGetValue(serviceMessage.GetType(), out var tcs))
-            {
-                tcs.SetResult(serviceMessage);
-            }
-            else
-            {
-                throw new InvalidOperationException("Not expected to write before tcs is inited");
-            }
+        // re-init the tcs
+        tcs = _waitForTransportOutputMessage[messageType] = new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            return Task.FromResult(true);
-        }
+        return tcs.Task;
+    }
 
-        public Task<ServiceMessage> WaitForTransportOutputMessageAsync(Type messageType)
-        {
-            if (_waitForTransportOutputMessage.TryGetValue(messageType, out var tcs))
-            {
-                tcs.TrySetCanceled();
-            }
-
-            // re-init the tcs
-            tcs = _waitForTransportOutputMessage[messageType] = new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            return tcs.Task;
-        }
-
-        public void DisposeServiceConnection(IServiceConnection connection)
-        {
-        }
+    public void DisposeServiceConnection(IServiceConnection connection)
+    {
     }
 }

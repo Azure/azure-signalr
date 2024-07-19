@@ -5,21 +5,20 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR.Tests.Common
+namespace Microsoft.Azure.SignalR.Tests.Common;
+
+internal sealed class TestServiceMessageHandler : IServiceMessageHandler
 {
-    internal sealed class TestServiceMessageHandler : IServiceMessageHandler
+    public TestServiceMessageHandler()
     {
-        public TestServiceMessageHandler()
-        {
-        }
-
-        public Task HandlePingAsync(PingMessage pingMessage) => Task.CompletedTask;
-
-        public void HandleAck(AckMessage serviceMessage)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task HandleKeyAsync(AccessKeyResponseMessage keyMessage) => Task.CompletedTask;
     }
+
+    public Task HandlePingAsync(PingMessage pingMessage) => Task.CompletedTask;
+
+    public void HandleAck(AckMessage serviceMessage)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task HandleKeyAsync(AccessKeyResponseMessage keyMessage) => Task.CompletedTask;
 }

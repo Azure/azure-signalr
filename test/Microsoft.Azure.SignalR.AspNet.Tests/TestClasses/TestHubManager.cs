@@ -7,44 +7,43 @@ using System.Linq;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Json;
 
-namespace Microsoft.Azure.SignalR.AspNet.Tests
+namespace Microsoft.Azure.SignalR.AspNet.Tests;
+
+internal sealed class TestHubManager : IHubManager
 {
-    internal sealed class TestHubManager : IHubManager
+    private readonly string[] _hubs;
+    public TestHubManager(params string[] hubs)
     {
-        private readonly string[] _hubs;
-        public TestHubManager(params string[] hubs)
-        {
-            _hubs = hubs;
-        }
+        _hubs = hubs;
+    }
 
-        public HubDescriptor GetHub(string hubName)
-        {
-            return null;
-        }
+    public HubDescriptor GetHub(string hubName)
+    {
+        return null;
+    }
 
-        public MethodDescriptor GetHubMethod(string hubName, string method, IList<IJsonValue> parameters)
-        {
-            return null;
-        }
+    public MethodDescriptor GetHubMethod(string hubName, string method, IList<IJsonValue> parameters)
+    {
+        return null;
+    }
 
-        public IEnumerable<MethodDescriptor> GetHubMethods(string hubName, Func<MethodDescriptor, bool> predicate)
-        {
-            yield break;
-        }
+    public IEnumerable<MethodDescriptor> GetHubMethods(string hubName, Func<MethodDescriptor, bool> predicate)
+    {
+        yield break;
+    }
 
-        public IEnumerable<HubDescriptor> GetHubs(Func<HubDescriptor, bool> predicate)
-        {
-            return _hubs.Select(s => new HubDescriptor() { Name = s });
-        }
+    public IEnumerable<HubDescriptor> GetHubs(Func<HubDescriptor, bool> predicate)
+    {
+        return _hubs.Select(s => new HubDescriptor() { Name = s });
+    }
 
-        public IHub ResolveHub(string hubName)
-        {
-            return null;
-        }
+    public IHub ResolveHub(string hubName)
+    {
+        return null;
+    }
 
-        public IEnumerable<IHub> ResolveHubs()
-        {
-            yield break;
-        }
+    public IEnumerable<IHub> ResolveHubs()
+    {
+        yield break;
     }
 }
