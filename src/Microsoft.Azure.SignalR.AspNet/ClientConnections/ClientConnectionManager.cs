@@ -22,9 +22,9 @@ internal class ClientConnectionManager : IClientConnectionManager
 
     private readonly ILogger _logger;
 
-    private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections = new ConcurrentDictionary<string, ClientConnectionContext>();
+    private readonly ConcurrentDictionary<string, IClientConnection> _clientConnections = new ConcurrentDictionary<string, IClientConnection>();
 
-    public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _clientConnections;
+    public IReadOnlyDictionary<string, IClientConnection> ClientConnections => _clientConnections;
 
     public ClientConnectionManager(HubConfiguration configuration, ILoggerFactory loggerFactory)
     {
@@ -60,17 +60,17 @@ internal class ClientConnectionManager : IClientConnectionManager
         throw new InvalidOperationException("Unable to authorize request");
     }
 
-    public bool TryAddClientConnection(ClientConnectionContext connection)
+    public bool TryAddClientConnection(IClientConnection connection)
     {
         return _clientConnections.TryAdd(connection.ConnectionId, connection);
     }
 
-    public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
+    public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
     {
         return _clientConnections.TryRemove(connectionId, out connection);
     }
 
-    public bool TryGetClientConnection(string connectionId, out ClientConnectionContext connection)
+    public bool TryGetClientConnection(string connectionId, out IClientConnection connection)
     {
         return _clientConnections.TryGetValue(connectionId, out connection);
     }

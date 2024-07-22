@@ -17,9 +17,9 @@ internal sealed class TestClientConnectionManager(IServiceConnection serviceConn
 
     public ConcurrentDictionary<string, TestTransport> CurrentTransports = new ConcurrentDictionary<string, TestTransport>();
 
-    private readonly ConcurrentDictionary<string, ClientConnectionContext> _connections = new ConcurrentDictionary<string, ClientConnectionContext>();
+    private readonly ConcurrentDictionary<string, IClientConnection> _connections = new ConcurrentDictionary<string, IClientConnection>();
 
-    public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _connections;
+    public IReadOnlyDictionary<string, IClientConnection> ClientConnections => _connections;
 
     public Task WhenAllCompleted()
     {
@@ -41,18 +41,18 @@ internal sealed class TestClientConnectionManager(IServiceConnection serviceConn
         return Task.FromResult<IServiceTransport>(transport);
     }
 
-    public bool TryAddClientConnection(ClientConnectionContext connection)
+    public bool TryAddClientConnection(IClientConnection connection)
     {
         return _connections.TryAdd(connection.ConnectionId, connection);
     }
 
-    public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
+    public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
     {
         connection = null;
         return CurrentTransports.TryRemove(connectionId, out _);
     }
 
-    public bool TryGetClientConnection(string connectionId, out ClientConnectionContext connection)
+    public bool TryGetClientConnection(string connectionId, out IClientConnection connection)
     {
         if (_serviceConnection != null)
         {
