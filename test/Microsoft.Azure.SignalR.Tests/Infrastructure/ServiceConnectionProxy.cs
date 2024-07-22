@@ -27,13 +27,13 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
 
     private readonly PipeOptions _clientPipeOptions;
 
-    private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<IClientConnection>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<IClientConnection>>();
 
     private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
 
     private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
 
-    private readonly ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>> _waitForServerConnection = new ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>>();
+    private readonly ConcurrentDictionary<int, TaskCompletionSource<IClientConnection>> _waitForServerConnection = new ConcurrentDictionary<int, TaskCompletionSource<IClientConnection>>();
 
     private int _connectedServerConnectionCount;
 
@@ -58,7 +58,7 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
 
     public ConcurrentDictionary<string, ServiceConnection> ServiceConnections { get; } = new ConcurrentDictionary<string, ServiceConnection>();
 
-    public IEnumerable<ClientConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
+    public IEnumerable<IClientConnection> ClientConnections => ClientConnectionManager.ClientConnections;
 
     public bool AllowStatefulReconnects { get; }
 
@@ -214,9 +214,9 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
         }
     }
 
-    public Task<ConnectionContext> WaitForConnectionAsync(string connectionId)
+    public Task<IClientConnection> WaitForConnectionAsync(string connectionId)
     {
-        return _waitForConnectionOpen.GetOrAdd(connectionId, key => new TaskCompletionSource<ConnectionContext>()).Task;
+        return _waitForConnectionOpen.GetOrAdd(connectionId, key => new TaskCompletionSource<IClientConnection>()).Task;
     }
 
     public Task WaitForConnectionCloseAsync(string connectionId)
@@ -229,12 +229,12 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
         return _waitForApplicationMessage.GetOrAdd(type, key => new TaskCompletionSource<ServiceMessage>()).Task;
     }
 
-    public Task<ConnectionContext> WaitForServerConnectionAsync(int count)
+    public Task<IClientConnection> WaitForServerConnectionAsync(int count)
     {
-        return _waitForServerConnection.GetOrAdd(count, key => new TaskCompletionSource<ConnectionContext>()).Task;
+        return _waitForServerConnection.GetOrAdd(count, key => new TaskCompletionSource<IClientConnection>()).Task;
     }
 
-    public bool TryAddClientConnection(ClientConnectionContext connection)
+    public bool TryAddClientConnection(IClientConnection connection)
     {
         if (ClientConnectionManager.TryAddClientConnection(connection))
         {
@@ -247,7 +247,7 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
         return false;
     }
 
-    public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
+    public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
     {
         if (ClientConnectionManager.TryRemoveClientConnection(connectionId, out connection))
         {
@@ -260,7 +260,7 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
         return false;
     }
 
-    public bool TryGetClientConnection(string connectionId, out ClientConnectionContext connection)
+    public bool TryGetClientConnection(string connectionId, out IClientConnection connection)
     {
         return ClientConnectionManager.TryGetClientConnection(connectionId, out connection);
     }

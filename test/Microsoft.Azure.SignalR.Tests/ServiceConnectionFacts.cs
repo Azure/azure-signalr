@@ -67,7 +67,7 @@ public class ServiceConnectionFacts
 
         Assert.Single(proxy.ClientConnectionManager.ClientConnections);
 
-        var httpContext1 = connection1.GetHttpContext();
+        var httpContext1 = connection1.AsContext().GetHttpContext();
         Assert.NotNull(httpContext1);
         Assert.Empty(httpContext1.Request.Headers);
         Assert.Empty(httpContext1.Request.Query);
@@ -98,7 +98,7 @@ public class ServiceConnectionFacts
 
         Assert.Equal(2, proxy.ClientConnectionManager.Count);
 
-        var httpContext2 = connection2.GetHttpContext();
+        var httpContext2 = connection2.AsContext().GetHttpContext();
         Assert.NotNull(httpContext2);
         Assert.Equal(3, httpContext2.Request.Headers.Count);
         Assert.Equal(headerValue1, httpContext2.Request.Headers[headerKey1]);
@@ -113,7 +113,7 @@ public class ServiceConnectionFacts
         // Send a message to client 1
         await proxy.WriteMessageAsync(new ConnectionDataMessage(connectionId1, Encoding.ASCII.GetBytes("Hello")));
 
-        var item = await connection1.Transport.Input.ReadSingleAsync().OrTimeout();
+        var item = await connection1.AsContext().Transport.Input.ReadSingleAsync().OrTimeout();
 
         Assert.Equal("Hello", Encoding.ASCII.GetString(item));
 
@@ -198,14 +198,14 @@ public class ServiceConnectionFacts
         var connection = await task.OrTimeout();
 
         var channel = proxy.ApplicationMessages;
-        await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("{}\u001e"));
+        await connection.AsContext().Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("{}\u001e"));
 
         var message = Assert.IsType<ConnectionDataMessage>(await channel.Reader.ReadAsync());
         Assert.Equal(DataMessageType.Handshake, message.Type);
         Assert.Equal(connection.ConnectionId, message.ConnectionId);
         Assert.Equal("{}\u001e", Encoding.ASCII.GetString(message.Payload.ToArray()));
 
-        await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("{\"type\":1,\"target\":\"hello\",\"arguments\":[]}\u001e"));
+        await connection.AsContext().Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("{\"type\":1,\"target\":\"hello\",\"arguments\":[]}\u001e"));
 
         message = Assert.IsType<ConnectionDataMessage>(await channel.Reader.ReadAsync());
         Assert.Equal(DataMessageType.Invocation, message.Type);
@@ -234,8 +234,8 @@ public class ServiceConnectionFacts
 
         var channel = proxy.ApplicationMessages;
 
-        await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("{}\u001e"));
-        await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes(outputMessage));
+        await connection.AsContext().Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("{}\u001e"));
+        await connection.AsContext().Transport.Output.WriteAsync(Encoding.ASCII.GetBytes(outputMessage));
         var message = Assert.IsType<ConnectionDataMessage>(await channel.Reader.ReadAsync());
         Assert.Equal(DataMessageType.Handshake, message.Type);
         Assert.Equal(connection.ConnectionId, message.ConnectionId);
@@ -267,8 +267,8 @@ public class ServiceConnectionFacts
 
         var channel = proxy.ApplicationMessages;
 
-        await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("{}\u001e"));
-        await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes(outputMessage));
+        await connection.AsContext().Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("{}\u001e"));
+        await connection.AsContext().Transport.Output.WriteAsync(Encoding.ASCII.GetBytes(outputMessage));
         var message = Assert.IsType<ConnectionDataMessage>(await channel.Reader.ReadAsync());
         Assert.Equal(DataMessageType.Handshake, message.Type);
         Assert.Equal(connection.ConnectionId, message.ConnectionId);
@@ -432,7 +432,7 @@ public class ServiceConnectionFacts
         AssertTimeout(serverTask2);
 
         // Dispose the connection, then server will throw exception and reconnect
-        serverConnection1.Transport.Input.CancelPendingRead();
+        serverConnection1.AsContext().Transport.Input.CancelPendingRead();
 
         await serverTask2.OrTimeout();
 
@@ -474,7 +474,7 @@ public class ServiceConnectionFacts
         var serverTask3 = proxy.WaitForServerConnectionAsync(3);
         AssertTimeout(serverTask3);
 
-        onDemandConnection.Transport.Input.CancelPendingRead();
+        onDemandConnection.AsContext().Transport.Input.CancelPendingRead();
         AssertTimeout(serverTask3);
     }
 
@@ -509,7 +509,7 @@ public class ServiceConnectionFacts
 
         // dispose the only default connection
         var serverTask3 = proxy.WaitForServerConnectionAsync(3);
-        defaultConnection.Transport.Input.CancelPendingRead();
+        defaultConnection.AsContext().Transport.Input.CancelPendingRead();
         // There won't be another connection to be created
         AssertTimeout(serverTask3);
 

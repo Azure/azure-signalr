@@ -192,7 +192,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
 
             errorTcs.SetException(new InvalidOperationException("error operation"));
 
-            await clientConnection.LifetimeTask.OrTimeout();
+            await clientConnection.AsContext().LifetimeTask.OrTimeout();
 
             // Should complete the connection when application throws
             await ccm.WaitForClientConnectionRemovalAsync(clientConnectionId).OrTimeout();
@@ -259,7 +259,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             transportConnection.Application.Output.Complete();
 
             // Assert timeout
-            var lifetime = clientConnection.LifetimeTask;
+            var lifetime = clientConnection.AsContext().LifetimeTask;
             var task = await Task.WhenAny(lifetime, Task.Delay(1000));
             Assert.NotEqual(lifetime, task);
 
@@ -315,10 +315,10 @@ public class ServiceConnectionTests : VerifiableLoggedTest
 
             var clientConnection = await waitClientTask.OrTimeout();
 
-            clientConnection.CancelOutgoing();
+            clientConnection.AsContext().CancelOutgoing();
 
             connectionHandler.CancellationToken.Cancel();
-            await clientConnection.LifetimeTask.OrTimeout();
+            await clientConnection.AsContext().LifetimeTask.OrTimeout();
 
             // complete reading to end the connection
             transportConnection.Application.Output.Complete();
@@ -331,7 +331,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     }
 
     [Fact]
-    public async Task TestClientConnectionContextAbortCanSendOutCloseMessage()
+    public async Task TestIClientConnectionAbortCanSendOutCloseMessage()
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
             logChecker: logs =>
@@ -378,7 +378,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                 protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { }) { Protocol = hubProtocol.Name }));
             var clientConnection = await waitClientTask.OrTimeout();
 
-            await clientConnection.LifetimeTask.OrTimeout();
+            await clientConnection.AsContext().LifetimeTask.OrTimeout();
 
             transportConnection.Transport.Output.Complete();
             var input = await transportConnection.Application.Input.ReadAsync();
@@ -462,7 +462,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                 protocol.GetMessageBytes(new OpenConnectionMessage(normalClientConnectionId, null) { Protocol = hubProtocol.Name }));
 
             var connections = await waitClientTask.OrTimeout();
-            await Task.WhenAll(from c in connections select c.LifetimeTask.OrTimeout());
+            await Task.WhenAll(from c in connections select c.AsContext().LifetimeTask.OrTimeout());
 
             // complete reading to end the connection
             transportConnection.Application.Output.Complete();
@@ -535,12 +535,12 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             // send a handshake response, should be skipped.
             var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
             var handshakeResponse = new SignalRProtocol.HandshakeResponseMessage(null);
-            HandshakeProtocol.WriteResponseMessage(handshakeResponse, clientConnection.Transport.Output);
-            await clientConnection.Transport.Output.FlushAsync();
+            HandshakeProtocol.WriteResponseMessage(handshakeResponse, clientConnection.AsContext().Transport.Output);
+            await clientConnection.AsContext().Transport.Output.FlushAsync();
 
             // send a test message.
             var payload = Encoding.UTF8.GetBytes("{\"type\":1,\"target\":\"method\",\"arguments\":[]}\u001e");
-            await clientConnection.Transport.Output.WriteAsync(payload).OrTimeout();
+            await clientConnection.AsContext().Transport.Output.WriteAsync(payload).OrTimeout();
 
             var result = await serviceConnection.Application.Input.ReadAsync().OrTimeout();
             var buffer = result.Buffer;
@@ -622,7 +622,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
 
             connectionHandler.CancellationToken.Cancel();
 
-            await clientConnection.LifetimeTask.OrTimeout();
+            await clientConnection.AsContext().LifetimeTask.OrTimeout();
 
             // 1s for application task to timeout
             await connectionTask.OrTimeout(1000);
@@ -711,7 +711,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             // complete reading to end the connection
             transportConnection.Application.Output.Complete();
 
-            await clientConnection.LifetimeTask.OrTimeout();
+            await clientConnection.AsContext().LifetimeTask.OrTimeout();
 
             // 1s for application task to timeout
             await connectionTask.OrTimeout(1000);
@@ -790,7 +790,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             // complete reading to end the connection
             transportConnection.Application.Output.Complete();
 
-            await clientConnection.LifetimeTask.OrTimeout();
+            await clientConnection.AsContext().LifetimeTask.OrTimeout();
 
             // 1s for application task to timeout
             await connectionTask.OrTimeout(1000);
@@ -803,13 +803,13 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     {
         private readonly ClientConnectionManager _ccm = new ClientConnectionManager();
 
-        private readonly ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>> _tcs =
-            new ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>>();
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<IClientConnection>> _tcs =
+            new ConcurrentDictionary<string, TaskCompletionSource<IClientConnection>>();
 
-        private readonly ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>> _tcsForRemoval
-            = new ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>>();
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<IClientConnection>> _tcsForRemoval
+            = new ConcurrentDictionary<string, TaskCompletionSource<IClientConnection>>();
 
-        public IEnumerable<ClientConnectionContext> ClientConnections => _ccm.ClientConnections;
+        public IEnumerable<IClientConnection> ClientConnections => _ccm.ClientConnections;
 
         public int Count => _ccm.Count;
 
@@ -817,46 +817,46 @@ public class ServiceConnectionTests : VerifiableLoggedTest
         {
         }
 
-        public Task<ClientConnectionContext> WaitForClientConnectionRemovalAsync(string id)
+        public Task<IClientConnection> WaitForClientConnectionRemovalAsync(string id)
         {
             var tcs = _tcsForRemoval.GetOrAdd(id,
-                s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
+                s => new TaskCompletionSource<IClientConnection>(TaskCreationOptions
                     .RunContinuationsAsynchronously));
             return tcs.Task;
         }
 
-        public Task<ClientConnectionContext> WaitForClientConnectionAsync(string id)
+        public Task<IClientConnection> WaitForClientConnectionAsync(string id)
         {
             var tcs = _tcs.GetOrAdd(id,
-                s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
+                s => new TaskCompletionSource<IClientConnection>(TaskCreationOptions
                     .RunContinuationsAsynchronously));
             return tcs.Task;
         }
 
-        public bool TryAddClientConnection(ClientConnectionContext connection)
+        public bool TryAddClientConnection(IClientConnection clientConnection)
         {
-            var tcs = _tcs.GetOrAdd(connection.ConnectionId,
-                s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
+            var tcs = _tcs.GetOrAdd(clientConnection.ConnectionId,
+                s => new TaskCompletionSource<IClientConnection>(TaskCreationOptions
                     .RunContinuationsAsynchronously));
-            var r = _ccm.TryAddClientConnection(connection);
-            tcs.SetResult(connection);
+            var r = _ccm.TryAddClientConnection(clientConnection);
+            tcs.SetResult(clientConnection);
             return r;
         }
 
-        public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
+        public bool TryRemoveClientConnection(string connectionId, out IClientConnection clientConnection)
         {
             var tcs = _tcsForRemoval.GetOrAdd(connectionId,
-                s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
+                s => new TaskCompletionSource<IClientConnection>(TaskCreationOptions
                     .RunContinuationsAsynchronously));
             _tcs.TryRemove(connectionId, out _);
-            var r = _ccm.TryRemoveClientConnection(connectionId, out connection);
-            tcs.TrySetResult(connection);
+            var r = _ccm.TryRemoveClientConnection(connectionId, out clientConnection);
+            tcs.TrySetResult(clientConnection);
             return r;
         }
 
-        public bool TryGetClientConnection(string connectionId, out ClientConnectionContext connection)
+        public bool TryGetClientConnection(string connectionId, out IClientConnection clientConnection)
         {
-            return _ccm.TryGetClientConnection(connectionId, out connection);
+            return _ccm.TryGetClientConnection(connectionId, out clientConnection);
         }
 
         public Task WhenAllCompleted()

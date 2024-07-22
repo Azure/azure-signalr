@@ -242,7 +242,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
         var connectionId = message.ConnectionId;
         try
         {
-            clientContext.Transport = await _clientConnectionManager.CreateConnection(message);
+            clientContext.Transport = await (_clientConnectionManager as ClientConnectionManager).CreateConnection(message);
             Log.ConnectedStarting(Logger, connectionId);
         }
         catch (Exception e)

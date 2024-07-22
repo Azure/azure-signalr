@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
@@ -9,7 +10,7 @@ using Microsoft.AspNetCore.Http.Features;
 
 namespace Microsoft.Azure.SignalR.Tests;
 
-public class TestConnection : ConnectionContext
+internal class TestConnection : ConnectionContext, IClientConnection
 {
     public override string ConnectionId { get; set; }
 
@@ -22,6 +23,12 @@ public class TestConnection : ConnectionContext
     public IDuplexPipe Application { get; set; }
 
     public string Target { get; set; }
+
+    public string InstanceId => throw new NotImplementedException();
+
+    public IServiceConnection ServiceConnection => throw new NotImplementedException();
+
+    public string HubProtocol => throw new NotImplementedException();
 
     public TestConnection()
     {

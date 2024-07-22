@@ -281,7 +281,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             Assert.True(message is CloseConnectionMessage);
 
             // Verify client connection is not created due to authorized failure.
-            Assert.False(ccm.ClientConnections.TryGetValue(connectionId, out var connection));
+            Assert.False(ccm.TryGetClientConnection(connectionId, out var connection));
         }
     }
 
@@ -317,7 +317,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             Assert.True(message is CloseConnectionMessage);
 
             // Verify client connection is not created due to authorized failure.
-            Assert.False(ccm.ClientConnections.TryGetValue(connectionId, out var connection));
+            Assert.False(ccm.TryGetClientConnection(connectionId, out var connection));
         }
     }
 
@@ -523,8 +523,8 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var message = connectMessage.Payloads["json"].GetJsonMessageFromSingleFramePayload<HubResponseItem>();
             Assert.Equal("Connected", message.A[0]);
 
-            ccm.ClientConnections.TryGetValue(connectionId1, out var transport1);
-            Assert.NotNull(transport1);
+            ccm.TryGetClientConnection(connectionId1, out var clientConnection1);
+            Assert.NotNull(clientConnection1);
 
             // Application layer sends OpenConnectionMessage for client2
             connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
@@ -537,8 +537,8 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             Assert.Equal($"hg-{hub}.note", connectMessage.GroupName);
             message = connectMessage.Payloads["json"].GetJsonMessageFromSingleFramePayload<HubResponseItem>();
             Assert.Equal("Connected", message.A[0]);
-            ccm.ClientConnections.TryGetValue(connectionId2, out var transport2);
-            Assert.NotNull(transport2);
+            ccm.TryGetClientConnection(connectionId2, out var clientConnection2);
+            Assert.NotNull(clientConnection2);
 
             // Send ServerOfflinePing on instance1 and will trigger cleanup related client1
             connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
@@ -557,7 +557,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             // Validate client2 is still connected
             Assert.Single(ccm.ClientConnections);
-            Assert.Equal(connectionId2, ccm.ClientConnections.FirstOrDefault().Key);
+            Assert.Equal(connectionId2, ccm.ClientConnections.FirstOrDefault().ConnectionId);
         }
     }
 

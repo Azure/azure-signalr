@@ -7,19 +7,13 @@ namespace Microsoft.Azure.SignalR.Tests;
 
 public class ClientConnectionManagerTests
 {
-    private async Task RemoveConnection(IClientConnectionManager manager, ClientConnectionContext ctx)
-    {
-        await Task.Delay(100);
-        ctx.OnCompleted();
-    }
-
     [Fact(Skip = "Disable high possibility failed cases until they are fixed")]
     public void TestAllClientConnectionsCompleted()
     {
         var manager = new ClientConnectionManager();
 
-        var c1 = new ClientConnectionContext(new Protocol.OpenConnectionMessage("foo", new Claim[0]));
-        var c2 = new ClientConnectionContext(new Protocol.OpenConnectionMessage("bar", new Claim[0]));
+        var c1 = new ClientConnectionContext(new Protocol.OpenConnectionMessage("foo", Array.Empty<Claim>()));
+        var c2 = new ClientConnectionContext(new Protocol.OpenConnectionMessage("bar", Array.Empty<Claim>()));
 
         manager.TryAddClientConnection(c1);
         manager.TryAddClientConnection(c2);
@@ -33,5 +27,11 @@ public class ClientConnectionManagerTests
             Task.Delay(TimeSpan.FromSeconds(1))
         );
         Assert.Equal(0, actual);
+    }
+
+    private static async Task RemoveConnection(IClientConnectionManager manager, ClientConnectionContext ctx)
+    {
+        await Task.Delay(100);
+        ctx.OnCompleted();
     }
 }

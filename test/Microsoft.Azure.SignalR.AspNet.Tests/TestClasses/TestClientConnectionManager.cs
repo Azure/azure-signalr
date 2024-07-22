@@ -11,15 +11,17 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
 internal sealed class TestClientConnectionManager(IServiceConnection serviceConnection = null) : IClientConnectionManager
 {
+    public ConcurrentDictionary<string, TestTransport> CurrentTransports = new ConcurrentDictionary<string, TestTransport>();
+
     private readonly IServiceConnection _serviceConnection = serviceConnection;
 
     private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
 
-    public ConcurrentDictionary<string, TestTransport> CurrentTransports = new ConcurrentDictionary<string, TestTransport>();
+    private readonly ConcurrentDictionary<string, IClientConnection> _connections = new ConcurrentDictionary<string, IClientConnection>();
 
-    private readonly ConcurrentDictionary<string, ClientConnectionContext> _connections = new ConcurrentDictionary<string, ClientConnectionContext>();
+    public IEnumerable<IClientConnection> ClientConnections => _connections.Values;
 
-    public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _connections;
+    public int Count => _connections.Count;
 
     public Task WhenAllCompleted()
     {
@@ -41,18 +43,18 @@ internal sealed class TestClientConnectionManager(IServiceConnection serviceConn
         return Task.FromResult<IServiceTransport>(transport);
     }
 
-    public bool TryAddClientConnection(ClientConnectionContext connection)
+    public bool TryAddClientConnection(IClientConnection connection)
     {
         return _connections.TryAdd(connection.ConnectionId, connection);
     }
 
-    public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
+    public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
     {
         connection = null;
         return CurrentTransports.TryRemove(connectionId, out _);
     }
 
-    public bool TryGetClientConnection(string connectionId, out ClientConnectionContext connection)
+    public bool TryGetClientConnection(string connectionId, out IClientConnection connection)
     {
         if (_serviceConnection != null)
         {
