@@ -38,11 +38,6 @@ internal class ClientConnectionContext : IClientConnection
         Output = channel.Writer;
     }
 
-    public async Task WriteMessageAsync(ConnectionDataMessage message)
-    {
-        await ServiceConnection.WriteAsync(message);
-    }
-
     public void CancelPendingRead()
     {
         _source.Cancel();

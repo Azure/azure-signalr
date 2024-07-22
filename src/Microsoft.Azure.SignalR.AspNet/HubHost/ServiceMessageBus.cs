@@ -95,7 +95,7 @@ internal class ServiceMessageBus : MessageBus
                     {
                         // If the client connection is connected to local server connection,
                         // send back directly from the established server connection
-                        await conn.WriteMessageAsync(connectionDataMessage);
+                        await conn.ServiceConnection.WriteAsync(connectionDataMessage);
                     }
                     else
                     {

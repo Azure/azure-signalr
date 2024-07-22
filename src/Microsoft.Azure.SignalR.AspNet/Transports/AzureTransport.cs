@@ -72,7 +72,8 @@ internal class AzureTransport : IServiceTransport
     {
         if (_clientConnectionManager.TryGetClientConnection(ConnectionId, out var connection))
         {
-            return connection.WriteAsync(ConnectionId, value, _serviceProtocol, _serializer, _pool);
+            var message = CreateConnectionDataMessage(connection.ConnectionId, value, _serviceProtocol, _serializer, _pool);
+            return connection.ServiceConnection.WriteAsync(message);
         }
         throw new InvalidOperationException("No service connection found when sending message");
     }
@@ -88,6 +89,22 @@ internal class AzureTransport : IServiceTransport
     }
 
     public void OnDisconnected() => _lifetimeTcs.TrySetResult(null);
+
+    private ConnectionDataMessage CreateConnectionDataMessage(string connectionId,
+                                                                      object value,
+                                                              IServiceProtocol protocol,
+                                                              JsonSerializer serializer,
+                                                              IMemoryPool pool)
+    {
+        using var writer = new MemoryPoolTextWriter(pool);
+        serializer.Serialize(writer, value);
+        writer.Flush();
+
+        // Reuse ConnectionDataMessage to wrap the payload
+        var wrapped = new ConnectionDataMessage(string.Empty, writer.Buffer);
+        var message = new ConnectionDataMessage(connectionId, protocol.GetMessageBytes(wrapped));
+        return message;
+    }
 
     private async Task LifetimeExecute()
     {

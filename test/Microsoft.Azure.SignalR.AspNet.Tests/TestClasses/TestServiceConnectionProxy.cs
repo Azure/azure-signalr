@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.IO.Pipelines;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
@@ -14,8 +13,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
 internal class TestServiceConnectionProxy(IClientConnectionManager clientConnectionManager,
                                           ILoggerFactory loggerFactory,
-                                          ConnectionDelegate callback = null,
-                                          PipeOptions clientPipeOptions = null,
                                           IServiceMessageHandler serviceMessageHandler = null) : ServiceConnection(
                                               "serverId",
                                               Guid.NewGuid().ToString("N"),
