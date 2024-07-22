@@ -18,7 +18,6 @@ internal interface IClientConnection
     /// <summary>
     /// The connection protocol being used.
     /// JSON / MesssagePack
-    /// https://learn.microsoft.com/en-us/aspnet/core/signalr/configuration?view=aspnetcore-8.0&tabs=dotnet
     /// </summary>
     string Protocol { get; }
 
