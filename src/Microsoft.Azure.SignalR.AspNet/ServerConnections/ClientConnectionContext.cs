@@ -1,10 +1,13 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.AspNet;
 
@@ -16,7 +19,7 @@ internal class ClientConnectionContext : IClientConnection
 
     public string InstanceId { get; }
 
-    public IServiceConnection ServiceConnection { get; }
+    public IServiceConnection ServiceConnection { get; set; }
 
     public Task ApplicationTask { get; set; }
 
@@ -28,11 +31,14 @@ internal class ClientConnectionContext : IClientConnection
 
     public IServiceTransport Transport { get; set; }
 
-    public ClientConnectionContext(IServiceConnection sc, string connectionId, string instanceId = null)
+    public string Protocol { get; }
+
+    public ClientConnectionContext(OpenConnectionMessage serviceMessage)
     {
-        ServiceConnection = sc;
-        ConnectionId = connectionId;
-        InstanceId = instanceId;
+        InstanceId = GetInstanceId(serviceMessage.Headers);
+        ConnectionId = serviceMessage.ConnectionId;
+        Protocol = serviceMessage.Protocol;
+
         var channel = Channel.CreateUnbounded<ServiceMessage>();
         Input = channel.Reader;
         Output = channel.Writer;
@@ -41,5 +47,10 @@ internal class ClientConnectionContext : IClientConnection
     public void CancelPendingRead()
     {
         _source.Cancel();
+    }
+
+    private string GetInstanceId(IDictionary<string, StringValues> header)
+    {
+        return header.TryGetValue(Constants.AsrsInstanceId, out var instanceId) ? (string)instanceId : string.Empty;
     }
 }

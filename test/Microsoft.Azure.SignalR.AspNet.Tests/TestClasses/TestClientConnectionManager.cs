@@ -56,7 +56,10 @@ internal sealed class TestClientConnectionManager(IServiceConnection serviceConn
     {
         if (_serviceConnection != null)
         {
-            connection = new ClientConnectionContext(_serviceConnection, connectionId);
+            connection = new ClientConnectionContext(new OpenConnectionMessage(connectionId, []))
+            {
+                ServiceConnection = _serviceConnection
+            };
             return true;
         }
         return _connections.TryGetValue(connectionId, out connection);

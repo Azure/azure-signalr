@@ -88,7 +88,10 @@ internal partial class ServiceConnection : ServiceConnectionBase
     {
         // Create empty transport with only channel for async processing messages
         var connectionId = openConnectionMessage.ConnectionId;
-        var clientConnection = new ClientConnectionContext(this, connectionId, GetInstanceId(openConnectionMessage.Headers));
+        var clientConnection = new ClientConnectionContext(openConnectionMessage)
+        {
+            ServiceConnection = this
+        };
 
         var isDiagnosticClient = false;
         openConnectionMessage.Headers.TryGetValue(Constants.AsrsIsDiagnosticClient, out var isDiagnosticClientValue);
@@ -322,10 +325,5 @@ internal partial class ServiceConnection : ServiceConnectionBase
             _ = PerformDisconnectCore(connectionId, false);
             _ = SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
         }
-    }
-
-    private string GetInstanceId(IDictionary<string, StringValues> header)
-    {
-        return header.TryGetValue(Constants.AsrsInstanceId, out var instanceId) ? (string)instanceId : null;
     }
 }

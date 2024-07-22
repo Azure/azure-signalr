@@ -16,6 +16,13 @@ internal interface IClientConnection
     string InstanceId { get; }
 
     /// <summary>
+    /// The connection protocol being used.
+    /// JSON / MesssagePack
+    /// https://learn.microsoft.com/en-us/aspnet/core/signalr/configuration?view=aspnetcore-8.0&tabs=dotnet
+    /// </summary>
+    string Protocol { get; }
+
+    /// <summary>
     /// The server connection associated with this client connection.
     /// </summary>
     IServiceConnection ServiceConnection { get; }
