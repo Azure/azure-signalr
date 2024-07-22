@@ -23,7 +23,7 @@ internal sealed class TestClientConnectionManager : IClientConnectionManager
 
     private readonly StrongBox<int> _index;
 
-    public IEnumerable<ClientConnectionContext> ClientConnections => _ccm.ClientConnections;
+    public IEnumerable<IClientConnection> ClientConnections => _ccm.ClientConnections;
 
     public int Count => _ccm.Count;
 
@@ -52,28 +52,20 @@ internal sealed class TestClientConnectionManager : IClientConnectionManager
         return tcs.Task;
     }
 
-    public bool TryAddClientConnection(ClientConnectionContext connection)
-    {
-        var tcs = _tcs.GetOrAdd(connection.ConnectionId,
-            s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
-                .RunContinuationsAsynchronously));
-        var r = _ccm.TryAddClientConnection(connection);
-        tcs.SetResult(connection);
-        return r;
-    }
+    public bool TryAddClientConnection(IClientConnection connection) => TryAddClientConnection(connection as ClientConnectionContext);
 
-    public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
+    public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
     {
         var tcs = _tcsForRemoval.GetOrAdd(connectionId,
             s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
                 .RunContinuationsAsynchronously));
         _tcs.TryRemove(connectionId, out _);
         var r = _ccm.TryRemoveClientConnection(connectionId, out connection);
-        tcs.TrySetResult(connection);
+        tcs.TrySetResult(connection as ClientConnectionContext);
         return r;
     }
 
-    public bool TryGetClientConnection(string connectionId, out ClientConnectionContext connection)
+    public bool TryGetClientConnection(string connectionId, out IClientConnection connection)
     {
         return _ccm.TryGetClientConnection(connectionId, out connection);
     }
@@ -82,5 +74,15 @@ internal sealed class TestClientConnectionManager : IClientConnectionManager
     {
         await Task.Yield();
         CompleteIndex = Interlocked.Increment(ref _index.Value);
+    }
+
+    private bool TryAddClientConnection(ClientConnectionContext connection)
+    {
+        var tcs = _tcs.GetOrAdd(connection.ConnectionId,
+            s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
+                .RunContinuationsAsynchronously));
+        var r = _ccm.TryAddClientConnection(connection);
+        tcs.SetResult(connection);
+        return r;
     }
 }

@@ -58,7 +58,7 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
 
     public ConcurrentDictionary<string, ServiceConnection> ServiceConnections { get; } = new ConcurrentDictionary<string, ServiceConnection>();
 
-    public IEnumerable<ClientConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
+    public IEnumerable<IClientConnection> ClientConnections => ClientConnectionManager.ClientConnections;
 
     public bool AllowStatefulReconnects { get; }
 
@@ -234,20 +234,9 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
         return _waitForServerConnection.GetOrAdd(count, key => new TaskCompletionSource<ConnectionContext>()).Task;
     }
 
-    public bool TryAddClientConnection(ClientConnectionContext connection)
-    {
-        if (ClientConnectionManager.TryAddClientConnection(connection))
-        {
-            if (_waitForConnectionOpen.TryGetValue(connection.ConnectionId, out var tcs))
-            {
-                tcs.TrySetResult(connection);
-            }
-            return true;
-        }
-        return false;
-    }
+    public bool TryAddClientConnection(IClientConnection connection) => TryAddClientConnection(connection as ClientConnectionContext);
 
-    public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
+    public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
     {
         if (ClientConnectionManager.TryRemoveClientConnection(connectionId, out connection))
         {
@@ -260,7 +249,7 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
         return false;
     }
 
-    public bool TryGetClientConnection(string connectionId, out ClientConnectionContext connection)
+    public bool TryGetClientConnection(string connectionId, out IClientConnection connection)
     {
         return ClientConnectionManager.TryGetClientConnection(connectionId, out connection);
     }
@@ -273,6 +262,19 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
     public Task WhenAllCompleted()
     {
         return Task.CompletedTask;
+    }
+
+    private bool TryAddClientConnection(ClientConnectionContext connection)
+    {
+        if (ClientConnectionManager.TryAddClientConnection(connection))
+        {
+            if (_waitForConnectionOpen.TryGetValue(connection.ConnectionId, out var tcs))
+            {
+                tcs.TrySetResult(connection);
+            }
+            return true;
+        }
+        return false;
     }
 
     private async Task ConnectionFactoryCallbackAsync(TestConnection connection)

@@ -66,7 +66,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
 
             var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
             await transportConnection.Application.Output.WriteAsync(
-                protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { }) { Protocol = hubProtocol.Name }));
+                protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[0] { }) { Protocol = hubProtocol.Name }));
 
             var clientConnection = await waitClientTask.OrTimeout();
 
@@ -312,12 +312,12 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             await transportConnection.Application.Output.WriteAsync(
                 protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { }) { Protocol = hubProtocol.Name }));
 
-            var clientConnection = await waitClientTask.OrTimeout();
+            var context = await waitClientTask.OrTimeout();
 
-            clientConnection.CancelOutgoing();
+            context.CancelOutgoing();
 
             connectionHandler.CancellationToken.Cancel();
-            await clientConnection.LifetimeTask.OrTimeout();
+            await context.LifetimeTask.OrTimeout();
 
             // complete reading to end the connection
             transportConnection.Application.Output.Complete();
@@ -333,10 +333,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     public async Task TestClientConnectionContextAbortCanSendOutCloseMessage()
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
-            logChecker: logs =>
-            {
-                return true;
-            }))
+            logChecker: logs => true))
         {
             var ccm = new TestClientConnectionManager();
             var ccf = new ClientConnectionFactory();
@@ -478,10 +475,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     [InlineData("anotherheader", false)]
     public async Task TestClientConnectionShouldSkipHandshakeWhenMigrateIn(string headerKey, bool shoudSkip)
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
-        {
-            return true;
-        }))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs => true))
         {
             var ccm = new TestClientConnectionManager();
             var ccf = new ClientConnectionFactory();
@@ -532,14 +526,14 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                 }));
 
             // send a handshake response, should be skipped.
-            var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
+            var context = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
             var handshakeResponse = new SignalRProtocol.HandshakeResponseMessage(null);
-            HandshakeProtocol.WriteResponseMessage(handshakeResponse, clientConnection.Transport.Output);
-            await clientConnection.Transport.Output.FlushAsync();
+            HandshakeProtocol.WriteResponseMessage(handshakeResponse, context.Transport.Output);
+            await context.Transport.Output.FlushAsync();
 
             // send a test message.
             var payload = Encoding.UTF8.GetBytes("{\"type\":1,\"target\":\"method\",\"arguments\":[]}\u001e");
-            await clientConnection.Transport.Output.WriteAsync(payload).OrTimeout();
+            await context.Transport.Output.WriteAsync(payload).OrTimeout();
 
             var result = await serviceConnection.Application.Input.ReadAsync().OrTimeout();
             var buffer = result.Buffer;

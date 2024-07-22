@@ -180,18 +180,19 @@ internal partial class ServiceConnection : ServiceConnectionBase
         _bufferingMessages.Remove(connectionId);
         if (_clientConnectionManager.TryGetClientConnection(connectionId, out var clientConnection))
         {
+            var connection = clientConnection as ClientConnectionContext;
             if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
             {
-                clientConnection.AbortOnClose = false;
-                clientConnection.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(ServerId, to));
+                connection.AbortOnClose = false;
+                connection.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(ServerId, to));
 
                 // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
                 // Since all data messages will be sent to `ServiceConnection` directly.
                 // We can simply ignore all messages came from the application.
-                clientConnection.CancelOutgoing();
+                connection.CancelOutgoing();
 
                 // The close connection message must be the last message, so we could complete the pipe.
-                clientConnection.CompleteIncoming();
+                connection.CompleteIncoming();
             }
         }
         return PerformDisconnectAsyncCore(connectionId);
@@ -203,8 +204,10 @@ internal partial class ServiceConnection : ServiceConnectionBase
         {
             MessageLog.ReceiveMessageFromService(Logger, connectionDataMessage);
         }
-        if (_clientConnectionManager.TryGetClientConnection(connectionDataMessage.ConnectionId, out var connection))
+        if (_clientConnectionManager.TryGetClientConnection(connectionDataMessage.ConnectionId, out var clientConnection))
         {
+            var connection = clientConnection as ClientConnectionContext;
+
             try
             {
 #if !NET8_0_OR_GREATER
@@ -519,8 +522,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     private async Task PerformDisconnectAsyncCore(string connectionId)
     {
-        var connection = RemoveClientConnection(connectionId);
-        if (connection != null)
+        var clientConnection = RemoveClientConnection(connectionId);
+        if (clientConnection is ClientConnectionContext connection)
         {
             // In normal close, service already knows the client is closed, no need to be informed.
             connection.AbortOnClose = false;
@@ -545,7 +548,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
         }
     }
 
-    private ClientConnectionContext RemoveClientConnection(string connectionId)
+    private IClientConnection RemoveClientConnection(string connectionId)
     {
         _connectionIds.TryRemove(connectionId, out _);
         _clientConnectionManager.TryRemoveClientConnection(connectionId, out var connection);

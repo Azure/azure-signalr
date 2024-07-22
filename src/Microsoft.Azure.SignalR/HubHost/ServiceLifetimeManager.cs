@@ -185,14 +185,14 @@ namespace Microsoft.Azure.SignalR
         }
 #endif
 
-        private MultiConnectionDataMessage CreateMessage(string connectionId, string methodName, object[] args, ClientConnectionContext serviceConnectionContext)
+        private MultiConnectionDataMessage CreateMessage(string connectionId, string methodName, object[] args, IClientConnection clientConnection)
         {
             IDictionary<string, ReadOnlyMemory<byte>> payloads;
-            if (serviceConnectionContext.HubProtocol != null)
+            if (clientConnection.HubProtocol != null)
             {
                 payloads = new ArrayDictionary<string, ReadOnlyMemory<byte>>(1)
                 {
-                    { serviceConnectionContext.HubProtocol, SerializeProtocol(serviceConnectionContext.HubProtocol, methodName, args) }
+                    { clientConnection.HubProtocol, SerializeProtocol(clientConnection.HubProtocol, methodName, args) }
                 };
             }
             else

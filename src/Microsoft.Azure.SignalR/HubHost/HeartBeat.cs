@@ -48,7 +48,7 @@ internal class HeartBeat : BackgroundService
                 // Trigger each connection heartbeat
                 foreach (var connection in _connectionManager.ClientConnections)
                 {
-                    connection.TickHeartbeat();
+                    (connection as ClientConnectionContext).TickHeartbeat();
                 }
             }
         }
