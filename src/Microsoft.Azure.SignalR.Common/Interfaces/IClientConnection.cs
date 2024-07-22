@@ -19,7 +19,7 @@ internal interface IClientConnection
     /// The connection protocol being used.
     /// JSON / MesssagePack
     /// </summary>
-    string Protocol { get; }
+    string HubProtocol { get; }
 
     /// <summary>
     /// The server connection associated with this client connection.

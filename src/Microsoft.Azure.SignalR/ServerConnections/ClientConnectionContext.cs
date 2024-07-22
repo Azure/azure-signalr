@@ -89,7 +89,7 @@ internal class ClientConnectionContext : ConnectionContext,
 
     public bool IsMigrated { get; }
 
-    public string Protocol { get; }
+    public string HubProtocol { get; }
 
     // Send "Abort" to service on close except that Service asks SDK to close
     public bool AbortOnClose
@@ -126,7 +126,7 @@ internal class ClientConnectionContext : ConnectionContext,
                                    PipeOptions appPipeOptions = null)
     {
         ConnectionId = serviceMessage.ConnectionId;
-        Protocol = serviceMessage.Protocol;
+        HubProtocol = serviceMessage.Protocol;
         User = serviceMessage.GetUserPrincipal();
         InstanceId = GetInstanceId(serviceMessage.Headers);
 

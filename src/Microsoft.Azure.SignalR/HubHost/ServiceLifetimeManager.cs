@@ -166,13 +166,13 @@ namespace Microsoft.Azure.SignalR
                 {
                     clientResultsManager = _clientInvocationManager.Router;
                     // For router server, it should send a ClientCompletionMessage with accurate payload content, which is necessary for the caller server.
-                    payload = SerializeCompletionMessage(result, clientConnection.Protocol);
+                    payload = SerializeCompletionMessage(result, clientConnection.HubProtocol);
                 }
 
                 // Block unknown `results` which belongs to neither Caller nor Router
                 if (clientResultsManager != null)
                 {
-                    var protocol = clientConnection.Protocol;
+                    var protocol = clientConnection.HubProtocol;
                     var message = AppendMessageTracingId(new ClientCompletionMessage(result.InvocationId, connectionId, _callerId, protocol, payload));
                     await WriteAsync(message);
                 }
@@ -188,11 +188,11 @@ namespace Microsoft.Azure.SignalR
         private MultiConnectionDataMessage CreateMessage(string connectionId, string methodName, object[] args, ClientConnectionContext serviceConnectionContext)
         {
             IDictionary<string, ReadOnlyMemory<byte>> payloads;
-            if (serviceConnectionContext.Protocol != null)
+            if (serviceConnectionContext.HubProtocol != null)
             {
                 payloads = new ArrayDictionary<string, ReadOnlyMemory<byte>>(1)
                 {
-                    { serviceConnectionContext.Protocol, SerializeProtocol(serviceConnectionContext.Protocol, methodName, args) }
+                    { serviceConnectionContext.HubProtocol, SerializeProtocol(serviceConnectionContext.HubProtocol, methodName, args) }
                 };
             }
             else

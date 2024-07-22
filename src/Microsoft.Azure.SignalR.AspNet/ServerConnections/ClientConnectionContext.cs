@@ -31,13 +31,13 @@ internal class ClientConnectionContext : IClientConnection
 
     public IServiceTransport Transport { get; set; }
 
-    public string Protocol { get; }
+    public string HubProtocol { get; }
 
     public ClientConnectionContext(OpenConnectionMessage serviceMessage)
     {
         InstanceId = GetInstanceId(serviceMessage.Headers);
         ConnectionId = serviceMessage.ConnectionId;
-        Protocol = serviceMessage.Protocol;
+        HubProtocol = serviceMessage.Protocol;
 
         var channel = Channel.CreateUnbounded<ServiceMessage>();
         Input = channel.Reader;
