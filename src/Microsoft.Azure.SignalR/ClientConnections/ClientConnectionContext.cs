@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Http.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -45,7 +46,7 @@ namespace Microsoft.Azure.SignalR;
 ///  | ========================            ============         ============    |                 |  ============         ============    |
 ///   --------------------------------------------------------------------------                   ---------------------------------------
 /// </code>
-internal class ClientConnectionContext : ConnectionContext,
+internal partial class ClientConnectionContext : ConnectionContext,
                                           IClientConnection,
                                           IConnectionUserFeature,
                                           IConnectionItemsFeature,
@@ -72,6 +73,8 @@ internal class ClientConnectionContext : ConnectionContext,
     private readonly object _heartbeatLock = new object();
 
     private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
+
+    private readonly Queue<IMemoryOwner<byte>> _bufferedMessages = new();
 
     private int _connectionState = IdleState;
 
@@ -169,46 +172,6 @@ internal class ClientConnectionContext : ConnectionContext,
         }
     }
 
-    public async Task WriteMessageAsync(ReadOnlySequence<byte> payload)
-    {
-        await _writeLock.WaitAsync();
-        try
-        {
-            var previousState = Interlocked.CompareExchange(ref _connectionState, WritingState, IdleState);
-
-            // Write should not be called from multiple threads
-            Debug.Assert(previousState != WritingState);
-
-            if (previousState == CompletedState)
-            {
-                // already completing, don't write anymore
-                return;
-            }
-
-            try
-            {
-                _lastMessageReceivedAt = DateTime.UtcNow.Ticks;
-                _receivedBytes += payload.Length;
-
-                // Start write
-                await WriteMessageAsyncCore(payload);
-            }
-            finally
-            {
-                // Try to set the connection to idle if it is in writing state, if it is in complete state, complete the tcs
-                previousState = Interlocked.CompareExchange(ref _connectionState, IdleState, WritingState);
-                if (previousState == CompletedState)
-                {
-                    Application.Output.Complete();
-                }
-            }
-        }
-        finally
-        {
-            _writeLock.Release();
-        }
-    }
-
     public void OnCompleted()
     {
         _connectionEndTcs.TrySetResult(null);
@@ -263,6 +226,54 @@ internal class ClientConnectionContext : ConnectionContext,
         }
         address = null;
         return false;
+    }
+
+    internal async Task ProcessConnectionDataMessageAsync(ConnectionDataMessage connectionDataMessage)
+    {
+        try
+        {
+#if !NET8_0_OR_GREATER
+            // do NOT write close message until net 8 or later.
+            if (connectionDataMessage.Type == DataMessageType.Close)
+            {
+                return;
+            }
+#endif
+            if (connectionDataMessage.IsPartial)
+            {
+                var owner = ExactSizeMemoryPool.Shared.Rent((int)connectionDataMessage.Payload.Length);
+                connectionDataMessage.Payload.CopyTo(owner.Memory.Span);
+                // make sure there is no await operation before _bufferingMessages.
+                _bufferedMessages.Enqueue(owner);
+            }
+            else
+            {
+                long length = 0;
+                foreach (var owner in _bufferedMessages)
+                {
+                    using (owner)
+                    {
+                        await WriteToApplicationAsync(new ReadOnlySequence<byte>(owner.Memory));
+                        length += owner.Memory.Length;
+                    }
+                }
+                _bufferedMessages.Clear();
+
+                var payload = connectionDataMessage.Payload;
+                length += payload.Length;
+                Log.WriteMessageToApplication(Logger, length, connectionDataMessage.ConnectionId);
+                await WriteToApplicationAsync(payload);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.FailToWriteMessageToApplication(Logger, connectionDataMessage, ex);
+        }
+    }
+
+    internal void ClearBufferedMessages()
+    {
+        _bufferedMessages?.Clear();
     }
 
     private static void ProcessQuery(string queryString, out string originalPath)
@@ -321,6 +332,46 @@ internal class ClientConnectionContext : ConnectionContext,
     private static string GetInstanceId(IDictionary<string, StringValues> header)
     {
         return header.TryGetValue(Constants.AsrsInstanceId, out var instanceId) ? (string)instanceId : string.Empty;
+    }
+
+    private async Task WriteToApplicationAsync(ReadOnlySequence<byte> payload)
+    {
+        await _writeLock.WaitAsync();
+        try
+        {
+            var previousState = Interlocked.CompareExchange(ref _connectionState, WritingState, IdleState);
+
+            // Write should not be called from multiple threads
+            Debug.Assert(previousState != WritingState);
+
+            if (previousState == CompletedState)
+            {
+                // already completing, don't write anymore
+                return;
+            }
+
+            try
+            {
+                _lastMessageReceivedAt = DateTime.UtcNow.Ticks;
+                _receivedBytes += payload.Length;
+
+                // Start write
+                await WriteMessageAsyncCore(payload);
+            }
+            finally
+            {
+                // Try to set the connection to idle if it is in writing state, if it is in complete state, complete the tcs
+                previousState = Interlocked.CompareExchange(ref _connectionState, IdleState, WritingState);
+                if (previousState == CompletedState)
+                {
+                    Application.Output.Complete();
+                }
+            }
+        }
+        finally
+        {
+            _writeLock.Release();
+        }
     }
 
     private FeatureCollection BuildFeatures(OpenConnectionMessage serviceMessage)

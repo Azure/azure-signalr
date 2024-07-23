@@ -20,7 +20,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Xunit.Abstractions;
-using static Microsoft.Azure.SignalR.Tests.ServiceConnectionTests;
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -1609,7 +1608,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         {
             // prepare containers
             var ccm = new TestClientConnectionManager();
-            var ccf = new ClientConnectionFactory(NullLoggerFactory.Instance);
+            var ccf = new ClientConnectionFactory(loggerFactory);
             var protocol = new ServiceProtocol();
             TestConnection transportConnection1 = null;
             TestConnection transportConnection2 = null;
