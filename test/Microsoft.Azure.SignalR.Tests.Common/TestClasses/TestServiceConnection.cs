@@ -40,6 +40,8 @@ internal class TestServiceConnection(ServiceConnectionStatus status = ServiceCon
 
     public ConcurrentQueue<ServiceMessage> ReceivedMessages { get; } = new();
 
+    public override IBufferingMessageHandler BufferingMessages => throw new NotImplementedException();
+
     public void SetStatus(ServiceConnectionStatus status)
     {
         Status = status;

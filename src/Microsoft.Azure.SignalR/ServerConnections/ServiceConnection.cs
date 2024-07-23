@@ -36,9 +36,9 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     private readonly IClientConnectionFactory _clientConnectionFactory;
 
-    private readonly int _closeTimeOutMilliseconds;
-
     private readonly IClientConnectionManager _clientConnectionManager;
+
+    private readonly int _closeTimeOutMilliseconds;
 
     private readonly ConcurrentDictionary<string, string> _connectionIds =
         new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
@@ -52,11 +52,9 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     private readonly IHubProtocolResolver _hubProtocolResolver;
 
-    // Performance: Do not use ConcurrentDictionary. There is no multi-threading scenario here, all operations are in the same logical thread.
-    private readonly Dictionary<string, List<IMemoryOwner<byte>>> _bufferingMessages =
-        new Dictionary<string, List<IMemoryOwner<byte>>>(StringComparer.Ordinal);
-
     public Action<HttpContext> ConfigureContext { get; set; }
+
+    public override IBufferingMessageHandler BufferingMessages { get; } = new BufferingMessageHandler();
 
     public ServiceConnection(IServiceProtocol serviceProtocol,
                              IClientConnectionManager clientConnectionManager,
@@ -127,7 +125,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
             }
 
             // make sure there is no await operation before _bufferingMessages.
-            _bufferingMessages.Remove(connection.Key);
+            BufferingMessages.Remove(connection.Key);
             // We should not wait until all the clients' lifetime ends to restart another service connection
             _ = PerformDisconnectAsyncCore(connection.Key);
         }
@@ -187,7 +185,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
     {
         var connectionId = closeConnectionMessage.ConnectionId;
         // make sure there is no await operation before _bufferingMessages.
-        _bufferingMessages.Remove(connectionId);
+        BufferingMessages.Remove(connectionId);
         if (_clientConnectionManager.TryGetClientConnection(connectionId, out var clientConnection))
         {
             var connection = clientConnection as ClientConnectionContext;
@@ -232,19 +230,19 @@ internal partial class ServiceConnection : ServiceConnectionBase
                     var owner = ExactSizeMemoryPool.Shared.Rent((int)connectionDataMessage.Payload.Length);
                     connectionDataMessage.Payload.CopyTo(owner.Memory.Span);
                     // make sure there is no await operation before _bufferingMessages.
-                    if (!_bufferingMessages.TryGetValue(connectionDataMessage.ConnectionId, out var list))
+                    if (!BufferingMessages.TryGetValue(connectionDataMessage.ConnectionId, out var list))
                     {
                         list = new List<IMemoryOwner<byte>>();
-                        _bufferingMessages[connectionDataMessage.ConnectionId] = list;
+                        BufferingMessages[connectionDataMessage.ConnectionId] = list;
                     }
                     list.Add(owner);
                 }
                 else
                 {
                     // make sure there is no await operation before _bufferingMessages.
-                    if (_bufferingMessages.TryGetValue(connectionDataMessage.ConnectionId, out var list))
+                    if (BufferingMessages.TryGetValue(connectionDataMessage.ConnectionId, out var list))
                     {
-                        _bufferingMessages.Remove(connectionDataMessage.ConnectionId);
+                        BufferingMessages.Remove(connectionDataMessage.ConnectionId);
                         long length = 0;
                         foreach (var owner in list)
                         {
@@ -596,8 +594,25 @@ internal partial class ServiceConnection : ServiceConnectionBase
     private Task OnConnectionReconnectAsync(ConnectionReconnectMessage connectionReconnectMessage)
     {
         // make sure there is no await operation before _bufferingMessages.
-        _bufferingMessages.Remove(connectionReconnectMessage.ConnectionId);
+        BufferingMessages.Remove(connectionReconnectMessage.ConnectionId);
         return Task.CompletedTask;
+    }
+
+    private class BufferingMessageHandler : IBufferingMessageHandler
+    {
+        // Performance: Do not use ConcurrentDictionary. There is no multi-threading scenario here, all operations are in the same logical thread.
+        private readonly Dictionary<string, List<IMemoryOwner<byte>>> _inner =
+            new Dictionary<string, List<IMemoryOwner<byte>>>(StringComparer.Ordinal);
+
+        public List<IMemoryOwner<byte>> this[string connectionId]
+        {
+            get => _inner[connectionId];
+            set => _inner[connectionId] = value;
+        }
+
+        public void Remove(string connectionId) => _inner.Remove(connectionId);
+
+        public bool TryGetValue(string connectionId, out List<IMemoryOwner<byte>> list) => _inner.TryGetValue(connectionId, out list);
     }
 
     private sealed class FakeInvocationBinder : IInvocationBinder

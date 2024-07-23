@@ -20,6 +20,8 @@ internal sealed class TestSimpleServiceConnection : IServiceConnection
 
     public Task ConnectionOfflineTask => Task.CompletedTask;
 
+    public IBufferingMessageHandler BufferingMessages => throw new NotImplementedException();
+
     public TestSimpleServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected,
                                        bool throws = false,
                                        TaskCompletionSource<object> writeAsyncTcs = null)

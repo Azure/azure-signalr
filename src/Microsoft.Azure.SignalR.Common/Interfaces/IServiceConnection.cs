@@ -15,6 +15,8 @@ internal interface IServiceConnection
 
     Task ConnectionOfflineTask { get; }
 
+    IBufferingMessageHandler BufferingMessages { get; }
+
     event Action<StatusChange> ConnectionStatusChanged;
 
     Task StartAsync(string target = null);

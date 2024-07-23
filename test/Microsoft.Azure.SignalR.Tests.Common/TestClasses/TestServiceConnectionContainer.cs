@@ -27,6 +27,8 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
 
     public bool HasClients => throw new NotSupportedException();
 
+    public IBufferingMessageHandler BufferingMessages => throw new NotImplementedException();
+
     public TestServiceConnectionContainer(ServiceConnectionStatus status)
     {
         Status = status;

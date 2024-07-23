@@ -93,6 +93,8 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     public Task ConnectionOfflineTask => _serviceConnectionOfflineTcs.Task;
 
+    public abstract IBufferingMessageHandler BufferingMessages { get; }
+
     protected HubServiceEndpoint HubEndpoint { get; }
 
     protected string ServerId { get; }

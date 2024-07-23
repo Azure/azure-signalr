@@ -238,6 +238,8 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
 
         public int ConnectionStatusChangedRemoveCount { get; set; }
 
+        public IBufferingMessageHandler BufferingMessages => throw new NotImplementedException();
+
         public SimpleTestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Disconnected)
         {
             Status = status;

@@ -35,6 +35,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     private readonly AckHandler _ackHandler;
 
+    public override IBufferingMessageHandler BufferingMessages => throw new NotSupportedException("This feature isn't supported in Asp.Net");
+
     public ServiceConnection(
         string serverId,
         string connectionId,
