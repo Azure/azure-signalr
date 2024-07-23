@@ -19,7 +19,9 @@ internal interface IServiceConnection
 
     Task StartAsync(string target = null);
 
+    Task StopAsync();
+
     Task WriteAsync(ServiceMessage serviceMessage);
 
-    Task StopAsync();
+    Task<bool> SafeWriteAsync(ServiceMessage serviceMessage);
 }

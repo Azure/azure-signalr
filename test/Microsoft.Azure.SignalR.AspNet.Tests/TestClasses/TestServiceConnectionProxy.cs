@@ -65,6 +65,23 @@ internal class TestServiceConnectionProxy(IClientConnectionManagerAspNet clientC
         _ = StopAsync();
     }
 
+    public override async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
+    {
+        var result = await base.SafeWriteAsync(serviceMessage);
+
+        if (serviceMessage is ConnectionDataMessage cdm)
+        {
+            var tcs = _waitForOutgoingMessage.GetOrAdd(cdm.ConnectionId, t => new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
+            tcs.TrySetResult(serviceMessage);
+        }
+        else if (serviceMessage is CloseConnectionMessage ccm)
+        {
+            var tcs = _waitForOutgoingMessage.GetOrAdd(ccm.ConnectionId, t => new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
+            tcs.TrySetResult(serviceMessage);
+        }
+        return result;
+    }
+
     protected override async Task<ConnectionContext> CreateConnection(string target = null)
     {
         TestConnectionContext = await base.CreateConnection() as TestConnectionContext;
@@ -84,22 +101,5 @@ internal class TestServiceConnectionProxy(IClientConnectionManagerAspNet clientC
         {
             _connectionClosedTcs.SetException(e);
         }
-    }
-
-    protected override async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
-    {
-        var result = await base.SafeWriteAsync(serviceMessage);
-
-        if (serviceMessage is ConnectionDataMessage cdm)
-        {
-            var tcs = _waitForOutgoingMessage.GetOrAdd(cdm.ConnectionId, t => new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
-            tcs.TrySetResult(serviceMessage);
-        }
-        else if (serviceMessage is CloseConnectionMessage ccm)
-        {
-            var tcs = _waitForOutgoingMessage.GetOrAdd(ccm.ConnectionId, t => new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
-            tcs.TrySetResult(serviceMessage);
-        }
-        return result;
     }
 }

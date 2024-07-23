@@ -48,10 +48,12 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 
         public Task StopAsync() => _serviceConnection.StopAsync();
 
-        public Task WriteAsync(ServiceMessage serviceMessage)
+        public Task WriteAsync(ServiceMessage serviceMessage) => _serviceConnection.WriteAsync(serviceMessage);
+
+        public async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
         {
-            var t = _serviceConnection.WriteAsync(serviceMessage);
-            return t;
+            await WriteAsync(serviceMessage);
+            return true;
         }
 
         public event Action<StatusChange> ConnectionStatusChanged

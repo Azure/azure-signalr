@@ -272,5 +272,18 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
             }
             return Task.CompletedTask;
         }
+
+        public async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
+        {
+            try
+            {
+                await WriteAsync(serviceMessage);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
     }
 }

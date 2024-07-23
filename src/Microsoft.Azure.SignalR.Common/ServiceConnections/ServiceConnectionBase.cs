@@ -233,7 +233,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
         }
     }
 
-    protected virtual async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
+    public virtual async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
     {
         if (!string.IsNullOrEmpty(_errorMessage) || Status != ServiceConnectionStatus.Connected)
         {

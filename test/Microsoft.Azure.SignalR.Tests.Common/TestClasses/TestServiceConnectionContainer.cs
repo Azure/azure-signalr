@@ -57,6 +57,19 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
         return Task.CompletedTask;
     }
 
+    public async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
+    {
+        try
+        {
+            await WriteAsync(serviceMessage);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
     public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage,
         CancellationToken cancellationToken = default)
     {

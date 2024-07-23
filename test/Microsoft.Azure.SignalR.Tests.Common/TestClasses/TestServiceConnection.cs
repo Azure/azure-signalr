@@ -98,7 +98,7 @@ internal class TestServiceConnection(ServiceConnectionStatus status = ServiceCon
         return Task.CompletedTask;
     }
 
-    protected override Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
+    public override Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
     {
         if (_throws)
         {
@@ -107,10 +107,5 @@ internal class TestServiceConnection(ServiceConnectionStatus status = ServiceCon
         ReceivedMessages.Enqueue(serviceMessage);
 
         return Task.FromResult(true);
-    }
-
-    protected Task WriteAsyncBase(ServiceMessage serviceMessage)
-    {
-        return base.WriteAsync(serviceMessage);
     }
 }

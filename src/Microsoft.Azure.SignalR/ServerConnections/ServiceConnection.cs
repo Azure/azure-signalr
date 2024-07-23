@@ -95,6 +95,16 @@ internal partial class ServiceConnection : ServiceConnectionBase
         Fatal,
     }
 
+    internal bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
+    {
+        _connectionIds.TryRemove(connectionId, out _);
+        var r = _clientConnectionManager.TryRemoveClientConnection(connectionId, out connection);
+#if NET7_0_OR_GREATER
+        _clientInvocationManager.CleanupInvocationsByConnection(connectionId);
+#endif
+        return r;
+    }
+
     protected override Task<ConnectionContext> CreateConnection(string target = null)
     {
         return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target, headers: CustomHeader);
@@ -310,7 +320,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
             var task = await Task.WhenAny(app, transport);
 
             // remove it from the connection list
-            RemoveClientConnection(connection.ConnectionId);
+            TryRemoveClientConnection(connection.ConnectionId, out _);
 
             // This is the exception from application
             Exception exception = null;
@@ -403,7 +413,11 @@ internal partial class ServiceConnection : ServiceConnectionBase
                             isHandshakeResponseParsed = true;
                             if (!shouldSkipHandshakeResponse)
                             {
-                                var forwardResult = await ForwardMessage(new ConnectionDataMessage(connection.ConnectionId, buffer.Slice(0, next.Start)) { Type = DataMessageType.Handshake });
+                                var dataMessage = new ConnectionDataMessage(connection.ConnectionId, buffer.Slice(0, next.Start))
+                                {
+                                    Type = DataMessageType.Handshake
+                                };
+                                var forwardResult = await ForwardMessage(dataMessage);
                                 switch (forwardResult)
                                 {
                                     case ForwardMessageResult.Success:
@@ -424,9 +438,17 @@ internal partial class ServiceConnection : ServiceConnectionBase
                         var next = buffer;
                         while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
                         {
-                            var messageType = message is SignalRProtocol.HubInvocationMessage ? DataMessageType.Invocation :
-                                message is SignalRProtocol.CloseMessage ? DataMessageType.Close : DataMessageType.Other;
-                            var forwardResult = await ForwardMessage(new ConnectionDataMessage(connection.ConnectionId, buffer.Slice(0, next.Start)) { Type = messageType });
+                            var messageType = message switch
+                            {
+                                SignalRProtocol.HubInvocationMessage => DataMessageType.Invocation,
+                                SignalRProtocol.CloseMessage => DataMessageType.Close,
+                                _ => DataMessageType.Other,
+                            };
+                            var dataMessage = new ConnectionDataMessage(connection.ConnectionId, buffer.Slice(0, next.Start))
+                            {
+                                Type = messageType
+                            };
+                            var forwardResult = await ForwardMessage(dataMessage);
                             switch (forwardResult)
                             {
                                 case ForwardMessageResult.Fatal:
@@ -522,8 +544,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     private async Task PerformDisconnectAsyncCore(string connectionId)
     {
-        var clientConnection = RemoveClientConnection(connectionId);
-        if (clientConnection is ClientConnectionContext connection)
+        if (TryRemoveClientConnection(connectionId, out var c) && c is ClientConnectionContext connection)
         {
             // In normal close, service already knows the client is closed, no need to be informed.
             connection.AbortOnClose = false;
@@ -546,16 +567,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
             await lifetime;
         }
-    }
-
-    private IClientConnection RemoveClientConnection(string connectionId)
-    {
-        _connectionIds.TryRemove(connectionId, out _);
-        _clientConnectionManager.TryRemoveClientConnection(connectionId, out var connection);
-#if NET7_0_OR_GREATER
-        _clientInvocationManager.CleanupInvocationsByConnection(connectionId);
-#endif
-        return connection;
     }
 
     private Task OnClientInvocationAsync(ClientInvocationMessage message)

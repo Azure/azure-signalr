@@ -20,7 +20,9 @@ internal sealed class TestSimpleServiceConnection : IServiceConnection
 
     public Task ConnectionOfflineTask => Task.CompletedTask;
 
-    public TestSimpleServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false, TaskCompletionSource<object> writeAsyncTcs = null)
+    public TestSimpleServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected,
+                                       bool throws = false,
+                                       TaskCompletionSource<object> writeAsyncTcs = null)
     {
         Status = status;
         _throws = throws;
@@ -51,5 +53,16 @@ internal sealed class TestSimpleServiceConnection : IServiceConnection
 
         _writeAsyncTcs?.TrySetResult(null);
         return Task.CompletedTask;
+    }
+
+    public Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
+    {
+        if (_throws)
+        {
+            return Task.FromResult(false);
+        }
+
+        _writeAsyncTcs?.TrySetResult(null);
+        return Task.FromResult(true);
     }
 }

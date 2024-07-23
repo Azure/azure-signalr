@@ -383,7 +383,7 @@ public class ServiceLifetimeManagerFacts
     {
         public ServiceMessage LastMessage { get; private set; }
 
-        protected override Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
+        public override Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
         {
             LastMessage = serviceMessage;
             return Task.FromResult(true);
