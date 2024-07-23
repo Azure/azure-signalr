@@ -254,7 +254,7 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
         return ClientConnectionManager.TryGetClientConnection(connectionId, out connection);
     }
 
-    public ClientConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)
+    public IClientConnection CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)
     {
         return new ClientConnectionContext(message, configureContext, _clientPipeOptions, _clientPipeOptions);
     }

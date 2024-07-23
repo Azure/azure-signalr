@@ -9,7 +9,7 @@ internal class TestClientConnectionFactory : IClientConnectionFactory
 {
     public IList<ClientConnectionContext> Connections = new List<ClientConnectionContext>();
 
-    public ClientConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)
+    public IClientConnection CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)
     {
         var context = new ClientConnectionContext(message, configureContext);
         Connections.Add(context);

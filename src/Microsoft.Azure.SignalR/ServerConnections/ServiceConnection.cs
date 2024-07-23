@@ -139,7 +139,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     protected override Task OnClientConnectedAsync(OpenConnectionMessage message)
     {
-        var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
+        var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext) as ClientConnectionContext;
         connection.ServiceConnection = this;
 
         if (message.Headers.TryGetValue(Constants.AsrsMigrateFrom, out var from))
