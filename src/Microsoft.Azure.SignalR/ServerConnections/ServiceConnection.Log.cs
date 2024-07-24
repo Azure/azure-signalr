@@ -133,18 +133,6 @@ internal partial class ServiceConnection
             _applicationTaskFailed(logger, exception);
         }
 
-        /// <summary>
-        /// <see cref="ClientConnectionContext.Log.FailToWriteMessageToApplication(ILogger{ServiceConnection}, ConnectionDataMessage, Exception)"/>
-        /// </summary>
-        /// <param name="logger"></param>
-        /// <param name="message"></param>
-        /// <param name="exception"></param>
-        [Obsolete("move to ClientConnectionContext.Log")]
-        public static void FailToWriteMessageToApplication(ILogger logger, ConnectionDataMessage message, Exception exception)
-        {
-            _failToWriteMessageToApplication(logger, message.TracingId, message.ConnectionId, exception);
-        }
-
         public static void ReceivedMessageForNonExistentConnection(ILogger logger, ConnectionDataMessage message)
         {
             _receivedMessageForNonExistentConnection(logger, message.TracingId, message.ConnectionId, null);
@@ -168,18 +156,6 @@ internal partial class ServiceConnection
         public static void CloseConnection(ILogger logger, string connectionId)
         {
             _closeConnection(logger, connectionId, null);
-        }
-
-        /// <summary>
-        /// <see cref="ClientConnectionContext.Log.WriteMessageToApplication(ILogger{ServiceConnection}, long, string)"/>
-        /// </summary>
-        /// <param name="logger"></param>
-        /// <param name="count"></param>
-        /// <param name="connectionId"></param>
-        [Obsolete("move to ClientConnectionContext.Log")]
-        public static void WriteMessageToApplication(ILogger logger, long count, string connectionId)
-        {
-            _writeMessageToApplication(logger, count, connectionId, null);
         }
 
         public static void ApplicationTaskCancelled(ILogger logger)

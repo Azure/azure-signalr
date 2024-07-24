@@ -273,7 +273,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     internal void ClearBufferedMessages()
     {
-        _bufferedMessages?.Clear();
+        _bufferedMessages.Clear();
     }
 
     private static void ProcessQuery(string queryString, out string originalPath)
