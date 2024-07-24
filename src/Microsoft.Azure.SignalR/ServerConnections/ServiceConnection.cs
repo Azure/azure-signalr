@@ -40,7 +40,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     private readonly IClientConnectionManager _clientConnectionManager;
 
-    private readonly ConcurrentDictionary<string, string> _clientConnectionIdToInstanceIdDict =
+    private readonly ConcurrentDictionary<string, string> _connectionIds =
         new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
 
     private readonly string[] _pingMessages =
@@ -93,7 +93,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     internal bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
     {
-        _clientConnectionIdToInstanceIdDict.TryRemove(connectionId, out _);
+        _connectionIds.TryRemove(connectionId, out _);
         var r = _clientConnectionManager.TryRemoveClientConnection(connectionId, out connection);
 #if NET7_0_OR_GREATER
         _clientInvocationManager.CleanupInvocationsByConnection(connectionId);
@@ -115,20 +115,20 @@ internal partial class ServiceConnection : ServiceConnectionBase
     {
         // To gracefully complete client connections, let the client itself owns the connection lifetime
 
-        foreach (var entity in _clientConnectionIdToInstanceIdDict)
+        foreach (var connection in _connectionIds)
         {
-            if (!string.IsNullOrEmpty(fromInstanceId) && entity.Value != fromInstanceId)
+            if (!string.IsNullOrEmpty(fromInstanceId) && connection.Value != fromInstanceId)
             {
                 continue;
             }
 
-            if (_clientConnectionManager.TryGetClientConnection(entity.Key, out var connection))
+            if (_clientConnectionManager.TryGetClientConnection(connection.Key, out var c))
             {
-                (connection as ClientConnectionContext)?.ClearBufferedMessages();
+                (c as ClientConnectionContext)?.ClearBufferedMessages();
             }
 
             // We should not wait until all the clients' lifetime ends to restart another service connection
-            _ = PerformDisconnectAsyncCore(entity.Key);
+            _ = PerformDisconnectAsyncCore(connection.Key);
         }
 
         return Task.CompletedTask;
@@ -137,7 +137,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
     protected override ReadOnlyMemory<byte> GetPingMessage()
     {
         _pingMessages[1] = _clientConnectionManager.Count.ToString();
-        _pingMessages[3] = _clientConnectionIdToInstanceIdDict.Count.ToString();
+        _pingMessages[3] = _connectionIds.Count.ToString();
 
         return ServiceProtocol.GetMessageBytes(
             new PingMessage
@@ -458,7 +458,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
     private void AddClientConnection(ClientConnectionContext connection)
     {
         _clientConnectionManager.TryAddClientConnection(connection);
-        _clientConnectionIdToInstanceIdDict.TryAdd(connection.ConnectionId, connection.InstanceId);
+        _connectionIds.TryAdd(connection.ConnectionId, connection.InstanceId);
     }
 
     private async Task ProcessApplicationTaskAsyncCore(ClientConnectionContext connection)
