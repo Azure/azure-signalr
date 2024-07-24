@@ -76,6 +76,8 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private readonly Queue<IMemoryOwner<byte>> _bufferedMessages = new();
 
+    private readonly int _closeTimeOutMilliseconds;
+
     private int _connectionState = IdleState;
 
     private List<(Action<object> handler, object state)> _heartbeatHandlers;
@@ -127,10 +129,13 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     public ILogger<ServiceConnection> Logger { get; init; } = NullLogger<ServiceConnection>.Instance;
 
+    public Task DelayTask => Task.Delay(_closeTimeOutMilliseconds);
+
     public ClientConnectionContext(OpenConnectionMessage serviceMessage,
                                    Action<HttpContext> configureContext = null,
                                    PipeOptions transportPipeOptions = null,
-                                   PipeOptions appPipeOptions = null)
+                                   PipeOptions appPipeOptions = null,
+                                   int closeTimeOutMilliseconds = Constants.DefaultCloseTimeoutMilliseconds)
     {
         ConnectionId = serviceMessage.ConnectionId;
         HubProtocol = serviceMessage.Protocol;
@@ -154,6 +159,8 @@ internal partial class ClientConnectionContext : ConnectionContext,
         {
             IsMigrated = true;
         }
+
+        _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
     }
 
     public void CompleteIncoming()
@@ -205,15 +212,15 @@ internal partial class ClientConnectionContext : ConnectionContext,
     /// <summary>
     /// Cancel the outgoing process
     /// </summary>
-    public void CancelOutgoing(int millisecondsDelay = 0)
+    public void CancelOutgoing(bool wait = false)
     {
-        if (millisecondsDelay <= 0)
+        if (!wait)
         {
             _abortOutgoingCts.Cancel();
         }
         else
         {
-            _abortOutgoingCts.CancelAfter(millisecondsDelay);
+            _abortOutgoingCts.CancelAfter(_closeTimeOutMilliseconds);
         }
     }
 

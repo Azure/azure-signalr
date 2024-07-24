@@ -13,16 +13,19 @@ internal class ClientConnectionFactory : IClientConnectionFactory
 {
     private readonly ILogger<ServiceConnection> _logger;
 
-    public ClientConnectionFactory(ILoggerFactory loggerFactory)
+    private readonly int _closeTimeOutMilliseconds;
+
+    public ClientConnectionFactory(ILoggerFactory loggerFactory, int closeTimeOutMilliseconds = Constants.DefaultCloseTimeoutMilliseconds)
     {
         _logger = loggerFactory.CreateLogger<ServiceConnection>() ?? NullLogger<ServiceConnection>.Instance;
+        _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
     }
 
     public IClientConnection CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)
     {
-        return new ClientConnectionContext(message, configureContext)
+        return new ClientConnectionContext(message, configureContext, closeTimeOutMilliseconds: _closeTimeOutMilliseconds)
         {
-            Logger = _logger
+            Logger = _logger,
         };
     }
 }

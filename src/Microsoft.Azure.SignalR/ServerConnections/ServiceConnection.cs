@@ -22,8 +22,6 @@ namespace Microsoft.Azure.SignalR;
 
 internal partial class ServiceConnection : ServiceConnectionBase
 {
-    private const int DefaultCloseTimeoutMilliseconds = 30000;
-
     private const string ClientConnectionCountInHub = "#clientInHub";
 
     private const string ClientConnectionCountInServiceConnection = "#client";
@@ -35,8 +33,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
     private readonly IConnectionFactory _connectionFactory;
 
     private readonly IClientConnectionFactory _clientConnectionFactory;
-
-    private readonly int _closeTimeOutMilliseconds;
 
     private readonly IClientConnectionManager _clientConnectionManager;
 
@@ -69,7 +65,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
                              IHubProtocolResolver hubProtocolResolver,
                              ServiceConnectionType connectionType = ServiceConnectionType.Default,
                              GracefulShutdownMode mode = GracefulShutdownMode.Off,
-                             int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds,
                              bool allowStatefulReconnects = false
         ) : base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode, allowStatefulReconnects)
     {
@@ -77,7 +72,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
         _connectionFactory = connectionFactory;
         _connectionDelegate = connectionDelegate;
         _clientConnectionFactory = clientConnectionFactory;
-        _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
         _clientInvocationManager = clientInvocationManager;
         _hubProtocolResolver = hubProtocolResolver;
     }
@@ -281,7 +275,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
                 // app task completes connection.Transport.Output, which will completes connection.Application.Input and ends the transport
                 // Transports are written by us and are well behaved, wait for them to drain
-                connection.CancelOutgoing(_closeTimeOutMilliseconds);
+                connection.CancelOutgoing(true);
 
                 // transport never throws
                 await transport;
@@ -506,7 +500,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
             // Wait on the application task to complete
             // We wait gracefully here to be consistent with self-host SignalR
-            await Task.WhenAny(lifetime, Task.Delay(_closeTimeOutMilliseconds));
+            await Task.WhenAny(lifetime, connection.DelayTask);
 
             if (!lifetime.IsCompleted)
             {

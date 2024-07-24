@@ -222,7 +222,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             }))
         {
             var ccm = new TestClientConnectionManager();
-            var ccf = new ClientConnectionFactory(loggerFactory);
+            var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 1);
             var protocol = new ServiceProtocol();
             var hubProtocol = new JsonHubProtocol();
             TestConnection transportConnection = null;
@@ -237,11 +237,20 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<EndlessConnectionHandler>();
             var handler = builder.Build();
-            var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                "serverId", Guid.NewGuid().ToString("N"),
-                null, null, null, new DefaultClientInvocationManager(),
-                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
-                closeTimeOutMilliseconds: 1);
+            var hubProtocolResolver = new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance);
+            var connection = new ServiceConnection(protocol,
+                                                   ccm,
+                                                   connectionFactory,
+                                                   loggerFactory,
+                                                   handler,
+                                                   ccf,
+                                                   "serverId",
+                                                   Guid.NewGuid().ToString("N"),
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   new DefaultClientInvocationManager(),
+                                                   hubProtocolResolver);
 
             var connectionTask = connection.StartAsync();
 
@@ -281,7 +290,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             }))
         {
             var ccm = new TestClientConnectionManager();
-            var ccf = new ClientConnectionFactory(loggerFactory);
+            var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
             var protocol = new ServiceProtocol();
             var hubProtocol = new JsonHubProtocol();
             TestConnection transportConnection = null;
@@ -296,11 +305,20 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<EndlessConnectionHandler>();
             var handler = builder.Build();
-            var connection = new ServiceConnection(
-                protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
-                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
-                closeTimeOutMilliseconds: 500);
+            var hubProtocolResolver = new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance);
+            var connection = new ServiceConnection(protocol,
+                                                   ccm,
+                                                   connectionFactory,
+                                                   loggerFactory,
+                                                   handler,
+                                                   ccf,
+                                                   "serverId",
+                                                   Guid.NewGuid().ToString("N"),
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   new DefaultClientInvocationManager(),
+                                                   hubProtocolResolver);
 
             var connectionTask = connection.StartAsync();
 
@@ -336,7 +354,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             logChecker: logs => true))
         {
             var ccm = new TestClientConnectionManager();
-            var ccf = new ClientConnectionFactory(loggerFactory);
+            var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
             var protocol = new ServiceProtocol();
             var hubProtocol = new JsonHubProtocol();
             TestConnection transportConnection = null;
@@ -354,11 +372,20 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             builder.UseConnectionHandler<LastWillConnectionHandler>();
             var handler = builder.Build();
 
-            var connection = new ServiceConnection(
-                protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
-                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance)
-                , closeTimeOutMilliseconds: 500);
+            var hubProtocolResolver = new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance);
+            var connection = new ServiceConnection(protocol,
+                                                   ccm,
+                                                   connectionFactory,
+                                                   loggerFactory,
+                                                   handler,
+                                                   ccf,
+                                                   "serverId",
+                                                   Guid.NewGuid().ToString("N"),
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   new DefaultClientInvocationManager(),
+                                                   hubProtocolResolver);
 
             var connectionTask = connection.StartAsync();
 
@@ -407,7 +434,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
             var ccm = new TestClientConnectionManager();
-            var ccf = new ClientConnectionFactory(loggerFactory);
+            var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
             var protocol = new ServiceProtocol();
             var hubProtocol = new JsonHubProtocol();
             TestConnection transportConnection = null;
@@ -427,11 +454,20 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             builder.UseConnectionHandler<DiagnosticClientConnectionHandler>();
             var handler = builder.Build();
 
-            var connection = new ServiceConnection(
-                protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
-                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
-                closeTimeOutMilliseconds: 500);
+            var defaultHubProtocolResolver = new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance);
+            var connection = new ServiceConnection(protocol,
+                                                   ccm,
+                                                   connectionFactory,
+                                                   loggerFactory,
+                                                   handler,
+                                                   ccf,
+                                                   "serverId",
+                                                   Guid.NewGuid().ToString("N"),
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   new DefaultClientInvocationManager(),
+                                                   defaultHubProtocolResolver);
 
             var connectionTask = connection.StartAsync();
 
@@ -478,7 +514,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs => true))
         {
             var ccm = new TestClientConnectionManager();
-            var ccf = new ClientConnectionFactory(loggerFactory);
+            var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
             var protocol = new ServiceProtocol();
             var hubProtocol = new JsonHubProtocol();
             TestConnection serviceConnection = null;
@@ -493,6 +529,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<EndlessConnectionHandler>();
             var handler = builder.Build();
+            var defaultHubProtocolResolver = new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance);
             var connection = new ServiceConnection(protocol,
                                                    ccm,
                                                    connectionFactory,
@@ -505,9 +542,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    null,
                                                    new DefaultClientInvocationManager(),
-
-                                                   new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
-                                                   closeTimeOutMilliseconds: 500);
+                                                   defaultHubProtocolResolver);
 
             var connectionTask = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout();
@@ -566,7 +601,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             }))
         {
             var ccm = new TestClientConnectionManager();
-            var ccf = new ClientConnectionFactory(loggerFactory);
+            var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
             var protocol = new ServiceProtocol();
             var hubProtocol = new JsonHubProtocol();
             TestConnection transportConnection = null;
@@ -582,6 +617,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<EndlessConnectionHandler>();
             var handler = builder.Build();
+            var hubProtocolResolver = new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance);
             var connection = new ServiceConnection(protocol,
                                                    ccm,
                                                    connectionFactory,
@@ -594,9 +630,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    null,
                                                    new DefaultClientInvocationManager(),
-
-                                                   new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
-                                                   closeTimeOutMilliseconds: 500);
+                                                   hubProtocolResolver);
 
             var connectionTask = connection.StartAsync();
 
@@ -635,7 +669,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             }))
         {
             var ccm = new TestClientConnectionManager();
-            var ccf = new ClientConnectionFactory(loggerFactory);
+            var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
             var protocol = new ServiceProtocol();
             var hubProtocol = new JsonHubProtocol();
             TestConnection transportConnection = null;
@@ -651,11 +685,20 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<TextContentConnectionHandler>();
             var handler = builder.Build();
-            var connection = new ServiceConnection(
-                protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
-                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
-                closeTimeOutMilliseconds: 500);
+            var hubProcotolResolver = new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance);
+            var connection = new ServiceConnection(protocol,
+                                                   ccm,
+                                                   connectionFactory,
+                                                   loggerFactory,
+                                                   handler,
+                                                   ccf,
+                                                   "serverId",
+                                                   Guid.NewGuid().ToString("N"),
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   new DefaultClientInvocationManager(),
+                                                   hubProcotolResolver);
 
             var connectionTask = connection.StartAsync().OrTimeout();
 
@@ -724,7 +767,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             }))
         {
             var ccm = new TestClientConnectionManager();
-            var ccf = new ClientConnectionFactory(loggerFactory);
+            var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
             var protocol = new ServiceProtocol();
             var hubProtocol = new JsonHubProtocol();
             TestConnection transportConnection = null;
@@ -740,11 +783,20 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<TextContentConnectionHandler>();
             var handler = builder.Build();
-            var connection = new ServiceConnection(
-                protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
-                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
-                closeTimeOutMilliseconds: 500);
+            var hubProtocolResolver = new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance);
+            var connection = new ServiceConnection(protocol,
+                                                   ccm,
+                                                   connectionFactory,
+                                                   loggerFactory,
+                                                   handler,
+                                                   ccf,
+                                                   "serverId",
+                                                   Guid.NewGuid().ToString("N"),
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   new DefaultClientInvocationManager(),
+                                                   hubProtocolResolver);
 
             var connectionTask = connection.StartAsync();
 

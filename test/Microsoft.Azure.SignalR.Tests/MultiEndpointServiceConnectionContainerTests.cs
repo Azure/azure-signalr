@@ -1608,7 +1608,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         {
             // prepare containers
             var ccm = new TestClientConnectionManager();
-            var ccf = new ClientConnectionFactory(loggerFactory);
+            var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
             var protocol = new ServiceProtocol();
             TestConnection transportConnection1 = null;
             TestConnection transportConnection2 = null;
@@ -1631,28 +1631,60 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
             (var connectionHandler, var connectionDelegate) = GetConnectionDelegate();
 
-            var ConnectionStringFormatter = "Endpoint={0};AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
-            var Url1 = "http://url1";
-            var Url2 = "http://url2";
-            var Url22 = "http://url22";
-            var ConnectionString1 = string.Format(ConnectionStringFormatter, Url1);
-            var ConnectionString2 = string.Format(ConnectionStringFormatter, Url2);
-            var ConnectionString22 = string.Format(ConnectionStringFormatter, Url22);
+            var connectionStringFormatter = "Endpoint={0};AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+            var url1 = "http://url1";
+            var url2 = "http://url2";
+            var url22 = "http://url22";
+            var connectionString1 = string.Format(connectionStringFormatter, url1);
+            var connectionString2 = string.Format(connectionStringFormatter, url2);
+            var connectionString22 = string.Format(connectionStringFormatter, url22);
 
-            var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
-                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2")
-                );
+            var sem = new TestServiceEndpointManager(new ServiceEndpoint(connectionString1, EndpointType.Primary, "1"),
+                                                     new ServiceEndpoint(connectionString2, EndpointType.Primary, "2"));
             var endpoints = sem.GetEndpoints("hub");
             var clientInvocationManager = new DefaultClientInvocationManager();
-            var connection1 = new ServiceConnection(protocol, ccm, connectionFactory1, loggerFactory, connectionDelegate, ccf,
-                                "serverId", "server-conn-1", endpoints[0], endpoints[0].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, new DefaultHubProtocolResolver(new[] { new SignalRProtocol.JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance), closeTimeOutMilliseconds: 500);
+            var hubProtocolResolver = new DefaultHubProtocolResolver(new[] { new SignalRProtocol.JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance);
+            var connection1 = new ServiceConnection(protocol,
+                                                    ccm,
+                                                    connectionFactory1,
+                                                    loggerFactory,
+                                                    connectionDelegate,
+                                                    ccf,
+                                                    "serverId",
+                                                    "server-conn-1",
+                                                    endpoints[0],
+                                                    endpoints[0].ConnectionContainer as IServiceMessageHandler,
+                                                    null,
+                                                    clientInvocationManager,
+                                                    hubProtocolResolver);
 
-            var connection2 = new ServiceConnection(protocol, ccm, connectionFactory2, loggerFactory, connectionDelegate, ccf,
-                                "serverId", "server-conn-2", endpoints[1], endpoints[1].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, new DefaultHubProtocolResolver(new[] { new SignalRProtocol.JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance), closeTimeOutMilliseconds: 500);
+            var connection2 = new ServiceConnection(protocol,
+                                                    ccm,
+                                                    connectionFactory2,
+                                                    loggerFactory,
+                                                    connectionDelegate,
+                                                    ccf,
+                                                    "serverId",
+                                                    "server-conn-2",
+                                                    endpoints[1],
+                                                    endpoints[1].ConnectionContainer as IServiceMessageHandler,
+                                                    null,
+                                                    clientInvocationManager,
+                                                    hubProtocolResolver);
 
-            var connection22 = new ServiceConnection(protocol, ccm, connectionFactory22, loggerFactory, connectionDelegate, ccf,
-                                "serverId", "server-conn-22", endpoints[1], endpoints[1].ConnectionContainer as IServiceMessageHandler, null, clientInvocationManager, new DefaultHubProtocolResolver(new[] { new SignalRProtocol.JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance), closeTimeOutMilliseconds: 500);
+            var connection22 = new ServiceConnection(protocol,
+                                                     ccm,
+                                                     connectionFactory22,
+                                                     loggerFactory,
+                                                     connectionDelegate,
+                                                     ccf,
+                                                     "serverId",
+                                                     "server-conn-22",
+                                                     endpoints[1],
+                                                     endpoints[1].ConnectionContainer as IServiceMessageHandler,
+                                                     null,
+                                                     clientInvocationManager,
+                                                     hubProtocolResolver);
 
             var router = new TestEndpointRouter();
 

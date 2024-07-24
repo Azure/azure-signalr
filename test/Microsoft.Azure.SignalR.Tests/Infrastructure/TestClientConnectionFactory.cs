@@ -11,7 +11,7 @@ internal class TestClientConnectionFactory : IClientConnectionFactory
 
     public IClientConnection CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)
     {
-        var context = new ClientConnectionContext(message, configureContext);
+        var context = new ClientConnectionContext(message, configureContext, closeTimeOutMilliseconds: 10000);
         Connections.Add(context);
         return context;
     }

@@ -58,7 +58,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
         // write a handshake response
         var message = new SignalRProtocol.HandshakeResponseMessage("");
-        SignalRProtocol.HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
+        HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
         await clientConnection.Transport.Output.FlushAsync();
 
         // signalr handshake response should be skipped.
@@ -120,9 +120,9 @@ public class ServiceMessageTests : VerifiableLoggedTest
         var clientConnectionFactory = new TestClientConnectionFactory();
         var clientInvocationManager = new DefaultClientInvocationManager();
 
-        const string LastWill = "{\"type\":1,\"target\":\"test\",\"arguments\":[\"last will\"]}\u001e";
+        const string lastWill = "{\"type\":1,\"target\":\"test\",\"arguments\":[\"last will\"]}\u001e";
 
-        var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, LastWill), clientInvocationManager: clientInvocationManager);
+        var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, lastWill), clientInvocationManager: clientInvocationManager);
         _ = connection.StartAsync();
         await connection.ConnectionInitializedTask.OrTimeout(1000);
 
@@ -144,7 +144,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         await clientConnection.LifetimeTask;
 
         await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout(1000);
-        await connection.ExpectStringMessage(LastWill).OrTimeout(1000);
+        await connection.ExpectStringMessage(lastWill).OrTimeout(1000);
         await connection.ExpectSignalRMessage(SignalRProtocol.CloseMessage.Empty).OrTimeout(1000);
 
         await connection.StopAsync();
@@ -287,10 +287,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         var services = new ServiceCollection();
         var builder = new ConnectionBuilder(services.BuildServiceProvider());
 
-        if (handler == null)
-        {
-            handler = new TestConnectionHandler();
-        }
+        handler ??= new TestConnectionHandler();
 
         return new TestServiceConnection(
             container,
@@ -426,9 +423,9 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
         public TestClientConnectionManager ClientConnectionManager { get; }
 
-        public PipeReader Reader => _connection.Application.Input;
+        public PipeReader Reader => Connection.Application.Input;
 
-        public PipeWriter Writer => _connection.Application.Output;
+        public PipeWriter Writer => Connection.Application.Output;
 
         public Task ClientConnectedTask => _clientConnectedTcs.Task;
 
@@ -436,15 +433,9 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
         public ServiceProtocol DefaultServiceProtocol { get; } = new ServiceProtocol();
 
-        public SignalRProtocol.IHubProtocol DefaultHubProtocol { get; } = new SignalRProtocol.JsonHubProtocol();
+        public IHubProtocol DefaultHubProtocol { get; } = new JsonHubProtocol();
 
-        private TestConnection _connection
-        {
-            get
-            {
-                return _container.Instance == null ? throw new Exception("connection needs to be started") : _container.Instance;
-            }
-        }
+        private TestConnection Connection => _container.Instance ?? throw new Exception("connection needs to be started");
 
         public TestServiceConnection(TestConnectionContainer container,
                                      IServiceProtocol serviceProtocol,
@@ -461,8 +452,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
                                      IClientInvocationManager clientInvocationManager,
                                      IHubProtocolResolver hubProtocolResolver,
                                      ServiceConnectionType connectionType = ServiceConnectionType.Default,
-                                     GracefulShutdownMode mode = GracefulShutdownMode.Off,
-                                     int closeTimeOutMilliseconds = 10000) : base(
+                                     GracefulShutdownMode mode = GracefulShutdownMode.Off) : base(
                 serviceProtocol,
                 clientConnectionManager,
                 connectionFactory,
@@ -477,8 +467,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
                 clientInvocationManager,
                 hubProtocolResolver,
                 connectionType: connectionType,
-                mode: mode,
-                closeTimeOutMilliseconds: closeTimeOutMilliseconds)
+                mode: mode)
         {
             _container = container;
             ClientConnectionManager = clientConnectionManager;
@@ -528,7 +517,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
         public void CompleteWriteFromService()
         {
-            _connection.Application.Output.Complete();
+            Connection.Application.Output.Complete();
         }
 
         public async Task WriteFromServiceAsync(ServiceMessage message)
