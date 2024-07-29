@@ -93,11 +93,11 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     public Task ConnectionOfflineTask => _serviceConnectionOfflineTcs.Task;
 
-    protected HubServiceEndpoint HubEndpoint { get; }
-
     public string ServerId { get; }
 
     public string ConnectionId { get; }
+
+    protected HubServiceEndpoint HubEndpoint { get; }
 
     protected ILogger Logger { get; }
 

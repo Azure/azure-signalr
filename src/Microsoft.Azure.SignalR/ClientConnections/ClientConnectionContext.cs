@@ -130,7 +130,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     public ILogger<ServiceConnection> Logger { get; init; } = NullLogger<ServiceConnection>.Instance;
 
-    public Task DelayTask => Task.Delay(_closeTimeOutMilliseconds);
+    private Task DelayTask => Task.Delay(_closeTimeOutMilliseconds);
 
     private CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
 
@@ -378,6 +378,30 @@ internal partial class ClientConnectionContext : ConnectionContext,
             Transport.Output.Complete(exception);
             Transport.Input.Complete();
         }
+    }
+
+    internal async Task PerformDisconnectAsync()
+    {
+        ClearBufferedMessages();
+
+        // In normal close, service already knows the client is closed, no need to be informed.
+        AbortOnClose = false;
+
+        // We're done writing to the application output
+        // Let the connection complete incoming
+        CompleteIncoming();
+
+        // Wait for the connection's lifetime task to end
+        // Wait on the application task to complete
+        // We wait gracefully here to be consistent with self-host SignalR
+        await Task.WhenAny(LifetimeTask, DelayTask);
+
+        if (!LifetimeTask.IsCompleted)
+        {
+            Log.DetectedLongRunningApplicationTask(Logger, ConnectionId);
+        }
+
+        await LifetimeTask;
     }
 
     internal async Task ProcessConnectionDataMessageAsync(ConnectionDataMessage connectionDataMessage)
