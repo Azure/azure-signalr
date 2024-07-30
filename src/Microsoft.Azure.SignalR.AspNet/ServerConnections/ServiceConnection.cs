@@ -26,9 +26,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     private static readonly TimeSpan CloseApplicationTimeout = TimeSpan.FromSeconds(5);
 
-    private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections =
-        new ConcurrentDictionary<string, ClientConnectionContext>(StringComparer.Ordinal);
-
     private readonly IConnectionFactory _connectionFactory;
 
     private readonly IClientConnectionManagerAspNet _clientConnectionManager;
@@ -60,6 +57,16 @@ internal partial class ServiceConnection : ServiceConnectionBase
         _connectionFactory = connectionFactory;
         _clientConnectionManager = clientConnectionManager;
         _ackHandler = ackHandler;
+    }
+
+    public override bool TryAddClientConnection(IClientConnection connection)
+    {
+        return _clientConnectionManager.TryAddClientConnection(connection);
+    }
+
+    public override bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
+    {
+        return _clientConnectionManager.TryRemoveClientConnection(connectionId, out connection);
     }
 
     protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -103,9 +110,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
         // todo: ignore asp.net for now
         using (new ClientConnectionScope(endpoint: HubEndpoint, outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
         {
-            if (_clientConnectionManager.TryAddClientConnection(clientConnection))
+            if (TryAddClientConnection(clientConnection))
             {
-                _clientConnections.TryAdd(connectionId, clientConnection);
                 clientConnection.ApplicationTask = ProcessMessageAsync(clientConnection, clientConnection.CancellationToken);
                 return ForwardMessageToApplication(connectionId, openConnectionMessage);
             }
@@ -137,12 +143,14 @@ internal partial class ServiceConnection : ServiceConnectionBase
     {
         try
         {
-            var connectionIds = _clientConnections.Select(s => s.Key);
+            var connections = _clientConnectionManager.ClientConnections;
             if (!string.IsNullOrEmpty(instanceId))
             {
-                connectionIds = _clientConnections.Where(s => s.Value.InstanceId == instanceId).Select(s => s.Key);
+                connections = connections.Where(c => c.InstanceId == instanceId);
             }
-            var tasks = connectionIds.Select(s => PerformDisconnectCore(s, true, false)).ToArray();
+            var connectionIds = connections.Select(c => c.ConnectionId);
+
+            var tasks = connectionIds.Select(connectionId => PerformDisconnectAsync(connectionId, true, false)).ToArray();
             if (tasks.Length > 0)
             {
                 Log.ClosingClientConnections(Logger, tasks.Length, ConnectionId);
@@ -168,16 +176,16 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     private async Task ForwardMessageToApplication(string connectionId, ServiceMessage message)
     {
-        if (_clientConnections.TryGetValue(connectionId, out var clientContext))
+        if (_clientConnectionManager.TryGetClientConnection(connectionId, out var c) && c is ClientConnectionContext connection)
         {
             try
             {
-                await clientContext.Output.WriteAsync(message);
+                await connection.Output.WriteAsync(message);
             }
             catch (Exception e)
             {
                 Log.FailToWriteMessageToApplication(Logger, message.GetType().Name, connectionId, (message as IMessageWithTracingId)?.TracingId, e);
-                _ = PerformDisconnectCore(connectionId, true);
+                _ = PerformDisconnectAsync(connectionId, true);
 
                 _ = SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
@@ -219,21 +227,18 @@ internal partial class ServiceConnection : ServiceConnectionBase
         }
     }
 
-    private async Task PerformDisconnectCore(string connectionId, bool waitForApplicationTask, bool closeGracefully = true)
+    private async Task PerformDisconnectAsync(string connectionId, bool waitForApplicationTask, bool closeGracefully = true)
     {
         // remove the connection from the global store so that a connection with the same connectionId can be added from elsewhere
-        if (_clientConnectionManager.TryRemoveClientConnection(connectionId, out _))
+        if (TryRemoveClientConnection(connectionId, out var c) && c is ClientConnectionContext connection)
         {
-            if (_clientConnections.TryRemove(connectionId, out var clientContext))
+            if (waitForApplicationTask)
             {
-                if (waitForApplicationTask)
-                {
-                    await WaitForApplicationTask(clientContext, closeGracefully);
-                }
-
-                clientContext.Transport?.OnDisconnected();
-                Log.ConnectedEnding(Logger, connectionId);
+                await WaitForApplicationTask(connection, closeGracefully);
             }
+
+            connection.Transport?.OnDisconnected();
+            Log.ConnectedEnding(Logger, connectionId);
         }
     }
 
@@ -250,7 +255,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
             Log.ConnectedStartingFailed(Logger, connectionId, e);
 
             // Should not wait for application task inside the application task
-            _ = PerformDisconnectCore(connectionId, false);
+            _ = PerformDisconnectAsync(connectionId, false);
             _ = SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
         }
     }
@@ -300,7 +305,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
                             // should not wait for application task when inside the application task
                             // As the messages are in a queue, close message should be after all the other messages
-                            await PerformDisconnectCore(closeConnectionMessage.ConnectionId, false);
+                            await PerformDisconnectAsync(closeConnectionMessage.ConnectionId, false);
                             return;
 
                         case ConnectionDataMessage connectionDataMessage:
@@ -322,7 +327,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
             // Internal exception is already caught and here only for channel exception.
             // Notify client to disconnect.
             Log.SendLoopStopped(Logger, connectionId, e);
-            _ = PerformDisconnectCore(connectionId, false);
+            _ = PerformDisconnectAsync(connectionId, false);
             _ = SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
         }
     }

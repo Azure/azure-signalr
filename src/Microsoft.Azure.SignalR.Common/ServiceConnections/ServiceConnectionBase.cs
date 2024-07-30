@@ -268,6 +268,10 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
         }
     }
 
+    public abstract bool TryAddClientConnection(IClientConnection connection);
+
+    public abstract bool TryRemoveClientConnection(string connectionId, out IClientConnection connection);
+
     protected abstract Task<ConnectionContext> CreateConnection(string target = null);
 
     protected abstract Task DisposeConnection(ConnectionContext connection);

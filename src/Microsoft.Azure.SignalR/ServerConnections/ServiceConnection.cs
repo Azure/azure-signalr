@@ -73,7 +73,14 @@ internal partial class ServiceConnection : ServiceConnectionBase
         _hubProtocolResolver = hubProtocolResolver;
     }
 
-    internal bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
+    public override bool TryAddClientConnection(IClientConnection connection)
+    {
+        var a = _clientConnectionManager.TryAddClientConnection(connection);
+        var b = _connectionIds.TryAdd(connection.ConnectionId, connection.InstanceId);
+        return a && b;
+    }
+
+    public override bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
     {
         _connectionIds.TryRemove(connectionId, out _);
         var r = _clientConnectionManager.TryRemoveClientConnection(connectionId, out connection);
@@ -136,7 +143,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
             connection.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(from, ServerId));
         }
 
-        AddClientConnection(connection);
+        TryAddClientConnection(connection);
 
         var isDiagnosticClient = false;
         message.Headers.TryGetValue(Constants.AsrsIsDiagnosticClient, out var isDiagnosticClientValue);
@@ -297,12 +304,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
         {
             connection.OnCompleted();
         }
-    }
-
-    private void AddClientConnection(ClientConnectionContext connection)
-    {
-        _clientConnectionManager.TryAddClientConnection(connection);
-        _connectionIds.TryAdd(connection.ConnectionId, connection.InstanceId);
     }
 
     private Task OnClientInvocationAsync(ClientInvocationMessage message)

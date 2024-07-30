@@ -22,7 +22,7 @@ internal class ClientConnectionManager : IClientConnectionManagerAspNet
 
     private readonly ILogger _logger;
 
-    private readonly ConcurrentDictionary<string, IClientConnection> _clientConnections = new ConcurrentDictionary<string, IClientConnection>();
+    private readonly ConcurrentDictionary<string, IClientConnection> _clientConnections = new ConcurrentDictionary<string, IClientConnection>(StringComparer.Ordinal);
 
     public IEnumerable<IClientConnection> ClientConnections
     {

@@ -28,4 +28,8 @@ internal interface IServiceConnection
     Task WriteAsync(ServiceMessage serviceMessage);
 
     Task<bool> SafeWriteAsync(ServiceMessage serviceMessage);
+
+    bool TryAddClientConnection(IClientConnection connection);
+
+    bool TryRemoveClientConnection(string connectionId, out IClientConnection connection);
 }
