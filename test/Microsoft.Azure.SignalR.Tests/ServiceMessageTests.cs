@@ -13,7 +13,6 @@ using Azure.Identity;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
-using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +40,8 @@ public class ServiceMessageTests : VerifiableLoggedTest
     [Fact]
     public async Task TestOpenConnectionMessageWithMigrateIn()
     {
+        var isMigratedProperty = typeof(ClientConnectionContext).GetField("_isMigrated", BindingFlags.Instance | BindingFlags.NonPublic);
+
         var clientConnectionFactory = new TestClientConnectionFactory();
         var clientInvocationManager = new DefaultClientInvocationManager();
         var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, clientInvocationManager: clientInvocationManager);
@@ -54,17 +55,17 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
         Assert.Equal(1, clientConnectionFactory.Connections.Count);
         var clientConnection = clientConnectionFactory.Connections[0];
-        Assert.True(clientConnection.IsMigrated);
+        Assert.True((bool)isMigratedProperty.GetValue(clientConnection));
 
         // write a handshake response
         var message = new SignalRProtocol.HandshakeResponseMessage("");
-        HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
+        SignalRProtocol.HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
         await clientConnection.Transport.Output.FlushAsync();
 
         // signalr handshake response should be skipped.
         await Assert.ThrowsAsync<TimeoutException>(async () => await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout(1000));
 
-        Assert.True(clientConnection.IsMigrated);
+        Assert.True((bool)isMigratedProperty.GetValue(clientConnection));
 
         var feature = clientConnection.Features.Get<IConnectionMigrationFeature>();
         Assert.NotNull(feature);
@@ -76,6 +77,8 @@ public class ServiceMessageTests : VerifiableLoggedTest
     [Fact]
     public async Task TestCloseConnectionMessageWithMigrateOut()
     {
+        var isMigratedProperty = typeof(ClientConnectionContext).GetField("_isMigrated", BindingFlags.Instance | BindingFlags.NonPublic);
+
         var clientConnectionFactory = new TestClientConnectionFactory();
         var clientInvocationManager = new DefaultClientInvocationManager();
 
@@ -89,7 +92,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
         Assert.Equal(1, clientConnectionFactory.Connections.Count);
         var clientConnection = clientConnectionFactory.Connections[0];
-        Assert.False(clientConnection.IsMigrated);
+        Assert.False((bool)isMigratedProperty.GetValue(clientConnection));
 
         // write a signalr handshake response
         var message = new SignalRProtocol.HandshakeResponseMessage("");
@@ -303,7 +306,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
             messageHandler ?? new TestServiceMessageHandler(),
             eventHandler ?? new TestServiceEventHandler(),
             clientInvocationManager,
-            new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
+            new DefaultHubProtocolResolver(new[] { new SignalRProtocol.JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
             mode: mode ?? GracefulShutdownMode.Off
         );
     }
@@ -433,7 +436,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
         public ServiceProtocol DefaultServiceProtocol { get; } = new ServiceProtocol();
 
-        public IHubProtocol DefaultHubProtocol { get; } = new JsonHubProtocol();
+        public SignalRProtocol.IHubProtocol DefaultHubProtocol { get; } = new SignalRProtocol.JsonHubProtocol();
 
         private TestConnection Connection => _container.Instance ?? throw new Exception("connection needs to be started");
 

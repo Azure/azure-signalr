@@ -91,7 +91,9 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private long _receivedBytes;
 
-    public bool IsMigrated { get; private init; } = false;
+    private bool _isHandshakeResponseParsed = false;
+
+    private readonly bool _isMigrated = false;
 
     public override string ConnectionId { get; set; }
 
@@ -160,7 +162,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
         if (serviceMessage.Headers.TryGetValue(Constants.AsrsMigrateFrom, out _))
         {
-            IsMigrated = true;
+            _isMigrated = true;
             Log.MigrationStarting(Logger, ConnectionId);
         }
         else
@@ -256,9 +258,6 @@ internal partial class ClientConnectionContext : ConnectionContext,
     {
         try
         {
-            var isHandshakeResponseParsed = false;
-            var shouldSkipHandshakeResponse = IsMigrated;
-
             while (true)
             {
                 var result = await Application.Input.ReadAsync(OutgoingAborted);
@@ -272,13 +271,13 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
                 if (!buffer.IsEmpty)
                 {
-                    if (!isHandshakeResponseParsed)
+                    if (!_isHandshakeResponseParsed)
                     {
                         var next = buffer;
                         if (SignalRProtocol.HandshakeProtocol.TryParseResponseMessage(ref next, out var message))
                         {
-                            isHandshakeResponseParsed = true;
-                            if (!shouldSkipHandshakeResponse)
+                            _isHandshakeResponseParsed = true;
+                            if (!_isMigrated) // migrated client connection should skip handshake response
                             {
                                 var dataMessage = new ConnectionDataMessage(ConnectionId, buffer.Slice(0, next.Start))
                                 {
@@ -289,18 +288,16 @@ internal partial class ClientConnectionContext : ConnectionContext,
                                 {
                                     case ForwardMessageResult.Success:
                                         break;
+                                    case ForwardMessageResult.Error:
+                                    case ForwardMessageResult.Fatal:
                                     default:
                                         return;
                                 }
                             }
                             buffer = buffer.Slice(next.Start);
                         }
-                        else
-                        {
-                            // waiting for handshake response.
-                        }
                     }
-                    if (isHandshakeResponseParsed)
+                    if (_isHandshakeResponseParsed)
                     {
                         var next = buffer;
                         while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
@@ -320,6 +317,8 @@ internal partial class ClientConnectionContext : ConnectionContext,
                             {
                                 case ForwardMessageResult.Fatal:
                                     return;
+                                case ForwardMessageResult.Success:
+                                case ForwardMessageResult.Error:
                                 default:
                                     buffer = next;
                                     break;

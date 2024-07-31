@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
@@ -165,15 +166,17 @@ public class ServiceContextFacts
     [Fact]
     public void ServiceConnectionShouldBeMigrated()
     {
-        var open = new OpenConnectionMessage("foo", new Claim[0]);
+        var isMigratedProperty = typeof(ClientConnectionContext).GetField("_isMigrated", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        var open = new OpenConnectionMessage("foo", Array.Empty<Claim>());
         var context = new ClientConnectionContext(open);
-        Assert.False(context.IsMigrated);
+        Assert.False((bool)isMigratedProperty.GetValue(context));
 
         open.Headers = new Dictionary<string, StringValues>{
             { Constants.AsrsMigrateFrom, "another-server" }
         };
         context = new ClientConnectionContext(open);
-        Assert.True(context.IsMigrated);
+        Assert.True((bool)isMigratedProperty.GetValue(context));
     }
 
     [Theory]

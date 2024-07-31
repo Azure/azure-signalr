@@ -517,6 +517,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
             var protocol = new ServiceProtocol();
             var hubProtocol = new JsonHubProtocol();
+
             TestConnection serviceConnection = null;
             var connectionFactory = new TestConnectionFactory(conn =>
             {
