@@ -363,6 +363,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
             AckMessage ackMessage => OnAckMessageAsync(ackMessage),
             ServiceEventMessage eventMessage => OnEventMessageAsync(eventMessage),
             AccessKeyResponseMessage keyMessage => OnAccessKeyMessageAsync(keyMessage),
+            ConnectionFlowControlMessage flowControlMessage => OnFlowControlMessageAsync(flowControlMessage),
             _ => Task.CompletedTask,
         };
     }
@@ -418,6 +419,39 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
             }
         }
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// TODO: set the server connection offline.
+    /// </summary>
+    /// <returns></returns>
+    private Task OfflineAsync() => Task.CompletedTask;
+
+    private Task OnFlowControlMessageAsync(ConnectionFlowControlMessage flowControlMessage)
+    {
+        if (flowControlMessage.ConnectionType == ConnectionType.Server)
+        {
+            return flowControlMessage.Operation switch
+            {
+                ConnectionFlowControlOperation.Offline => OfflineAsync(),
+                _ => throw new InvalidOperationException($"Opereration {flowControlMessage.Operation} is invalid on server connections."),
+            };
+        }
+        else if (flowControlMessage.ConnectionType == ConnectionType.Client)
+        {
+            if (_clientConnectionManager.TryGetClientConnection(flowControlMessage.ConnectionId, out var clientConnection))
+            {
+                return flowControlMessage.Operation switch
+                {
+                    ConnectionFlowControlOperation.Pause => clientConnection.PauseOutgoingAsync(),
+                    ConnectionFlowControlOperation.Resume => clientConnection.ResumeOutgoingAsync(this),
+                    _ => throw new InvalidOperationException($"Opereration {flowControlMessage.Operation} is invalid on client connections."),
+                };
+            }
+            // TODO: client connection not found.
+            return Task.CompletedTask;
+        }
+        throw new NotImplementedException();
     }
 
     private async Task<ConnectionContext> EstablishConnectionAsync(string target)

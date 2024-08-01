@@ -52,4 +52,14 @@ internal class ClientConnectionContext : IClientConnection
     {
         return header.TryGetValue(Constants.AsrsInstanceId, out var instanceId) ? (string)instanceId : string.Empty;
     }
+
+    public Task PauseOutgoingAsync()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public Task ResumeOutgoingAsync(IServiceConnection serviceConnection)
+    {
+        throw new System.NotImplementedException();
+    }
 }

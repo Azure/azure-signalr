@@ -81,6 +81,14 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private readonly int _closeTimeOutMilliseconds;
 
+    private readonly bool _isMigrated = false;
+
+    private volatile int _outgoingPaused = 0;
+
+    private volatile int _outgoingPauseAcked = 0;
+
+    private volatile IServiceConnection _serviceConnection;
+
     private int _connectionState = IdleState;
 
     private List<(Action<object> handler, object state)> _heartbeatHandlers;
@@ -93,13 +101,23 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private bool _isHandshakeResponseParsed = false;
 
-    private readonly bool _isMigrated = false;
-
     public override string ConnectionId { get; set; }
 
     public string InstanceId { get; }
 
-    public IServiceConnection ServiceConnection { get; set; }
+    public IServiceConnection ServiceConnection
+    {
+        get
+        {
+            return _serviceConnection;
+        }
+        set
+        {
+            _serviceConnection?.TryRemoveClientConnection(ConnectionId, out _);
+            _serviceConnection = value;
+            _serviceConnection?.TryAddClientConnection(this);
+        }
+    }
 
     public string HubProtocol { get; }
 
@@ -131,6 +149,8 @@ internal partial class ClientConnectionContext : ConnectionContext,
     public long ReceivedBytes => Volatile.Read(ref _receivedBytes);
 
     public ILogger<ServiceConnection> Logger { get; init; } = NullLogger<ServiceConnection>.Instance;
+
+    private SemaphoreSlim OutgoingPauseSema { get; } = new(1, 1);
 
     private Task DelayTask => Task.Delay(_closeTimeOutMilliseconds);
 
@@ -243,6 +263,25 @@ internal partial class ClientConnectionContext : ConnectionContext,
         }
     }
 
+    public async Task PauseOutgoingAsync()
+    {
+        if (Interlocked.CompareExchange(ref _outgoingPaused, 1, 0) == 0)
+        {
+            Interlocked.Exchange(ref _outgoingPauseAcked, 0);
+            await OutgoingPauseSema.WaitAsync();
+        }
+    }
+
+    public Task ResumeOutgoingAsync(IServiceConnection serviceConnection)
+    {
+        ServiceConnection = serviceConnection;
+        if (Interlocked.CompareExchange(ref _outgoingPaused, 0, 1) == 1)
+        {
+            OutgoingPauseSema.Release();
+        }
+        return Task.CompletedTask;
+    }
+
     internal static bool TryGetRemoteIpAddress(IHeaderDictionary headers, out IPAddress address)
     {
         var forwardedFor = headers.GetCommaSeparatedValues("X-Forwarded-For");
@@ -268,62 +307,24 @@ internal partial class ClientConnectionContext : ConnectionContext,
                 }
 
                 var buffer = result.Buffer;
-
                 if (!buffer.IsEmpty)
                 {
-                    if (!_isHandshakeResponseParsed)
+                    if (!OutgoingPauseSema.Wait(0))
                     {
-                        var next = buffer;
-                        if (SignalRProtocol.HandshakeProtocol.TryParseResponseMessage(ref next, out var message))
+                        if (!await OutgoingPauseSema.WaitAsync(1000))
                         {
-                            _isHandshakeResponseParsed = true;
-                            if (!_isMigrated) // migrated client connection should skip handshake response
-                            {
-                                var dataMessage = new ConnectionDataMessage(ConnectionId, buffer.Slice(0, next.Start))
-                                {
-                                    Type = DataMessageType.Handshake
-                                };
-                                var forwardResult = await ForwardMessage(dataMessage);
-                                switch (forwardResult)
-                                {
-                                    case ForwardMessageResult.Success:
-                                        break;
-                                    case ForwardMessageResult.Error:
-                                    case ForwardMessageResult.Fatal:
-                                    default:
-                                        return;
-                                }
-                            }
-                            buffer = buffer.Slice(next.Start);
+                            await ReplyPauseAckMessageAsync(protocol);
+                            continue;
                         }
                     }
-                    if (_isHandshakeResponseParsed)
+
+                    try
                     {
-                        var next = buffer;
-                        while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
-                        {
-                            var messageType = message switch
-                            {
-                                SignalRProtocol.HubInvocationMessage => DataMessageType.Invocation,
-                                SignalRProtocol.CloseMessage => DataMessageType.Close,
-                                _ => DataMessageType.Other,
-                            };
-                            var dataMessage = new ConnectionDataMessage(ConnectionId, buffer.Slice(0, next.Start))
-                            {
-                                Type = messageType
-                            };
-                            var forwardResult = await ForwardMessage(dataMessage);
-                            switch (forwardResult)
-                            {
-                                case ForwardMessageResult.Fatal:
-                                    return;
-                                case ForwardMessageResult.Success:
-                                case ForwardMessageResult.Error:
-                                default:
-                                    buffer = next;
-                                    break;
-                            }
-                        }
+                        await ProcessOutgoingMessagesCoreAsync(protocol, buffer);
+                    }
+                    finally
+                    {
+                        OutgoingPauseSema.Release();
                     }
                 }
 
@@ -335,6 +336,11 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
                 Application.Input.AdvanceTo(buffer.Start, buffer.End);
             }
+        }
+        catch (ForwardMessageException)
+        {
+            // The exception means application fail to forward messages to service.
+            return;
         }
         catch (Exception ex)
         {
@@ -509,15 +515,73 @@ internal partial class ClientConnectionContext : ConnectionContext,
         return header.TryGetValue(Constants.AsrsInstanceId, out var instanceId) ? (string)instanceId : string.Empty;
     }
 
+    private async Task ReplyPauseAckMessageAsync(SignalRProtocol.IHubProtocol protocol)
+    {
+        if (Interlocked.CompareExchange(ref _outgoingPauseAcked, 1, 0) == 0)
+        {
+            var flowControlMessage = new ConnectionFlowControlMessage(ConnectionId, ConnectionFlowControlOperation.PauseAck);
+            await ServiceConnection.WriteAsync(flowControlMessage);
+        }
+    }
+
+    private async Task<ReadOnlySequence<byte>> ProcessOutgoingMessagesCoreAsync(SignalRProtocol.IHubProtocol protocol, ReadOnlySequence<byte> buffer)
+    {
+        if (!_isHandshakeResponseParsed)
+        {
+            var next = buffer;
+            if (SignalRProtocol.HandshakeProtocol.TryParseResponseMessage(ref next, out var message))
+            {
+                _isHandshakeResponseParsed = true;
+                if (!_isMigrated) // migrated client connection should skip handshake response
+                {
+                    var dataMessage = new ConnectionDataMessage(ConnectionId, buffer.Slice(0, next.Start))
+                    {
+                        Type = DataMessageType.Handshake
+                    };
+                    var forwardResult = await ForwardMessage(dataMessage);
+
+                    if (forwardResult != ForwardMessageResult.Success)
+                    {
+                        throw new ForwardMessageException(forwardResult);
+                    }
+                }
+                buffer = buffer.Slice(next.Start);
+            }
+        }
+        if (_isHandshakeResponseParsed)
+        {
+            var next = buffer;
+            while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
+            {
+                var messageType = message switch
+                {
+                    SignalRProtocol.HubInvocationMessage => DataMessageType.Invocation,
+                    SignalRProtocol.CloseMessage => DataMessageType.Close,
+                    _ => DataMessageType.Other,
+                };
+                var dataMessage = new ConnectionDataMessage(ConnectionId, buffer.Slice(0, next.Start))
+                {
+                    Type = messageType
+                };
+                var forwardResult = await ForwardMessage(dataMessage);
+                if (forwardResult == ForwardMessageResult.Fatal)
+                {
+                    throw new ForwardMessageException(forwardResult);
+                }
+            }
+        }
+        return buffer;
+    }
+
     /// <summary>
     /// Forward message to service
     /// </summary>
-    private async Task<ForwardMessageResult> ForwardMessage(ConnectionDataMessage data)
+    private async Task<ForwardMessageResult> ForwardMessage(ConnectionDataMessage dataMessage)
     {
         try
         {
             // Forward the message to the service
-            await ServiceConnection.WriteAsync(data);
+            await ServiceConnection.WriteAsync(dataMessage);
             return ForwardMessageResult.Success;
         }
         catch (ServiceConnectionNotActiveException)
@@ -647,5 +711,15 @@ internal partial class ClientConnectionContext : ConnectionContext,
         public Type GetReturnType(string invocationId) => typeof(object);
 
         public Type GetStreamItemType(string streamId) => typeof(object);
+    }
+
+    private sealed class ForwardMessageException : Exception
+    {
+        public ForwardMessageResult Result { get; }
+
+        public ForwardMessageException(ForwardMessageResult result)
+        {
+            Result = result;
+        }
     }
 }

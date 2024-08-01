@@ -6,7 +6,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Security.Claims;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Xunit;
@@ -279,12 +278,13 @@ public class ClientConnectionContextFacts
 
         public bool TryAddClientConnection(IClientConnection connection)
         {
-            throw new NotImplementedException();
+            return true;
         }
 
-        public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
+        public bool TryRemoveClientConnection(string connectionId, out IClientConnection? connection)
         {
-            throw new NotImplementedException();
+            connection = null;
+            return false;
         }
 
         public async Task CompleteAsync()
