@@ -63,17 +63,6 @@ internal class TestServiceConnection(ServiceConnectionStatus status = ServiceCon
         return Task.FromResult(true);
     }
 
-    public override bool TryAddClientConnection(IClientConnection connection)
-    {
-        return true;
-    }
-
-    public override bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
-    {
-        connection = null;
-        return true;
-    }
-
     protected override Task CleanupClientConnections(string fromInstanceId = null)
     {
         return Task.CompletedTask;
@@ -119,5 +108,15 @@ internal class TestServiceConnection(ServiceConnectionStatus status = ServiceCon
     protected override Task OnClientMessageAsync(ConnectionDataMessage connectionDataMessage)
     {
         return Task.CompletedTask;
+    }
+
+    public override bool TryAddClientConnection(IClientConnection connection)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
+    {
+        throw new NotImplementedException();
     }
 }

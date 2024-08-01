@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR;
 
+#nullable enable
+
 internal interface IClientConnectionManager
 {
     IEnumerable<IClientConnection> ClientConnections { get; }
@@ -14,9 +16,9 @@ internal interface IClientConnectionManager
 
     bool TryAddClientConnection(IClientConnection connection);
 
-    bool TryRemoveClientConnection(string connectionId, out IClientConnection connection);
+    bool TryRemoveClientConnection(string connectionId, out IClientConnection? connection);
 
-    bool TryGetClientConnection(string connectionId, out IClientConnection connection);
+    bool TryGetClientConnection(string connectionId, out IClientConnection? connection);
 
     Task WhenAllCompleted();
 }

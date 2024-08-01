@@ -7,6 +7,8 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR;
 
+#nullable enable
+
 internal interface IServiceConnection
 {
     string ConnectionId { get; }
@@ -21,15 +23,11 @@ internal interface IServiceConnection
 
     event Action<StatusChange> ConnectionStatusChanged;
 
-    Task StartAsync(string target = null);
+    Task StartAsync(string? target = null);
 
     Task StopAsync();
 
     Task WriteAsync(ServiceMessage serviceMessage);
 
     Task<bool> SafeWriteAsync(ServiceMessage serviceMessage);
-
-    bool TryAddClientConnection(IClientConnection connection);
-
-    bool TryRemoveClientConnection(string connectionId, out IClientConnection connection);
 }

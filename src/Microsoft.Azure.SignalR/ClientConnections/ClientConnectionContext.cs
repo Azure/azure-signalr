@@ -81,6 +81,8 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private readonly int _closeTimeOutMilliseconds;
 
+    private readonly bool _isMigrated = false;
+
     private int _connectionState = IdleState;
 
     private List<(Action<object> handler, object state)> _heartbeatHandlers;
@@ -92,8 +94,6 @@ internal partial class ClientConnectionContext : ConnectionContext,
     private long _receivedBytes;
 
     private bool _isHandshakeResponseParsed = false;
-
-    private readonly bool _isMigrated = false;
 
     public override string ConnectionId { get; set; }
 
