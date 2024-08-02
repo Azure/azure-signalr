@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Azure SignalR Service REST API",
-    "version": "2023-07-01"
+    "version": "2022-11-01"
   },
   "paths": {
     "/api/auth/accessKey": {
@@ -35,11 +35,6 @@
           "default": {
             "description": "Error response"
           }
-        },
-        "x-ms-examples": {
-          "Auth_GetAccessKey": {
-            "$ref": "./examples/Auth_GetAccessKey.json"
-          }
         }
       }
     },
@@ -65,11 +60,6 @@
           },
           "default": {
             "description": "Error response"
-          }
-        },
-        "x-ms-examples": {
-          "HealthApi_GetServiceStatus": {
-            "$ref": "./examples/HealthApi_GetServiceStatus.json"
           }
         }
       }
@@ -141,11 +131,6 @@
               }
             }
           }
-        },
-        "x-ms-examples": {
-          "SignalR_CloseConnections": {
-            "$ref": "./examples/SignalR_CloseConnections.json"
-          }
         }
       }
     },
@@ -214,11 +199,6 @@
               }
             }
           }
-        },
-        "x-ms-examples": {
-          "HubProxyV20230701_Execute": {
-            "$ref": "./examples/HubProxyV20230701_Execute.json"
-          }
         }
       }
     },
@@ -285,11 +265,6 @@
                 "type": "string"
               }
             }
-          }
-        },
-        "x-ms-examples": {
-          "HubProxyV20221101_GenerateClientToken": {
-            "$ref": "./examples/HubProxyV20221101_GenerateClientToken.json"
           }
         }
       }
@@ -374,11 +349,6 @@
               }
             }
           }
-        },
-        "x-ms-examples": {
-          "SignalR_Broadcast": {
-            "$ref": "./examples/SignalR_Broadcast.json"
-          }
         }
       }
     },
@@ -451,11 +421,6 @@
               }
             }
           }
-        },
-        "x-ms-examples": {
-          "SignalR_CloseConnection": {
-            "$ref": "./examples/SignalR_CloseConnection.json"
-          }
         }
       },
       "head": {
@@ -508,11 +473,6 @@
                 "type": "string"
               }
             }
-          }
-        },
-        "x-ms-examples": {
-          "SignalR_CheckConnectionExistence": {
-            "$ref": "./examples/SignalR_CheckConnectionExistence.json"
           }
         }
       }
@@ -594,11 +554,6 @@
               }
             }
           }
-        },
-        "x-ms-examples": {
-          "SignalR_SendToConnection": {
-            "$ref": "./examples/SignalR_SendToConnection.json"
-          }
         }
       }
     },
@@ -666,11 +621,6 @@
               }
             }
           }
-        },
-        "x-ms-examples": {
-          "SignalR_RemoveConnectionFromAllGroups": {
-            "$ref": "./examples/SignalR_RemoveConnectionFromAllGroups.json"
-          }
         }
       }
     },
@@ -731,11 +681,6 @@
                 "type": "string"
               }
             }
-          }
-        },
-        "x-ms-examples": {
-          "SignalR_CheckGroupExistence": {
-            "$ref": "./examples/SignalR_CheckGroupExistence.json"
           }
         }
       }
@@ -816,11 +761,6 @@
                 "type": "string"
               }
             }
-          }
-        },
-        "x-ms-examples": {
-          "SignalR_CloseGroupConnections": {
-            "$ref": "./examples/SignalR_CloseGroupConnections.json"
           }
         }
       }
@@ -914,11 +854,6 @@
               }
             }
           }
-        },
-        "x-ms-examples": {
-          "SignalR_GroupBroadcast": {
-            "$ref": "./examples/SignalR_GroupBroadcast.json"
-          }
         }
       }
     },
@@ -994,11 +929,6 @@
                 "type": "string"
               }
             }
-          }
-        },
-        "x-ms-examples": {
-          "SignalR_RemoveConnectionFromGroup": {
-            "$ref": "./examples/SignalR_RemoveConnectionFromGroup.json"
           }
         }
       },
@@ -1077,11 +1007,6 @@
               }
             }
           }
-        },
-        "x-ms-examples": {
-          "SignalR_AddConnectionToGroup": {
-            "$ref": "./examples/SignalR_AddConnectionToGroup.json"
-          }
         }
       }
     },
@@ -1139,11 +1064,6 @@
                 "type": "string"
               }
             }
-          }
-        },
-        "x-ms-examples": {
-          "SignalR_CheckUserExistence": {
-            "$ref": "./examples/SignalR_CheckUserExistence.json"
           }
         }
       }
@@ -1223,11 +1143,6 @@
                 "type": "string"
               }
             }
-          }
-        },
-        "x-ms-examples": {
-          "SignalR_CloseUserConnections": {
-            "$ref": "./examples/SignalR_CloseUserConnections.json"
           }
         }
       }
@@ -1309,11 +1224,6 @@
               }
             }
           }
-        },
-        "x-ms-examples": {
-          "SignalR_SendToUser": {
-            "$ref": "./examples/SignalR_SendToUser.json"
-          }
         }
       }
     },
@@ -1374,11 +1284,6 @@
                 "type": "string"
               }
             }
-          }
-        },
-        "x-ms-examples": {
-          "SignalR_RemoveUserFromAllGroups": {
-            "$ref": "./examples/SignalR_RemoveUserFromAllGroups.json"
           }
         }
       }
@@ -1451,11 +1356,6 @@
               }
             }
           }
-        },
-        "x-ms-examples": {
-          "SignalR_RemoveUserFromGroup": {
-            "$ref": "./examples/SignalR_RemoveUserFromGroup.json"
-          }
         }
       },
       "head": {
@@ -1521,11 +1421,6 @@
                 "type": "string"
               }
             }
-          }
-        },
-        "x-ms-examples": {
-          "SignalR_CheckUserExistenceInGroup": {
-            "$ref": "./examples/SignalR_CheckUserExistenceInGroup.json"
           }
         }
       },
@@ -1608,11 +1503,6 @@
               }
             }
           }
-        },
-        "x-ms-examples": {
-          "SignalR_AddUserToGroup": {
-            "$ref": "./examples/SignalR_AddUserToGroup.json"
-          }
         }
       }
     }
@@ -1623,9 +1513,11 @@
       "type": "object",
       "properties": {
         "AccessKey": {
+          "description": "The string value of the access key for SignalR app server to sign client tokens.",
           "type": "string"
         },
         "KeyId": {
+          "description": "The ID of the access key.",
           "type": "string"
         }
       }
@@ -1877,7 +1769,7 @@
         "message": {
           "type": "string"
         },
-        "jsonObject": {},
+        "jsonObject": { },
         "isSuccess": {
           "type": "boolean"
         },
