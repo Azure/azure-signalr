@@ -1769,7 +1769,7 @@
         "message": {
           "type": "string"
         },
-        "jsonObject": { },
+        "jsonObject": {},
         "isSuccess": {
           "type": "boolean"
         },
