@@ -12,11 +12,13 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests.Common;
 
+#nullable enable
+
 internal class TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected,
                                      bool throws = false,
-                                     ILogger logger = null,
-                                     IServiceMessageHandler serviceMessageHandler = null,
-                                     IServiceEventHandler serviceEventHandler = null) 
+                                     ILogger? logger = null,
+                                     IServiceMessageHandler? serviceMessageHandler = null,
+                                     IServiceEventHandler? serviceEventHandler = null)
     : ServiceConnectionBase(new ServiceProtocol(),
                             "serverId",
                             Guid.NewGuid().ToString(),
@@ -27,15 +29,15 @@ internal class TestServiceConnection(ServiceConnectionStatus status = ServiceCon
                             ServiceConnectionType.Default,
                             logger ?? NullLogger.Instance)
 {
-    private readonly TaskCompletionSource<object> _created = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object?> _created = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly bool _throws = throws;
 
-    private ConnectionContext _connection;
+    private ConnectionContext? _connection;
 
     private ServiceConnectionStatus _expectedStatus = status;
 
-    public IDuplexPipe Application { get; private set; }
+    public IDuplexPipe? Application { get; private set; }
 
     public Task ConnectionCreated => _created.Task;
 
@@ -68,18 +70,18 @@ internal class TestServiceConnection(ServiceConnectionStatus status = ServiceCon
         return true;
     }
 
-    public override bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
+    public override bool TryRemoveClientConnection(string connectionId, out IClientConnection? connection)
     {
         connection = null;
-        return true;
+        return false;
     }
 
-    protected override Task CleanupClientConnections(string fromInstanceId = null)
+    protected override Task CleanupClientConnections(string? fromInstanceId = null)
     {
         return Task.CompletedTask;
     }
 
-    protected override Task<ConnectionContext> CreateConnection(string target = null)
+    protected override Task<ConnectionContext> CreateConnection(string? target = null)
     {
         var pipeOptions = new PipeOptions();
         var duplex = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);

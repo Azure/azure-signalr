@@ -277,16 +277,6 @@ public class ClientConnectionContextFacts
             await _pipe.Writer.FlushAsync();
         }
 
-        public bool TryAddClientConnection(IClientConnection connection)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task CompleteAsync()
         {
             _pipe.Writer.Complete();

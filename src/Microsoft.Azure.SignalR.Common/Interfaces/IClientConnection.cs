@@ -3,6 +3,8 @@
 
 namespace Microsoft.Azure.SignalR;
 
+#nullable enable
+
 internal interface IClientConnection
 {
     /// <summary>
@@ -24,5 +26,5 @@ internal interface IClientConnection
     /// <summary>
     /// The server connection associated with this client connection.
     /// </summary>
-    IServiceConnection ServiceConnection { get; }
+    IServiceConnection? ServiceConnection { get; }
 }

@@ -81,6 +81,8 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private readonly int _closeTimeOutMilliseconds;
 
+    private readonly bool _isMigrated = false;
+
     private int _connectionState = IdleState;
 
     private List<(Action<object> handler, object state)> _heartbeatHandlers;
@@ -92,8 +94,6 @@ internal partial class ClientConnectionContext : ConnectionContext,
     private long _receivedBytes;
 
     private bool _isHandshakeResponseParsed = false;
-
-    private readonly bool _isMigrated = false;
 
     public override string ConnectionId { get; set; }
 
@@ -277,24 +277,24 @@ internal partial class ClientConnectionContext : ConnectionContext,
                         if (SignalRProtocol.HandshakeProtocol.TryParseResponseMessage(ref next, out var message))
                         {
                             _isHandshakeResponseParsed = true;
-                            if (!_isMigrated) // migrated client connection should skip handshake response
+                            if (_isMigrated)
+                            {
+                                // simply skip the handshake response.
+                                buffer = buffer.Slice(next.Start);
+                            }
+                            else
                             {
                                 var dataMessage = new ConnectionDataMessage(ConnectionId, buffer.Slice(0, next.Start))
                                 {
                                     Type = DataMessageType.Handshake
                                 };
                                 var forwardResult = await ForwardMessage(dataMessage);
-                                switch (forwardResult)
+                                buffer = forwardResult switch
                                 {
-                                    case ForwardMessageResult.Success:
-                                        break;
-                                    case ForwardMessageResult.Error:
-                                    case ForwardMessageResult.Fatal:
-                                    default:
-                                        return;
-                                }
+                                    ForwardMessageResult.Success => buffer.Slice(next.Start),
+                                    _ => throw new ForwardMessageException(forwardResult),
+                                };
                             }
-                            buffer = buffer.Slice(next.Start);
                         }
                     }
                     if (_isHandshakeResponseParsed)
@@ -313,16 +313,11 @@ internal partial class ClientConnectionContext : ConnectionContext,
                                 Type = messageType
                             };
                             var forwardResult = await ForwardMessage(dataMessage);
-                            switch (forwardResult)
+                            buffer = forwardResult switch
                             {
-                                case ForwardMessageResult.Fatal:
-                                    return;
-                                case ForwardMessageResult.Success:
-                                case ForwardMessageResult.Error:
-                                default:
-                                    buffer = next;
-                                    break;
-                            }
+                                ForwardMessageResult.Fatal => throw new ForwardMessageException(forwardResult),
+                                _ => next,
+                            };
                         }
                     }
                 }
@@ -335,6 +330,10 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
                 Application.Input.AdvanceTo(buffer.Start, buffer.End);
             }
+        }
+        catch (ForwardMessageException)
+        {
+            // do nothing.
         }
         catch (Exception ex)
         {
@@ -647,5 +646,15 @@ internal partial class ClientConnectionContext : ConnectionContext,
         public Type GetReturnType(string invocationId) => typeof(object);
 
         public Type GetStreamItemType(string streamId) => typeof(object);
+    }
+
+    private sealed class ForwardMessageException : Exception
+    {
+        public ForwardMessageResult Result { get; }
+
+        public ForwardMessageException(ForwardMessageResult result)
+        {
+            Result = result;
+        }
     }
 }
