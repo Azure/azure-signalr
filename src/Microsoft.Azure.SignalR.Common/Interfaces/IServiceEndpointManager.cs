@@ -3,20 +3,19 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal delegate void EndpointEventHandler(HubServiceEndpoint endpoint);
+
+internal interface IServiceEndpointManager
 {
-    internal delegate void EndpointEventHandler(HubServiceEndpoint endpoint);
+    IReadOnlyDictionary<ServiceEndpoint, ServiceEndpoint> Endpoints { get; }
 
-    internal interface IServiceEndpointManager
-    {
-        IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
+    event EndpointEventHandler OnAdd;
 
-        IReadOnlyDictionary<ServiceEndpoint, ServiceEndpoint> Endpoints { get; }
+    event EndpointEventHandler OnRemove;
 
-        IReadOnlyList<HubServiceEndpoint> GetEndpoints(string hub);
+    IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
 
-        event EndpointEventHandler OnAdd;
-
-        event EndpointEventHandler OnRemove;
-    }
+    IReadOnlyList<HubServiceEndpoint> GetEndpoints(string hub);
 }

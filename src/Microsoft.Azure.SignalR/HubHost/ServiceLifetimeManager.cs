@@ -85,14 +85,14 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var serviceConnectionContext))
+            if (_clientConnectionManager.TryGetClientConnection(connectionId, out var clientConnection))
             {
-                var message = CreateMessage(connectionId, methodName, args, serviceConnectionContext);
+                var message = CreateMessage(connectionId, methodName, args, clientConnection);
                 var messageWithTracingId = (IMessageWithTracingId)message;
                 try
                 {
                     // Write directly to this connection
-                    await serviceConnectionContext.ServiceConnection.WriteAsync(message);
+                    await clientConnection.ServiceConnection.WriteAsync(message);
 
                     if (messageWithTracingId.TracingId != null)
                     {
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
             }
-            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var clientConnectionContext))
+            if (_clientConnectionManager.TryGetClientConnection(connectionId, out var clientConnection))
             {
                 // Determine which manager (Caller / Router) the `result` belongs to.
                 // `TryCompletionResult` returns false when the corresponding invocation is not existing.
@@ -166,13 +166,13 @@ namespace Microsoft.Azure.SignalR
                 {
                     clientResultsManager = _clientInvocationManager.Router;
                     // For router server, it should send a ClientCompletionMessage with accurate payload content, which is necessary for the caller server.
-                    payload = SerializeCompletionMessage(result, clientConnectionContext.Protocol);
+                    payload = SerializeCompletionMessage(result, clientConnection.HubProtocol);
                 }
 
                 // Block unknown `results` which belongs to neither Caller nor Router
                 if (clientResultsManager != null)
                 {
-                    var protocol = clientConnectionContext.Protocol;
+                    var protocol = clientConnection.HubProtocol;
                     var message = AppendMessageTracingId(new ClientCompletionMessage(result.InvocationId, connectionId, _callerId, protocol, payload));
                     await WriteAsync(message);
                 }
@@ -185,14 +185,14 @@ namespace Microsoft.Azure.SignalR
         }
 #endif
 
-        private MultiConnectionDataMessage CreateMessage(string connectionId, string methodName, object[] args, ClientConnectionContext serviceConnectionContext)
+        private MultiConnectionDataMessage CreateMessage(string connectionId, string methodName, object[] args, IClientConnection clientConnection)
         {
             IDictionary<string, ReadOnlyMemory<byte>> payloads;
-            if (serviceConnectionContext.Protocol != null)
+            if (clientConnection.HubProtocol != null)
             {
                 payloads = new ArrayDictionary<string, ReadOnlyMemory<byte>>(1)
                 {
-                    { serviceConnectionContext.Protocol, SerializeProtocol(serviceConnectionContext.Protocol, methodName, args) }
+                    { clientConnection.HubProtocol, SerializeProtocol(clientConnection.HubProtocol, methodName, args) }
                 };
             }
             else

@@ -7,85 +7,112 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR.Tests.Common
+namespace Microsoft.Azure.SignalR.Tests.Common;
+
+internal sealed class TestServiceConnectionContainer : IServiceConnectionContainer, IServiceConnection
 {
-    internal sealed class TestServiceConnectionContainer : IServiceConnectionContainer, IServiceConnection
+    private readonly Action<(ServiceMessage, IServiceConnectionContainer)> _validator;
+
+    public string HubName { get; }
+
+    public ServiceConnectionStatus Status { get; }
+
+    public Task ConnectionInitializedTask => Task.CompletedTask;
+
+    public Task ConnectionOfflineTask => Task.CompletedTask;
+
+    public IReadOnlyDictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; }
+
+    public string ConnectionId => throw new NotImplementedException();
+
+    public string ServersTag => throw new NotSupportedException();
+
+    public string ServerId => throw new NotImplementedException();
+
+    public bool HasClients => throw new NotSupportedException();
+
+    public TestServiceConnectionContainer(ServiceConnectionStatus status)
     {
-        private readonly Action<(ServiceMessage, IServiceConnectionContainer)> _validator;
+        Status = status;
+    }
 
-        public event Action<StatusChange> ConnectionStatusChanged;
+    public TestServiceConnectionContainer(string name, Action<(ServiceMessage, IServiceConnectionContainer)> validator)
+    {
+        _validator = validator;
+        HubName = name;
+    }
 
-        public string HubName { get; }
+    public event Action<StatusChange> ConnectionStatusChanged;
 
-        public ServiceConnectionStatus Status { get; }
+    public Task StartAsync()
+    {
+        ConnectionStatusChanged?.Invoke(new StatusChange(ServiceConnectionStatus.Connecting, Status));
+        return Task.CompletedTask;
+    }
 
-        public Task ConnectionInitializedTask => Task.CompletedTask;
+    public Task StartAsync(string target)
+    {
+        return Task.CompletedTask;
+    }
 
-        public Task ConnectionOfflineTask => Task.CompletedTask;
+    public Task WriteAsync(ServiceMessage serviceMessage)
+    {
+        _validator?.Invoke((serviceMessage, this));
+        return Task.CompletedTask;
+    }
 
-        public IReadOnlyDictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; }
-
-        public string ServersTag => throw new NotSupportedException();
-
-        public bool HasClients => throw new NotSupportedException();
-
-        public TestServiceConnectionContainer(ServiceConnectionStatus status)
+    public async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
+    {
+        try
         {
-            Status = status;
+            await WriteAsync(serviceMessage);
+            return true;
         }
-
-        public TestServiceConnectionContainer(string name, Action<(ServiceMessage, IServiceConnectionContainer)> validator)
+        catch (Exception)
         {
-            _validator = validator;
-            HubName = name;
+            return false;
         }
+    }
 
-        public Task StartAsync()
-        {
-            ConnectionStatusChanged?.Invoke(new StatusChange(ServiceConnectionStatus.Connecting, Status));
-            return Task.CompletedTask;
-        }
+    public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage,
+        CancellationToken cancellationToken = default)
+    {
+        _validator?.Invoke((serviceMessage, this));
+        return Task.FromResult(true);
+    }
 
-        public Task StartAsync(string target)
-        {
-            return Task.CompletedTask;
-        }
+    public Task StopAsync()
+    {
+        return Task.CompletedTask;
+    }
 
-        public Task WriteAsync(ServiceMessage serviceMessage)
-        {
-            _validator?.Invoke((serviceMessage, this));
-            return Task.CompletedTask;
-        }
+    public Task OfflineAsync(GracefulShutdownMode mode)
+    {
+        return Task.CompletedTask;
+    }
 
-        public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage,
-            CancellationToken cancellationToken = default)
-        {
-            _validator?.Invoke((serviceMessage, this));
-            return Task.FromResult(true);
-        }
+    public Task StartGetServersPing()
+    {
+        return Task.CompletedTask;
+    }
 
-        public Task StopAsync()
-        {
-            return Task.CompletedTask;
-        }
+    public Task StopGetServersPing()
+    {
+        return Task.CompletedTask;
+    }
 
-        public Task OfflineAsync(GracefulShutdownMode mode)
-        {
-            return Task.CompletedTask;
-        }
+    public void Dispose()
+    {
+    }
 
-        public Task StartGetServersPing()
-        {
-            return Task.CompletedTask;
-        }
+    public bool TryAddClientConnection(IClientConnection connection)
+    {
+        return true;
+    }
 
-        public Task StopGetServersPing()
-        {
-            return Task.CompletedTask;
-        }
-
-        public void Dispose()
-        {
-        }
+    public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
+    {
+        connection = null;
+        return true;
     }
 }

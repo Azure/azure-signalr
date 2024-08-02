@@ -5,22 +5,31 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal interface IServiceConnection
 {
-    internal interface IServiceConnection
-    {
-        Task StartAsync(string target = null);
+    string ConnectionId { get; }
 
-        Task WriteAsync(ServiceMessage serviceMessage);
+    string ServerId { get; }
 
-        Task StopAsync();
+    ServiceConnectionStatus Status { get; }
 
-        ServiceConnectionStatus Status { get; }
+    Task ConnectionInitializedTask { get; }
 
-        Task ConnectionInitializedTask { get; }
+    Task ConnectionOfflineTask { get; }
 
-        Task ConnectionOfflineTask { get; }
+    event Action<StatusChange> ConnectionStatusChanged;
 
-        event Action<StatusChange> ConnectionStatusChanged;
-    }
+    Task StartAsync(string target = null);
+
+    Task StopAsync();
+
+    Task WriteAsync(ServiceMessage serviceMessage);
+
+    Task<bool> SafeWriteAsync(ServiceMessage serviceMessage);
+
+    bool TryAddClientConnection(IClientConnection connection);
+
+    bool TryRemoveClientConnection(string connectionId, out IClientConnection connection);
 }

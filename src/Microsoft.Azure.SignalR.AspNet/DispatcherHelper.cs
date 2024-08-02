@@ -111,11 +111,11 @@ namespace Microsoft.Azure.SignalR.AspNet
                 configuration.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             }
 
-            var ccm = configuration.Resolver.Resolve<IClientConnectionManager>();
+            var ccm = configuration.Resolver.Resolve<IClientConnectionManagerAspNet>();
             if (ccm == null)
             {
                 ccm = new ClientConnectionManager(configuration, loggerFactory);
-                configuration.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
+                configuration.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
             }
 
             var atm = new AzureTransportManager(configuration.Resolver);

@@ -10,6 +10,14 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IServiceConnectionContainer : IDisposable
     {
+        ServiceConnectionStatus Status { get; }
+
+        Task ConnectionInitializedTask { get; }
+
+        string ServersTag { get; }
+
+        bool HasClients { get; }
+
         Task StartAsync();
 
         Task StopAsync();
@@ -23,13 +31,5 @@ namespace Microsoft.Azure.SignalR
         Task StartGetServersPing();
 
         Task StopGetServersPing();
-
-        ServiceConnectionStatus Status { get; }
-
-        Task ConnectionInitializedTask { get; }
-
-        string ServersTag { get; }
-
-        bool HasClients { get; }
     }
 }

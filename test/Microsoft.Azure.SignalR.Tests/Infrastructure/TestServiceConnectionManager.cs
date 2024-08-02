@@ -8,56 +8,56 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR.Tests
+namespace Microsoft.Azure.SignalR.Tests;
+
+internal class TestServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
 {
-    internal class TestServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
+    private readonly ConcurrentDictionary<Type, int> _writeAsyncCallCount = new ConcurrentDictionary<Type, int>();
+
+    private readonly ConcurrentDictionary<Type, int> _partitionedWriteAsyncCallCount = new ConcurrentDictionary<Type, int>();
+
+    public ServiceMessage ServiceMessage { get; private set; }
+
+    public void SetServiceConnection(IServiceConnectionContainer serviceConnection)
     {
-        private readonly ConcurrentDictionary<Type, int> _writeAsyncCallCount = new ConcurrentDictionary<Type, int>();
-        private readonly ConcurrentDictionary<Type, int> _partitionedWriteAsyncCallCount = new ConcurrentDictionary<Type, int>();
+    }
 
-        public ServiceMessage ServiceMessage { get; private set; }
+    public async Task StartAsync()
+    {
+        await Task.CompletedTask;
+    }
 
-        public void SetServiceConnection(IServiceConnectionContainer serviceConnection)
+    public Task WriteAsync(ServiceMessage serviceMessage)
+    {
+        _writeAsyncCallCount.AddOrUpdate(serviceMessage.GetType(), 1, (_, value) => value + 1);
+        ServiceMessage = serviceMessage;
+        return Task.CompletedTask;
+    }
+
+    public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
+    {
+        if (serviceMessage is IAckableMessage)
         {
-        }
-
-        public async Task StartAsync()
-        {
-            await Task.CompletedTask;
-        }
-
-        public Task WriteAsync(ServiceMessage serviceMessage)
-        {
-            _writeAsyncCallCount.AddOrUpdate(serviceMessage.GetType(), 1, (_, value) => value + 1);
-            ServiceMessage = serviceMessage;
-            return Task.CompletedTask;
-        }
-
-        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
-        {
-            if (serviceMessage is IAckableMessage)
-            {
-                await WriteAsync(serviceMessage);
-                return true;
-            }
+            await WriteAsync(serviceMessage);
             return true;
         }
-
-        public int GetCallCount(Type type)
-        {
-            return _writeAsyncCallCount.TryGetValue(type, out var count) ? count : 0;
-        }
-
-        public int GetPartitionedCallCount(Type type)
-        {
-            return _partitionedWriteAsyncCallCount.TryGetValue(type, out var count) ? count : 0;
-        }
-
-        public Task StopAsync()
-        {
-            return Task.CompletedTask;
-        }
-
-        public Task OfflineAsync(GracefulShutdownMode mode) => Task.CompletedTask;
+        return true;
     }
+
+    public int GetCallCount(Type type)
+    {
+        return _writeAsyncCallCount.TryGetValue(type, out var count) ? count : 0;
+    }
+
+    public int GetPartitionedCallCount(Type type)
+    {
+        return _partitionedWriteAsyncCallCount.TryGetValue(type, out var count) ? count : 0;
+    }
+
+    public Task StopAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task OfflineAsync(GracefulShutdownMode mode) => Task.CompletedTask;
 }

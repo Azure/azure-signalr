@@ -1,19 +1,17 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal interface IConnectionRequestIdProvider
 {
-    internal interface IConnectionRequestIdProvider
-    {
-        string GetRequestId();
-    }
+    string GetRequestId();
+}
 
-
-    internal class DefaultConnectionRequestIdProvider : IConnectionRequestIdProvider
+internal class DefaultConnectionRequestIdProvider : IConnectionRequestIdProvider
+{
+    public string GetRequestId()
     {
-        public string GetRequestId()
-        {
-            return AuthUtility.GenerateRequestId();
-        }
+        return AuthUtility.GenerateRequestId();
     }
 }

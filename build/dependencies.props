@@ -21,7 +21,7 @@
     <SystemBuffersPackageVersion>4.5.1</SystemBuffersPackageVersion>
     <SystemMemoryPackageVersion>4.5.4</SystemMemoryPackageVersion>
     <SystemRuntimeCompilerServicesUnsafePackageVersion>6.0.0</SystemRuntimeCompilerServicesUnsafePackageVersion>
-    <AzureIdentityPackageVersion>1.11.2</AzureIdentityPackageVersion>
+    <AzureIdentityPackageVersion>1.11.4</AzureIdentityPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.1</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>

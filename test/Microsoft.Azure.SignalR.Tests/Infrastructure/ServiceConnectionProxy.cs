@@ -19,295 +19,305 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Microsoft.Azure.SignalR.Tests
+namespace Microsoft.Azure.SignalR.Tests;
+
+internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnectionFactory, IServiceConnectionFactory
 {
-    internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnectionFactory, IServiceConnectionFactory
+    private static readonly IServiceProtocol SharedServiceProtocol = new ServiceProtocol();
+
+    private readonly PipeOptions _clientPipeOptions;
+
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
+
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
+
+    private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
+
+    private readonly ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>> _waitForServerConnection = new ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>>();
+
+    private int _connectedServerConnectionCount;
+
+    public TestConnectionFactory ConnectionFactory { get; }
+
+    public IClientConnectionManager ClientConnectionManager { get; }
+
+    public IClientInvocationManager ClientInvocationManager { get; }
+
+    public IServiceConnectionContainer ServiceConnectionContainer { get; }
+
+    public IServiceMessageHandler ServiceMessageHandler { get; }
+
+    public IHubProtocolResolver HubProtocolResolver { get; }
+
+    public IServerNameProvider ServerNameProvider { get; }
+
+    public ConnectionDelegate ConnectionDelegateCallback { get; }
+
+    public ConcurrentDictionary<string, TestConnection> ConnectionContexts { get; } =
+        new ConcurrentDictionary<string, TestConnection>();
+
+    public ConcurrentDictionary<string, ServiceConnection> ServiceConnections { get; } = new ConcurrentDictionary<string, ServiceConnection>();
+
+    public IEnumerable<IClientConnection> ClientConnections => ClientConnectionManager.ClientConnections;
+
+    public bool AllowStatefulReconnects { get; }
+
+    public bool NewConnectionsCreationPaused { get; set; }
+
+    public Channel<ServiceMessage> ApplicationMessages { get; } = Channel.CreateUnbounded<ServiceMessage>();
+
+    public int Count => ClientConnectionManager.Count;
+
+    public ServiceConnectionProxy(ConnectionDelegate callback = null,
+                                  PipeOptions clientPipeOptions = null,
+                                  Func<Func<TestConnection, Task>, TestConnectionFactory> connectionFactoryCallback = null,
+                                  int connectionCount = 1,
+                                  bool allowStatefulReconnects = false)
     {
-        private static readonly IServiceProtocol SharedServiceProtocol = new ServiceProtocol();
-        private readonly PipeOptions _clientPipeOptions;
+        ConnectionFactory = connectionFactoryCallback?.Invoke(ConnectionFactoryCallbackAsync) ?? new TestConnectionFactory(ConnectionFactoryCallbackAsync);
+        ClientConnectionManager = new ClientConnectionManager();
 
-        public TestConnectionFactory ConnectionFactory { get; }
+        ClientInvocationManager = new DefaultClientInvocationManager();
+        _clientPipeOptions = clientPipeOptions;
+        ConnectionDelegateCallback = callback ?? OnConnectionAsync;
 
-        public IClientConnectionManager ClientConnectionManager { get; }
+        ServerNameProvider = new DefaultServerNameProvider();
 
-        public IClientInvocationManager ClientInvocationManager { get; }
+        AllowStatefulReconnects = allowStatefulReconnects;
 
-        public IServiceConnectionContainer ServiceConnectionContainer { get; }
+        // these two lines should be located in the end of this constructor.
+        ServiceConnectionContainer = new StrongServiceConnectionContainer(this, connectionCount, null, new TestHubServiceEndpoint(), NullLogger.Instance);
+        ServiceMessageHandler = (StrongServiceConnectionContainer)ServiceConnectionContainer;
+        HubProtocolResolver = new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance);
+    }
 
-        public IServiceMessageHandler ServiceMessageHandler { get; }
+    /// <summary>
+    /// Write a message to server connection.
+    /// </summary>
+    public static async Task WriteMessageAsync(TestConnection context, ServiceMessage message)
+    {
+        SharedServiceProtocol.WriteMessage(message, context.Application.Output);
+        await context.Application.Output.FlushAsync();
+    }
 
-        public IHubProtocolResolver HubProtocolResolver { get; }
-
-        public IServerNameProvider ServerNameProvider { get; }
-
-        public ConnectionDelegate ConnectionDelegateCallback { get; }
-
-        public ConcurrentDictionary<string, TestConnection> ConnectionContexts { get; } =
-            new ConcurrentDictionary<string, TestConnection>();
-
-        public ConcurrentDictionary<string, ServiceConnection> ServiceConnections { get; } = new ConcurrentDictionary<string, ServiceConnection>();
-
-        public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
-
-        public bool AllowStatefulReconnects { get; }
-
-        private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
-        private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
-        private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
-        private readonly ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>> _waitForServerConnection = new ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>>();
-        private int _connectedServerConnectionCount;
-        private readonly ConcurrentDictionary<Type, Channel<ServiceMessage>> _applicationMessages = new();
-
-        public ServiceConnectionProxy(
-            ConnectionDelegate callback = null,
-            PipeOptions clientPipeOptions = null,
-            Func<Func<TestConnection, Task>, TestConnectionFactory> connectionFactoryCallback = null,
-            int connectionCount = 1,
-            bool allowStatefulReconnects = false)
-        {
-            ConnectionFactory = connectionFactoryCallback?.Invoke(ConnectionFactoryCallbackAsync) ?? new TestConnectionFactory(ConnectionFactoryCallbackAsync);
-            ClientConnectionManager = new ClientConnectionManager();
-            
-            ClientInvocationManager = new DefaultClientInvocationManager();
-            _clientPipeOptions = clientPipeOptions;
-            ConnectionDelegateCallback = callback ?? OnConnectionAsync;
-
-            ServerNameProvider = new DefaultServerNameProvider();
-
-            AllowStatefulReconnects = allowStatefulReconnects;
-
-            // these two lines should be located in the end of this constructor.
-            ServiceConnectionContainer = new StrongServiceConnectionContainer(this, connectionCount, null, new TestHubServiceEndpoint(), NullLogger.Instance);
-            ServiceMessageHandler = (StrongServiceConnectionContainer) ServiceConnectionContainer;
-            HubProtocolResolver = new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger< DefaultHubProtocolResolver>.Instance);
-        }
-
-        public IServiceConnection Create(HubServiceEndpoint endpoint,
+    public IServiceConnection Create(HubServiceEndpoint endpoint,
                                          IServiceMessageHandler serviceMessageHandler,
-                                         AckHandler ackHandler,
-                                         ServiceConnectionType type)
-        {
-            var connectionId = Guid.NewGuid().ToString("N");
-            var connection = new ServiceConnection(
-                SharedServiceProtocol,
-                this,
-                ConnectionFactory,
-                NullLoggerFactory.Instance,
-                ConnectionDelegateCallback,
-                this,
-                ServerNameProvider.GetName(),
-                connectionId,
-                endpoint,
-                serviceMessageHandler,
-                null,
-                ClientInvocationManager,
-                ackHandler,
-                new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
-                type,
-                allowStatefulReconnects: AllowStatefulReconnects);
-            ServiceConnections.TryAdd(connectionId, connection);
-            return connection;
-        }
+                                     AckHandler ackHandler,
+                                     ServiceConnectionType type)
+    {
+        var connectionId = Guid.NewGuid().ToString("N");
+        var connection = new ServiceConnection(
+            SharedServiceProtocol,
+            this,
+            ConnectionFactory,
+            NullLoggerFactory.Instance,
+            ConnectionDelegateCallback,
+            this,
+            ServerNameProvider.GetName(),
+            connectionId,
+            endpoint,
+            serviceMessageHandler,
+            null,
+            ClientInvocationManager,
+            new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
+            type,
+            allowStatefulReconnects: AllowStatefulReconnects);
+        ServiceConnections.TryAdd(connectionId, connection);
+        return connection;
+    }
 
-        public bool NewConnectionsCreationPaused { get; set; }
+    public Task StartAsync()
+    {
+        return ServiceConnectionContainer.StartAsync();
+    }
 
-        private async Task ConnectionFactoryCallbackAsync(TestConnection connection)
+    public Task WaitForServerConnectionsInited()
+    {
+        return Task.WhenAll(ServiceConnections.Values.Select(s => s.ConnectionInitializedTask));
+    }
+
+    public async Task ProcessApplicationMessagesAsync(PipeReader pipeReader)
+    {
+        try
         {
-            while (NewConnectionsCreationPaused)
+            while (true)
             {
-                await Task.Delay(10);
-            }
-            ConnectionContexts.TryAdd(connection.ConnectionId, connection);
-            // Start a process for each server connection
-            _ = StartProcessApplicationMessagesAsync(connection);
-        }
+                var result = await pipeReader.ReadAsync();
+                var buffer = result.Buffer;
 
-        private async Task StartProcessApplicationMessagesAsync(TestConnection connection)
-        {
-            await ServiceConnections[connection.ConnectionId].ConnectionInitializedTask;
+                var consumed = buffer.Start;
+                var examined = buffer.End;
 
-            if (ServiceConnections[connection.ConnectionId].Status == ServiceConnectionStatus.Connected)
-            {
-                Interlocked.Increment(ref _connectedServerConnectionCount);
-                if (_waitForServerConnection.TryGetValue(_connectedServerConnectionCount, out var tcs))
+                try
                 {
-                    tcs.TrySetResult(connection);
-                }
-                await ProcessApplicationMessagesAsync(connection.Application.Input);
-            } 
-        }
-
-        public Task StartAsync()
-        {
-            return ServiceConnectionContainer.StartAsync();
-        }
-
-        public Task WaitForServerConnectionsInited()
-        {
-            return Task.WhenAll(ServiceConnections.Values.Select(s => s.ConnectionInitializedTask));
-        }
-
-        public async Task ProcessApplicationMessagesAsync(PipeReader pipeReader)
-        {
-            try
-            {
-                while (true)
-                {
-                    var result = await pipeReader.ReadAsync();
-                    var buffer = result.Buffer;
-
-                    var consumed = buffer.Start;
-                    var examined = buffer.End;
-
-                    try
+                    if (result.IsCanceled)
                     {
-                        if (result.IsCanceled)
-                        {
-                            break;
-                        }
+                        break;
+                    }
 
-                        if (!buffer.IsEmpty)
+                    if (!buffer.IsEmpty)
+                    {
+                        if (SharedServiceProtocol.TryParseMessage(ref buffer, out var message))
                         {
-                            if (SharedServiceProtocol.TryParseMessage(ref buffer, out var message))
-                            {
-                                consumed = buffer.Start;
-                                examined = consumed;
+                            consumed = buffer.Start;
+                            examined = consumed;
 
-                                AddApplicationMessage(message.GetType(), message);
-                            }
-                        }
-
-                        if (result.IsCompleted)
-                        {
-                            break;
+                            AddApplicationMessage(message.GetType(), message);
                         }
                     }
-                    finally
+
+                    if (result.IsCompleted)
                     {
-                        pipeReader.AdvanceTo(consumed, examined);
+                        break;
                     }
                 }
-            }
-            catch
-            {
-                // Ignored.
-            }
-        }
-
-        public void Stop()
-        {
-            _ = Task.WhenAll(ServiceConnections.Select(c => c.Value.StopAsync()));
-            foreach (var connectionContext in ConnectionContexts)
-            {
-                connectionContext.Value.Application.Input.CancelPendingRead();
-            }
-        }
-
-        /// <summary>
-        /// Write a message to server connection.
-        /// </summary>
-        public async Task WriteMessageAsync(TestConnection context, ServiceMessage message)
-        {
-            SharedServiceProtocol.WriteMessage(message, context.Application.Output);
-            await context.Application.Output.FlushAsync();
-        }
-
-        /// <summary>
-        /// Write a message to the first connected server connection
-        /// </summary>
-        public async Task WriteMessageAsync(ServiceMessage message)
-        {
-            foreach (var connection in ServiceConnections)
-            {
-                if (connection.Value.Status == ServiceConnectionStatus.Connecting)
+                finally
                 {
-                    await connection.Value.ConnectionInitializedTask;
-                }
-
-                if (connection.Value.Status == ServiceConnectionStatus.Connected)
-                {
-                    var context = ConnectionContexts[connection.Key];
-                    SharedServiceProtocol.WriteMessage(message, context.Application.Output);
-                    await context.Application.Output.FlushAsync();
-                    return;
+                    pipeReader.AdvanceTo(consumed, examined);
                 }
             }
         }
-
-        public Task<ConnectionContext> WaitForConnectionAsync(string connectionId)
+        catch
         {
-            return _waitForConnectionOpen.GetOrAdd(connectionId, key => new TaskCompletionSource<ConnectionContext>()).Task;
+            // Ignored.
         }
+    }
 
-        public Task WaitForConnectionCloseAsync(string connectionId)
+    public void Stop()
+    {
+        _ = Task.WhenAll(ServiceConnections.Select(c => c.Value.StopAsync()));
+        foreach (var connectionContext in ConnectionContexts)
         {
-            return _waitForConnectionClose.GetOrAdd(connectionId, key => new TaskCompletionSource<object>()).Task;
+            connectionContext.Value.Application.Input.CancelPendingRead();
         }
+    }
 
-        public Task<ServiceMessage> WaitForApplicationMessageAsync(Type type)
+    /// <summary>
+    /// Write a message to the first connected server connection
+    /// </summary>
+    public async Task WriteMessageAsync(ServiceMessage message)
+    {
+        foreach (var connection in ServiceConnections)
         {
-            return _waitForApplicationMessage.GetOrAdd(type, key => new TaskCompletionSource<ServiceMessage>()).Task;
-        }
-
-        public Channel<ServiceMessage> ApplicationMessages { get; } = Channel.CreateUnbounded<ServiceMessage>();
-
-        public Task<ConnectionContext> WaitForServerConnectionAsync(int count)
-        {
-            return _waitForServerConnection.GetOrAdd(count, key => new TaskCompletionSource<ConnectionContext>()).Task;
-        }
-
-        private Task OnConnectionAsync(ConnectionContext connection)
-        {
-            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            connection.ConnectionClosed.Register(() => tcs.TrySetResult(null));
-
-            return tcs.Task;
-        }
-
-        public bool TryAddClientConnection(ClientConnectionContext connection)
-        {
-            if (ClientConnectionManager.TryAddClientConnection(connection))
+            if (connection.Value.Status == ServiceConnectionStatus.Connecting)
             {
-                if (_waitForConnectionOpen.TryGetValue(connection.ConnectionId, out var tcs))
-                {
-                    tcs.TrySetResult(connection);
-                }
-                return true;
+                await connection.Value.ConnectionInitializedTask;
             }
-            return false;
-        }
 
-        public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
-        {
-            if (ClientConnectionManager.TryRemoveClientConnection(connectionId, out connection))
+            if (connection.Value.Status == ServiceConnectionStatus.Connected)
             {
-                if (_waitForConnectionClose.TryGetValue(connectionId, out var tcs))
-                {
-                    tcs.TrySetResult(null);
-                }
-                return true;
+                var context = ConnectionContexts[connection.Key];
+                SharedServiceProtocol.WriteMessage(message, context.Application.Output);
+                await context.Application.Output.FlushAsync();
+                return;
             }
-            return false;
         }
+    }
 
-        public ClientConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)
-        {
-            return new ClientConnectionContext(message, configureContext, _clientPipeOptions, _clientPipeOptions);
-        }
+    public Task<ConnectionContext> WaitForConnectionAsync(string connectionId)
+    {
+        return _waitForConnectionOpen.GetOrAdd(connectionId, key => new TaskCompletionSource<ConnectionContext>()).Task;
+    }
 
-        private void AddApplicationMessage(Type type, ServiceMessage message)
+    public Task WaitForConnectionCloseAsync(string connectionId)
+    {
+        return _waitForConnectionClose.GetOrAdd(connectionId, key => new TaskCompletionSource<object>()).Task;
+    }
+
+    public Task<ServiceMessage> WaitForApplicationMessageAsync(Type type)
+    {
+        return _waitForApplicationMessage.GetOrAdd(type, key => new TaskCompletionSource<ServiceMessage>()).Task;
+    }
+
+    public Task<ConnectionContext> WaitForServerConnectionAsync(int count)
+    {
+        return _waitForServerConnection.GetOrAdd(count, key => new TaskCompletionSource<ConnectionContext>()).Task;
+    }
+
+    public bool TryAddClientConnection(IClientConnection connection) => TryAddClientConnection(connection as ClientConnectionContext);
+
+    public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
+    {
+        if (ClientConnectionManager.TryRemoveClientConnection(connectionId, out connection))
         {
-            if (_waitForApplicationMessage.TryRemove(type, out var tcs))
+            if (_waitForConnectionClose.TryGetValue(connectionId, out var tcs))
             {
-                tcs.TrySetResult(message);
+                tcs.TrySetResult(null);
             }
-            ApplicationMessages.Writer.TryWrite(message);
+            return true;
         }
+        return false;
+    }
 
-        public Task WhenAllCompleted()
+    public bool TryGetClientConnection(string connectionId, out IClientConnection connection)
+    {
+        return ClientConnectionManager.TryGetClientConnection(connectionId, out connection);
+    }
+
+    public IClientConnection CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)
+    {
+        return new ClientConnectionContext(message, configureContext, _clientPipeOptions, _clientPipeOptions);
+    }
+
+    public Task WhenAllCompleted()
+    {
+        return Task.CompletedTask;
+    }
+
+    private bool TryAddClientConnection(ClientConnectionContext connection)
+    {
+        if (ClientConnectionManager.TryAddClientConnection(connection))
         {
-            return Task.CompletedTask;
+            if (_waitForConnectionOpen.TryGetValue(connection.ConnectionId, out var tcs))
+            {
+                tcs.TrySetResult(connection);
+            }
+            return true;
         }
+        return false;
+    }
+
+    private async Task ConnectionFactoryCallbackAsync(TestConnection connection)
+    {
+        while (NewConnectionsCreationPaused)
+        {
+            await Task.Delay(10);
+        }
+        ConnectionContexts.TryAdd(connection.ConnectionId, connection);
+        // Start a process for each server connection
+        _ = StartProcessApplicationMessagesAsync(connection);
+    }
+
+    private async Task StartProcessApplicationMessagesAsync(TestConnection connection)
+    {
+        await ServiceConnections[connection.ConnectionId].ConnectionInitializedTask;
+
+        if (ServiceConnections[connection.ConnectionId].Status == ServiceConnectionStatus.Connected)
+        {
+            Interlocked.Increment(ref _connectedServerConnectionCount);
+            if (_waitForServerConnection.TryGetValue(_connectedServerConnectionCount, out var tcs))
+            {
+                tcs.TrySetResult(connection);
+            }
+            await ProcessApplicationMessagesAsync(connection.Application.Input);
+        }
+    }
+
+    private Task OnConnectionAsync(ConnectionContext connection)
+    {
+        var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        connection.ConnectionClosed.Register(() => tcs.TrySetResult(null));
+
+        return tcs.Task;
+    }
+
+    private void AddApplicationMessage(Type type, ServiceMessage message)
+    {
+        if (_waitForApplicationMessage.TryRemove(type, out var tcs))
+        {
+            tcs.TrySetResult(message);
+        }
+        ApplicationMessages.Writer.TryWrite(message);
     }
 }

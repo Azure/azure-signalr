@@ -1,10 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+public interface IServerNameProvider
 {
-    public interface IServerNameProvider
-    {
-        string GetName();
-    }
+    string GetName();
 }

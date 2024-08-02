@@ -7,18 +7,17 @@ using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal interface IServiceEndpointProvider
 {
-    internal interface IServiceEndpointProvider
-    {
-        Task<string> GenerateClientAccessTokenAsync(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null);
+    Task<string> GenerateClientAccessTokenAsync(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null);
 
-        string GetClientEndpoint(string hubName, string originalPath, string queryString);
+    string GetClientEndpoint(string hubName, string originalPath, string queryString);
 
-        IAccessTokenProvider GetServerAccessTokenProvider(string hubName, string serverId);
+    IAccessTokenProvider GetServerAccessTokenProvider(string hubName, string serverId);
 
-        string GetServerEndpoint(string hubName);
+    string GetServerEndpoint(string hubName);
 
-        IWebProxy Proxy { get; }
-    }
+    IWebProxy Proxy { get; }
 }

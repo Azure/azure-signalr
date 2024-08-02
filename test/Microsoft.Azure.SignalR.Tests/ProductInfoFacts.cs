@@ -3,16 +3,15 @@
 
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.Tests
-{
-    public class ProductInfoFacts
-    {
-        [Fact]
-        public void GetProductInfo()
-        {
-            var productInfo = ProductInfo.GetProductInfo();
+namespace Microsoft.Azure.SignalR.Tests;
 
-            Assert.NotNull(productInfo);
-        }
+public class ProductInfoFacts
+{
+    [Fact]
+    public void GetProductInfo()
+    {
+        var productInfo = ProductInfo.GetProductInfo();
+
+        Assert.NotNull(productInfo);
     }
 }

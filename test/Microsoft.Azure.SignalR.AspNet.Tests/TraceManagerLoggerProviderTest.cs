@@ -9,39 +9,38 @@ using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.AspNet.Tests
+namespace Microsoft.Azure.SignalR.AspNet.Tests;
+
+public class TraceManagerLoggerProviderTest
 {
-    public class TraceManagerLoggerProviderTest
+    /// <summary>
+    /// TraceManagerLoggerProvider throws when its CreateLogger returns TraceSourceLogger when using HttpConnections.Client 1.0.0
+    /// </summary>
+    /// <returns></returns>
+    [Fact]
+    public async Task TestTraceManagerLoggerProviderCanDisposeHttpConnection()
     {
-        /// <summary>
-        /// TraceManagerLoggerProvider throws when its CreateLogger returns TraceSourceLogger when using HttpConnections.Client 1.0.0
-        /// </summary>
-        /// <returns></returns>
-        [Fact]
-        public async Task TestTraceManagerLoggerProviderCanDisposeHttpConnection()
-        {
-            var lf = new LoggerFactory();
-            lf.AddProvider(new TraceManagerLoggerProvider(new TraceManager()));
-            await StartAsync(lf);
-        }
+        var lf = new LoggerFactory();
+        lf.AddProvider(new TraceManagerLoggerProvider(new TraceManager()));
+        await StartAsync(lf);
+    }
 
-        private static async Task StartAsync(ILoggerFactory lf)
-        {
-            var connection = await ConnectAsync(lf);
-            // var connection = Connect(lf);
-            await ((HttpConnection)connection).DisposeAsync();
-        }
+    private static async Task StartAsync(ILoggerFactory lf)
+    {
+        var connection = await ConnectAsync(lf);
+        // var connection = Connect(lf);
+        await ((HttpConnection)connection).DisposeAsync();
+    }
 
-        public static async Task<ConnectionContext> ConnectAsync(ILoggerFactory lf)
+    public static async Task<ConnectionContext> ConnectAsync(ILoggerFactory lf)
+    {
+        // Await to enforce it run in another thread
+        await Task.Yield();
+        var httpConnectionOptions = new HttpConnectionOptions
         {
-            // Await to enforce it run in another thread
-            await Task.Yield();
-            var httpConnectionOptions = new HttpConnectionOptions
-            {
-                Url = new Uri("http://locolhost"),
-            };
+            Url = new Uri("http://locolhost"),
+        };
 
-            return new HttpConnection(httpConnectionOptions, lf);
-        }
+        return new HttpConnection(httpConnectionOptions, lf);
     }
 }
