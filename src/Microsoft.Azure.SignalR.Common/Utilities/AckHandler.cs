@@ -11,6 +11,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal sealed class AckHandler : IDisposable
     {
+        public static readonly AckHandler Singleton = new();
         private readonly ConcurrentDictionary<int, IAckInfo> _acks = new();
         private readonly Timer _timer;
         private readonly TimeSpan _defaultAckTimeout;
