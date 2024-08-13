@@ -114,7 +114,7 @@ namespace Microsoft.Azure.SignalR
             ServiceConnectionFactory = serviceConnectionFactory;
             Endpoint = endpoint;
             // use globally unique AckHanlder if not specified
-            // It is possible that the mulitple MapHub calls the same hub, so that ack messages could be received by another instance of ServiceConnectionContainer
+            // It is possible that the multiple MapHub calls the same hub, so that ack messages could be received by another instance of ServiceConnectionContainer
             // Use the ack handler singleton to allow ack message to be acked by another container instance
             _ackHandler = ackHandler ?? AckHandler.Singleton;
 
