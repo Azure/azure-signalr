@@ -15,9 +15,10 @@
     <ProjectReference Include="..\Microsoft.Azure.SignalR.Protocols\Microsoft.Azure.SignalR.Protocols.csproj" />
     <ProjectReference Include="..\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" PrivateAssets="all" />
   </ItemGroup>
-
+	
   <ItemGroup>
     <Compile Include="..\Common\MemoryBufferWriter.cs" Link="Internals\MemoryBufferWriter.cs" />
+    <Compile Include="..\Common\BinaryMessageParser.cs" Link="Internal\BinaryMessageParser.cs" />
     <Compile Include="..\Microsoft.Azure.SignalR.Emulator\Common\ExactSizeMemoryPool.cs" Link="Internals\ExactSizeMemoryPool.cs" />
   </ItemGroup>
 
