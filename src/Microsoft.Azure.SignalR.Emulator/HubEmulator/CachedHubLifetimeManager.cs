@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
@@ -9,11 +12,11 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 {
     internal class CachedHubLifetimeManager<THub> : DefaultHubLifetimeManager<THub>, IHubLifetimeManager where THub : Hub
     {
-        private readonly DynamicHubContextStore _store;
+        private readonly IDynamicHubContextStore _store;
         private readonly string _hub;
         public HubConnectionStore Connections { get; } = new HubConnectionStore();
 
-        public CachedHubLifetimeManager(DynamicHubContextStore store, ILogger<CachedHubLifetimeManager<THub>> logger) : base(logger)
+        public CachedHubLifetimeManager(IDynamicHubContextStore store, ILogger<CachedHubLifetimeManager<THub>> logger) : base(logger)
         {
             _store = store;
             _hub = typeof(THub).Name;

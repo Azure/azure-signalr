@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             new Startup(configuration).ConfigureServices(serviceCollection);
             //serviceCollection.AddSignalREmulator().AddLogging();
             using var provider = serviceCollection.BuildServiceProvider();
-            var store = provider.GetService<DynamicHubContextStore>();
+            var store = provider.GetService<IDynamicHubContextStore>();
             var hubContext = store.GetOrAdd("chat");
             Assert.NotNull(hubContext.LifetimeManager);
             Assert.NotNull(hubContext.HubType);
