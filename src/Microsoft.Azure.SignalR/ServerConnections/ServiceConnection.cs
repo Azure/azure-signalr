@@ -164,7 +164,17 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
         using (new ClientConnectionScope(endpoint: HubEndpoint, outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
         {
-            _ = ProcessClientConnectionAsync(connection, _hubProtocolResolver.GetProtocol(message.Protocol, null));
+            SignalRProtocol.IHubProtocol protocol;
+            if (message.Protocol == FakeBlazorPackHubProtocol.Instance.Name)
+            {
+                // hack: blazorpack cannot parse it correctly, we use a fake one to workaround it.
+                protocol = FakeBlazorPackHubProtocol.Instance;
+            }
+            else
+            {
+                protocol = _hubProtocolResolver.GetProtocol(message.Protocol, null);
+            }
+            _ = ProcessClientConnectionAsync(connection, protocol);
         }
 
         return Task.CompletedTask;
@@ -347,4 +357,5 @@ internal partial class ServiceConnection : ServiceConnectionBase
         }
         return Task.CompletedTask;
     }
+
 }
