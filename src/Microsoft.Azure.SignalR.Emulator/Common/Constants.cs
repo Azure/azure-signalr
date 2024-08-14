@@ -37,5 +37,50 @@ namespace Microsoft.Azure.SignalR.Common
             public const string AsrsClientCertThumbprint = AsrsHeaderPrefix + "Client-Cert-Thumbprint";
             public const string AsrsConnectionGroups = AsrsHeaderPrefix + "Connection-Group";
         }
+
+        public enum ErrorCodeLevel
+        {
+            Warning,
+            Info,
+            Error
+        }
+
+        public enum ErrorCodeScope
+        {
+            Connection,
+            User,
+            Group
+        }
+
+        public enum ErrorCodeKind
+        {
+            NotExisted,
+            NotInGroup
+        }
+
+        public static class ErrorCodes
+        {
+            public static string BuildErrorCode(ErrorCodeLevel level, ErrorCodeScope scope, ErrorCodeKind kind)
+            {
+                return $"{level}.{scope}.{kind}";
+            }
+
+            public static class Warning
+            {
+                public static string ConnectionNotExisted => BuildErrorCode(ErrorCodeLevel.Warning, ErrorCodeScope.Connection, ErrorCodeKind.NotExisted);
+                public static string UserNotExisted => BuildErrorCode(ErrorCodeLevel.Warning, ErrorCodeScope.User, ErrorCodeKind.NotExisted);
+                public static string GroupNotExisted => BuildErrorCode(ErrorCodeLevel.Warning, ErrorCodeScope.Group, ErrorCodeKind.NotExisted);
+            }
+
+            public static class Info
+            {
+                public static string UserNotInGroup => BuildErrorCode(ErrorCodeLevel.Info, ErrorCodeScope.User, ErrorCodeKind.NotInGroup);
+            }
+
+            public static class Error
+            {
+                public static string ConnectionNotExisted => BuildErrorCode(ErrorCodeLevel.Error, ErrorCodeScope.Connection, ErrorCodeKind.NotExisted);
+            }
+        }
     }
 }

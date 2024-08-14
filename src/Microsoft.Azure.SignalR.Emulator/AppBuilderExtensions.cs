@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -77,7 +76,7 @@ namespace Microsoft.Azure.SignalR.Emulator
             services.AddSingleton<IUserIdProvider, AzureSignalRCustomUserIdProvider>();
             services.AddSingleton(typeof(HttpServerlessMessageHandler<>));
             services.AddSingleton<IHttpUpstreamTrigger, HttpUpstreamTrigger>();
-            services.AddSingleton<DynamicHubContextStore>();
+            services.AddSingleton<IDynamicHubContextStore, DynamicHubContextStore>();
             services.AddSignalR().AddMessagePackProtocol();
             return services;
         }

@@ -24,10 +24,14 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             ConnectionHandler = connectionHandler;
         }
 
+        protected DynamicHubContext()
+        {
+        }
+
         public Type HubType { get; }
         public IHubClients ClientManager { get; }
         public IHubLifetimeManager LifetimeManager { get; }
         public ConnectionHandler ConnectionHandler { get; }
-        public GroupManager UserGroupManager { get; } = new GroupManager();
+        public virtual GroupManager UserGroupManager { get; } = new GroupManager();
     }
 }

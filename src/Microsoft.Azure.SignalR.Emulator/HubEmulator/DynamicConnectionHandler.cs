@@ -11,9 +11,9 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 {
     internal class DynamicConnectionHandler : ConnectionHandler
     {
-        private readonly DynamicHubContextStore _store;
+        private readonly IDynamicHubContextStore _store;
 
-        public DynamicConnectionHandler(DynamicHubContextStore store)
+        public DynamicConnectionHandler(IDynamicHubContextStore store)
         {
             _store = store;
         }

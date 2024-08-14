@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 {
-    internal class DynamicHubContextStore
+    internal class DynamicHubContextStore : IDynamicHubContextStore
     {
         private readonly ModuleBuilder _hubModule =
             AssemblyBuilder
