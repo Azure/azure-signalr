@@ -458,7 +458,7 @@ namespace Microsoft.Azure.SignalR
                 var containers = ClientConnectionScope.OutboundServiceConnections;
                 if (!(containers.TryGetValue(Endpoint.UniqueIndex, out var connectionWeakReference)
                     && connectionWeakReference.TryGetTarget(out connection)
-                    && connection != null))
+                    && IsActiveConnection(connection)))
                 {
                     connection = GetRandomActiveConnection();
                     ClientConnectionScope.OutboundServiceConnections[Endpoint.UniqueIndex] = new WeakReference<IServiceConnection>(connection);
@@ -476,13 +476,13 @@ namespace Microsoft.Azure.SignalR
                         return new WeakReference<IServiceConnection>(connection);
                     }, (_, reference) =>
                     {
-                        if (reference.TryGetTarget(out connection) && connection != null)
+                        if (reference.TryGetTarget(out connection) && IsActiveConnection(connection))
                         {
                             return reference;
                         }
                         lock (reference)
                         {
-                            if (reference.TryGetTarget(out connection) && connection != null)
+                            if (reference.TryGetTarget(out connection) && IsActiveConnection(connection))
                             {
                                 return reference;
                             }
@@ -508,6 +508,11 @@ namespace Microsoft.Azure.SignalR
             return connection;
         }
 
+        private bool IsActiveConnection(IServiceConnection connection)
+        {
+            return connection != null && connection.Status == ServiceConnectionStatus.Connected;
+        }
+
         private IServiceConnection GetRandomActiveConnection()
         {
             var currentConnections = ServiceConnections;
@@ -519,11 +524,11 @@ namespace Microsoft.Azure.SignalR
             var retry = 0;
             var index = (initial & int.MaxValue) % count;
             var direction = initial > 0 ? 1 : count - 1;
-            var connection = currentConnections[index];
 
             while (retry < maxRetry)
             {
-                if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
+                var connection = currentConnections[index];
+                if (IsActiveConnection(connection))
                 {
                     return connection;
                 }

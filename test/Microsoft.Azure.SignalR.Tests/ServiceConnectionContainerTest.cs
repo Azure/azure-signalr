@@ -22,7 +22,7 @@ public class ServiceConnectionContainerTest
         var container = new StrongServiceConnectionContainer(factory, 3, 3, hubServiceEndpoint, NullLogger.Instance);
 
         Assert.True(factory.CreatedConnections.TryGetValue(hubServiceEndpoint, out var conns));
-        var connections = conns.Select(x => (TestServiceConnection)x);
+        var connections = conns.Select(x => (TestServiceConnection)x).ToArray();
 
         foreach (var connection in connections)
         {
@@ -32,7 +32,7 @@ public class ServiceConnectionContainerTest
         // write 100 messages.
         for (var i = 0; i < 100; i++)
         {
-            var message = new ConnectionDataMessage("bar", new byte[12]);
+            var message = new ConnectionDataMessage(i.ToString(), new byte[12]);
             await container.WriteAsync(message);
         }
 
@@ -43,12 +43,12 @@ public class ServiceConnectionContainerTest
             messageCount.TryAdd(connection.ConnectionId, connection.ReceivedMessages.Count);
         }
 
-        connections.First().SetStatus(ServiceConnectionStatus.Disconnected);
+        connections[0].SetStatus(ServiceConnectionStatus.Disconnected);
 
         // write 100 more messages.
         for (var i = 0; i < 100; i++)
         {
-            var message = new ConnectionDataMessage("bar", new byte[12]);
+            var message = new ConnectionDataMessage(i.ToString(), new byte[12]);
             await container.WriteAsync(message);
         }
 
@@ -64,6 +64,49 @@ public class ServiceConnectionContainerTest
                 Assert.NotEqual(messageCount[connection.ConnectionId], connection.ReceivedMessages.Count);
             }
             index++;
+        }
+    }
+
+    [Fact]
+    public async Task TestServiceConnectionStickyWrites()
+    {
+        var factory = new TestServiceConnectionFactory();
+        var hubServiceEndpoint = new HubServiceEndpoint("foo", null, new TestServiceEndpoint());
+
+        var container = new StrongServiceConnectionContainer(factory, 3, 3, hubServiceEndpoint, NullLogger.Instance);
+
+        Assert.True(factory.CreatedConnections.TryGetValue(hubServiceEndpoint, out var conns));
+        var connections = conns.Select(x => (TestServiceConnection)x);
+
+        foreach (var connection in connections)
+        {
+            connection.SetStatus(ServiceConnectionStatus.Connected);
+        }
+
+        // write 100 messages.
+        for (var i = 0; i < 100; i++)
+        {
+            var message = new ConnectionDataMessage(i.ToString(), new byte[12]);
+            await container.WriteAsync(message);
+        }
+
+        var messageCount = new Dictionary<string, int>();
+        foreach (var connection in connections)
+        {
+            Assert.NotEmpty(connection.ReceivedMessages);
+            messageCount.TryAdd(connection.ConnectionId, connection.ReceivedMessages.Count);
+        }
+
+        // write 100 messages with the same connectionIds should double the message count for each service connection
+        for (var i = 0; i < 100; i++)
+        {
+            var message = new ConnectionDataMessage(i.ToString(), new byte[12]);
+            await container.WriteAsync(message);
+        }
+
+        foreach (var connection in connections)
+        {
+            Assert.Equal(messageCount[connection.ConnectionId] * 2, connection.ReceivedMessages.Count);
         }
     }
 }

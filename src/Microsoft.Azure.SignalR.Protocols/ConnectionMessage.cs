@@ -149,7 +149,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             Payload = payload;
             TracingId = tracingId;
-            PartitionKey = GeneratePartitionKey("c." + connectionId);
+            PartitionKey = GeneratePartitionKey(connectionId);
         }
 
         /// <summary>

@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             ConnectionId = connectionId;
             GroupName = groupName;
             TracingId = tracingId;
-            PartitionKey = GeneratePartitionKey("g." + groupName);
+            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             ConnectionId = connectionId;
             GroupName = groupName;
             TracingId = tracingId;
-            PartitionKey = GeneratePartitionKey("g." + groupName);
+            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             UserId = userId;
             GroupName = groupName;
             TracingId = tracingId;
-            PartitionKey = GeneratePartitionKey("g." + groupName);
+            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             TracingId = tracingId;
             AckId = ackId;
             Ttl = ttl;
-            PartitionKey = GeneratePartitionKey("g." + groupName);
+            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             GroupName = groupName;
             TracingId = tracingId;
             AckId = ackId;
-            PartitionKey = GeneratePartitionKey("g." + groupName);
+            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             GroupName = groupName;
             AckId = ackId;
             TracingId = tracingId;
-            PartitionKey =  GeneratePartitionKey("g." + groupName);
+            PartitionKey =  GeneratePartitionKey(groupName);
         }
     }
 
@@ -355,7 +355,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             GroupName = groupName;
             AckId = ackId;
             TracingId = tracingId;
-            PartitionKey = GeneratePartitionKey("g." + groupName);
+            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 }

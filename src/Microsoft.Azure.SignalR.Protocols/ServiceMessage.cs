@@ -70,7 +70,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public virtual ServiceMessage Clone() => MemberwiseClone() as ServiceMessage;
 
-        public byte GeneratePartitionKey(string input)
+        public static byte GeneratePartitionKey(string input)
         {
             return (byte)(input.GetHashCode() & 0xFF);
         }
