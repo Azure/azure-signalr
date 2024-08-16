@@ -483,13 +483,19 @@ namespace Microsoft.Azure.SignalR
                         return new WeakReference<IServiceConnection>(connection);
                     }, (_, reference) =>
                     {
-                        reference.TryGetTarget(out connection);
-
-                        // update the reference to a new connection
-                        if (connection == null)
+                        if (reference.TryGetTarget(out connection) && connection != null)
                         {
+                            return reference;
+                        }
+                        lock (reference)
+                        {
+                            if (reference.TryGetTarget(out connection) && connection != null)
+                            {
+                                return reference;
+                            }
+
                             connection = GetRandomActiveConnection();
-                            return new WeakReference<IServiceConnection>(connection);
+                            reference.SetTarget(connection);
                         }
 
                         return reference;
@@ -527,7 +533,7 @@ namespace Microsoft.Azure.SignalR
                 index = (index + direction) % count;
             }
 
-            throw new ServiceConnectionNotActiveException();
+            return null;
         }
 
         private async Task RestartFixedServiceConnectionCoreAsync(int index)
