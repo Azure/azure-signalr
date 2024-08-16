@@ -423,10 +423,6 @@ namespace Microsoft.Azure.SignalR
         private async Task WriteMessageAsync(ServiceMessage serviceMessage)
         {
             var connection = SelectConnection(serviceMessage);
-            if (connection == null)
-            {
-                throw new ServiceConnectionNotActiveException();
-            }
 
             var retry = 0;
             var maxRetry = MessageWriteMaxRetry;
@@ -455,20 +451,18 @@ namespace Microsoft.Azure.SignalR
 
         private IServiceConnection SelectConnection(ServiceMessage message)
         {
+            IServiceConnection connection = null;
             if (ClientConnectionScope.IsScopeEstablished)
             {
                 // see if the execution context already has the connection stored for this container
                 var containers = ClientConnectionScope.OutboundServiceConnections;
-                if (containers.TryGetValue(Endpoint.UniqueIndex, out var connectionWeakReference)
-                    && connectionWeakReference.TryGetTarget(out var connection)
-                    && connection != null)
+                if (!(containers.TryGetValue(Endpoint.UniqueIndex, out var connectionWeakReference)
+                    && connectionWeakReference.TryGetTarget(out connection)
+                    && connection != null))
                 {
-                    return connection;
+                    connection = GetRandomActiveConnection();
+                    ClientConnectionScope.OutboundServiceConnections[Endpoint.UniqueIndex] = new WeakReference<IServiceConnection>(connection);
                 }
-
-                connection = GetRandomActiveConnection();
-                ClientConnectionScope.OutboundServiceConnections[Endpoint.UniqueIndex] = new WeakReference<IServiceConnection>(connection);
-                return connection;
             }
             else
             {
@@ -476,7 +470,6 @@ namespace Microsoft.Azure.SignalR
                 // if message is partitionable, use the container's partition cache, otherwise use a random connection
                 if (message is IPartitionableMessage partitionable)
                 {
-                    IServiceConnection connection = null;
                     var item = _partitionedCache.AddOrUpdate(partitionable.PartitionKey, _ =>
                     {
                         connection = GetRandomActiveConnection();
@@ -500,13 +493,19 @@ namespace Microsoft.Azure.SignalR
 
                         return reference;
                     });
-                    return connection;
                 }
                 else
                 {
-                    return GetRandomActiveConnection();
+                    connection = GetRandomActiveConnection();
                 }
             }
+
+            if (connection == null)
+            {
+                throw new ServiceConnectionNotActiveException();
+            }
+
+            return connection;
         }
 
         private IServiceConnection GetRandomActiveConnection()
