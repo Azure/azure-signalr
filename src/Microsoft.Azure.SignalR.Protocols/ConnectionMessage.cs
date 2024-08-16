@@ -126,7 +126,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A connection data message.
     /// </summary>
-    public class ConnectionDataMessage : ConnectionMessage, IMessageWithTracingId, IHasDataMessageType, IPartializable
+    public class ConnectionDataMessage : ConnectionMessage, IMessageWithTracingId, IHasDataMessageType, IPartializable, IPartitionableMessage
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionDataMessage"/> class.
@@ -134,10 +134,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="payload">Binary data to be delivered.</param>
         /// <param name="tracingId">The tracing Id of the message</param>
-        public ConnectionDataMessage(string connectionId, ReadOnlyMemory<byte> payload, ulong? tracingId = null) : base(connectionId)
+        public ConnectionDataMessage(string connectionId, ReadOnlyMemory<byte> payload, ulong? tracingId = null)
+            : this(connectionId, new ReadOnlySequence<byte>(payload), tracingId)
         {
-            Payload = new ReadOnlySequence<byte>(payload);
-            TracingId = tracingId;
         }
 
         /// <summary>
@@ -150,6 +149,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             Payload = payload;
             TracingId = tracingId;
+            PartitionKey = GeneratePartitionKey("c." + connectionId);
         }
 
         /// <summary>
@@ -171,6 +171,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the payload is partial or not.
         /// </summary>
         public bool IsPartial { get; set; }
+
+        public byte PartitionKey { get; }
     }
 
     /// <summary>

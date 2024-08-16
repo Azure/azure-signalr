@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A data message which will be sent to multiple connections.
     /// </summary>
-    public class MultiConnectionDataMessage : MulticastDataMessage
+    public class MultiConnectionDataMessage : MulticastDataMessage, IPartitionableMessage
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiConnectionDataMessage"/> class.
@@ -59,19 +59,24 @@ namespace Microsoft.Azure.SignalR.Protocol
             IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             ConnectionList = connectionList;
+            PartitionKey = GeneratePartitionKey(nameof(MultiConnectionDataMessage));
         }
 
         /// <summary>
         /// Gets or sets the list of connections which will receive this message.
         /// </summary>
         public IReadOnlyList<string> ConnectionList { get; set; }
+
+        public byte PartitionKey { get; }
     }
 
     /// <summary>
     /// A data message which will be sent to a user.
     /// </summary>
-    public class UserDataMessage : MulticastDataMessage
+    public class UserDataMessage : MulticastDataMessage, IPartitionableMessage
     {
+        public byte PartitionKey { get; }
+
         /// <summary>
         /// Gets or sets the user Id.
         /// </summary>
@@ -86,13 +91,14 @@ namespace Microsoft.Azure.SignalR.Protocol
         public UserDataMessage(string userId, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             UserId = userId;
+            PartitionKey = GeneratePartitionKey("u." + userId);
         }
     }
 
     /// <summary>
     /// A data message which will be sent to multiple users.
     /// </summary>
-    public class MultiUserDataMessage : MulticastDataMessage
+    public class MultiUserDataMessage : MulticastDataMessage, IPartitionableMessage
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiUserDataMessage"/> class.
@@ -103,23 +109,28 @@ namespace Microsoft.Azure.SignalR.Protocol
         public MultiUserDataMessage(IReadOnlyList<string> userList, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             UserList = userList;
+            PartitionKey = GeneratePartitionKey(nameof(MultiUserDataMessage));
         }
 
         /// <summary>
         /// Gets or sets the list of user Ids.
         /// </summary>
         public IReadOnlyList<string> UserList { get; set; }
+
+        public byte PartitionKey { get; }
     }
 
     /// <summary>
     /// A data message which will be broadcasted.
     /// </summary>
-    public class BroadcastDataMessage : MulticastDataMessage
+    public class BroadcastDataMessage : MulticastDataMessage, IPartitionableMessage
     {
         /// <summary>
         /// Gets or sets the list of excluded connection Ids.
         /// </summary>
         public IReadOnlyList<string> ExcludedList { get; set; }
+
+        public byte PartitionKey { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BroadcastDataMessage"/> class.
@@ -139,18 +150,21 @@ namespace Microsoft.Azure.SignalR.Protocol
         public BroadcastDataMessage(IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             ExcludedList = excludedList;
+            PartitionKey = GeneratePartitionKey(nameof(BroadcastDataMessage));
         }
     }
 
     /// <summary>
     /// A data message which will be broadcasted within a group.
     /// </summary>
-    public class GroupBroadcastDataMessage : MulticastDataMessage
+    public class GroupBroadcastDataMessage : MulticastDataMessage, IPartitionableMessage
     {
         /// <summary>
         /// Gets or sets the group name.
         /// </summary>
         public string GroupName { get; set; }
+
+        public byte PartitionKey { get; }
 
         /// <summary>
         /// Gets or sets the list of excluded connection Ids.
@@ -190,18 +204,21 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             GroupName = groupName;
             ExcludedList = excludedList;
+            PartitionKey = GeneratePartitionKey("g." + groupName);
         }
     }
 
     /// <summary>
     /// A data message which will be broadcasted within multiple groups.
     /// </summary>
-    public class MultiGroupBroadcastDataMessage : MulticastDataMessage
+    public class MultiGroupBroadcastDataMessage : MulticastDataMessage, IPartitionableMessage
     {
         /// <summary>
         /// Gets or sets the list of group names.
         /// </summary>
         public IReadOnlyList<string> GroupList { get; set; }
+
+        public byte PartitionKey { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiGroupBroadcastDataMessage"/> class.
@@ -212,13 +229,14 @@ namespace Microsoft.Azure.SignalR.Protocol
         public MultiGroupBroadcastDataMessage(IReadOnlyList<string> groupList, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             GroupList = groupList;
+            PartitionKey = GeneratePartitionKey(nameof(MultiGroupBroadcastDataMessage));
         }
     }
 
     /// <summary>
     /// A data message to indicate a client invocation request.
     /// </summary>
-    public class ClientInvocationMessage : MultiPayloadDataMessage
+    public class ClientInvocationMessage : MultiPayloadDataMessage, IPartitionableMessage
     {
         /// <summary>
         /// Initialize a new instance of <see cref="ClientInvocationMessage"/> class.
@@ -234,6 +252,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             InvocationId = invocationId;
             ConnectionId = connectionId;
             CallerServerId = callerServerId;
+            PartitionKey = GeneratePartitionKey("c." + connectionId);
         }
 
         /// <summary>
@@ -250,5 +269,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the caller server Id that init the client invocation.
         /// </summary>
         public string CallerServerId { get; set; }
+
+        public byte PartitionKey { get; }
     }
 }

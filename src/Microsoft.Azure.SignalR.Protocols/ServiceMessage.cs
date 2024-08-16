@@ -54,6 +54,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         int AckId { get; set; }
     }
 
+    public interface IPartitionableMessage
+    {
+        byte PartitionKey { get; }
+    }
+
     /// <summary>
     /// Base class of messages between Azure SignalR Service and SDK.
     /// </summary>
@@ -64,6 +69,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// The default implementation is a shallow copy as it fits the current needs.
         /// </summary>
         public virtual ServiceMessage Clone() => MemberwiseClone() as ServiceMessage;
+
+        public byte GeneratePartitionKey(string input)
+        {
+            return (byte)(input.GetHashCode() & 0xFF);
+        }
     }
 
     /// <summary>
