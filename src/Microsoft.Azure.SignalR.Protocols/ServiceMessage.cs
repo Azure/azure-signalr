@@ -72,7 +72,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         public static byte GeneratePartitionKey(string input)
         {
-            return (byte)(input.GetHashCode() & 0xFF);
+            return (byte)((input?.GetHashCode() ?? 0) & 0xFF);
         }
     }
 
