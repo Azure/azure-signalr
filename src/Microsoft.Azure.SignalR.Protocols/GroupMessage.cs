@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public ulong? TracingId { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(GroupName);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinGroupMessage"/> class.
@@ -36,7 +36,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             ConnectionId = connectionId;
             GroupName = groupName;
             TracingId = tracingId;
-            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -60,7 +59,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public ulong? TracingId { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(GroupName);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LeaveGroupMessage"/> class.
@@ -73,7 +72,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             ConnectionId = connectionId;
             GroupName = groupName;
             TracingId = tracingId;
-            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -102,7 +100,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public int? Ttl { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(GroupName);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UserJoinGroupMessage"/> class.
@@ -115,7 +113,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             UserId = userId;
             GroupName = groupName;
             TracingId = tracingId;
-            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -139,7 +136,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public ulong? TracingId { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(GroupName);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UserLeaveGroupMessage"/> class.
@@ -152,7 +149,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             UserId = userId;
             GroupName = groupName;
             TracingId = tracingId;
-            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -186,7 +182,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public int AckId { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(GroupName);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UserJoinGroupMessage"/> class.
@@ -203,7 +199,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             TracingId = tracingId;
             AckId = ackId;
             Ttl = ttl;
-            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -232,7 +227,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public int AckId { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(GroupName);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UserLeaveGroupMessage"/> class.
@@ -247,7 +242,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             GroupName = groupName;
             TracingId = tracingId;
             AckId = ackId;
-            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -276,7 +270,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public ulong? TracingId { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(GroupName);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinGroupWithAckMessage"/> class.
@@ -301,7 +295,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             GroupName = groupName;
             AckId = ackId;
             TracingId = tracingId;
-            PartitionKey =  GeneratePartitionKey(groupName);
         }
     }
 
@@ -330,7 +323,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public ulong? TracingId { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(GroupName);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LeaveGroupWithAckMessage"/> class.
@@ -355,7 +348,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             GroupName = groupName;
             AckId = ackId;
             TracingId = tracingId;
-            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 }

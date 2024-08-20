@@ -149,7 +149,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             Payload = payload;
             TracingId = tracingId;
-            PartitionKey = GeneratePartitionKey(connectionId);
         }
 
         /// <summary>
@@ -172,7 +171,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public bool IsPartial { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(ConnectionId);
     }
 
     /// <summary>

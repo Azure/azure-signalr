@@ -60,7 +60,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             ConnectionList = connectionList;
-            PartitionKey = Key;
         }
 
         /// <summary>
@@ -68,7 +67,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public IReadOnlyList<string> ConnectionList { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => Key;
     }
 
     /// <summary>
@@ -76,12 +75,12 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// </summary>
     public class UserDataMessage : MulticastDataMessage, IPartitionableMessage
     {
-        public byte PartitionKey { get; }
-
         /// <summary>
         /// Gets or sets the user Id.
         /// </summary>
         public string UserId { get; set; }
+
+        public byte PartitionKey => GeneratePartitionKey(UserId);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UserDataMessage"/> class.
@@ -92,7 +91,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         public UserDataMessage(string userId, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             UserId = userId;
-            PartitionKey = GeneratePartitionKey(userId);
         }
     }
 
@@ -111,7 +109,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         public MultiUserDataMessage(IReadOnlyList<string> userList, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             UserList = userList;
-            PartitionKey = Key;
         }
 
         /// <summary>
@@ -119,7 +116,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public IReadOnlyList<string> UserList { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => Key;
     }
 
     /// <summary>
@@ -133,7 +130,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public IReadOnlyList<string> ExcludedList { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => Key;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BroadcastDataMessage"/> class.
@@ -153,7 +150,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         public BroadcastDataMessage(IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             ExcludedList = excludedList;
-            PartitionKey = Key;
         }
     }
 
@@ -167,7 +163,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public string GroupName { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(GroupName);
 
         /// <summary>
         /// Gets or sets the list of excluded connection Ids.
@@ -207,7 +203,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             GroupName = groupName;
             ExcludedList = excludedList;
-            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -223,7 +218,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public IReadOnlyList<string> GroupList { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => Key;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiGroupBroadcastDataMessage"/> class.
@@ -234,7 +229,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         public MultiGroupBroadcastDataMessage(IReadOnlyList<string> groupList, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             GroupList = groupList;
-            PartitionKey = Key;
         }
     }
 
@@ -257,7 +251,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             InvocationId = invocationId;
             ConnectionId = connectionId;
             CallerServerId = callerServerId;
-            PartitionKey = GeneratePartitionKey(connectionId);
         }
 
         /// <summary>
@@ -275,6 +268,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public string CallerServerId { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(ConnectionId);
     }
 }

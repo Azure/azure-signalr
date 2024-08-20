@@ -39,7 +39,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the group name.
         /// </summary>
         public string GroupName { get; set; }
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(GroupName);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CheckUserInGroupWithAckMessage"/> class.
@@ -52,7 +52,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             UserId = userId;
             GroupName = groupName;
-            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -66,7 +65,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public string GroupName { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(GroupName);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CheckGroupExistenceWithAckMessage"/> class.
@@ -77,7 +76,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         public CheckGroupExistenceWithAckMessage(string groupName, int ackId = 0, ulong? tracingId = null) : base(ackId, tracingId)
         {
             GroupName = groupName;
-            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
@@ -112,7 +110,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the user Id.
         /// </summary>
         public string UserId { get; set; }
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(UserId);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CheckUserExistenceWithAckMessage"/> class.
@@ -123,7 +121,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         public CheckUserExistenceWithAckMessage(string userId, int ackId = 0, ulong? tracingId = null) : base(ackId, tracingId)
         {
             UserId = userId;
-            PartitionKey = GeneratePartitionKey(userId);
         }
     }
 }

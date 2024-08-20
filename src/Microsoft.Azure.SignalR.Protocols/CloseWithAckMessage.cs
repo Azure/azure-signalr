@@ -111,7 +111,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public string GroupName { get; set; }
 
-        public byte PartitionKey { get; }
+        public byte PartitionKey => GeneratePartitionKey(GroupName);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CloseGroupConnectionsWithAckMessage"/> class.
@@ -121,7 +121,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         public CloseGroupConnectionsWithAckMessage(string groupName, int ackId) : base(ackId)
         {
             GroupName = groupName ?? throw new ArgumentNullException(nameof(groupName));
-            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 }
