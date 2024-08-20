@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly Tuple<string, long> DefaultServersTagContext = new Tuple<string, long>(string.Empty, 0);
 
-        private readonly ConcurrentDictionary<byte, WeakReference<IServiceConnection>> _partitionedCache = new();
+        private readonly IReadOnlyDictionary<byte, StrongBox<WeakReference<IServiceConnection>>> _partitionedCache;
 
         private readonly BackOffPolicy _backOffPolicy = new BackOffPolicy();
 
@@ -161,6 +162,8 @@ namespace Microsoft.Azure.SignalR
             }
 
             _serversPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServersPingAsync, Constants.Periods.DefaultServersPingInterval, Constants.Periods.DefaultServersPingInterval);
+
+            _partitionedCache = Enumerable.Range(0, 256).ToDictionary(i => (byte)i, i => new StrongBox<WeakReference<IServiceConnection>>(new WeakReference<IServiceConnection>(null)));
         }
 
         public event Action<StatusChange> ConnectionStatusChanged;
@@ -470,29 +473,18 @@ namespace Microsoft.Azure.SignalR
                 // if message is partitionable, use the container's partition cache, otherwise use a random connection
                 if (message is IPartitionableMessage partitionable)
                 {
-                    var item = _partitionedCache.AddOrUpdate(partitionable.PartitionKey, _ =>
+                    var box = _partitionedCache[partitionable.PartitionKey];
+                    if (!box.Value.TryGetTarget(out connection) || !IsActiveConnection(connection))
                     {
-                        connection = GetRandomActiveConnection();
-                        return new WeakReference<IServiceConnection>(connection);
-                    }, (_, reference) =>
-                    {
-                        if (reference.TryGetTarget(out connection) && IsActiveConnection(connection))
+                        lock (box)
                         {
-                            return reference;
-                        }
-                        lock (reference)
-                        {
-                            if (reference.TryGetTarget(out connection) && IsActiveConnection(connection))
+                            if (!box.Value.TryGetTarget(out connection) || !IsActiveConnection(connection))
                             {
-                                return reference;
+                                connection = GetRandomActiveConnection();
+                                box.Value.SetTarget(connection);
                             }
-
-                            connection = GetRandomActiveConnection();
-                            reference.SetTarget(connection);
                         }
-
-                        return reference;
-                    });
+                    }
                 }
                 else
                 {
