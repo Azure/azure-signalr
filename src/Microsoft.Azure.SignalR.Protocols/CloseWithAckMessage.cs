@@ -104,12 +104,14 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// Close connections in a group.
     /// </summary>
-    public class CloseGroupConnectionsWithAckMessage : CloseMultiConnectionsWithAckMessage
+    public class CloseGroupConnectionsWithAckMessage : CloseMultiConnectionsWithAckMessage, IPartitionableMessage
     {
         /// <summary>
         /// Gets or sets the group name.
         /// </summary>
         public string GroupName { get; set; }
+
+        public byte PartitionKey { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CloseGroupConnectionsWithAckMessage"/> class.
@@ -119,6 +121,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public CloseGroupConnectionsWithAckMessage(string groupName, int ackId) : base(ackId)
         {
             GroupName = groupName ?? throw new ArgumentNullException(nameof(groupName));
+            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 }

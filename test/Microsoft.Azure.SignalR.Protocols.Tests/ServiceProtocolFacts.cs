@@ -9,7 +9,8 @@ using System.Security.Claims;
 using System.Text;
 
 using Microsoft.Extensions.Primitives;
-
+using Moq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Protocol.Tests
@@ -808,6 +809,112 @@ Please verify the MsgPack output and update the baseline");
             message = ParseServiceMessage(bytes);
             openConnectionMessage = Assert.IsType<OpenConnectionMessage>(message);
             Assert.Equal(expectedMessage, openConnectionMessage, ServiceMessageEqualityComparer.Instance);
+        }
+
+        [Fact]
+        public void PartitionKeyTest()
+        {
+            // group messages for the same group should have the same partition key
+            var group = "group1";
+            var connectionId = Guid.NewGuid().ToString();
+            var userId = "user1";
+            var value = new ReadOnlyMemory<byte>(new byte[] { 1, 2, 3 });
+            var payloads = new Dictionary<string, ReadOnlyMemory<byte>> { ["1"] = value };
+            byte? pk = null;
+            var groupMessages = new IPartitionableMessage[] {
+                new GroupBroadcastDataMessage(group, payloads),
+                new JoinGroupMessage(connectionId, group),
+                new JoinGroupWithAckMessage(connectionId, group),
+                new UserJoinGroupMessage(userId, group),
+                new UserJoinGroupWithAckMessage(userId, group, 0),
+                new LeaveGroupMessage(connectionId, group),
+                new LeaveGroupWithAckMessage(connectionId, group),
+                new UserLeaveGroupMessage(userId, group),
+                new UserLeaveGroupWithAckMessage(userId, group, 0),
+                new CheckGroupExistenceWithAckMessage(group),
+                new CheckUserInGroupWithAckMessage(userId, group),
+                new CloseGroupConnectionsWithAckMessage(group, 0)
+            };
+
+            foreach (var i in groupMessages)
+            {
+                pk ??= i.PartitionKey;
+                Assert.Equal(pk, i.PartitionKey);
+            }
+
+            var userMessages = new IPartitionableMessage[]
+            {
+                new UserDataMessage(userId, payloads),
+                new CheckUserExistenceWithAckMessage(userId),
+            };
+
+            pk = null;
+            foreach (var i in userMessages)
+            {
+                pk ??= i.PartitionKey;
+                Assert.Equal(pk, i.PartitionKey);
+            }
+
+            var broadcastMessages = new IPartitionableMessage[]
+            {
+                new BroadcastDataMessage(payloads),
+                new BroadcastDataMessage(payloads),
+                new BroadcastDataMessage(payloads),
+                new BroadcastDataMessage(payloads),
+                new BroadcastDataMessage(payloads),
+            };
+
+            pk = null;
+            foreach (var i in broadcastMessages)
+            {
+                pk ??= i.PartitionKey;
+                Assert.Equal(pk, i.PartitionKey);
+            }
+
+            var mcm = new IPartitionableMessage[]
+            {
+                new MultiConnectionDataMessage([], payloads),
+                new MultiConnectionDataMessage([], payloads),
+                new MultiConnectionDataMessage([], payloads),
+                new MultiConnectionDataMessage([], payloads),
+                new MultiConnectionDataMessage([], payloads),
+            };
+            pk = null;
+            foreach (var i in mcm)
+            {
+                pk ??= i.PartitionKey;
+                Assert.Equal(pk, i.PartitionKey);
+            }
+
+            var mgm = new IPartitionableMessage[]
+            {
+                new MultiGroupBroadcastDataMessage([], payloads),
+                new MultiGroupBroadcastDataMessage([], payloads),
+                new MultiGroupBroadcastDataMessage([], payloads),
+                new MultiGroupBroadcastDataMessage([], payloads),
+                new MultiGroupBroadcastDataMessage([], payloads),
+            };
+            pk = null;
+            foreach (var i in mgm)
+            {
+                pk ??= i.PartitionKey;
+                Assert.Equal(pk, i.PartitionKey);
+            }
+
+            var mum = new IPartitionableMessage[]
+            {
+                new MultiUserDataMessage([], payloads),
+                new MultiUserDataMessage([], payloads),
+                new MultiUserDataMessage([], payloads),
+                new MultiUserDataMessage([], payloads),
+                new MultiUserDataMessage([], payloads),
+            };
+            pk = null;
+            foreach (var i in mum)
+            {
+                pk ??= i.PartitionKey;
+                Assert.Equal(pk, i.PartitionKey);
+            }
         }
 
         private static byte ArrayBytes(int size)

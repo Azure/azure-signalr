@@ -175,12 +175,11 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
                         _ = UpdateAzureIdentityAsync(key, syncTimer);
                     }
                     await ProcessIncomingAsync(connection);
-
-                    // mark the status as Disconnected so that no one will write to this connection anymore
-                    Status = ServiceConnectionStatus.Disconnected;
                 }
                 finally
                 {
+                    // mark the status as Disconnected so that no one will write to this connection anymore
+                    Status = ServiceConnectionStatus.Disconnected;
                     syncTimer?.Stop();
 
                     // when ProcessIncoming completes, clean up the connection

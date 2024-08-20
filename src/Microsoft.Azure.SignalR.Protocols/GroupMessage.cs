@@ -152,7 +152,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             UserId = userId;
             GroupName = groupName;
             TracingId = tracingId;
-            PartitionKey = GeneratePartitionKey("g." + groupName);
+            PartitionKey = GeneratePartitionKey(groupName);
         }
     }
 
