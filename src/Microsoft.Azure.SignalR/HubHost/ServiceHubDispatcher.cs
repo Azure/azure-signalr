@@ -92,15 +92,18 @@ namespace Microsoft.Azure.SignalR
 #if NET8_0_OR_GREATER
         private static HttpConnectionDispatcherOptions GetDispatcherOptions(EndpointDataSource source, Type hubType)
         {
-            foreach (var endpoint in source.Endpoints)
+            if (source != null)
             {
-                var metaData = endpoint.Metadata;
-                if (metaData.GetMetadata<HubMetadata>()?.HubType == hubType)
+                foreach (var endpoint in source.Endpoints)
                 {
-                    var options = metaData.GetMetadata<HttpConnectionDispatcherOptions>();
-                    if (options != null)
+                    var metaData = endpoint.Metadata;
+                    if (metaData.GetMetadata<HubMetadata>()?.HubType == hubType)
                     {
-                        return options;
+                        var options = metaData.GetMetadata<HttpConnectionDispatcherOptions>();
+                        if (options != null)
+                        {
+                            return options;
+                        }
                     }
                 }
             }
