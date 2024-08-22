@@ -2,7 +2,7 @@
 # Build stage
 ##################################################
 
-FROM mcr.microsoft.com/dotnet/core/sdk:3.0
+FROM mcr.microsoft.com/dotnet/core/sdk:8.0
 
 COPY ./ /home/signalr-src
 
@@ -14,7 +14,7 @@ RUN dotnet build && \
 # Final stage
 ##################################################
 
-FROM mcr.microsoft.com/dotnet/core/runtime:3.0
+FROM mcr.microsoft.com/dotnet/core/runtime:8.0
 
 COPY --from=0 /home/build/ /home/SignalR
 

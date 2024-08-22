@@ -1,11 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <UserSecretsId>chatsample</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="$(MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion)" />
-    <PackageReference Include="MessagePack" Version="$(MessagePackPackage3_1Version)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" />
