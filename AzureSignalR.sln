@@ -8,6 +8,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DA69F624-539
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{C4BC9889-B49F-41B6-806B-F84941B2549B}"
+	ProjectSection(SolutionItems) = preProject
+		samples\Directory.Build.props = samples\Directory.Build.props
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR", "src\Microsoft.Azure.SignalR\Microsoft.Azure.SignalR.csproj", "{7B124E40-36AC-45CC-9467-F6A50D5FC149}"
 EndProject
@@ -15,6 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		build\dependencies.props = build\dependencies.props
+		build\dependencies.private.props = build\dependencies.private.props
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
 		NuGet.config = NuGet.config
@@ -25,6 +29,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.Protocols", "src\Microsoft.Azure.SignalR.Protocols\Microsoft.Azure.SignalR.Protocols.csproj", "{2EBFCD26-6E31-4855-ABF5-0A82E78F87C7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{2429FBD8-1FCE-4C42-AA28-DF32F7249E77}"
+	ProjectSection(SolutionItems) = preProject
+		test\Directory.Build.props = test\Directory.Build.props
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.Tests", "test\Microsoft.Azure.SignalR.Tests\Microsoft.Azure.SignalR.Tests.csproj", "{764DCFF5-D28D-4CEF-B186-B7A62FBB3E98}"
 EndProject

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var protocols = new List<IHubProtocol>() { new MessagePackHubProtocol() };
             using var httpContent = new BinaryPayloadMessageContent(payload, protocols);
             var actualBytes = new MemoryStream();
-            httpContent.CopyToAsync(actualBytes, null, default).Wait();
+            httpContent.CopyTo(actualBytes, null, default);
             var expectedBytes = new ArrayBufferWriter<byte>();
             var messagePackWriter = new MessagePackWriter(expectedBytes);
             messagePackWriter.WriteMapHeader(1);
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var protocols = new List<IHubProtocol>() { new MessagePackHubProtocol(), new JsonHubProtocol() };
             using var httpContent = new BinaryPayloadMessageContent(payload, protocols);
             var actualBytes = new MemoryStream();
-            httpContent.CopyToAsync(actualBytes, null, default).Wait();
+            httpContent.CopyTo(actualBytes, null, default);
             var expectedBytes = new ArrayBufferWriter<byte>();
             var messagePackWriter = new MessagePackWriter(expectedBytes);
             messagePackWriter.WriteMapHeader(2);

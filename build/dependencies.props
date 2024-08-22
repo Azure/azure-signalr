@@ -67,23 +67,6 @@
     <!--Emulator -->
     <MicrosoftExtensionsCommandLineUtilsPackageVersion>1.1.1</MicrosoftExtensionsCommandLineUtilsPackageVersion>
     <SystemIOPipelinesPackageForEmulatorVersion>4.7.5</SystemIOPipelinesPackageForEmulatorVersion>
-    <EmulatorMicrosoftPackageVersion>6.0.9</EmulatorMicrosoftPackageVersion>
-
-    <!--Testing -->
-    <SystemIdentityModelTokensJwtPackageVersion>5.7.0</SystemIdentityModelTokensJwtPackageVersion>
-    <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
-    <MessagePackPackage3_1Version>1.9.11</MessagePackPackage3_1Version>
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>3.1.24</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
-    <MicrosoftNETTestSdkPackageVersion>17.7.2</MicrosoftNETTestSdkPackageVersion>
-    <MoqPackageVersion>4.14.5</MoqPackageVersion>
-    <XunitPackageVersion>2.4.2</XunitPackageVersion>
-    <XunitRunnerVisualStudioPackageVersion>2.4.2</XunitRunnerVisualStudioPackageVersion>
-    <MicrosoftOwinTestingPackageVersion>4.2.2</MicrosoftOwinTestingPackageVersion>
-    <MicrosoftAspNetCoreTestingVersion>2.1.0</MicrosoftAspNetCoreTestingVersion>
-    <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
-    <MicrosoftAspNetCoreTestHostPackageVersion>6.0.24</MicrosoftAspNetCoreTestHostPackageVersion>
-    <E2eTestUserSecretId>E2eTestUserSecret</E2eTestUserSecretId>
-    <MicrosoftAspNetCoreSignalRProtocolsJsonPackageVersion>5.0.0</MicrosoftAspNetCoreSignalRProtocolsJsonPackageVersion>
-  </PropertyGroup>
+    <EmulatorMicrosoftPackageVersion>6.0.9</EmulatorMicrosoftPackageVersion></PropertyGroup>
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition=" '$(DotNetPackageVersionPropsPath)' != '' " />
 </Project>

@@ -44,7 +44,8 @@ public class ServiceHubDispatcherTests
             null,
             null,
             null,
-            new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance)
+            new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
+            null
         );
 
         await dispatcher.ShutdownAsync();

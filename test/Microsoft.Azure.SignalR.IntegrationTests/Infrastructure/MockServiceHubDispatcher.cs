@@ -49,7 +49,8 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
                 clientConnectionFactory,
                 clientInvocationManager,
                 null,
-                hubProtocolResolver)
+                hubProtocolResolver,
+                null)
         {
             MockService = new ConnectionTrackingMockService();
 

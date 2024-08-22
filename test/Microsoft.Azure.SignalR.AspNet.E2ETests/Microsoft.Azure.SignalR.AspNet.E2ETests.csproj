@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net462</TargetFramework>
     <IsPackable>false</IsPackable>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
@@ -21,8 +21,6 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualStudioPackageVersion)" Condition=" '$(DisableNet461Tests)'!='true'" />
     <PackageReference Include="Microsoft.AspNet.SignalR.Client" Version="$(MicrosoftAspNetSignalRClientVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="$(MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion)" />
-    <PackageReference Include="MessagePack" Version="$(MessagePackPackage3_1Version)" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Testing" Version="$(MicrosoftExtensionsLoggingPackageVersion)" />
     <PackageReference Include="Microsoft.Owin.Testing" Version="$(MicrosoftOwinTestingPackageVersion)" />
     <PackageReference Include="Microsoft.Owin.Host.HttpListener" Version="$(MicrosoftOwinTestingPackageVersion)" />
   </ItemGroup>

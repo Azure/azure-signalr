@@ -1,0 +1,4 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <Import Project="..\build\dependencies.private.props" />
+</Project>

@@ -125,7 +125,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 services.AddHttpClient(string.Empty).AddHttpMessageHandler(() => new TestRootHandler((message, cancellationToken) =>
                 {
-                    var reader = new MessagePackReader(message.Content.ReadAsByteArrayAsync().Result);
+                    var reader = new MessagePackReader(message.Content.ReadAsByteArrayAsync(cancellationToken).Result);
                     Assert.Equal(2, reader.ReadMapHeader());
                     Assert.Equal(hubProtocols[0].Name, reader.ReadString());
                     Assert.True(hubProtocols[0].GetMessageBytes(invocationMessage).Span.SequenceEqual(reader.ReadBytes().Value.ToArray().AsSpan()));

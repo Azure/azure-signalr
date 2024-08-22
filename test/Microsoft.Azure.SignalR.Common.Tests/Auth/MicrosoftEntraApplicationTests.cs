@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
                 "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration",
                 new OpenIdConnectConfigurationRetriever()
             );
-            var keys = configManager.GetConfigurationAsync().Result.SigningKeys;
+            var keys = (await configManager.GetConfigurationAsync()).SigningKeys;
 
             var p = new TokenValidationParameters()
             {
