@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup Label="Test Package Versions">
-    <!--Testing: always use latest-->
+    <!--For tests and samples: always try the latest version-->
     <SystemIdentityModelTokensJwtPackageVersion>8.0.1</SystemIdentityModelTokensJwtPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>8.0.8</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>8.0.8</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
@@ -17,6 +17,11 @@
     <MicrosoftAspNetCoreTestingVersion>2.1.0</MicrosoftAspNetCoreTestingVersion>
     <!--Requires old version due to the breaking change in https://github.com/Azure/azure-signalr/issues/1503-->
     <MicrosoftAspNetCoreHttpConnectionsClientPackageOldVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackageOldVersion>
+    <MicrosoftAspNetSignalRClientVersion>2.4.3</MicrosoftAspNetSignalRClientVersion>
+
+    <MicrosoftAspNetCoreSignalRClientPackageVersion>8.0.8</MicrosoftAspNetCoreSignalRClientPackageVersion>
+    <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>
+    <MicrosoftConfigurationEnvironmentVariablesVersion>2.2.0</MicrosoftConfigurationEnvironmentVariablesVersion>
     <E2eTestUserSecretId>E2eTestUserSecret</E2eTestUserSecretId>
   </PropertyGroup>
 </Project>
