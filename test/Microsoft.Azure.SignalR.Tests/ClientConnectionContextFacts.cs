@@ -325,7 +325,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
 
         public string ServerId => throw new NotImplementedException();
 
-        public ServiceConnectionStatus Status => throw new NotImplementedException();
+        public ServiceConnectionStatus Status { get; private set; }
 
         public Task ConnectionInitializedTask => throw new NotImplementedException();
 
@@ -338,7 +338,9 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
             _lifetimeTask = StartAsync();
         }
 
+#pragma warning disable CS0067
         public event Action<StatusChange>? ConnectionStatusChanged;
+#pragma warning restore CS0067
 
         public Task<bool> SafeWriteAsync(ServiceProtocol.ServiceMessage serviceMessage)
         {

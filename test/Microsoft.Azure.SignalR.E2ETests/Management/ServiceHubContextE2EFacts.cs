@@ -98,7 +98,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 Assert.False(tcsDict[excluded].Task.IsCompleted);
 
                 //clean
-                await Task.WhenAll(connections.Select(conn => conn.DisposeAsync()));
+                await Task.WhenAll(connections.Select(async conn => await conn.DisposeAsync()));
                 await hubContext.DisposeAsync();
             }
         }
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 Assert.False(tcsDict[excluded].Task.IsCompleted);
 
                 //clean
-                await Task.WhenAll(connections.Select(conn => conn.DisposeAsync()));
+                await Task.WhenAll(connections.Select(async conn => await conn.DisposeAsync()));
                 await hubContext.DisposeAsync();
             }
         }
