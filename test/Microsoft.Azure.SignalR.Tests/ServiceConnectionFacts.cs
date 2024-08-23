@@ -542,14 +542,15 @@ public class ServiceConnectionFacts
         await connectionTask.OrTimeout();
 
         // 2 client connects with different instanceIds
-        await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId1, null, header1, null));
         connectionTask = proxy.WaitForConnectionAsync(connectionId1);
+        await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId1, null, header1, null));
         await connectionTask.OrTimeout();
 
-        await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId2, null, header2, null));
         connectionTask = proxy.WaitForConnectionAsync(connectionId2);
+        await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId2, null, header2, null));
         await connectionTask.OrTimeout();
 
+        var disconnectTask = proxy.WaitForConnectionCloseAsync(connectionId1);
         // Server received instance offline ping on instanceId1 and trigger cleanup related client1
         await proxy.WriteMessageAsync(new PingMessage()
         {
@@ -557,7 +558,6 @@ public class ServiceConnectionFacts
         });
 
         // Validate client1 is closed and client2 is still connected
-        var disconnectTask = proxy.WaitForConnectionCloseAsync(connectionId1);
         await disconnectTask.OrTimeout();
         Assert.Single(proxy.ClientConnections);
         Assert.Equal(connectionId2, proxy.ClientConnections.FirstOrDefault().ConnectionId);
