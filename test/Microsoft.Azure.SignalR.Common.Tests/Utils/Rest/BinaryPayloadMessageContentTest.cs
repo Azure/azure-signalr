@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using MessagePack;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Xunit;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var protocols = new List<IHubProtocol>() { new MessagePackHubProtocol() };
             using var httpContent = new BinaryPayloadMessageContent(payload, protocols);
             var actualBytes = new MemoryStream();
-            httpContent.CopyTo(actualBytes, null, default);
+            httpContent.CopyToAsync(actualBytes, null, default).GetAwaiter().GetResult();
             var expectedBytes = new ArrayBufferWriter<byte>();
             var messagePackWriter = new MessagePackWriter(expectedBytes);
             messagePackWriter.WriteMapHeader(1);
@@ -38,7 +39,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var protocols = new List<IHubProtocol>() { new MessagePackHubProtocol(), new JsonHubProtocol() };
             using var httpContent = new BinaryPayloadMessageContent(payload, protocols);
             var actualBytes = new MemoryStream();
-            httpContent.CopyTo(actualBytes, null, default);
+            httpContent.CopyToAsync(actualBytes, null, default).GetAwaiter().GetResult();
             var expectedBytes = new ArrayBufferWriter<byte>();
             var messagePackWriter = new MessagePackWriter(expectedBytes);
             messagePackWriter.WriteMapHeader(2);
