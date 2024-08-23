@@ -6,9 +6,8 @@
     <LangVersion>11</LangVersion>
     <RootNamespace>Microsoft.Azure.SignalR</RootNamespace>
   </PropertyGroup>
-  
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net5.0;net6.0;net7.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

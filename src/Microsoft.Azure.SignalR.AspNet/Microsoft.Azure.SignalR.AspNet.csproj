@@ -4,7 +4,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <LangVersion>11</LangVersion>
     <RootNamespace>Microsoft.Azure.SignalR.AspNet</RootNamespace>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net462</TargetFramework>
   </PropertyGroup>
   
   <ItemGroup>
