@@ -16,6 +16,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
     public class BinaryPayloadMessageContentTest
     {
         [Fact]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1031:Do not use blocking task operations in test method", Justification = "<Pending>")]
         public void OneHubProtocolTest()
         {
             var payload = new PayloadMessage { Target = "target", Arguments = new object[] { "a", 1 } };
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         }
 
         [Fact]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1031:Do not use blocking task operations in test method", Justification = "<Pending>")]
         public void TwoHubProtocolTest()
         {
             var payload = new PayloadMessage { Target = "target", Arguments = new object[] { "a", 1 } };

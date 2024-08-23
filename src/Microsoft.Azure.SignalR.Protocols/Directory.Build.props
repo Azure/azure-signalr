@@ -1,0 +1,24 @@
+﻿<Project>
+    <!-- This file is used to exclude the impact of ..\Directory.Build.props -->
+    <Import Project="..\..\Directory.Build.props" />
+    <PropertyGroup>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <PackageTags>aspnetcore;azure;signalr</PackageTags>
+        <EnableApiCheck>false</EnableApiCheck>
+        <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.VisualStudioEng.MicroBuild.Core" Version="$(MicrosoftVisualStudioEngMicroBuildCoreVersion)">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubPackageVersion)" PrivateAssets="All" />
+    </ItemGroup>
+    <ItemGroup>
+        <!-- Adding the assemblies to sign -->
+        <FilesToSign Include="$(OutDir)\$(RootNamespace)*.nupkg">
+            <Authenticode>NuGet</Authenticode>
+        </FilesToSign>
+    </ItemGroup>
+</Project>
