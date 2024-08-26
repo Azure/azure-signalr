@@ -101,41 +101,4 @@ public class ServiceConnectionContainerBaseTests(ITestOutputHelper output) : Ver
             Assert.True(endpoint1.Online);
         }
     }
-
-    [Fact]
-    public void TestWriteMessageOrder()
-    {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: e => true,
-            logChecker: s =>
-            {
-                Assert.Single(s);
-                Assert.Equal("EndpointOffline", s[0].Write.EventId.Name);
-                return true;
-            }))
-        {
-            var endpoint1 = new TestHubServiceEndpoint();
-            var conn1 = new TestServiceConnection();
-            var scf = new TestServiceConnectionFactory(endpoint1 => conn1);
-            var container = new StrongServiceConnectionContainer(scf, 5, null, endpoint1, loggerFactory.CreateLogger(nameof(TestStrongConnectionStatus)));
-
-            // When init, consider the endpoint as online
-            // TODO: improve the logic
-            Assert.True(endpoint1.Online);
-
-            conn1.SetStatus(ServiceConnectionStatus.Connecting);
-            Assert.True(endpoint1.Online);
-
-            conn1.SetStatus(ServiceConnectionStatus.Connected);
-            Assert.True(endpoint1.Online);
-
-            conn1.SetStatus(ServiceConnectionStatus.Disconnected);
-            Assert.False(endpoint1.Online);
-
-            conn1.SetStatus(ServiceConnectionStatus.Connecting);
-            Assert.False(endpoint1.Online);
-
-            conn1.SetStatus(ServiceConnectionStatus.Connected);
-            Assert.True(endpoint1.Online);
-        }
-    }
 }
