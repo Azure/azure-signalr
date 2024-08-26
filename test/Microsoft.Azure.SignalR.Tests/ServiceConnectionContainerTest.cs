@@ -130,4 +130,35 @@ public class ServiceConnectionContainerTest
         var connected = connections.SkipLast(15).Sum(s => s.ReceivedMessages.Count);
         Assert.Equal(100000 + sub, connected - disconnected);
     }
+
+    [Fact]
+    public async Task TestServiceConnectionStickyWritesWithScope()
+    {
+        // with scope enabled, the messages always go through the first picked connection
+        using var _ = new ClientConnectionScope();
+        var factory = new TestServiceConnectionFactory();
+        var hubServiceEndpoint = new HubServiceEndpoint("foo", null, new TestServiceEndpoint());
+
+        var container = new StrongServiceConnectionContainer(factory, 30, 30, hubServiceEndpoint, NullLogger.Instance);
+
+        Assert.True(factory.CreatedConnections.TryGetValue(hubServiceEndpoint, out var conns));
+        var connections = conns.Select(x => (TestServiceConnection)x);
+
+        foreach (var connection in connections)
+        {
+            connection.SetStatus(ServiceConnectionStatus.Connected);
+        }
+
+        // write 100000 messages.
+        for (var i = 0; i < 100000; i++)
+        {
+            var message = new ConnectionDataMessage(i.ToString(), new byte[12]);
+            await container.WriteAsync(message);
+        }
+
+        var selected = connections.Where(s => s.ReceivedMessages.Count > 0).ToArray();
+        Assert.Single(selected);
+
+        Assert.Equal(100000, selected[0].ReceivedMessages.Count);
+    }
 }
