@@ -50,7 +50,9 @@ namespace Microsoft.Azure.SignalR.Management
                 {
                     claimProvider = () => claims;
                 }
-                var claimsWithUserId = ClaimsUtility.BuildJwtClaims(httpContext?.User, userId: userId, claimProvider, enableDetailedErrors: enableDetailedErrors, isDiagnosticClient: isDiagnosticClient);
+                var closeOnAuthenticationExpiration = negotiationOptions.CloseOnAuthenticationExpiration;
+                var authenticationExpiresOn = closeOnAuthenticationExpiration ? DateTimeOffset.UtcNow.Add(negotiationOptions.TokenLifetime) : default(DateTimeOffset?);
+                var claimsWithUserId = ClaimsUtility.BuildJwtClaims(httpContext?.User, userId: userId, claimProvider, enableDetailedErrors: enableDetailedErrors, isDiagnosticClient: isDiagnosticClient, closeOnAuthenticationExpiration: closeOnAuthenticationExpiration, authenticationExpiresOn: authenticationExpiresOn);
 
                 var tokenTask = provider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifetime);
                 await tokenTask.OrTimeout(cancellationToken, Timeout, GeneratingTokenTaskDescription);

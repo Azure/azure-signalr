@@ -31,6 +31,23 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                                                                            from appName in _appNames
                                                                            select new object[] { userId, claims, appName };
 
+        [Fact]
+        public async Task GenerateTokenWithCloseOnAuthExpiration()
+        {
+            var hubContext = await new ServiceManagerBuilder()
+                .WithOptions(o => o.ConnectionString = "Endpoint=https://zityang-signalr-standard-dev.service.signalr.net;AccessKey=K/JHYahkm7MAZHc9G0R5rvCM5gCI/Fh9oIgVF9xdWFA=;Version=1.0;")
+                .BuildServiceManager()
+                .CreateHubContextAsync("hub", default);
+            var now = DateTimeOffset.UtcNow;
+            var negotiateResponse = await hubContext.NegotiateAsync(new NegotiationOptions { CloseOnAuthenticationExpiration = true, TokenLifetime = TimeSpan.FromSeconds(30) });
+            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(negotiateResponse.AccessToken);
+            var closeOnAuthExpiration = Assert.Single(token.Claims.Where(c => c.Type == Constants.ClaimType.CloseOnAuthExpiration));
+            Assert.Equal("true", closeOnAuthExpiration.Value);
+            var ttl = Assert.Single(token.Claims.Where(c => c.Type == Constants.ClaimType.AuthExpiresOn));
+            Assert.True(long.TryParse(ttl.Value, out var expiresOn));
+            Assert.InRange(DateTimeOffset.FromUnixTimeSeconds(expiresOn), now.AddSeconds(29), now.AddSeconds(32));
+        }
+
         [Theory]
         [MemberData(nameof(TestGenerateAccessTokenData))]
         public async Task GenerateClientEndpoint(string userId, Claim[] claims, string appName)
