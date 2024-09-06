@@ -35,7 +35,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         public async Task GenerateTokenWithCloseOnAuthExpiration()
         {
             var hubContext = await new ServiceManagerBuilder()
-                .WithOptions(o => o.ConnectionString = "Endpoint=https://zityang-signalr-standard-dev.service.signalr.net;AccessKey=K/JHYahkm7MAZHc9G0R5rvCM5gCI/Fh9oIgVF9xdWFA=;Version=1.0;")
+                .WithOptions(o => o.ConnectionString = "Endpoint=https://abc.service.signalr.net;AccessKey=FakeKey;Version=1.0;")
                 .BuildServiceManager()
                 .CreateHubContextAsync("hub", default);
             var now = DateTimeOffset.UtcNow;
