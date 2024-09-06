@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="${AspireHostingAppHostPackageVersion}" />
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="$(AspireHostingAppHostPackageVersion)" />
     <PackageReference Include="Aspire.Hosting.Azure.SignalR" Version="$(AspireHostingAzureSignalRPackageVersion)" />
   </ItemGroup>
 
