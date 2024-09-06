@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        dotnet-version: [ '8.0.x', '7.0.x', '6.0.x' ]
+        dotnet-version: [ '8.0.x' ]
     steps:
     - uses: actions/checkout@v4
     - uses: dorny/paths-filter@v2
@@ -41,6 +41,8 @@ jobs:
         dotnet-version: ${{ matrix.dotnet-version }}
     - name: Display dotnet version
       run: dotnet --version
+    - name: Install aspire workload
+      run: dotnet workload install aspire
     - name: Build with dotnet
       run:  "dotnet build AzureSignalR.sln /p:DisableNet461Tests=true"
       if: steps.filter.outputs.src == 'true'
