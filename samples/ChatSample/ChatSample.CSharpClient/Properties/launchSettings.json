@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "ChatSample.CSharpClient": {
+      "commandName": "Project"
+    },
+    "auto": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "MODE": "Auto"
+      },
+      "distributionName": ""
+    }
+  }
+}

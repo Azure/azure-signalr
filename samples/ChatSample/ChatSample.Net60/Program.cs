@@ -5,7 +5,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-builder.Services.AddSignalR().AddAzureSignalR();
+builder.Services.AddSignalR()
+                .AddNamedAzureSignalR("signalr1");
 
 // uncomment for streaming outside the scope
 // builder.Services.AddHostedService<StreamingService>();

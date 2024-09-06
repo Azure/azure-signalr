@@ -15,17 +15,19 @@ namespace ChatSample.CoreApp3
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
-            services.AddSignalR()
-                .AddAzureSignalR(option =>
-                {
-                    option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
-                    option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(30);
+            var builder = services.AddSignalR()
+                .AddNamedAzureSignalR("signalr1");
+            builder.Services.Configure<ServiceOptions>(option =>
+            {
+                option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
+                option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(30);
 
-                    option.GracefulShutdown.Add<Chat>(async (c) =>
-                    {
-                        await c.Clients.All.SendAsync("exit");
-                    });
-                })
+                option.GracefulShutdown.Add<Chat>(async (c) =>
+                {
+                    await c.Clients.All.SendAsync("exit");
+                });
+            });
+            builder
                 .AddMessagePackProtocol();
         }
 
