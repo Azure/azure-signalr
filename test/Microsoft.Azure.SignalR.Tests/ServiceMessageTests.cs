@@ -155,7 +155,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
     [Theory]
     [InlineData(typeof(AccessKey))]
-    [InlineData(typeof(AccessKeyForMicrosoftEntra))]
+    [InlineData(typeof(MicrosoftEntraAccessKey))]
     public async Task TestAccessKeyRequestMessage(Type keyType)
     {
         var endpoint = MockServiceEndpoint(keyType.Name);
@@ -180,7 +180,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
     [Theory]
     [InlineData(typeof(AccessKey))]
-    [InlineData(typeof(AccessKeyForMicrosoftEntra))]
+    [InlineData(typeof(MicrosoftEntraAccessKey))]
     public async Task TestAccessKeyResponseMessage(Type keyType)
     {
         var endpoint = MockServiceEndpoint(keyType.Name);
@@ -229,9 +229,9 @@ public class ServiceMessageTests : VerifiableLoggedTest
         {
             var endpoint = new TestHubServiceEndpoint(endpoint: new TestServiceEndpoint(new DefaultAzureCredential()));
 
-            if (endpoint.AccessKey is AccessKeyForMicrosoftEntra key)
+            if (endpoint.AccessKey is MicrosoftEntraAccessKey key)
             {
-                var field = typeof(AccessKeyForMicrosoftEntra).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+                var field = typeof(MicrosoftEntraAccessKey).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
                 field.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(minutesElapsed));
             }
 
@@ -318,7 +318,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
             case nameof(AccessKey):
                 return new ServiceEndpoint(LocalConnectionString);
 
-            case nameof(AccessKeyForMicrosoftEntra):
+            case nameof(MicrosoftEntraAccessKey):
                 var endpoint = new ServiceEndpoint(MicrosoftEntraConnectionString);
                 var p = typeof(ServiceEndpoint).GetProperty("AccessKey", BindingFlags.NonPublic | BindingFlags.Instance);
                 p.SetValue(endpoint, new TestAadAccessKey());
@@ -329,7 +329,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         }
     }
 
-    private class TestAadAccessKey : AccessKeyForMicrosoftEntra
+    private class TestAadAccessKey : MicrosoftEntraAccessKey
     {
         public string Token { get; } = Guid.NewGuid().ToString();
 

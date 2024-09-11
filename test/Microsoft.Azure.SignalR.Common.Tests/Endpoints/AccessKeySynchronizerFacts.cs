@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;

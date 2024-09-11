@@ -169,11 +169,11 @@ namespace Microsoft.Azure.SignalR
                 {
                     if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
                     {
-                        return new AccessKeyForMicrosoftEntra(uri, new ClientSecretCredential(tenantId, clientId, clientSecret), serverEndpointUri);
+                        return new MicrosoftEntraAccessKey(uri, new ClientSecretCredential(tenantId, clientId, clientSecret), serverEndpointUri);
                     }
                     else if (dict.TryGetValue(ClientCertProperty, out var clientCertPath))
                     {
-                        return new AccessKeyForMicrosoftEntra(uri, new ClientCertificateCredential(tenantId, clientId, clientCertPath), serverEndpointUri);
+                        return new MicrosoftEntraAccessKey(uri, new ClientCertificateCredential(tenantId, clientId, clientCertPath), serverEndpointUri);
                     }
                     else
                     {
@@ -182,12 +182,12 @@ namespace Microsoft.Azure.SignalR
                 }
                 else
                 {
-                    return new AccessKeyForMicrosoftEntra(uri, new ManagedIdentityCredential(clientId), serverEndpointUri);
+                    return new MicrosoftEntraAccessKey(uri, new ManagedIdentityCredential(clientId), serverEndpointUri);
                 }
             }
             else
             {
-                return new AccessKeyForMicrosoftEntra(uri, new ManagedIdentityCredential(), serverEndpointUri);
+                return new MicrosoftEntraAccessKey(uri, new ManagedIdentityCredential(), serverEndpointUri);
             }
         }
 
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.SignalR
 
         private static AccessKey BuildAzureAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
         {
-            return new AccessKeyForMicrosoftEntra(uri, new DefaultAzureCredential(), serverEndpointUri);
+            return new MicrosoftEntraAccessKey(uri, new DefaultAzureCredential(), serverEndpointUri);
         }
 
         private static AccessKey BuildAzureAppAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
@@ -217,11 +217,11 @@ namespace Microsoft.Azure.SignalR
 
             if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
             {
-                return new AccessKeyForMicrosoftEntra(uri, new ClientSecretCredential(tenantId, clientId, clientSecret), serverEndpointUri);
+                return new MicrosoftEntraAccessKey(uri, new ClientSecretCredential(tenantId, clientId, clientSecret), serverEndpointUri);
             }
             else if (dict.TryGetValue(ClientCertProperty, out var clientCertPath))
             {
-                return new AccessKeyForMicrosoftEntra(uri, new ClientCertificateCredential(tenantId, clientId, clientCertPath), serverEndpointUri);
+                return new MicrosoftEntraAccessKey(uri, new ClientCertificateCredential(tenantId, clientId, clientCertPath), serverEndpointUri);
             }
             throw new ArgumentException(MissingClientSecretProperty, ClientSecretProperty);
         }
@@ -229,8 +229,8 @@ namespace Microsoft.Azure.SignalR
         private static AccessKey BuildAzureMsiAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
         {
             return dict.TryGetValue(ClientIdProperty, out var clientId)
-                ? new AccessKeyForMicrosoftEntra(uri, new ManagedIdentityCredential(clientId), serverEndpointUri)
-                : new AccessKeyForMicrosoftEntra(uri, new ManagedIdentityCredential(), serverEndpointUri);
+                ? new MicrosoftEntraAccessKey(uri, new ManagedIdentityCredential(clientId), serverEndpointUri)
+                : new MicrosoftEntraAccessKey(uri, new ManagedIdentityCredential(), serverEndpointUri);
         }
 
         private static Dictionary<string, string> ToDictionary(string connectionString)

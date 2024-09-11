@@ -61,7 +61,7 @@ namespace Microsoft.Azure.SignalR
 
         public IAccessTokenProvider GetServerAccessTokenProvider(string hubName, string serverId)
         {
-            if (_accessKey is AccessKeyForMicrosoftEntra key)
+            if (_accessKey is MicrosoftEntraAccessKey key)
             {
                 return new MicrosoftEntraTokenProvider(key);
             }

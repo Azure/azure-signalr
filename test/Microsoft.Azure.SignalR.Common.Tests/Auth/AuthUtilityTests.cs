@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             public IEnumerator<object[]> GetEnumerator()
             {
                 yield return new object[] { new AccessKey("http://localhost:443", SigningKey), true };
-                var key = new AccessKeyForMicrosoftEntra(new Uri("http://localhost"), new DefaultAzureCredential());
+                var key = new MicrosoftEntraAccessKey(new Uri("http://localhost"), new DefaultAzureCredential());
                 key.UpdateAccessKey("foo", SigningKey);
                 yield return new object[] { key, false };
             }

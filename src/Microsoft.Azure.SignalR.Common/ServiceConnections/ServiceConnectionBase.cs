@@ -169,7 +169,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
                 TimerAwaitable syncTimer = null;
                 try
                 {
-                    if (HubEndpoint != null && HubEndpoint.AccessKey is AccessKeyForMicrosoftEntra key)
+                    if (HubEndpoint != null && HubEndpoint.AccessKey is MicrosoftEntraAccessKey key)
                     {
                         syncTimer = new TimerAwaitable(TimeSpan.Zero, DefaultSyncAzureIdentityInterval);
                         _ = UpdateAzureIdentityAsync(key, syncTimer);
@@ -405,7 +405,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     private Task OnAccessKeyMessageAsync(AccessKeyResponseMessage keyMessage)
     {
-        if (HubEndpoint.AccessKey is AccessKeyForMicrosoftEntra key)
+        if (HubEndpoint.AccessKey is MicrosoftEntraAccessKey key)
         {
             if (string.IsNullOrEmpty(keyMessage.ErrorType))
             {
@@ -602,7 +602,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
         }
     }
 
-    private async Task UpdateAzureIdentityAsync(AccessKeyForMicrosoftEntra key, TimerAwaitable timer)
+    private async Task UpdateAzureIdentityAsync(MicrosoftEntraAccessKey key, TimerAwaitable timer)
     {
         using (timer)
         {
@@ -614,11 +614,11 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
         }
     }
 
-    private async Task SendAccessKeyRequestMessageAsync(AccessKeyForMicrosoftEntra key)
+    private async Task SendAccessKeyRequestMessageAsync(MicrosoftEntraAccessKey key)
     {
         try
         {
-            var source = new CancellationTokenSource(AccessKeyForMicrosoftEntra.GetAccessKeyTimeout);
+            var source = new CancellationTokenSource(MicrosoftEntraAccessKey.GetAccessKeyTimeout);
             var token = await key.GetMicrosoftEntraTokenAsync(source.Token);
             var message = new AccessKeyRequestMessage(token);
             await SafeWriteAsync(message);

@@ -5,6 +5,8 @@
 using System;
 using System.Globalization;
 
+namespace Microsoft.Azure.SignalR;
+
 internal class LogHelper
 {
     public static ArgumentNullException LogArgumentNullException(string name)

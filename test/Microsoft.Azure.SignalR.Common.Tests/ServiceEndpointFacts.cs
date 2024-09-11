@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 
 using Azure.Identity;
-
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests
@@ -117,7 +116,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         {
             var uri = new Uri(url);
             var serviceEndpoint = new ServiceEndpoint(uri, new DefaultAzureCredential());
-            Assert.IsType<AccessKeyForMicrosoftEntra>(serviceEndpoint.AccessKey);
+            Assert.IsType<MicrosoftEntraAccessKey>(serviceEndpoint.AccessKey);
             Assert.Equal(expectedEndpoint, serviceEndpoint.Endpoint);
             Assert.Equal("", serviceEndpoint.Name);
             Assert.Equal(port, serviceEndpoint.AccessKey.Endpoint.Port);
@@ -150,7 +149,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         {
             var uri = new Uri("http://localhost");
             var serviceEndpoint = new ServiceEndpoint(key, uri, new DefaultAzureCredential());
-            Assert.IsType<AccessKeyForMicrosoftEntra>(serviceEndpoint.AccessKey);
+            Assert.IsType<MicrosoftEntraAccessKey>(serviceEndpoint.AccessKey);
             Assert.Equal(name, serviceEndpoint.Name);
             Assert.Equal(type, serviceEndpoint.EndpointType);
             TestCopyConstructor(serviceEndpoint);
@@ -166,12 +165,12 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             {
                 ServerEndpoint = serverEndpoint1
             };
-            var key = Assert.IsType<AccessKeyForMicrosoftEntra>(endpoint.AccessKey);
+            var key = Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
             Assert.Same(key, endpoint.AccessKey);
             Assert.Equal("http://serverEndpoint:123/api/v1/auth/accessKey", key.GetAccessKeyUrl, StringComparer.OrdinalIgnoreCase);
 
             endpoint = new ServiceEndpoint(new Uri(serviceEndpoint), new DefaultAzureCredential(), serverEndpoint: serverEndpoint2);
-            key = Assert.IsType<AccessKeyForMicrosoftEntra>(endpoint.AccessKey);
+            key = Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
             Assert.Same(key, endpoint.AccessKey);
             Assert.Equal("http://serverEndpoint:123/path/api/v1/auth/accessKey", key.GetAccessKeyUrl, StringComparer.OrdinalIgnoreCase);
 
@@ -179,7 +178,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             {
                 ServerEndpoint = serverEndpoint2 // property initialize should override constructor param.
             };
-            key = Assert.IsType<AccessKeyForMicrosoftEntra>(endpoint.AccessKey);
+            key = Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
             Assert.Same(key, endpoint.AccessKey);
             Assert.Equal("http://serverEndpoint:123/path/api/v1/auth/accessKey", key.GetAccessKeyUrl, StringComparer.OrdinalIgnoreCase);
         }

@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         [InlineData("https://a.bc:443", "https://a.bc/api/v1/auth/accessKey")]
         public void TestExpectedGetAccessKeyUrl(string endpoint, string expectedGetAccessKeyUrl)
         {
-            var key = new AccessKeyForMicrosoftEntra(new Uri(endpoint), new DefaultAzureCredential());
+            var key = new MicrosoftEntraAccessKey(new Uri(endpoint), new DefaultAzureCredential());
             Assert.Equal(expectedGetAccessKeyUrl, key.GetAccessKeyUrl);
         }
 
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
                 It.IsAny<TokenRequestContext>(),
                 It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("Mock GetTokenAsync throws an exception"));
-            var key = new AccessKeyForMicrosoftEntra(DefaultEndpoint, mockCredential.Object);
+            var key = new MicrosoftEntraAccessKey(DefaultEndpoint, mockCredential.Object);
 
             var audience = "http://localhost/chat";
             var claims = Array.Empty<Claim>();
@@ -68,19 +68,19 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
                 It.IsAny<TokenRequestContext>(),
                 It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("Mock GetTokenAsync throws an exception"));
-            var key = new AccessKeyForMicrosoftEntra(DefaultEndpoint, mockCredential.Object);
-            var isAuthorizedField = typeof(AccessKeyForMicrosoftEntra).GetField("_isAuthorized", BindingFlags.NonPublic | BindingFlags.Instance);
+            var key = new MicrosoftEntraAccessKey(DefaultEndpoint, mockCredential.Object);
+            var isAuthorizedField = typeof(MicrosoftEntraAccessKey).GetField("_isAuthorized", BindingFlags.NonPublic | BindingFlags.Instance);
             isAuthorizedField.SetValue(key, isAuthorized);
             Assert.Equal(isAuthorized, (bool)isAuthorizedField.GetValue(key));
 
             var lastUpdatedTime = DateTime.UtcNow - TimeSpan.FromMinutes(timeElapsed);
-            var lastUpdatedTimeField = typeof(AccessKeyForMicrosoftEntra).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            var lastUpdatedTimeField = typeof(MicrosoftEntraAccessKey).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
             lastUpdatedTimeField.SetValue(key, lastUpdatedTime);
 
-            var initializedTcsField = typeof(AccessKeyForMicrosoftEntra).GetField("_initializedTcs", BindingFlags.NonPublic | BindingFlags.Instance);
+            var initializedTcsField = typeof(MicrosoftEntraAccessKey).GetField("_initializedTcs", BindingFlags.NonPublic | BindingFlags.Instance);
             var initializedTcs = (TaskCompletionSource<object>)initializedTcsField.GetValue(key);
 
-            var lastExceptionFields = typeof(AccessKeyForMicrosoftEntra).GetField("_lastException", BindingFlags.NonPublic | BindingFlags.Instance);
+            var lastExceptionFields = typeof(MicrosoftEntraAccessKey).GetField("_lastException", BindingFlags.NonPublic | BindingFlags.Instance);
 
             await key.UpdateAccessKeyAsync().OrTimeout(TimeSpan.FromSeconds(30));
             var actualLastUpdatedTime = Assert.IsType<DateTime>(lastUpdatedTimeField.GetValue(key));
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
                 It.IsAny<TokenRequestContext>(),
                 It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("Mock GetTokenAsync throws an exception"));
-            var key = new AccessKeyForMicrosoftEntra(DefaultEndpoint, mockCredential.Object);
+            var key = new MicrosoftEntraAccessKey(DefaultEndpoint, mockCredential.Object);
 
             var audience = "http://localhost/chat";
             var claims = Array.Empty<Claim>();
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
                 It.IsAny<TokenRequestContext>(),
                 It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("Mock GetTokenAsync throws an exception"));
-            var key = new AccessKeyForMicrosoftEntra(DefaultEndpoint, mockCredential.Object);
+            var key = new MicrosoftEntraAccessKey(DefaultEndpoint, mockCredential.Object);
 
             var audience = "http://localhost/chat";
             var claims = Array.Empty<Claim>();
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             );
             Assert.IsType<InvalidOperationException>(exception.InnerException);
 
-            var lastExceptionFields = typeof(AccessKeyForMicrosoftEntra).GetField("_lastException", BindingFlags.NonPublic | BindingFlags.Instance);
+            var lastExceptionFields = typeof(MicrosoftEntraAccessKey).GetField("_lastException", BindingFlags.NonPublic | BindingFlags.Instance);
 
             Assert.NotNull(lastExceptionFields.GetValue(key));
             var (kid, accessKey) = ("foo", DefaultSigningKey);

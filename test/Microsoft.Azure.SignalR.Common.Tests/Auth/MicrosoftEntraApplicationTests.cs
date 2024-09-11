@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         public async Task TestAcquireAccessToken()
         {
             var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
-            var key = new AccessKeyForMicrosoftEntra(new Uri("https://localhost:8080"), options);
+            var key = new MicrosoftEntraAccessKey(new Uri("https://localhost:8080"), options);
             var token = await key.GetMicrosoftEntraTokenAsync();
             Assert.NotNull(token);
         }
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         internal async Task TestAuthenticateAsync()
         {
             var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
-            var key = new AccessKeyForMicrosoftEntra(new Uri("https://localhost:8080"), options);
+            var key = new MicrosoftEntraAccessKey(new Uri("https://localhost:8080"), options);
             await key.UpdateAccessKeyAsync();
 
             Assert.True(key.IsAuthorized);

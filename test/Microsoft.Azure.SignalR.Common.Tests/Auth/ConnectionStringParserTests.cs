@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 
 using Azure.Identity;
-
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth
@@ -101,7 +100,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         {
             var r = ConnectionStringParser.Parse(connectionString);
 
-            var key = Assert.IsType<AccessKeyForMicrosoftEntra>(r.AccessKey);
+            var key = Assert.IsType<MicrosoftEntraAccessKey>(r.AccessKey);
             Assert.IsType<ClientSecretCredential>(key.TokenCredential);
             Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
             Assert.Null(r.Version);
@@ -148,7 +147,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             var r = ConnectionStringParser.Parse(connectionString);
 
             Assert.Equal(expectedEndpoint, r.Endpoint.AbsoluteUri.TrimEnd('/'));
-            var key = Assert.IsType<AccessKeyForMicrosoftEntra>(r.AccessKey);
+            var key = Assert.IsType<MicrosoftEntraAccessKey>(r.AccessKey);
             Assert.IsType<DefaultAzureCredential>(key.TokenCredential);
             Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
         }
@@ -165,7 +164,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             var r = ConnectionStringParser.Parse(connectionString);
 
             Assert.Equal(expectedEndpoint, r.Endpoint.AbsoluteUri.TrimEnd('/'));
-            var key = Assert.IsType<AccessKeyForMicrosoftEntra>(r.AccessKey);
+            var key = Assert.IsType<MicrosoftEntraAccessKey>(r.AccessKey);
             Assert.IsType<ManagedIdentityCredential>(key.TokenCredential);
             Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
             Assert.Null(r.ClientEndpoint);
@@ -180,7 +179,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         internal void TestAzureADWithServerEndpoint(string connectionString, string expectedAuthorizeUrl)
         {
             var r = ConnectionStringParser.Parse(connectionString);
-            var key = Assert.IsType<AccessKeyForMicrosoftEntra>(r.AccessKey);
+            var key = Assert.IsType<MicrosoftEntraAccessKey>(r.AccessKey);
             Assert.Equal(expectedAuthorizeUrl, key.GetAccessKeyUrl, StringComparer.OrdinalIgnoreCase);
         }
 
