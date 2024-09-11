@@ -17,10 +17,12 @@ public class MicrosoftEntraApplicationTests
     private const string IssuerEndpoint = "https://sts.windows.net/";
 
     private const string TestClientId = "";
+
     private const string TestClientSecret = "";
+
     private const string TestTenantId = "";
 
-    private static readonly string[] DefaultScopes = new string[] { "https://signalr.azure.com/.default" };
+    private static readonly string[] DefaultScopes = ["https://signalr.azure.com/.default"];
 
     [Fact(Skip = "Provide valid Microsoft Entra application options")]
     public async Task TestAcquireAccessToken()
@@ -44,20 +46,11 @@ public class MicrosoftEntraApplicationTests
 
         var p = new TokenValidationParameters()
         {
-            ValidateLifetime = true,
-            ValidateAudience = false,
-
-            IssuerValidator = (string issuer, SecurityToken securityToken, TokenValidationParameters validationParameters) =>
-            {
-                if (issuer.StartsWith(IssuerEndpoint))
-                {
-                    return IssuerEndpoint;
-                }
-                throw new SecurityTokenInvalidIssuerException();
-            },
-
-            ValidateIssuerSigningKey = true,
             IssuerSigningKeys = keys,
+            IssuerValidator = (string issuer, SecurityToken securityToken, TokenValidationParameters validationParameters) => issuer.StartsWith(IssuerEndpoint) ? IssuerEndpoint : throw new SecurityTokenInvalidIssuerException(),
+            ValidateAudience = false,
+            ValidateIssuerSigningKey = true,
+            ValidateLifetime = true,
         };
 
         var handler = new JwtSecurityTokenHandler();

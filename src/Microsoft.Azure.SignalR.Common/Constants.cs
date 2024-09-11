@@ -122,11 +122,11 @@ namespace Microsoft.Azure.SignalR
 
         public static class Protocol
         {
-            public const string BlazorPack = "blazorpack";
-
             public const string Json = "json";
 
             public const string MessagePack = "messagepack";
+
+            public const string BlazorPack = "blazorpack";
         }
 
         public static class Headers

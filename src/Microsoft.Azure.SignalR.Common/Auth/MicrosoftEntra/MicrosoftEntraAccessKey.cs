@@ -81,6 +81,7 @@ internal class MicrosoftEntraAccessKey : AccessKey
         var authorizeUri = (serverEndpoint ?? endpoint).Append("/api/v1/auth/accessKey");
         GetAccessKeyUrl = authorizeUri.AbsoluteUri;
         TokenCredential = credential;
+
         _httpClientFactory = httpClientFactory ?? HttpClientFactory.Instance;
     }
 
@@ -116,7 +117,7 @@ internal class MicrosoftEntraAccessKey : AccessKey
             await task;
             return IsAuthorized
                 ? await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm, ctoken)
-                : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential.GetType().Name, LastException);
+                : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, LastException);
         }
         else
         {
@@ -180,7 +181,7 @@ internal class MicrosoftEntraAccessKey : AccessKey
             return;
         }
 
-        var detail = await response.Content.ReadAsStringAsync();
+        var content = await response.Content.ReadAsStringAsync();
 
 #if NET5_0_OR_GREATER
             var innerException = new HttpRequestException(
@@ -195,10 +196,10 @@ internal class MicrosoftEntraAccessKey : AccessKey
         var requestUri = response.RequestMessage?.RequestUri?.ToString();
         throw response.StatusCode switch
         {
-            HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(requestUri, innerException, detail),
+            HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(requestUri, innerException, content),
             HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(requestUri, innerException),
             HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(requestUri, innerException),
-            _ => new AzureSignalRRuntimeException(requestUri, innerException),
+            _ => new AzureSignalRRuntimeException(requestUri, innerException, response.StatusCode, content),
         };
     }
 
@@ -226,7 +227,6 @@ internal class MicrosoftEntraAccessKey : AccessKey
         }
 
         var content = await response.Content.ReadAsStringAsync();
-
         var obj = JsonSerializer.Deserialize<AccessKeyResponse>(content) ?? throw new AzureSignalRException("Access key response is not expected.");
 
         if (string.IsNullOrEmpty(obj.KeyId))

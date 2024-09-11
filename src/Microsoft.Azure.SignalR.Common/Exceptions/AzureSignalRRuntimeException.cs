@@ -2,24 +2,40 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.Serialization;
+using System.Net;
 
-namespace Microsoft.Azure.SignalR.Common
+namespace Microsoft.Azure.SignalR.Common;
+
+[Serializable]
+public class AzureSignalRRuntimeException : AzureSignalRException
 {
-    [Serializable]
-    public class AzureSignalRRuntimeException : AzureSignalRException
+    private const string ErrorMessage = "Azure SignalR service runtime error.";
+
+    private const string NetworkErrorMessage = "403 Forbidden, please check your Network settings.";
+
+    internal HttpStatusCode StatusCode { get; private set; } = HttpStatusCode.InternalServerError;
+
+    public AzureSignalRRuntimeException(string requestUri, Exception inner) : base(GetExceptionMessage(HttpStatusCode.InternalServerError, requestUri, string.Empty), inner)
     {
-        private const string ErrorMessage = "Azure SignalR service runtime error.";
+    }
 
-        public AzureSignalRRuntimeException(string requestUri, Exception innerException) : base(string.IsNullOrEmpty(requestUri) ? ErrorMessage : $"{ErrorMessage} Request Uri: {requestUri}", innerException)
-        {
-        }
+    internal AzureSignalRRuntimeException(string requestUri, Exception inner, HttpStatusCode statusCode, string content) : base(GetExceptionMessage(statusCode, requestUri, content), inner)
+    {
+        StatusCode = statusCode;
+    }
 
-#if NET8_0_OR_GREATER
-        [Obsolete]
-#endif
-        protected AzureSignalRRuntimeException(SerializationInfo info, StreamingContext context) : base(info, context)
+    private static string GetExceptionMessage(HttpStatusCode statusCode, string requestUri, string content)
+    {
+        var reason = statusCode switch
         {
-        }
+            HttpStatusCode.Forbidden => GetForbiddenReason(content),
+            _ => ErrorMessage,
+        };
+        return string.IsNullOrEmpty(requestUri) ? reason : $"{reason} Request Uri: {requestUri}";
+    }
+
+    private static string GetForbiddenReason(string content)
+    {
+        return content.Contains("nginx") ? NetworkErrorMessage : content;
     }
 }

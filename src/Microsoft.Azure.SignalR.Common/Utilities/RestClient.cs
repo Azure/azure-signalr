@@ -131,7 +131,7 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
             HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(response.RequestMessage?.RequestUri?.ToString(), innerException, detail),
             HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(response.RequestMessage?.RequestUri?.ToString(), innerException),
             HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(response.RequestMessage?.RequestUri?.ToString(), innerException),
-            _ => new AzureSignalRRuntimeException(response.RequestMessage?.RequestUri?.ToString(), innerException),
+            _ => new AzureSignalRRuntimeException(response.RequestMessage?.RequestUri?.ToString(), innerException, response.StatusCode, detail),
         };
     }
 
