@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Azure.Core;
-
+using Azure.Core.Serialization;
 using Microsoft.Azure.SignalR.Common;
 
 using Newtonsoft.Json.Linq;
@@ -168,8 +168,9 @@ internal class MicrosoftEntraAccessKey : AccessKey
     private async Task GetAccessKeyInternalAsync(string accessToken, CancellationToken ctoken = default)
     {
         var api = new RestApiEndpoint(GetAccessKeyUrl, accessToken);
-
-        await new RestClient().SendAsync(
+        var builder = new JsonPayloadContentBuilder(new JsonObjectSerializer());
+        var client = new RestClient(HttpClientFactory.Instance, builder);
+        await client.SendAsync(
             api,
             HttpMethod.Get,
             handleExpectedResponseAsync: HandleHttpResponseAsync,
