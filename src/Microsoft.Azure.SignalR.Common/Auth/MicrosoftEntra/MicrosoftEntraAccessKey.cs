@@ -17,7 +17,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.SignalR;
 
-internal class MicrosoftEntraAccessKey : AccessKey
+internal partial class MicrosoftEntraAccessKey : AccessKey
 {
     internal static readonly TimeSpan GetAccessKeyTimeout = TimeSpan.FromSeconds(100);
 
@@ -169,7 +169,7 @@ internal class MicrosoftEntraAccessKey : AccessKey
     {
         var api = new RestApiEndpoint(GetAccessKeyUrl, accessToken);
 
-        await new RestClient().SendAsync(
+        await new RestClient(HttpClientFactory.Instance).SendAsync(
             api,
             HttpMethod.Get,
             handleExpectedResponseAsync: HandleHttpResponseAsync,

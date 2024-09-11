@@ -5,7 +5,7 @@ using System.Net.Http;
 using Azure.Core.Serialization;
 
 #nullable enable
-namespace Microsoft.Azure.SignalR.Common
+namespace Microsoft.Azure.SignalR.Management
 {
     internal class JsonPayloadContentBuilder : IPayloadContentBuilder
     {

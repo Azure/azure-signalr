@@ -4,11 +4,12 @@
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
+namespace Microsoft.Azure.SignalR.Management.Tests.Rest
 {
     public class RestClientFacts
     {

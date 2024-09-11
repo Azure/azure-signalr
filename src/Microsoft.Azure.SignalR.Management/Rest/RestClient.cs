@@ -15,7 +15,7 @@ using Microsoft.Extensions.Primitives;
 
 #nullable enable
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestClient
     {

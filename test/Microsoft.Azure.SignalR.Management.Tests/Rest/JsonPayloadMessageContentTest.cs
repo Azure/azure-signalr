@@ -7,9 +7,10 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
+using Microsoft.Azure.SignalR;
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.Common.Tests
+namespace Microsoft.Azure.SignalR.Management.Tests
 {
     public class JsonPayloadMessageContentTest
     {

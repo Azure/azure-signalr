@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.SignalR.Protocol;
 
 #nullable enable
 
-namespace Microsoft.Azure.SignalR.Common
+namespace Microsoft.Azure.SignalR.Management
 {
     internal class BinaryPayloadContentBuilder : IPayloadContentBuilder
     {

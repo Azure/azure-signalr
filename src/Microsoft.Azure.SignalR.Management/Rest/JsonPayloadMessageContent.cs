@@ -9,7 +9,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR.Management
 {
     internal class JsonPayloadMessageContent : HttpContent
     {

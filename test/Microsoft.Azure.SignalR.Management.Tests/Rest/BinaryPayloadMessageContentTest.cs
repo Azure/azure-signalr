@@ -6,12 +6,11 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 using MessagePack;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.Common.Tests
+namespace Microsoft.Azure.SignalR.Management.Tests
 {
     public class BinaryPayloadMessageContentTest
     {

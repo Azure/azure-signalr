@@ -5,7 +5,7 @@ using System.Net.Http;
 
 #nullable enable
 
-namespace Microsoft.Azure.SignalR.Common
+namespace Microsoft.Azure.SignalR.Management
 {
     internal interface IPayloadContentBuilder
     {
