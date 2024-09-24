@@ -33,11 +33,6 @@ namespace Microsoft.Azure.SignalR
         {
         }
 
-        // TODO: remove later
-        public RestClient() : this(HttpClientFactory.Instance)
-        {
-        }
-
         public Task SendAsync(
             RestApiEndpoint api,
             HttpMethod httpMethod,
