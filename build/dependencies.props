@@ -27,12 +27,17 @@
     <SystemNetWebSocketsWebSocketProtocolPackageVersion>4.5.3</SystemNetWebSocketsWebSocketProtocolPackageVersion>
 
     <!-- Azure ASP.NET SignalR -->
-    <MicrosoftAspNetSignalRPackageVersion>2.4.1</MicrosoftAspNetSignalRPackageVersion>
-    <MicrosoftExtensionsLoggingEventSourcePackageVersion>2.1.0</MicrosoftExtensionsLoggingEventSourcePackageVersion>
-    <SystemThreadingChannelsPackageVersion>4.6.0</SystemThreadingChannelsPackageVersion>
-    <SystemIOPipelinesPackageVersion>4.6.0</SystemIOPipelinesPackageVersion>
+    <MicrosoftAspNetSignalRPackageVersion>2.4.3</MicrosoftAspNetSignalRPackageVersion>
+    <MicrosoftExtensionsLoggingEventSourcePackageVersion>8.0.0</MicrosoftExtensionsLoggingEventSourcePackageVersion>
+    <SystemThreadingChannelsPackageVersion>8.0.0</SystemThreadingChannelsPackageVersion>
+    <SystemIOPipelinesPackageVersion>8.0.0</SystemIOPipelinesPackageVersion>
     <MicrosoftOwinPackageVersion>4.2.2</MicrosoftOwinPackageVersion>
     <OwinPackageVersion>1.0.0</OwinPackageVersion>
+    <MicrosoftAspNetCoreConnectionsAbstractionsNet8PackageVersion>8.0.8</MicrosoftAspNetCoreConnectionsAbstractionsNet8PackageVersion>
+    <MicrosoftExtensionsDependencyInjectionNet8PackageVersion>8.0.0</MicrosoftExtensionsDependencyInjectionNet8PackageVersion>
+    <MicrosoftAspNetCoreHttpConnectionsCommonNet8PackageVersion>8.0.8</MicrosoftAspNetCoreHttpConnectionsCommonNet8PackageVersion>
+    <MicrosoftExtensionsLoggingAbstractionsNet8PackageVersion>8.0.1</MicrosoftExtensionsLoggingAbstractionsNet8PackageVersion>
+    <MicrosoftAspNetCoreSignalRCommonNet8PackageVersion>8.0.8</MicrosoftAspNetCoreSignalRCommonNet8PackageVersion>
 
     <!-- SignalR Management -->
     <AzureCorePackageVersion>1.39.0</AzureCorePackageVersion>

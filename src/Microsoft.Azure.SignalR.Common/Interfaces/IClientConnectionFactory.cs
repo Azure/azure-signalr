@@ -2,7 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+#if NETFRAMEWORK
+using System.Web;
+#else
 using Microsoft.AspNetCore.Http;
+#endif
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR;

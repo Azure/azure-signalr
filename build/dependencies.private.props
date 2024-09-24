@@ -15,8 +15,6 @@
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <MicrosoftExtensionsLoggingTestingPackageVersion>2.1.0</MicrosoftExtensionsLoggingTestingPackageVersion>
     <MicrosoftAspNetCoreTestingVersion>2.1.0</MicrosoftAspNetCoreTestingVersion>
-    <!--Requires old version due to the breaking change in https://github.com/Azure/azure-signalr/issues/1503-->
-    <MicrosoftAspNetCoreHttpConnectionsClientPackageOldVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackageOldVersion>
     <MicrosoftAspNetSignalRClientVersion>2.4.3</MicrosoftAspNetSignalRClientVersion>
 
     <MicrosoftAspNetCoreSignalRClientPackageVersion>8.0.8</MicrosoftAspNetCoreSignalRClientPackageVersion>

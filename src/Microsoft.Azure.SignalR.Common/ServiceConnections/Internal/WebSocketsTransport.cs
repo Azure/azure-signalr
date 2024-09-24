@@ -201,7 +201,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
             {
                 while (true)
                 {
-#if !NETSTANDARD2_0
+#if NETCOREAPP
                     // Do a 0 byte read so that idle connections don't allocate a buffer when waiting for a read
                     var result = await socket.ReceiveAsync(Memory<byte>.Empty, CancellationToken.None);
 
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
                     }
 #endif
                     var memory = _application.Output.GetMemory(2048);
-#if !NETSTANDARD2_0
+#if NETCOREAPP
                     // Because we checked the CloseStatus from the 0 byte read above, we don't need to check again after reading
                     var receiveResult = await socket.ReceiveAsync(memory, CancellationToken.None);
 #else

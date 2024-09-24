@@ -11,11 +11,8 @@
     <!-- Directly reference Microsoft.Owin 4.x for security fix -->
     <PackageReference Include="Microsoft.Owin" Version="$(MicrosoftOwinPackageVersion)" />
     <PackageReference Include="Microsoft.AspNet.SignalR" Version="$(MicrosoftAspNetSignalRPackageVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.Connections.Abstractions" Version="$(MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion)" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging.EventSource" Version="$(MicrosoftExtensionsLoggingEventSourcePackageVersion)" />
-    <PackageReference Include="System.IO.Pipelines" Version="$(SystemIOPipelinesPackageVersion)" />
-    <PackageReference Include="System.Threading.Channels" Version="$(SystemThreadingChannelsPackageVersion)" />
+    
   </ItemGroup>
 
   <ItemGroup>
@@ -25,7 +22,6 @@
 
   <ItemGroup>
     <Reference Include="System.Configuration" />
-    <Reference Include="System.Web" />
   </ItemGroup>
 
   <!-- Copy the referenced Microsoft.Azure.SignalR.Common.dll into the package https://github.com/nuget/home/issues/3891#issuecomment-397481361 -->
