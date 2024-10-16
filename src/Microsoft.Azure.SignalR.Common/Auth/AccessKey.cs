@@ -7,42 +7,41 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal class AccessKey
 {
-    internal class AccessKey
+    public string Id => Key?.Item1;
+
+    public string Value => Key?.Item2;
+
+    public Uri Endpoint { get; }
+
+    protected Tuple<string, string> Key { get; set; }
+
+    public AccessKey(string uri, string key) : this(new Uri(uri))
     {
-        public string Id => Key?.Item1;
+        Key = new Tuple<string, string>(key.GetHashCode().ToString(), key);
+    }
 
-        public string Value => Key?.Item2;
+    public AccessKey(Uri uri, string key) : this(uri)
+    {
+        Key = new Tuple<string, string>(key.GetHashCode().ToString(), key);
+    }
 
-        public Uri Endpoint { get; }
+    protected AccessKey(Uri uri)
+    {
+        Endpoint = uri;
+    }
 
-        protected Tuple<string, string> Key { get; set; }
-
-        public AccessKey(string uri, string key) : this(new Uri(uri))
-        {
-            Key = new Tuple<string, string>(key.GetHashCode().ToString(), key);
-        }
-
-        public AccessKey(Uri uri, string key) : this(uri)
-        {
-            Key = new Tuple<string, string>(key.GetHashCode().ToString(), key);
-        }
-
-        protected AccessKey(Uri uri)
-        {
-            Endpoint = uri;
-        }
-
-        public virtual Task<string> GenerateAccessTokenAsync(
-            string audience,
-            IEnumerable<Claim> claims,
-            TimeSpan lifetime,
-            AccessTokenAlgorithm algorithm,
-            CancellationToken ctoken = default)
-        {
-            var token = AuthUtility.GenerateAccessToken(this, audience, claims, lifetime, algorithm);
-            return Task.FromResult(token);
-        }
+    public virtual Task<string> GenerateAccessTokenAsync(
+        string audience,
+        IEnumerable<Claim> claims,
+        TimeSpan lifetime,
+        AccessTokenAlgorithm algorithm,
+        CancellationToken ctoken = default)
+    {
+        var token = AuthUtility.GenerateAccessToken(this, audience, claims, lifetime, algorithm);
+        return Task.FromResult(token);
     }
 }
