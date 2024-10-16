@@ -106,7 +106,7 @@ internal partial class MicrosoftEntraAccessKey : AccessKey
         {
             await task;
             return IsAuthorized
-                ? await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm)
+                ? await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm, ctoken)
                 : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential.GetType().Name, _lastException);
         }
         else

@@ -10,43 +10,42 @@ using Azure.Identity;
 
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.Common.Tests.Auth
+namespace Microsoft.Azure.SignalR.Common.Tests.Auth;
+
+[Collection("Auth")]
+public class AuthUtilityTests
 {
-    [Collection("Auth")]
-    public class AuthUtilityTests
+    private const string Audience = "https://localhost/aspnetclient?hub=testhub";
+
+    private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    private static readonly TimeSpan DefaultLifetime = TimeSpan.FromHours(1);
+
+    [Fact]
+    public void TestAccessTokenTooLongThrowsException()
     {
-        private const string Audience = "https://localhost/aspnetclient?hub=testhub";
+        var claims = GenerateClaims(100);
+        var accessKey = new AccessKey("http://localhost:443", SigningKey);
+        var exception = Assert.Throws<AzureSignalRAccessTokenTooLongException>(() => AuthUtility.GenerateAccessToken(accessKey, Audience, claims, DefaultLifetime, AccessTokenAlgorithm.HS256));
 
-        private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        Assert.Equal("AccessToken must not be longer than 4K.", exception.Message);
+    }
 
-        private static readonly TimeSpan DefaultLifetime = TimeSpan.FromHours(1);
+    private static Claim[] GenerateClaims(int count)
+    {
+        return Enumerable.Range(0, count).Select(s => new Claim($"ClaimSubject{s}", $"ClaimValue{s}")).ToArray();
+    }
 
-        [Fact]
-        public void TestAccessTokenTooLongThrowsException()
+    public class CachingTestData : IEnumerable<object[]>
+    {
+        public IEnumerator<object[]> GetEnumerator()
         {
-            var claims = GenerateClaims(100);
-            var accessKey = new AccessKey("http://localhost:443", SigningKey);
-            var exception = Assert.Throws<AzureSignalRAccessTokenTooLongException>(() => AuthUtility.GenerateAccessToken(accessKey, Audience, claims, DefaultLifetime, AccessTokenAlgorithm.HS256));
-
-            Assert.Equal("AccessToken must not be longer than 4K.", exception.Message);
+            yield return new object[] { new AccessKey("http://localhost:443", SigningKey), true };
+            var key = new MicrosoftEntraAccessKey(new Uri("http://localhost"), new DefaultAzureCredential());
+            key.UpdateAccessKey("foo", SigningKey);
+            yield return new object[] { key, false };
         }
 
-        private static Claim[] GenerateClaims(int count)
-        {
-            return Enumerable.Range(0, count).Select(s => new Claim($"ClaimSubject{s}", $"ClaimValue{s}")).ToArray();
-        }
-
-        public class CachingTestData : IEnumerable<object[]>
-        {
-            public IEnumerator<object[]> GetEnumerator()
-            {
-                yield return new object[] { new AccessKey("http://localhost:443", SigningKey), true };
-                var key = new MicrosoftEntraAccessKey(new Uri("http://localhost"), new DefaultAzureCredential());
-                key.UpdateAccessKey("foo", SigningKey);
-                yield return new object[] { key, false };
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }
