@@ -148,6 +148,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
         var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext) as ClientConnectionContext;
         connection.ServiceConnection = this;
 
+        connection.Features.Set<IConnectionMigrationFeature>(null);
         if (message.Headers.TryGetValue(Constants.AsrsMigrateFrom, out var from))
         {
             connection.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(from, ServerId));
@@ -184,6 +185,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
     {
         if (_clientConnectionManager.TryRemoveClientConnection(message.ConnectionId, out var c) && c is ClientConnectionContext connection)
         {
+            connection.Features.Set<IConnectionMigrationFeature>(null);
+
             if (message.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
             {
                 connection.AbortOnClose = false;

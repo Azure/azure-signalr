@@ -118,6 +118,45 @@ public class ServiceMessageTests : VerifiableLoggedTest
     }
 
     [Fact]
+    public async Task TestMigrateInAndNormalClose()
+    {
+        var clientConnectionFactory = new TestClientConnectionFactory();
+        var clientInvocationManager = new DefaultClientInvocationManager();
+        var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, clientInvocationManager: clientInvocationManager);
+        _ = connection.StartAsync();
+        await connection.ConnectionInitializedTask.OrTimeout();
+
+        var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>()) { Protocol = "json" };
+        openConnectionMessage.Headers.Add(Constants.AsrsMigrateFrom, "another-server");
+        _ = connection.WriteFromServiceAsync(openConnectionMessage);
+        await connection.ClientConnectedTask.OrTimeout();
+
+        Assert.Equal(1, clientConnectionFactory.Connections.Count);
+        var clientConnection = clientConnectionFactory.Connections[0];
+        var feature = clientConnection.Features.Get<IConnectionMigrationFeature>();
+        Assert.NotNull(feature);
+        Assert.Equal("another-server", feature.MigrateFrom);
+
+        // write a handshake response
+        var message = new SignalRProtocol.HandshakeResponseMessage("");
+        SignalRProtocol.HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
+        await clientConnection.Transport.Output.FlushAsync();
+
+        // signalr handshake response should be skipped.
+        await Assert.ThrowsAsync<TimeoutException>(async () => await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout(1000));
+
+        // write close connection message
+        await connection.WriteFromServiceAsync(new CloseConnectionMessage(clientConnection.ConnectionId));
+
+        // wait until app task completed.
+        await clientConnection.LifetimeTask;
+
+        await connection.StopAsync();
+
+        Assert.Null(clientConnection.Features.Get<IConnectionMigrationFeature>());
+    }
+
+    [Fact]
     public async Task TestCloseConnectionMessage()
     {
         var clientConnectionFactory = new TestClientConnectionFactory();
@@ -143,7 +182,6 @@ public class ServiceMessageTests : VerifiableLoggedTest
         await connection.WriteFromServiceAsync(new CloseConnectionMessage(clientConnection.ConnectionId));
 
         // wait until app task completed.
-        await Assert.ThrowsAsync<TimeoutException>(async () => await clientConnection.LifetimeTask.OrTimeout(1000));
         await clientConnection.LifetimeTask;
 
         await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout(1000);
