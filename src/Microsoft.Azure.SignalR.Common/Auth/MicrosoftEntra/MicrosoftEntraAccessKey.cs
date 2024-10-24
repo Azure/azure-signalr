@@ -7,14 +7,13 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Azure.Core;
 
 using Microsoft.Azure.SignalR.Common;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.SignalR;
 
@@ -227,7 +226,8 @@ internal class MicrosoftEntraAccessKey : AccessKey
         }
 
         var content = await response.Content.ReadAsStringAsync();
-        var obj = JsonConvert.DeserializeObject<AccessKeyResponse>(content) ?? throw new AzureSignalRException("Access key response is not expected.");
+
+        var obj = JsonSerializer.Deserialize<AccessKeyResponse>(content) ?? throw new AzureSignalRException("Access key response is not expected.");
 
         if (string.IsNullOrEmpty(obj.KeyId))
         {
