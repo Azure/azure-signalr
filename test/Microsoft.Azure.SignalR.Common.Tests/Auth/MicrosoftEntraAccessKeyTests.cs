@@ -207,8 +207,8 @@ public class MicrosoftEntraAccessKeyTests
     }
 
     [Theory]
-    [InlineData("please check your Network settings", "403 forbidden, nginx")]
-    [InlineData("non-nginx", "non-nginx")]
+    [InlineData(AzureSignalRRuntimeException.NetworkErrorMessage, "403 forbidden, nginx")]
+    [InlineData("Please check your role assignments.", "Please check your role assignments.")]
     public async Task ThrowForbiddenExceptionTest(string expected, string responseContent)
     {
         var endpoint = new Uri("https://test-aad-signalr.service.signalr.net");

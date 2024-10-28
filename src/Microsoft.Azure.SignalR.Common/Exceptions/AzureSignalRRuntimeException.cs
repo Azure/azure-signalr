@@ -9,9 +9,9 @@ namespace Microsoft.Azure.SignalR.Common;
 [Serializable]
 public class AzureSignalRRuntimeException : AzureSignalRException
 {
-    private const string ErrorMessage = "Azure SignalR service runtime error.";
+    internal const string ErrorMessage = "Azure SignalR service runtime error.";
 
-    private const string NetworkErrorMessage = "403 Forbidden, please check your Network settings.";
+    internal const string NetworkErrorMessage = "403 Forbidden, please check your service Networking settings.";
 
     internal HttpStatusCode StatusCode { get; private set; } = HttpStatusCode.InternalServerError;
 
