@@ -95,6 +95,8 @@ namespace Microsoft.Azure.SignalR
             public const string AuthExpiresOn = AzureSignalRSysPrefix + "aeo";
 
             public const string AzureSignalRUserPrefix = "asrs.u.";
+
+            public const string AzureSignalRUserIssuer = "asrs.u.iss";
         }
 
         public static class Path
