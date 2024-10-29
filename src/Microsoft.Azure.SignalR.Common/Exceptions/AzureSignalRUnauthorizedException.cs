@@ -4,26 +4,32 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace Microsoft.Azure.SignalR.Common
+namespace Microsoft.Azure.SignalR.Common;
+
+[Serializable]
+public class AzureSignalRUnauthorizedException : AzureSignalRException
 {
-    [Serializable]
-    public class AzureSignalRUnauthorizedException : AzureSignalRException
+    /// <summary>
+    /// TODO: Try parse token issuer to identify the possible cause of 401
+    /// </summary>
+    internal const string ErrorMessage = $"401 Unauthorized. If you were using AccessKey, {ErrorMessageLocalAuth}. If you were using Microsoft Entra authentication, {ErrorMessageMicrosoftEntra}";
+
+    internal const string ErrorMessageLocalAuth = "please check the connection string and see if the AccessKey is correct.";
+
+    internal const string ErrorMessageMicrosoftEntra = "please check if you set the AzureAuthorityHosts properly in your TokenCredentialOptions, see \"https://learn.microsoft.com/en-us/dotnet/api/azure.identity.azureauthorityhosts\".";
+
+    public AzureSignalRUnauthorizedException(string requestUri, Exception innerException) : base(string.IsNullOrEmpty(requestUri) ? ErrorMessage : $"{ErrorMessage} Request Uri: {requestUri}", innerException)
     {
-        internal const string ErrorMessage = "Authorization failed. If you were using AccessKey, please check connection string and see if the AccessKey is correct. If you were using Azure Active Directory, please note that the role assignments will take up to 30 minutes to take effect if it was added recently.";
+    }
 
-        public AzureSignalRUnauthorizedException(string requestUri, Exception innerException) : base(string.IsNullOrEmpty(requestUri) ? ErrorMessage : $"{ErrorMessage} Request Uri: {requestUri}", innerException)
-        {
-        }
-
-        internal AzureSignalRUnauthorizedException(Exception innerException) : base(ErrorMessage, innerException)
-        {
-        }
+    internal AzureSignalRUnauthorizedException(Exception innerException) : base(ErrorMessage, innerException)
+    {
+    }
 
 #if NET8_0_OR_GREATER
-        [Obsolete]
+    [Obsolete]
 #endif
-        protected AzureSignalRUnauthorizedException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+    protected AzureSignalRUnauthorizedException(SerializationInfo info, StreamingContext context) : base(info, context)
+    {
     }
 }
