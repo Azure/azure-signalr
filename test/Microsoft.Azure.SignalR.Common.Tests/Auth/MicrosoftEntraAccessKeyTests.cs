@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -129,14 +131,15 @@ public class MicrosoftEntraAccessKeyTests
         Assert.IsType<InvalidOperationException>(exception.InnerException);
     }
 
-    [Fact]
-    public async Task TestUpdateAccessKeyAfterInitializeFailed()
+    [Theory]
+    [ClassData(typeof(NotAuthorizedTestData))]
+    public async Task TestUpdateAccessKeyFailedThrowsNotAuthorizedException(AzureSignalRException e, string expectedErrorMessage)
     {
         var mockCredential = new Mock<TokenCredential>();
         mockCredential.Setup(credential => credential.GetTokenAsync(
             It.IsAny<TokenRequestContext>(),
             It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("Mock GetTokenAsync throws an exception"));
+            .ThrowsAsync(e);
         var key = new MicrosoftEntraAccessKey(DefaultEndpoint, mockCredential.Object);
 
         var audience = "http://localhost/chat";
@@ -149,10 +152,11 @@ public class MicrosoftEntraAccessKeyTests
         var exception = await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(
             async () => await key.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm)
         );
-        Assert.IsType<InvalidOperationException>(exception.InnerException);
+        Assert.Same(exception.InnerException, e);
         Assert.Same(exception.InnerException, key.LastException);
+        Assert.StartsWith($"TokenCredentialProxy is not available for signing client tokens", exception.Message);
+        Assert.Contains(expectedErrorMessage, exception.Message);
 
-        Assert.NotNull(key.LastException);
         var (kid, accessKey) = ("foo", DefaultSigningKey);
         key.UpdateAccessKey(kid, accessKey);
         Assert.Null(key.LastException);
@@ -231,6 +235,21 @@ public class MicrosoftEntraAccessKeyTests
         Assert.Equal(HttpStatusCode.Forbidden, ex.StatusCode);
         Assert.Contains(expected, ex.Message);
         Assert.EndsWith($"Request Uri: {endpoint}", ex.Message);
+    }
+
+    public class NotAuthorizedTestData : IEnumerable<object[]>
+    {
+        private const string DefaultUri = "https://microsoft.com";
+
+        public IEnumerator<object[]> GetEnumerator()
+        {
+            yield return [new AzureSignalRUnauthorizedException(new Exception()), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
+            yield return [new AzureSignalRRuntimeException(DefaultUri, new Exception(), HttpStatusCode.Forbidden, "nginx"), AzureSignalRRuntimeException.NetworkErrorMessage];
+            yield return [new AzureSignalRRuntimeException(DefaultUri, new Exception(), HttpStatusCode.Forbidden, "http-content"), "http-content"];
+            yield return [new AzureSignalRRuntimeException(DefaultUri, new Exception("inner-exception-message"), HttpStatusCode.NotFound, "http"), AzureSignalRRuntimeException.ErrorMessage];
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     private sealed class TestHttpClientFactory(HttpResponseMessage message) : IHttpClientFactory

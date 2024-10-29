@@ -3,8 +3,11 @@
 
 using System;
 using System.Net;
+using System.Runtime.Serialization;
 
 namespace Microsoft.Azure.SignalR.Common;
+
+#nullable enable
 
 [Serializable]
 public class AzureSignalRRuntimeException : AzureSignalRException
@@ -15,20 +18,20 @@ public class AzureSignalRRuntimeException : AzureSignalRException
 
     internal HttpStatusCode StatusCode { get; private set; } = HttpStatusCode.InternalServerError;
 
-    public AzureSignalRRuntimeException(string requestUri, Exception inner) : base(GetExceptionMessage(HttpStatusCode.InternalServerError, requestUri, string.Empty), inner)
+    public AzureSignalRRuntimeException(string? requestUri, Exception inner) : base(GetExceptionMessage(HttpStatusCode.InternalServerError, requestUri, string.Empty), inner)
     {
     }
 
-    internal AzureSignalRRuntimeException(string requestUri, Exception inner, HttpStatusCode statusCode, string content) : base(GetExceptionMessage(statusCode, requestUri, content), inner)
+    internal AzureSignalRRuntimeException(string? requestUri, Exception inner, HttpStatusCode statusCode, string? content) : base(GetExceptionMessage(statusCode, requestUri, content), inner)
     {
         StatusCode = statusCode;
     }
 
-    private static string GetExceptionMessage(HttpStatusCode statusCode, string requestUri, string content)
+    private static string GetExceptionMessage(HttpStatusCode statusCode, string? requestUri, string? content)
     {
         var reason = statusCode switch
         {
-            HttpStatusCode.Forbidden => GetForbiddenReason(content),
+            HttpStatusCode.Forbidden => GetForbiddenReason(content ?? string.Empty),
             _ => ErrorMessage,
         };
         return string.IsNullOrEmpty(requestUri) ? reason : $"{reason} Request Uri: {requestUri}";
@@ -37,5 +40,12 @@ public class AzureSignalRRuntimeException : AzureSignalRException
     private static string GetForbiddenReason(string content)
     {
         return content.Contains("nginx") ? NetworkErrorMessage : content;
+    }
+
+#if NET8_0_OR_GREATER
+    [Obsolete]
+#endif
+    protected AzureSignalRRuntimeException(SerializationInfo info, StreamingContext context) : base(info, context)
+    {
     }
 }
