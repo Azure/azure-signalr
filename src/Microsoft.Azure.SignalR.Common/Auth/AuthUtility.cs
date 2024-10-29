@@ -14,7 +14,7 @@ internal static class AuthUtility
 {
     private const int MaxTokenLength = 4096;
 
-    private static readonly SignalRJwtSecurityTokenHandler JwtTokenHandler = new SignalRJwtSecurityTokenHandler();
+    private static readonly SignalRJwtSecurityTokenHandler JwtTokenHandler = new();
 
     public static string GenerateJwtBearer(
         string issuer = null,
@@ -28,7 +28,7 @@ internal static class AuthUtility
     {
         var subject = claims == null ? null : new ClaimsIdentity(claims);
 
-        string token = JwtTokenHandler.CreateJwtSecurityToken(
+        var token = JwtTokenHandler.CreateJwtSecurityToken(
             expires: expires,
             issuedAt: issuedAt,
             issuer: issuer,
@@ -59,12 +59,7 @@ internal static class AuthUtility
             algorithm: algorithm
         );
 
-        if (jwtToken.Length > MaxTokenLength)
-        {
-            throw new AzureSignalRAccessTokenTooLongException();
-        }
-
-        return jwtToken;
+        return jwtToken.Length > MaxTokenLength ? throw new AzureSignalRAccessTokenTooLongException() : jwtToken;
     }
 
     public static string GenerateRequestId()
