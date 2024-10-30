@@ -25,8 +25,14 @@ public class AuthUtilityTests
     public void TestAccessTokenTooLongThrowsException()
     {
         var claims = GenerateClaims(100);
-        var accessKey = new AccessKey("http://localhost:443", SigningKey);
-        var exception = Assert.Throws<AzureSignalRAccessTokenTooLongException>(() => AuthUtility.GenerateAccessToken(accessKey, Audience, claims, DefaultLifetime, AccessTokenAlgorithm.HS256));
+        var accessKey = new AccessKey(new Uri("http://localhost:443"), SigningKey);
+        var exception = Assert.Throws<AzureSignalRAccessTokenTooLongException>(() => AuthUtility.GenerateAccessToken(
+            accessKey.KeyBytes,
+            accessKey.Kid,
+            Audience,
+            claims,
+            DefaultLifetime,
+            AccessTokenAlgorithm.HS256));
 
         Assert.Equal("AccessToken must not be longer than 4K.", exception.Message);
     }
@@ -40,7 +46,7 @@ public class AuthUtilityTests
     {
         public IEnumerator<object[]> GetEnumerator()
         {
-            yield return new object[] { new AccessKey("http://localhost:443", SigningKey), true };
+            yield return new object[] { new AccessKey(new Uri("http://localhost:443"), SigningKey), true };
             var key = new MicrosoftEntraAccessKey(new Uri("http://localhost"), new DefaultAzureCredential());
             key.UpdateAccessKey("foo", SigningKey);
             yield return new object[] { key, false };

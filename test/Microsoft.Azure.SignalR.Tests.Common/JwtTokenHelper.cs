@@ -45,7 +45,7 @@ internal static class JwtTokenHelper
 
     public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string key, IEnumerable<Claim> customClaims = null)
     {
-        return GenerateExpectedAccessToken(token, audience, new AccessKey(TestEndpoint, key), customClaims: customClaims);
+        return GenerateExpectedAccessToken(token, audience, new AccessKey(new Uri(TestEndpoint), key), customClaims: customClaims);
     }
 
     public static string GenerateJwtBearer(
@@ -54,17 +54,18 @@ internal static class JwtTokenHelper
         DateTime expires,
         DateTime notBefore,
         DateTime issueAt,
-        AccessKey signingKey
+        IAccessKey signingKey
     )
     {
         return AuthUtility.GenerateJwtBearer(
+            signingKey.KeyBytes,
+            signingKey.Kid,
             issuer: null,
             audience: audience,
             claims: subject,
             notBefore: notBefore,
             expires: expires,
-            issuedAt: issueAt,
-            signingKey: signingKey
+            issuedAt: issueAt
         );
     }
 
@@ -77,6 +78,6 @@ internal static class JwtTokenHelper
         string signingKey
     )
     {
-        return GenerateJwtBearer(audience, subject, expires, notBefore, issueAt, new AccessKey(TestEndpoint, signingKey));
+        return GenerateJwtBearer(audience, subject, expires, notBefore, issueAt, new AccessKey(new Uri(TestEndpoint), signingKey));
     }
 }

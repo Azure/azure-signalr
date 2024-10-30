@@ -3,19 +3,18 @@
 
 using System;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal class ParsedConnectionString
 {
-    internal class ParsedConnectionString
-    {
-        internal AccessKey AccessKey { get; set; }
+    internal IAccessKey AccessKey { get; set; }
 
-        internal Uri Endpoint { get; set; }
+    internal Uri Endpoint { get; set; }
 
-        internal Uri ClientEndpoint { get; set; }
+    internal Uri ClientEndpoint { get; set; }
 
-        internal Uri ServerEndpoint { get; set; }
+    internal Uri ServerEndpoint { get; set; }
 
-        internal string Version { get; set; }
+    internal string Version { get; set; }
 
-    }
 }
