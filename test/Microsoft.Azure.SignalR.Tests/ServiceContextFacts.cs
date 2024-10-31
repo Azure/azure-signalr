@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
@@ -229,11 +230,47 @@ public class ServiceContextFacts
         var originalUiCulture = CultureInfo.CurrentUICulture.Name;
 
         _ = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
-        
+
         var expectedCulture = isCultureValid ? parsedCulture : originalCulture;
         var expectedUiCulture = isUiCultureValid ? parsedUiCulture : originalUiCulture;
 
         Assert.Equal(expectedCulture, CultureInfo.CurrentCulture.Name);
         Assert.Equal(expectedUiCulture, CultureInfo.CurrentUICulture.Name);
+    }
+
+    public static IEnumerable<object[]> TestCultures => new object[][]
+    {
+            new object[]
+            {
+                new CultureInfo("zh-CN"), new CultureInfo("en-US")
+            },
+            new object[]
+            {
+                new CultureInfo("zh-CN") { DateTimeFormat = { ShortDatePattern = "MM#dd#yyyy" } }, 
+                new CultureInfo("fr-CA") { DateTimeFormat = { ShortDatePattern = "yyyy|MM|dd" } }
+            }
+    };
+
+    [Theory]
+    [MemberData(nameof(TestCultures))]
+    public async Task ServiceConnectionContextCultureManagerTest(CultureInfo expectCulture, CultureInfo expectUICulture)
+    {
+        var (originalCulture, originalUICulture) = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
+
+        var cultureManager = new DefaultCultureInfoManager();
+
+        var requestIdProvider = new DefaultConnectionRequestIdProvider();
+        var requestId1 = requestIdProvider.GetRequestId("1");
+        var requestId2 = requestIdProvider.GetRequestId("2");
+        cultureManager.TryAddCulture(requestId1, expectCulture, expectUICulture);
+        cultureManager.TryAddCulture(requestId2, expectCulture, expectUICulture);
+
+        Assert.True(cultureManager.TryApplyCulture(requestId1));
+        Assert.Equal(expectCulture, CultureInfo.CurrentCulture);
+        Assert.Equal(expectUICulture, CultureInfo.CurrentUICulture);
+
+        await Task.Delay(31000);
+        cultureManager.Cleanup();
+        Assert.False(cultureManager.TryApplyCulture(requestId2));
     }
 }
