@@ -260,8 +260,8 @@ public class ServiceContextFacts
         var cultureManager = new DefaultCultureInfoManager();
 
         var requestIdProvider = new DefaultConnectionRequestIdProvider();
-        var requestId1 = requestIdProvider.GetRequestId("1");
-        var requestId2 = requestIdProvider.GetRequestId("2");
+        var requestId1 = "1";
+        var requestId2 = "2";
         cultureManager.TryAddCulture(requestId1, expectCulture, expectUICulture);
         cultureManager.TryAddCulture(requestId2, expectCulture, expectUICulture);
 
