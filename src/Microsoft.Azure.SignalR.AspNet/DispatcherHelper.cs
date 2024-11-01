@@ -134,11 +134,17 @@ namespace Microsoft.Azure.SignalR.AspNet
                 configuration.Resolver.Register(typeof(IServiceEventHandler), () => serviceEventHandler);
             }
 
+            var cf = configuration.Resolver.Resolve<IConnectionFactory>();
+            if (cf == null)
+            {
+                var connectionFactory = new ConnectionFactory(serverNameProvider, loggerFactory);
+                configuration.Resolver.Register(typeof(IConnectionFactory), () => cf);
+            }
+
             var scf = configuration.Resolver.Resolve<IServiceConnectionFactory>();
             if (scf == null)
             {
-                var connectionFactory = new ConnectionFactory(serverNameProvider, loggerFactory);
-                scf = new ServiceConnectionFactory(serviceProtocol, ccm, connectionFactory, loggerFactory, serverNameProvider, serviceEventHandler);
+                scf = new ServiceConnectionFactory(serviceProtocol, ccm, cf, loggerFactory, serverNameProvider, serviceEventHandler);
                 configuration.Resolver.Register(typeof(IServiceConnectionFactory), () => scf);
             }
 

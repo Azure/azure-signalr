@@ -167,6 +167,12 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         _partitionedCache = Enumerable.Range(0, 256).ToDictionary(i => (byte)i, i => new StrongBox<WeakReference<IServiceConnection>>(new WeakReference<IServiceConnection>(null)));
     }
 
+    private async Task StartStatusPing()
+    {
+        await this.ConnectionInitializedTask.ConfigureAwait(false);
+        _statusPing.Start();
+    }
+
     public event Action<StatusChange> ConnectionStatusChanged;
 
     public async Task StartAsync()

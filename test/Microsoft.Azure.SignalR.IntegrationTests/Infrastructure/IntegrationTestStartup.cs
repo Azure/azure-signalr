@@ -6,6 +6,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -53,6 +54,8 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
                 });
 
             // Here we inject MockServiceHubDispatcher and use it as a gateway to the MockService side
+            services.AddSingleton<IMockService, ConnectionTrackingMockService>();
+            services.AddSingleton<IConnectionFactory, MockServiceConnectionContextFactory>();
             services.Replace(ServiceDescriptor.Singleton(typeof(ServiceHubDispatcher<>), typeof(MockServiceHubDispatcher<>)));
 
             return services.BuildServiceProvider();
