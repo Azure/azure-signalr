@@ -12,6 +12,8 @@ using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth;
 
+#nullable enable
+
 [Collection("Auth")]
 public class AuthUtilityTests
 {
@@ -35,6 +37,41 @@ public class AuthUtilityTests
             AccessTokenAlgorithm.HS256));
 
         Assert.Equal("AccessToken must not be longer than 4K.", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("0")]
+    [InlineData("1")]
+    [InlineData("-1")]
+    [InlineData("microsoft.com")]
+    public void TestTryParseIssuer(string? issuer)
+    {
+        var accessKey = new AccessKey(new Uri("http://localhost:443"), SigningKey);
+        var token = AuthUtility.GenerateJwtBearer(accessKey.KeyBytes, issuer: issuer);
+
+        if (string.IsNullOrEmpty(issuer))
+        {
+            Assert.False(TokenUtilities.TryParseIssuer(token, out var actual));
+            Assert.Null(actual);
+        }
+        else
+        {
+            Assert.True(TokenUtilities.TryParseIssuer(token, out var actual));
+            Assert.Equal(issuer, actual);
+        }
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("123123")]
+    [InlineData("foobar")]
+    public void TestTryParseIssuerInvalidToken(string? jwtToken)
+    {
+        Assert.False(TokenUtilities.TryParseIssuer(jwtToken, out var issuer));
+        Assert.Null(issuer);
     }
 
     private static Claim[] GenerateClaims(int count)
