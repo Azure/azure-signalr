@@ -38,8 +38,6 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     private static readonly TimeSpan GetAccessKeyIntervalWhenUnauthorized = TimeSpan.FromMinutes(5);
 
-    private static readonly TimeSpan GetAccessKeyRetryInterval = TimeSpan.FromSeconds(3);
-
     private readonly TaskCompletionSource<object?> _initializedTcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly IHttpClientFactory _httpClientFactory;
@@ -47,6 +45,10 @@ internal class MicrosoftEntraAccessKey : IAccessKey
     private volatile bool _isAuthorized = false;
 
     private DateTime _lastUpdatedTime = DateTime.MinValue;
+
+    private volatile string? _kid;
+
+    private volatile byte[]? _keyBytes;
 
     public bool IsAuthorized
     {
@@ -66,23 +68,21 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     public TokenCredential TokenCredential { get; }
 
+    public string Kid => _kid ?? throw new ArgumentNullException(nameof(Kid));
+
+    public byte[] KeyBytes => _keyBytes ?? throw new ArgumentNullException(nameof(KeyBytes));
+
+    public Uri Endpoint { get; }
+
     internal Exception? LastException { get; private set; }
 
     internal string GetAccessKeyUrl { get; }
 
     internal bool HasExpired => DateTime.UtcNow - _lastUpdatedTime > TimeSpan.FromMinutes(GetAccessKeyIntervalInMinute * 2);
 
+    internal TimeSpan GetAccessKeyRetryInterval { get; set; } = TimeSpan.FromSeconds(3);
+
     private Task<object?> InitializedTask => _initializedTcs.Task;
-
-    private volatile string? _kid;
-
-    private volatile byte[]? _keyBytes;
-
-    public string Kid => _kid ?? throw new ArgumentNullException(nameof(Kid));
-
-    public byte[] KeyBytes => _keyBytes ?? throw new ArgumentNullException(nameof(KeyBytes));
-
-    public Uri Endpoint { get; }
 
     public MicrosoftEntraAccessKey(Uri endpoint,
                                    TokenCredential credential,
@@ -189,7 +189,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         IsAuthorized = false;
     }
 
-    private static async Task ThrowExceptionOnResponseFailureAsync(HttpResponseMessage response)
+    private static async Task ThrowExceptionOnResponseFailureAsync(HttpRequestMessage request, HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode)
         {
@@ -208,11 +208,12 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})");
 #endif
 
-        var requestUri = response.RequestMessage?.RequestUri?.ToString();
+        var requestUri = request.RequestUri?.ToString();
+        var jwtToken = request.Headers.Authorization?.Parameter ?? null;
         throw response.StatusCode switch
         {
             HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(requestUri, innerException, content),
-            HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(requestUri, innerException),
+            HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(requestUri, innerException, jwtToken),
             HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(requestUri, innerException),
             _ => new AzureSignalRRuntimeException(requestUri, innerException, response.StatusCode, content),
         };
@@ -231,7 +232,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
         await HandleHttpResponseAsync(response);
 
-        await ThrowExceptionOnResponseFailureAsync(response);
+        await ThrowExceptionOnResponseFailureAsync(request, response);
     }
 
     private async Task<bool> HandleHttpResponseAsync(HttpResponseMessage response)

@@ -31,9 +31,9 @@ internal partial class WebSocketsTransport : IDuplexPipe
 
     private readonly TimeSpan _closeTimeout;
 
-    private IDuplexPipe _application;
-
     private volatile bool _aborted;
+
+    private IDuplexPipe _application;
 
     private IDuplexPipe _transport;
 
@@ -110,10 +110,11 @@ internal partial class WebSocketsTransport : IDuplexPipe
 
         var resolvedUrl = ResolveWebSocketsUrl(url);
 
+        string accessToken = null;
         // We don't need to capture to a local because we never change this delegate.
         if (_accessTokenProvider != null)
         {
-            var accessToken = await _accessTokenProvider.ProvideAsync();
+            accessToken = await _accessTokenProvider.ProvideAsync();
             if (!string.IsNullOrEmpty(accessToken))
             {
                 _webSocket.Options.SetRequestHeader("Authorization", $"Bearer {accessToken}");
@@ -129,7 +130,7 @@ internal partial class WebSocketsTransport : IDuplexPipe
         catch (Exception e)
         {
             _webSocket.Dispose();
-            throw e.WrapAsAzureSignalRException();
+            throw e.WrapAsAzureSignalRException(accessToken);
         }
 
         Log.StartedTransport(_logger);

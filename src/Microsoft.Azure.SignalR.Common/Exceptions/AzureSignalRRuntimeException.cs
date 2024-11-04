@@ -14,7 +14,7 @@ public class AzureSignalRRuntimeException : AzureSignalRException
 {
     internal const string ErrorMessage = "Azure SignalR service runtime error.";
 
-    internal const string NetworkErrorMessage = "403 Forbidden, please check your service Networking settings.";
+    internal const string NetworkErrorMessage = "please check your service Networking settings.";
 
     internal HttpStatusCode StatusCode { get; private set; } = HttpStatusCode.InternalServerError;
 
@@ -39,7 +39,8 @@ public class AzureSignalRRuntimeException : AzureSignalRException
 
     private static string GetForbiddenReason(string content)
     {
-        return content.Contains("nginx") ? NetworkErrorMessage : content;
+        var reason = content.Contains("nginx") ? NetworkErrorMessage : content;
+        return $"403 Forbidden, {reason}";
     }
 
 #if NET8_0_OR_GREATER

@@ -110,7 +110,7 @@ internal class RestClient
         return builder.Uri;
     }
 
-    private static async Task ThrowExceptionOnResponseFailureAsync(HttpResponseMessage response)
+    private static async Task ThrowExceptionOnResponseFailureAsync(HttpRequestMessage request, HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode)
         {
@@ -126,11 +126,14 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
         var innerException = new HttpRequestException(
             $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})");
 #endif
+
+        var requestUri = request.RequestUri?.ToString();
+        var jwtToken = request.Headers.Authorization?.Parameter ?? null;
         throw response.StatusCode switch
         {
-            HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(response.RequestMessage?.RequestUri?.ToString(), innerException, detail),
-            HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(response.RequestMessage?.RequestUri?.ToString(), innerException),
-            HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(response.RequestMessage?.RequestUri?.ToString(), innerException),
+            HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(requestUri, innerException, detail),
+            HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(requestUri, innerException, jwtToken),
+            HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(requestUri, innerException),
             _ => new AzureSignalRRuntimeException(response.RequestMessage?.RequestUri?.ToString(), innerException, response.StatusCode, detail),
         };
     }
@@ -152,13 +155,13 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
             using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             if (handleExpectedResponseAsync == null)
             {
-                await ThrowExceptionOnResponseFailureAsync(response);
+                await ThrowExceptionOnResponseFailureAsync(request, response);
             }
             else
             {
                 if (!await handleExpectedResponseAsync(response))
                 {
-                    await ThrowExceptionOnResponseFailureAsync(response);
+                    await ThrowExceptionOnResponseFailureAsync(request, response);
                 }
             }
         }

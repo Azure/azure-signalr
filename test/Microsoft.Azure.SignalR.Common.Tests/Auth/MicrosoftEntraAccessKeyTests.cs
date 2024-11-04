@@ -77,7 +77,10 @@ public class MicrosoftEntraAccessKeyTests
             It.IsAny<TokenRequestContext>(),
             It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Mock GetTokenAsync throws an exception"));
-        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, mockCredential.Object);
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, mockCredential.Object)
+        {
+            GetAccessKeyRetryInterval = TimeSpan.Zero
+        };
         var isAuthorizedField = typeof(MicrosoftEntraAccessKey).GetField("_isAuthorized", BindingFlags.NonPublic | BindingFlags.Instance);
         isAuthorizedField.SetValue(key, isAuthorized);
         Assert.Equal(isAuthorized, (bool)isAuthorizedField.GetValue(key));
@@ -116,7 +119,10 @@ public class MicrosoftEntraAccessKeyTests
             It.IsAny<TokenRequestContext>(),
             It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Mock GetTokenAsync throws an exception"));
-        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, mockCredential.Object);
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, mockCredential.Object)
+        {
+            GetAccessKeyRetryInterval = TimeSpan.Zero
+        };
 
         var audience = "http://localhost/chat";
         var claims = Array.Empty<Claim>();
@@ -140,7 +146,10 @@ public class MicrosoftEntraAccessKeyTests
             It.IsAny<TokenRequestContext>(),
             It.IsAny<CancellationToken>()))
             .ThrowsAsync(e);
-        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, mockCredential.Object);
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, mockCredential.Object)
+        {
+            GetAccessKeyRetryInterval = TimeSpan.Zero
+        };
 
         var audience = "http://localhost/chat";
         var claims = Array.Empty<Claim>();
@@ -176,7 +185,7 @@ public class MicrosoftEntraAccessKeyTests
             })
         });
 
-        var credential = new TestTokenCredential();
+        var credential = new TestTokenCredential(TokenType.MicrosoftEntra);
         var key = new MicrosoftEntraAccessKey(DefaultEndpoint, credential, httpClientFactory: httpClientFactory);
 
         await key.UpdateAccessKeyAsync();
@@ -186,8 +195,10 @@ public class MicrosoftEntraAccessKeyTests
         Assert.Equal(signingKey, Encoding.UTF8.GetString(key.KeyBytes));
     }
 
-    [Fact]
-    public async Task ThrowUnauthorizedExceptionTest()
+    [Theory]
+    [InlineData(TokenType.Local)]
+    [InlineData(TokenType.MicrosoftEntra)]
+    public async Task ThrowUnauthorizedExceptionTest(TokenType tokenType)
     {
         var endpoint = new Uri("https://test-aad-signalr.service.signalr.net");
 
@@ -198,7 +209,7 @@ public class MicrosoftEntraAccessKeyTests
         };
         var key = new MicrosoftEntraAccessKey(
             endpoint,
-            new TestTokenCredential(),
+            new TestTokenCredential(tokenType),
             httpClientFactory: new TestHttpClientFactory(message)
         );
 
@@ -206,8 +217,16 @@ public class MicrosoftEntraAccessKeyTests
 
         Assert.False(key.IsAuthorized);
         var ex = Assert.IsType<AzureSignalRUnauthorizedException>(key.LastException);
-        Assert.StartsWith(AzureSignalRUnauthorizedException.ErrorMessage, ex.Message);
-        Assert.EndsWith($"Request Uri: {endpoint}", ex.Message);
+
+        var expected = tokenType switch
+        {
+            TokenType.Local => AzureSignalRUnauthorizedException.ErrorMessageLocalAuth,
+            TokenType.MicrosoftEntra => AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra,
+            _ => throw new NotImplementedException()
+        };
+        Assert.StartsWith("401 Unauthorized,", ex.Message);
+        Assert.Contains(expected, ex.Message);
+        Assert.EndsWith($"Request Uri: {endpoint}api/v1/auth/accessKey", ex.Message);
     }
 
     [Theory]
@@ -224,17 +243,22 @@ public class MicrosoftEntraAccessKeyTests
         };
         var key = new MicrosoftEntraAccessKey(
             endpoint,
-            new TestTokenCredential(),
+            new TestTokenCredential(TokenType.MicrosoftEntra),
             httpClientFactory: new TestHttpClientFactory(message)
-        );
+        )
+        {
+            GetAccessKeyRetryInterval = TimeSpan.Zero
+        };
 
         await key.UpdateAccessKeyAsync();
 
         Assert.False(key.IsAuthorized);
         var ex = Assert.IsType<AzureSignalRRuntimeException>(key.LastException);
         Assert.Equal(HttpStatusCode.Forbidden, ex.StatusCode);
+
+        Assert.StartsWith("403 Forbidden,", ex.Message);
         Assert.Contains(expected, ex.Message);
-        Assert.EndsWith($"Request Uri: {endpoint}", ex.Message);
+        Assert.EndsWith($"Request Uri: {endpoint}api/v1/auth/accessKey", ex.Message);
     }
 
     public class NotAuthorizedTestData : IEnumerable<object[]>
@@ -243,7 +267,13 @@ public class MicrosoftEntraAccessKeyTests
 
         public IEnumerator<object[]> GetEnumerator()
         {
-            yield return [new AzureSignalRUnauthorizedException(new Exception()), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
+            var accessKey = new AccessKey(new Uri("https://localhost:443"), DefaultSigningKey);
+            var token1 = AuthUtility.GenerateJwtToken(accessKey.KeyBytes, issuer: Constants.AsrsTokenIssuer);
+            var token2 = AuthUtility.GenerateJwtToken(accessKey.KeyBytes, issuer: "microsoft.com");
+
+            yield return [new AzureSignalRUnauthorizedException(null, new Exception(), token1), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
+            yield return [new AzureSignalRUnauthorizedException(null, new Exception(), token2), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
+            yield return [new AzureSignalRUnauthorizedException("https://request.uri", new Exception(), token2), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
             yield return [new AzureSignalRRuntimeException(DefaultUri, new Exception(), HttpStatusCode.Forbidden, "nginx"), AzureSignalRRuntimeException.NetworkErrorMessage];
             yield return [new AzureSignalRRuntimeException(DefaultUri, new Exception(), HttpStatusCode.Forbidden, "http-content"), "http-content"];
             yield return [new AzureSignalRRuntimeException(DefaultUri, new Exception("inner-exception-message"), HttpStatusCode.NotFound, "http"), AzureSignalRRuntimeException.ErrorMessage];
@@ -264,7 +294,7 @@ public class MicrosoftEntraAccessKeyTests
     {
         public override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Assert.Equal(DefaultToken, request.Headers.Authorization.ToString()["Bearer ".Length..]);
+            Assert.Equal("Bearer", request.Headers.Authorization.Scheme);
             return Task.FromResult(message);
         }
     }
@@ -289,11 +319,25 @@ public class MicrosoftEntraAccessKeyTests
         }
     }
 
-    private sealed class TestTokenCredential : TokenCredential
+    public enum TokenType
+    {
+        Local,
+        MicrosoftEntra,
+    }
+
+    private sealed class TestTokenCredential(TokenType tokenType) : TokenCredential
     {
         public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
         {
-            return new AccessToken(DefaultToken, DateTimeOffset.UtcNow.Add(TimeSpan.FromHours(1)));
+            var issuer = tokenType switch
+            {
+                TokenType.Local => Constants.AsrsTokenIssuer,
+                TokenType.MicrosoftEntra => "microsoft.com",
+                _ => throw new NotImplementedException(),
+            };
+            var key = new AccessKey(new Uri("https://foo.bar"), DefaultSigningKey);
+            var token = AuthUtility.GenerateJwtToken(key.KeyBytes, issuer: issuer);
+            return new AccessToken(token, DateTimeOffset.UtcNow.Add(TimeSpan.FromHours(1)));
         }
 
         public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
