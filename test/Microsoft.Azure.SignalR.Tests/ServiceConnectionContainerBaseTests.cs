@@ -50,7 +50,7 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
                     logger: loggerFactory.CreateLogger<TestServiceConnectionContainer>());
 
             await container.StartAsync();
-
+            await container.ConnectionInitializedTask;
             var tasks = new List<Task>();
 
             while (startCount > 0)
@@ -111,6 +111,7 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
                     logger: loggerFactory.CreateLogger<TestServiceConnectionContainer>());
 
             await container.StartAsync();
+            await container.ConnectionInitializedTask;
 
             var tasks = new List<Task>();
 

@@ -159,7 +159,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         // when server connection count is specified to 0, the app server only handle negotiate requests
         if (initial.Count > 0)
         {
-            _statusPing.Start();
+            _ = StartStatusPing();
         }
 
         _serversPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServersPingAsync, Constants.Periods.DefaultServersPingInterval, Constants.Periods.DefaultServersPingInterval);
@@ -418,6 +418,12 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
             retry++;
         }
         Log.TimeoutWaitingForFinAck(Logger, retry);
+    }
+
+    private async Task StartStatusPing()
+    {
+        await this.ConnectionInitializedTask.ConfigureAwait(false);
+        _statusPing.Start();
     }
 
     private async Task WriteMessageAsync(ServiceMessage serviceMessage)
