@@ -84,7 +84,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
                 var expectedToken = JwtTokenHelper.GenerateJwtBearer(
                     ClientEndpointUtils.GetExpectedClientEndpoint(Hub, null, randomEndpoint.Endpoint),
-                    ClaimsUtility.BuildJwtClaims(null, null, null), token.ValidTo, token.ValidFrom, token.ValidFrom, randomEndpoint.AccessKey);
+                    ClaimsUtility.BuildJwtClaims(null, null, null),
+                    token.ValidTo,
+                    token.ValidFrom,
+                    token.ValidFrom,
+                    randomEndpoint.AccessKey);
                 Assert.Equal(expectedToken, tokenString);
             }
         }

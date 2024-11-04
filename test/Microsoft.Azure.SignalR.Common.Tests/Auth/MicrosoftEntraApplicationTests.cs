@@ -70,7 +70,7 @@ public class MicrosoftEntraApplicationTests
         await key.UpdateAccessKeyAsync();
 
         Assert.True(key.IsAuthorized);
-        Assert.NotNull(key.Id);
-        Assert.NotNull(key.Value);
+        Assert.NotNull(key.Kid);
+        Assert.NotNull(key.KeyBytes);
     }
 }

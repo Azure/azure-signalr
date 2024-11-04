@@ -5,10 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Claims;
-using System.Text;
 using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR;
+
+#nullable enable
 
 internal static class AuthUtility
 {
@@ -16,15 +17,15 @@ internal static class AuthUtility
 
     private static readonly SignalRJwtSecurityTokenHandler JwtTokenHandler = new();
 
-    public static string GenerateJwtBearer(
-        string issuer = null,
-        string audience = null,
-        IEnumerable<Claim> claims = null,
-        DateTime? expires = null,
-        AccessKey signingKey = null,
-        DateTime? issuedAt = null,
-        DateTime? notBefore = null,
-        AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
+    public static string GenerateJwtBearer(byte[] keyBytes,
+                                           string? kid = null,
+                                           string? issuer = null,
+                                           string? audience = null,
+                                           IEnumerable<Claim>? claims = null,
+                                           DateTime? expires = null,
+                                           DateTime? issuedAt = null,
+                                           DateTime? notBefore = null,
+                                           AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
     {
         var subject = claims == null ? null : new ClaimsIdentity(claims);
 
@@ -35,27 +36,28 @@ internal static class AuthUtility
             audience: audience,
             notBefore: notBefore,
             subject: subject,
-            key: Encoding.UTF8.GetBytes(signingKey.Value),
-            kid: signingKey.Id,
+            key: keyBytes,
+            kid: kid,
             algorithm: algorithm);
 
         return token;
     }
 
-    public static string GenerateAccessToken(
-        AccessKey signingKey,
-        string audience,
-        IEnumerable<Claim> claims,
-        TimeSpan lifetime,
-        AccessTokenAlgorithm algorithm)
+    public static string GenerateAccessToken(byte[] keyBytes,
+                                             string? kid,
+                                             string audience,
+                                             IEnumerable<Claim> claims,
+                                             TimeSpan lifetime,
+                                             AccessTokenAlgorithm algorithm)
     {
         var expire = DateTime.UtcNow.Add(lifetime);
 
         var jwtToken = GenerateJwtBearer(
+            keyBytes,
+            kid,
             audience: audience,
             claims: claims,
             expires: expire,
-            signingKey: signingKey,
             algorithm: algorithm
         );
 

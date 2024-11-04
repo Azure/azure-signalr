@@ -10,9 +10,13 @@
 using System;
 using System.Globalization;
 using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.SignalR;
+
+#nullable enable
 
 internal class TokenUtilities
 {
@@ -21,6 +25,31 @@ internal class TokenUtilities
     internal const string JsonArray = "JSON_ARRAY";
 
     internal const string JsonNull = "JSON_NULL";
+
+    internal static bool TryParseIssuer(string? token, out string? issuer)
+    {
+        issuer = null;
+        if (string.IsNullOrEmpty(token))
+        {
+            return false;
+        }
+
+        var parts = token!.Split('.');
+        if (parts.Length != 3)
+        {
+            return false;
+        }
+
+        var payloadJson = Base64UrlDecode(parts[1]);
+        using var doc = JsonDocument.Parse(payloadJson);
+
+        if (doc.RootElement.TryGetProperty("iss", out var value))
+        {
+            issuer = value.ToString();
+            return true;
+        }
+        return false;
+    }
 
     internal static object GetClaimValueUsingValueType(Claim claim)
     {
@@ -70,5 +99,19 @@ internal class TokenUtilities
         }
 
         return claim.Value;
+    }
+
+    private static string Base64UrlDecode(string base64Url)
+    {
+        var base64 = base64Url.Replace('-', '+').Replace('_', '/');
+
+        switch (base64.Length % 4)
+        {
+            case 2: base64 += "=="; break;
+            case 3: base64 += "="; break;
+        }
+
+        var byteArray = Convert.FromBase64String(base64);
+        return Encoding.UTF8.GetString(byteArray);
     }
 }

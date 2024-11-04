@@ -182,8 +182,8 @@ public class MicrosoftEntraAccessKeyTests
         await key.UpdateAccessKeyAsync();
 
         Assert.True(key.IsAuthorized);
-        Assert.Equal("foo", key.Id);
-        Assert.Equal(signingKey, key.Value);
+        Assert.Equal("foo", key.Kid);
+        Assert.Equal(signingKey, Encoding.UTF8.GetString(key.KeyBytes));
     }
 
     [Fact]

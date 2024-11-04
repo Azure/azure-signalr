@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,7 +20,7 @@ namespace Microsoft.Azure.SignalR;
 
 #nullable enable
 
-internal class MicrosoftEntraAccessKey : AccessKey
+internal class MicrosoftEntraAccessKey : IAccessKey
 {
     internal static readonly TimeSpan GetAccessKeyTimeout = TimeSpan.FromSeconds(100);
 
@@ -73,11 +74,23 @@ internal class MicrosoftEntraAccessKey : AccessKey
 
     private Task<object?> InitializedTask => _initializedTcs.Task;
 
+    private volatile string? _kid;
+
+    private volatile byte[]? _keyBytes;
+
+    public string Kid => _kid ?? throw new ArgumentNullException(nameof(Kid));
+
+    public byte[] KeyBytes => _keyBytes ?? throw new ArgumentNullException(nameof(KeyBytes));
+
+    public Uri Endpoint { get; }
+
     public MicrosoftEntraAccessKey(Uri endpoint,
                                    TokenCredential credential,
                                    Uri? serverEndpoint = null,
-                                   IHttpClientFactory? httpClientFactory = null) : base(endpoint)
+                                   IHttpClientFactory? httpClientFactory = null)
     {
+        Endpoint = endpoint;
+
         var authorizeUri = (serverEndpoint ?? endpoint).Append("/api/v1/auth/accessKey");
         GetAccessKeyUrl = authorizeUri.AbsoluteUri;
         TokenCredential = credential;
@@ -103,7 +116,7 @@ internal class MicrosoftEntraAccessKey : AccessKey
         throw latest ?? new InvalidOperationException();
     }
 
-    public override async Task<string> GenerateAccessTokenAsync(
+    public async Task<string> GenerateAccessTokenAsync(
         string audience,
         IEnumerable<Claim> claims,
         TimeSpan lifetime,
@@ -115,8 +128,9 @@ internal class MicrosoftEntraAccessKey : AccessKey
         if (task == InitializedTask || InitializedTask.IsCompleted)
         {
             await task;
+
             return IsAuthorized
-                ? await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm, ctoken)
+                ? AuthUtility.GenerateAccessToken(KeyBytes, Kid, audience, claims, lifetime, algorithm)
                 : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, LastException);
         }
         else
@@ -125,9 +139,10 @@ internal class MicrosoftEntraAccessKey : AccessKey
         }
     }
 
-    internal void UpdateAccessKey(string kid, string accessKey)
+    internal void UpdateAccessKey(string kid, string keyStr)
     {
-        Key = new Tuple<string, string>(kid, accessKey);
+        _keyBytes = Encoding.UTF8.GetBytes(keyStr);
+        _kid = kid;
         IsAuthorized = true;
     }
 
