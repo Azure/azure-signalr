@@ -141,15 +141,15 @@ public class ServiceLifetimeManagerFacts
 
         var invokeTask = InvokeMethod(serviceLifetimeManager, methodName);
 
+        var message = await task.OrTimeout();
+
         if (typeof(IAckableMessage).IsAssignableFrom(messageType))
         {
-            await proxy.WriteMessageAsync(new AckMessage(1, (int)AckStatus.Ok));
+            await proxy.WriteMessageAsync(new AckMessage((message as IAckableMessage).AckId, (int)AckStatus.Ok));
         }
 
         // Need to return in time, or it indicate a timeout when sending ack-able messages.
         await invokeTask.OrTimeout();
-
-        var message = await task.OrTimeout();
 
         VerifyServiceMessage(methodName, message);
     }
