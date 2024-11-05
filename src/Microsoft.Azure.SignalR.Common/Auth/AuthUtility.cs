@@ -18,14 +18,14 @@ internal static class AuthUtility
     private static readonly SignalRJwtSecurityTokenHandler JwtTokenHandler = new SignalRJwtSecurityTokenHandler();
 
     public static string GenerateJwtToken(byte[] keyBytes,
-                                           string? kid = null,
-                                           string? issuer = null,
-                                           string? audience = null,
-                                           IEnumerable<Claim>? claims = null,
-                                           DateTime? expires = null,
-                                           DateTime? issuedAt = null,
-                                           DateTime? notBefore = null,
-                                           AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
+                                          string? kid = null,
+                                          string? issuer = null,
+                                          string? audience = null,
+                                          IEnumerable<Claim>? claims = null,
+                                          DateTime? expires = null,
+                                          DateTime? issuedAt = null,
+                                          DateTime? notBefore = null,
+                                          AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
     {
         var subject = claims == null ? null : new ClaimsIdentity(claims);
 
