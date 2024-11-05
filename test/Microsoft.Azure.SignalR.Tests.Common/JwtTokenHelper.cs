@@ -58,7 +58,7 @@ internal static class JwtTokenHelper
         return AuthUtility.GenerateJwtToken(
             signingKey.KeyBytes,
             signingKey.Kid,
-            issuer: null,
+            issuer: Constants.AsrsTokenIssuer,
             audience: audience,
             claims: subject,
             notBefore: notBefore,
