@@ -17,7 +17,7 @@ internal static class AuthUtility
 
     private static readonly SignalRJwtSecurityTokenHandler JwtTokenHandler = new SignalRJwtSecurityTokenHandler();
 
-    public static string GenerateJwtBearer(byte[] keyBytes,
+    public static string GenerateJwtToken(byte[] keyBytes,
                                            string? kid = null,
                                            string? issuer = null,
                                            string? audience = null,
@@ -52,9 +52,10 @@ internal static class AuthUtility
     {
         var expire = DateTime.UtcNow.Add(lifetime);
 
-        var jwtToken = GenerateJwtBearer(
+        var jwtToken = GenerateJwtToken(
             keyBytes,
             kid,
+            issuer: Constants.AsrsTokenIssuer,
             audience: audience,
             claims: claims,
             expires: expire,

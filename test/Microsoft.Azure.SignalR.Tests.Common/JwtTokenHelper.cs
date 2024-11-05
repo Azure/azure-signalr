@@ -57,7 +57,7 @@ internal static class JwtTokenHelper
         IAccessKey signingKey
     )
     {
-        return AuthUtility.GenerateJwtBearer(
+        return AuthUtility.GenerateJwtToken(
             signingKey.KeyBytes,
             signingKey.Kid,
             issuer: null,

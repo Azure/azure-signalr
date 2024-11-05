@@ -17,6 +17,8 @@ internal static class Constants
 
     public const string AsrsIsDiagnosticClient = "Asrs-Is-Diagnostic-Client";
 
+    public const string AsrsTokenIssuer = "Azure SignalR Service SDK";
+
     public const int DefaultCloseTimeoutMilliseconds = 30000;
 
     public static class Keys
