@@ -32,7 +32,7 @@ internal static class JwtTokenHelper
             claims.AddRange(customClaims.ToList());
         }
 
-        var tokenString = GenerateJwtBearer(
+        var tokenString = GenerateJwtToken(
             audience, claims,
             token.ValidTo,
             token.ValidFrom,
@@ -48,19 +48,17 @@ internal static class JwtTokenHelper
         return GenerateExpectedAccessToken(token, audience, new AccessKey(new Uri(TestEndpoint), key), customClaims: customClaims);
     }
 
-    public static string GenerateJwtBearer(
-        string audience,
-        IEnumerable<Claim> subject,
-        DateTime expires,
-        DateTime notBefore,
-        DateTime issueAt,
-        IAccessKey signingKey
-    )
+    public static string GenerateJwtToken(string audience,
+                                          IEnumerable<Claim> subject,
+                                          DateTime expires,
+                                          DateTime notBefore,
+                                          DateTime issueAt,
+                                          IAccessKey signingKey)
     {
-        return AuthUtility.GenerateJwtBearer(
+        return AuthUtility.GenerateJwtToken(
             signingKey.KeyBytes,
             signingKey.Kid,
-            issuer: null,
+            issuer: Constants.AsrsTokenIssuer,
             audience: audience,
             claims: subject,
             notBefore: notBefore,
@@ -69,15 +67,13 @@ internal static class JwtTokenHelper
         );
     }
 
-    public static string GenerateJwtBearer(
-        string audience,
-        IEnumerable<Claim> subject,
-        DateTime expires,
-        DateTime notBefore,
-        DateTime issueAt,
-        string signingKey
-    )
+    public static string GenerateJwtToken(string audience,
+                                          IEnumerable<Claim> subject,
+                                          DateTime expires,
+                                          DateTime notBefore,
+                                          DateTime issueAt,
+                                          string signingKey)
     {
-        return GenerateJwtBearer(audience, subject, expires, notBefore, issueAt, new AccessKey(new Uri(TestEndpoint), signingKey));
+        return GenerateJwtToken(audience, subject, expires, notBefore, issueAt, new AccessKey(new Uri(TestEndpoint), signingKey));
     }
 }

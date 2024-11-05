@@ -17,15 +17,15 @@ internal static class AuthUtility
 
     private static readonly SignalRJwtSecurityTokenHandler JwtTokenHandler = new SignalRJwtSecurityTokenHandler();
 
-    public static string GenerateJwtBearer(byte[] keyBytes,
-                                           string? kid = null,
-                                           string? issuer = null,
-                                           string? audience = null,
-                                           IEnumerable<Claim>? claims = null,
-                                           DateTime? expires = null,
-                                           DateTime? issuedAt = null,
-                                           DateTime? notBefore = null,
-                                           AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
+    public static string GenerateJwtToken(byte[] keyBytes,
+                                          string? kid = null,
+                                          string? issuer = null,
+                                          string? audience = null,
+                                          IEnumerable<Claim>? claims = null,
+                                          DateTime? expires = null,
+                                          DateTime? issuedAt = null,
+                                          DateTime? notBefore = null,
+                                          AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
     {
         var subject = claims == null ? null : new ClaimsIdentity(claims);
 
@@ -52,9 +52,10 @@ internal static class AuthUtility
     {
         var expire = DateTime.UtcNow.Add(lifetime);
 
-        var jwtToken = GenerateJwtBearer(
+        var jwtToken = GenerateJwtToken(
             keyBytes,
             kid,
+            issuer: Constants.AsrsTokenIssuer,
             audience: audience,
             claims: claims,
             expires: expire,

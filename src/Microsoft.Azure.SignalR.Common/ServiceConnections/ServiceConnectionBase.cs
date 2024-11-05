@@ -714,7 +714,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
             while (await timer)
             {
-                if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastReceiveTimestamp) > DefaultServiceTimeoutTicks)
+                if (!Debugger.IsAttached && Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastReceiveTimestamp) > DefaultServiceTimeoutTicks)
                 {
                     Log.ServiceTimeout(Logger, _endpointName, DefaultServiceTimeout, ConnectionId);
                     await StopAsync();
