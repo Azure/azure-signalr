@@ -38,25 +38,25 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
         public async Task TestRunSignalR()
         {
             var cdf = new CaptureDataConnectionFactory();
+            var startup = new TestStartup<SimpleHub>(services =>
+            {
+                services.AddSingleton<IConnectionFactory>(cdf);
+            });
             var builder = WebHost.CreateDefaultBuilder()
-                .ConfigureServices((IServiceCollection services) =>
-                {
-                    services.AddSingleton<IConnectionFactory>(cdf);
-                })
                 .ConfigureLogging(logging => logging.AddXunit(_output))
                 .ConfigureLogging(logging => logging.AddFilter("Microsoft.Azure.SignalR", LogLevel.Debug))
-                .UseStartup<TestStartup<SimpleHub>>();
+                .UseStartup(c => startup);
 
             using var server = new TestServer(builder);
-            var sc = await cdf.FirstConnectionTask;
-            await sc.OpenClientConnectionAsync("conn1");
+            var sc = await cdf.FirstConnectionTask.OrTimeout();
+            await sc.OpenClientConnectionAsync("conn1").OrTimeout();
 
             var ccm = server.Services.GetService<IClientConnectionManager>();
 
             await PollWait(() => ccm.TryGetClientConnection("conn1", out var connection));
         }
 
-        private static async Task PollWait(Func<bool> pollFunc, int count = 10)
+        private static async Task PollWait(Func<bool> pollFunc, int count = 5)
         {
             bool result = false;
             int times = 0;
@@ -64,8 +64,15 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
             {
                 times++;
                 result = pollFunc();
-                if (result) return;
-                else if (times > count) break;
+                if (result)
+                {
+                    return;
+                }
+                else if (times > count)
+                {
+                    break;
+                }
+
                 await Task.Delay(1000);
             }
 
@@ -75,6 +82,12 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
         private sealed class TestStartup<THub> : IStartup
             where THub : Hub
         {
+            private readonly Action<IServiceCollection> _configureServices;
+
+            public TestStartup(Action<IServiceCollection> configureServices)
+            {
+                _configureServices = configureServices;
+            }
             public void Configure(IApplicationBuilder app)
             {
                 app.UseRouting();
@@ -88,17 +101,18 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
             public IServiceProvider ConfigureServices(IServiceCollection services)
             {
                 services.AddMvc(option => option.EnableEndpointRouting = false);
-                services.AddSignalR(options =>
-                {
-                    options.EnableDetailedErrors = true;
-                })
+                services
+                    .AddSignalR(options =>
+                    {
+                        options.EnableDetailedErrors = true;
+                    })
                     .AddAzureSignalR(o =>
                     {
                         o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).First();
                         o.InitialHubServerConnectionCount = 1;
                         o.MaxHubServerConnectionCount = 1;
                     });
-
+                _configureServices.Invoke(services);
                 return services.BuildServiceProvider();
             }
         }
