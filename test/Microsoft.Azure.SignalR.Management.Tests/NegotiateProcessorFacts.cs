@@ -81,7 +81,7 @@ public class NegotiateProcessorFacts
             var tokenString = negotiationResponse.AccessToken;
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-            var expectedToken = JwtTokenHelper.GenerateJwtBearer(ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName, endpoints[i].Endpoint), ClaimsUtility.BuildJwtClaims(null, userId, () => claims), token.ValidTo, token.ValidFrom, token.ValidFrom, endpoints[i].AccessKey);
+            var expectedToken = JwtTokenHelper.GenerateJwtToken(ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName, endpoints[i].Endpoint), ClaimsUtility.BuildJwtClaims(null, userId, () => claims), token.ValidTo, token.ValidFrom, token.ValidFrom, endpoints[i].AccessKey);
 
             Assert.Equal(ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName, endpoints[i].Endpoint), negotiationResponse.Url);
             Assert.Equal(expectedToken, tokenString);

@@ -82,7 +82,7 @@ public class InternalServiceHubContextFacts(ITestOutputHelper output) : Verifiab
             Assert.Equal(ClientEndpointUtils.GetExpectedClientEndpoint(Hub, null, randomEndpoint.Endpoint), negotiationResponse.Url);
             var tokenString = negotiationResponse.AccessToken;
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
-            var expectedToken = JwtTokenHelper.GenerateJwtBearer(
+            var expectedToken = JwtTokenHelper.GenerateJwtToken(
                 ClientEndpointUtils.GetExpectedClientEndpoint(Hub, null, randomEndpoint.Endpoint),
                 ClaimsUtility.BuildJwtClaims(null, null, null),
                 token.ValidTo,

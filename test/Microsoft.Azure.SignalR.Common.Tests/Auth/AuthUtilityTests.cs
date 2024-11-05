@@ -39,6 +39,21 @@ public class AuthUtilityTests
         Assert.Equal("AccessToken must not be longer than 4K.", exception.Message);
     }
 
+    [Fact]
+    public void TestAccessTokenHasIssuer()
+    {
+        var accessKey = new AccessKey(new Uri("http://localhost:443"), SigningKey);
+        var token = AuthUtility.GenerateAccessToken(accessKey.KeyBytes,
+                                                    accessKey.Kid,
+                                                    Audience,
+                                                    [],
+                                                    DefaultLifetime,
+                                                    AccessTokenAlgorithm.HS256);
+
+        Assert.True(TokenUtilities.TryParseIssuer(token, out var iss));
+        Assert.Equal(Constants.AsrsTokenIssuer, iss);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -49,7 +64,7 @@ public class AuthUtilityTests
     public void TestTryParseIssuer(string? issuer)
     {
         var accessKey = new AccessKey(new Uri("http://localhost:443"), SigningKey);
-        var token = AuthUtility.GenerateJwtBearer(accessKey.KeyBytes, issuer: issuer);
+        var token = AuthUtility.GenerateJwtToken(accessKey.KeyBytes, issuer: issuer);
 
         if (string.IsNullOrEmpty(issuer))
         {
