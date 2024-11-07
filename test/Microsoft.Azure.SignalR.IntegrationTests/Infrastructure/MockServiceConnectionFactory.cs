@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
             : base(
                   serviceProtocol,
                   clientConnectionManager,
-                  new MockServiceConnectionContextFactory(mockService), // use instead of connectionFactory
+                  connectionFactory,
                   loggerFactory,
                   connectionDelegate,
                   clientConnectionFactory,

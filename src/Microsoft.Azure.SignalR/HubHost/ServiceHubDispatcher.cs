@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
 
 
 #if NET8_0_OR_GREATER
@@ -38,6 +39,8 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
     private readonly IServiceEventHandler _serviceEventHandler;
     private readonly IClientInvocationManager _clientInvocationManager;
     private readonly IHubProtocolResolver _hubProtocolResolver;
+    private readonly IConnectionFactory _connectionFactory;
+    private readonly IServiceProvider _serviceProvider;
 #if NET8_0_OR_GREATER
     private readonly HttpConnectionDispatcherOptions _dispatcherOptions;
 #endif
@@ -58,7 +61,9 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
         IClientConnectionFactory clientConnectionFactory,
         IClientInvocationManager clientInvocationManager,
         IServiceEventHandler serviceEventHandler,
-        IHubProtocolResolver hubProtocolResolver
+        IHubProtocolResolver hubProtocolResolver,
+        IConnectionFactory connectionFactory,
+        IServiceProvider serviceProvider
 #if NET8_0_OR_GREATER
         ,
         EndpointDataSource endpointDataSource
@@ -84,6 +89,8 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
 
         serverLifetimeManager?.Register(ShutdownAsync);
         _hubProtocolResolver = hubProtocolResolver;
+        _connectionFactory = connectionFactory;
+        _serviceProvider = serviceProvider;
 #if NET8_0_OR_GREATER
         _dispatcherOptions = GetDispatcherOptions(endpointDataSource, typeof(THub));
 #endif
@@ -115,7 +122,7 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
     public void Start(ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
     {
         // Create connections to Azure SignalR
-        var serviceConnection = GetServiceConnectionContainer(_hubName, connectionDelegate, contextConfig);
+        var serviceConnection = GetServiceConnectionContainer(connectionDelegate, contextConfig);
 
         _serviceConnectionManager.SetServiceConnection(serviceConnection);
 
@@ -166,50 +173,41 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
         await _serviceConnectionManager.StopAsync();
     }
 
-    private IServiceConnectionContainer GetServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
+    private IServiceConnectionContainer GetServiceConnectionContainer(ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
     {
-        var connectionFactory = new ConnectionFactory(_nameProvider, _loggerFactory);
+        var factory = _serviceProvider.GetService<IServiceConnectionContainerFactory>();
+        if (factory == null)
+        {
+            var allowStatefulReconnects = _options.AllowStatefulReconnects ??
+#if NET8_0_OR_GREATER
+                    _dispatcherOptions.AllowStatefulReconnects;
+#else
+                false;
+#endif
 
-        var serviceConnectionFactory = GetServiceConnectionFactory(connectionFactory, connectionDelegate, contextConfig);
-
-        var factory = new ServiceConnectionContainerFactory(
-            serviceConnectionFactory,
-            _serviceEndpointManager,
-            _router,
-            _options,
-            _loggerFactory,
-            _options.ServiceScaleTimeout
-        );
-        return factory.Create(hub);
+            var serviceConnectionFactory = _serviceProvider.GetService<IServiceConnectionFactory>();
+            if (serviceConnectionFactory == null)
+            {
+                var scf = GetServiceConnectionFactory(connectionDelegate);
+                scf.ConfigureContext = contextConfig;
+                scf.ShutdownMode = _options.GracefulShutdown.Mode;
+                scf.AllowStatefulReconnects = allowStatefulReconnects;
+                serviceConnectionFactory = scf;
+            }
+            factory = new ServiceConnectionContainerFactory(
+                serviceConnectionFactory,
+                _serviceEndpointManager,
+                _router,
+                _options,
+                _loggerFactory
+            );
+        }
+        return factory.Create(_hubName, _options.ServiceScaleTimeout);
     }
 
-    internal virtual ServiceConnectionFactory GetServiceConnectionFactory(
-        ConnectionFactory connectionFactory,
-        ConnectionDelegate connectionDelegate,
-        Action<HttpContext> contextConfig)
+    internal virtual ServiceConnectionFactory GetServiceConnectionFactory(ConnectionDelegate connectionDelegate)
     {
-        return new ServiceConnectionFactory(
-            _serviceProtocol,
-            _clientConnectionManager,
-            connectionFactory,
-            _loggerFactory,
-            connectionDelegate,
-            _clientConnectionFactory,
-            _nameProvider,
-            _serviceEventHandler,
-            _clientInvocationManager,
-            _hubProtocolResolver)
-        {
-            ConfigureContext = contextConfig,
-            ShutdownMode = _options.GracefulShutdown.Mode,
-            // todo: read per hub configuration from HttpConnectionDispatcherOptions.AllowStatefulReconnects for net 8.
-            AllowStatefulReconnects = _options.AllowStatefulReconnects ??
-#if NET8_0_OR_GREATER
-                _dispatcherOptions.AllowStatefulReconnects,
-#else
-                false,
-#endif
-        };
+        return ActivatorUtilities.CreateInstance<ServiceConnectionFactory>(_serviceProvider, connectionDelegate);
     }
 
     private static class Log
