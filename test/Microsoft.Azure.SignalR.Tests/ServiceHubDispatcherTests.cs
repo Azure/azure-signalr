@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -30,6 +31,7 @@ public class ServiceHubDispatcherTests
             Mode = GracefulShutdownMode.WaitForClientsClose
         };
 
+        var sc = new ServiceCollection();
         var dispatcher = new ServiceHubDispatcher<Hub>(
             null,
             TestHubContext<Hub>.GetInstance(),
@@ -45,6 +47,8 @@ public class ServiceHubDispatcherTests
             null,
             null,
             new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
+            null,
+            sc.BuildServiceProvider(),
             null
         );
 

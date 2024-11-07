@@ -132,7 +132,7 @@ public class ServiceEndpointProviderFacts
         var tokenString = await provider.GetServerAccessTokenProvider(nameof(TestHub), userId).ProvideAsync();
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-        var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/server/?hub={HubName}",
+        var expectedTokenString = JwtTokenHelper.GenerateJwtToken($"{Endpoint}/server/?hub={HubName}",
             new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, userId)
@@ -154,7 +154,7 @@ public class ServiceEndpointProviderFacts
         var tokenString = await provider.GetServerAccessTokenProvider(nameof(TestHub), userId).ProvideAsync();
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-        var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/server/?hub={AppName}_{HubName}",
+        var expectedTokenString = JwtTokenHelper.GenerateJwtToken($"{Endpoint}/server/?hub={AppName}_{HubName}",
             new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, userId)
@@ -176,7 +176,7 @@ public class ServiceEndpointProviderFacts
         var tokenString = await provider.GenerateClientAccessTokenAsync(HubName);
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-        var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/client/?hub={HubName}",
+        var expectedTokenString = JwtTokenHelper.GenerateJwtToken($"{Endpoint}/client/?hub={HubName}",
             null,
             token.ValidTo,
             token.ValidFrom,
@@ -194,7 +194,7 @@ public class ServiceEndpointProviderFacts
         var tokenString = await provider.GenerateClientAccessTokenAsync(HubName);
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-        var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/client/?hub={AppName}_{HubName}",
+        var expectedTokenString = JwtTokenHelper.GenerateJwtToken($"{Endpoint}/client/?hub={AppName}_{HubName}",
             null,
             token.ValidTo,
             token.ValidFrom,
