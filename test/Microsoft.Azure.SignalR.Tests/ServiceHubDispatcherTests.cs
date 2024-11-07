@@ -105,7 +105,7 @@ public class ServiceHubDispatcherTests
             _index = index;
         }
 
-        public async Task OfflineAsync(GracefulShutdownMode mode)
+        public async Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
         {
             await Task.Yield();
             OfflineIndex = Interlocked.Increment(ref _index.Value);

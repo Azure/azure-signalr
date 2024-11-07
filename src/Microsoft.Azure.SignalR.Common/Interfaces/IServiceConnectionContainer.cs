@@ -4,32 +4,20 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal interface IServiceConnectionContainer : IServiceConnectionManager, IDisposable
 {
-    internal interface IServiceConnectionContainer : IDisposable
-    {
-        ServiceConnectionStatus Status { get; }
+    ServiceConnectionStatus Status { get; }
 
-        Task ConnectionInitializedTask { get; }
+    Task ConnectionInitializedTask { get; }
 
-        string ServersTag { get; }
+    string ServersTag { get; }
 
-        bool HasClients { get; }
+    bool HasClients { get; }
 
-        Task StartAsync();
+    Task StartGetServersPing();
 
-        Task StopAsync();
-
-        Task OfflineAsync(GracefulShutdownMode mode);
-
-        Task WriteAsync(ServiceMessage serviceMessage);
-
-        Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default);
-
-        Task StartGetServersPing();
-
-        Task StopGetServersPing();
-    }
+    Task StopGetServersPing();
 }

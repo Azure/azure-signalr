@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -17,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Common
         {
         }
 
-        public override Task OfflineAsync(GracefulShutdownMode mode)
+        public override Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
         {
             return Task.CompletedTask;
         }

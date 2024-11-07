@@ -208,7 +208,7 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
             Assert.False(c.ConnectionOfflineTask.IsCompleted);
         }
 
-        await container.OfflineAsync(mode);
+        await container.OfflineAsync(mode, default);
 
         foreach (SimpleTestServiceConnection c in connections)
         {

@@ -1893,7 +1893,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             Assert.False(c.IsOffline);
         }
 
-        await container.OfflineAsync(mode).OrTimeout();
+        await container.OfflineAsync(mode, default).OrTimeout();
 
         foreach (var c in containers)
         {

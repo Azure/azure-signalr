@@ -135,9 +135,9 @@ namespace Microsoft.Azure.SignalR
             }));
         }
 
-        public Task OfflineAsync(GracefulShutdownMode mode)
+        public Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
         {
-            return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.OfflineAsync(mode)));
+            return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.OfflineAsync(mode, token)));
         }
 
         public Task WriteAsync(ServiceMessage serviceMessage)
@@ -319,7 +319,8 @@ namespace Microsoft.Azure.SignalR
                     return;
                 }
 
-                _ = container.ConnectionContainer.OfflineAsync(GracefulShutdownMode.Off);
+                // TDOO: shall we pass in cancellation token here?
+                _ = container.ConnectionContainer.OfflineAsync(GracefulShutdownMode.Off, default);
                 await WaitForClientsDisconnect(container);
 
                 UpdateEndpointsStore(endpoint, ScaleOperation.Remove);

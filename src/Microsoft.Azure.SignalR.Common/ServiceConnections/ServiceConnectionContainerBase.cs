@@ -249,10 +249,10 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         return AckHandler.HandleAckStatus(ackableMessage, status);
     }
 
-    public virtual Task OfflineAsync(GracefulShutdownMode mode)
+    public virtual Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
     {
         _terminated = true;
-        return Task.WhenAll(ServiceConnections.Select(c => RemoveConnectionAsync(c, mode)));
+        return Task.WhenAll(ServiceConnections.Select(c => RemoveConnectionAsync(c, mode, token)));
     }
 
     public Task StartGetServersPing()
@@ -397,17 +397,16 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
             : ServiceConnectionStatus.Disconnected;
     }
 
-    protected async Task RemoveConnectionAsync(IServiceConnection c, GracefulShutdownMode mode)
+    protected async Task RemoveConnectionAsync(IServiceConnection c, GracefulShutdownMode mode, CancellationToken token)
     {
         var retry = 0;
-        while (retry < MaxRetryRemoveSeverConnection)
+        while (retry < MaxRetryRemoveSeverConnection && !token.IsCancellationRequested)
         {
-            using var source = new CancellationTokenSource();
+            using var source = CancellationTokenSource.CreateLinkedTokenSource(token, new CancellationTokenSource(Constants.Periods.RemoveFromServiceTimeout).Token);
 
             var message = RuntimeServicePingMessage.GetFinPingMessage(mode);
             _ = c.WriteAsync(message);
-
-            var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(Constants.Periods.RemoveFromServiceTimeout, source.Token));
+            var task = await c.ConnectionOfflineTask.OrSilentCancelAsync(source.Token);
 
             if (task == c.ConnectionOfflineTask)
             {
