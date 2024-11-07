@@ -15,7 +15,7 @@ internal static class AuthUtility
 {
     private const int MaxTokenLength = 4096;
 
-    private static readonly SignalRJwtSecurityTokenHandler JwtTokenHandler = new SignalRJwtSecurityTokenHandler();
+    private static readonly SignalRJwtSecurityTokenHandler JwtTokenHandler = new();
 
     public static string GenerateJwtToken(byte[] keyBytes,
                                           string? kid = null,

@@ -1,4 +1,7 @@
-﻿/*------------------------------------------------------------------------------
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+/*------------------------------------------------------------------------------
  * Modified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs
  * Compared with original code
     *  1. Change class `JwtPayload` from `public` to `internal`
@@ -8,8 +11,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Security.Claims;
+using System.Text;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR;
@@ -30,7 +33,9 @@ internal class JwtPayload : Dictionary<string, object>
     public JwtPayload(string issuer = null, string audience = null, IEnumerable<Claim> claims = null, DateTime? notBefore = null, DateTime? expires = null, DateTime? issuedAt = null)
     {
         if (claims != null)
+        {
             AddClaims(claims);
+        }
 
         if (expires.HasValue)
         {
@@ -48,14 +53,20 @@ internal class JwtPayload : Dictionary<string, object>
         }
 
         if (issuedAt.HasValue)
+        {
             this[JwtRegisteredClaimNames.Iat] = EpochTime.GetIntDate(issuedAt.Value.ToUniversalTime());
+        }
 
         if (!string.IsNullOrEmpty(issuer))
+        {
             this[JwtRegisteredClaimNames.Iss] = issuer;
+        }
 
         // if could be the case that some of the claims above had an 'aud' claim;
         if (!string.IsNullOrEmpty(audience))
+        {
             AddClaim(new Claim(JwtRegisteredClaimNames.Aud, audience, ClaimValueTypes.String));
+        }
     }
 
     // Copied from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs#L474
@@ -79,22 +90,21 @@ internal class JwtPayload : Dictionary<string, object>
             throw LogHelper.LogExceptionMessage(new ArgumentNullException(nameof(claims)));
         }
 
-        foreach (Claim claim in claims)
+        foreach (var claim in claims)
         {
             if (claim == null)
             {
                 continue;
             }
 
-            string jsonClaimType = claim.Type;
-            object jsonClaimValue = claim.ValueType.Equals(ClaimValueTypes.String, StringComparison.Ordinal) ? claim.Value : TokenUtilities.GetClaimValueUsingValueType(claim);
-            object existingValue;
+            var jsonClaimType = claim.Type;
+            var jsonClaimValue = claim.ValueType.Equals(ClaimValueTypes.String, StringComparison.Ordinal) ? claim.Value : TokenUtilities.GetClaimValueUsingValueType(claim);
 
             // If there is an existing value, append to it.
             // What to do if the 'ClaimValueType' is not the same.
-            if (TryGetValue(jsonClaimType, out existingValue))
+            if (TryGetValue(jsonClaimType, out var existingValue))
             {
-                IList<object> claimValues = existingValue as IList<object>;
+                var claimValues = existingValue as IList<object>;
                 if (claimValues == null)
                 {
                     claimValues = new List<object>();
@@ -114,14 +124,8 @@ internal class JwtPayload : Dictionary<string, object>
     // Simplified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs#L761 and https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JsonExtensions.cs
     public string Base64UrlEncode()
     {
-        string json = JsonConvert.SerializeObject(this as IDictionary<string, object>);
-        if (json == null)
-        {
-            throw LogHelper.LogArgumentNullException("json");
-        }
-
-        byte[] bytes = Encoding.UTF8.GetBytes(json);
-
+        var json = JsonConvert.SerializeObject(this) ?? throw LogHelper.LogArgumentNullException("json");
+        var bytes = Encoding.UTF8.GetBytes(json);
         return Base64UrlEncoder.Encode(bytes);
     }
 }
