@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -34,7 +35,7 @@ internal sealed class TestServiceConnectionContainer : ServiceConnectionContaine
         prop.SetValue(this, true);
     }
 
-    public override async Task OfflineAsync(GracefulShutdownMode mode)
+    public override async Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
     {
         if (MockOffline)
         {
@@ -43,7 +44,7 @@ internal sealed class TestServiceConnectionContainer : ServiceConnectionContaine
         }
         else
         {
-            await base.OfflineAsync(mode);
+            await base.OfflineAsync(mode, token);
         }
     }
 

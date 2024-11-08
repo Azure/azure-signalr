@@ -59,5 +59,5 @@ internal class TestServiceConnectionManager<THub> : IServiceConnectionManager<TH
         return Task.CompletedTask;
     }
 
-    public Task OfflineAsync(GracefulShutdownMode mode) => Task.CompletedTask;
+    public Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token) => Task.CompletedTask;
 }

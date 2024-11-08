@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
     /// <summary>
     /// A service connection container which sends message to multiple service endpoints.
     /// </summary>
-    internal class MultiEndpointMessageWriter : IServiceConnectionContainer
+    internal class MultiEndpointMessageWriter : IServiceMessageWriter
     {
         private readonly ILogger _logger;
 
@@ -172,14 +172,6 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public Task StartAsync() => Task.CompletedTask;
-
-        public Task StopAsync() => Task.CompletedTask;
-
-        public void Dispose()
-        {
-        }
-
         internal static class Log
         {
             public const string FailedWritingMessageToEndpointTemplate = "{0} message {1} is not sent to endpoint {2} because all connections to this endpoint are offline.";
@@ -219,21 +211,5 @@ namespace Microsoft.Azure.SignalR
                 _failedWritingMessageToEndpoint(logger, messageType, tracingId, endpoint, null);
             }
         }
-
-        #region Not supported method or properties
-
-        public ServiceConnectionStatus Status => throw new NotSupportedException();
-
-        public string ServersTag => throw new NotSupportedException();
-
-        public bool HasClients => throw new NotSupportedException();
-
-        public Task OfflineAsync(GracefulShutdownMode mode) => throw new NotSupportedException();
-
-        public Task StartGetServersPing() => throw new NotSupportedException();
-
-        public Task StopGetServersPing() => throw new NotSupportedException();
-
-        #endregion Not supported method or properties
     }
 }

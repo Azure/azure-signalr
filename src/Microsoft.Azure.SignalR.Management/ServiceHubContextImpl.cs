@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
 
             var targetEndpoints = _endpointManager.GetEndpoints(_hubName).Intersect(endpoints, EqualityComparer<ServiceEndpoint>.Default).ToList();
-            var container = new MultiEndpointMessageWriter(targetEndpoints, ServiceProvider.GetRequiredService<ILoggerFactory>());
+            var container = new MessageWriterServiceContainerWrapper(targetEndpoints, ServiceProvider.GetRequiredService<ILoggerFactory>());
             var servicesFromServiceManager = ServiceProvider.GetRequiredService<IReadOnlyCollection<ServiceDescriptor>>();
             var services = new ServiceCollection()
                 .Add(servicesFromServiceManager)
@@ -87,6 +87,36 @@ namespace Microsoft.Azure.SignalR.Management
                 .AddSingleton<IEndpointRouter>(new FixedEndpointRouter(targetEndpoints));
 
             return services.BuildServiceProvider().GetRequiredService<ServiceHubContext>();
+        }
+
+        private sealed class MessageWriterServiceContainerWrapper : MultiEndpointMessageWriter, IServiceConnectionContainer
+        {
+            public MessageWriterServiceContainerWrapper(IReadOnlyCollection<ServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
+            : base(targetEndpoints, loggerFactory) { }
+
+            public Task StartAsync() => Task.CompletedTask;
+
+            public Task StopAsync() => Task.CompletedTask;
+
+            public void Dispose()
+            {
+            }
+
+            #region Not supported method or properties
+
+            public ServiceConnectionStatus Status => throw new NotSupportedException();
+
+            public string ServersTag => throw new NotSupportedException();
+
+            public bool HasClients => throw new NotSupportedException();
+
+            public Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token) => throw new NotSupportedException();
+
+            public Task StartGetServersPing() => throw new NotSupportedException();
+
+            public Task StopGetServersPing() => throw new NotSupportedException();
+
+            #endregion Not supported method or properties
         }
     }
 }

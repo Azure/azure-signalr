@@ -86,7 +86,7 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
         return Task.CompletedTask;
     }
 
-    public Task OfflineAsync(GracefulShutdownMode mode)
+    public Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
     {
         return Task.CompletedTask;
     }

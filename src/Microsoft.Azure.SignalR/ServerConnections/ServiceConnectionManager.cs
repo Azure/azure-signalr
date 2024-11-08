@@ -29,9 +29,9 @@ internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionM
         return _serviceConnection.StopAsync();
     }
 
-    public async Task OfflineAsync(GracefulShutdownMode mode)
+    public async Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
     {
-        await _serviceConnection.OfflineAsync(mode);
+        await _serviceConnection.OfflineAsync(mode, token);
     }
 
     public Task WriteAsync(ServiceMessage serviceMessage)

@@ -145,24 +145,13 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
 
             Log.SettingServerOffline(_logger, _hubName);
 
-            await Task.WhenAny(
-                _serviceConnectionManager.OfflineAsync(options.Mode),
-                Task.Delay(Timeout.InfiniteTimeSpan, source.Token)
-            );
+            await _serviceConnectionManager.OfflineAsync(options.Mode, source.Token).OrSilentCancelAsync(source.Token);
 
             Log.TriggeringShutdownHooks(_logger, _hubName);
-
-            await Task.WhenAny(
-                options.OnShutdown(Context),
-                Task.Delay(Timeout.InfiniteTimeSpan, source.Token)
-            );
+            await options.OnShutdown(Context).OrSilentCancelAsync(source.Token);
 
             Log.WaitingClientConnectionsToClose(_logger, _hubName);
-
-            await Task.WhenAny(
-                _clientConnectionManager.WhenAllCompleted(),
-                Task.Delay(Timeout.InfiniteTimeSpan, source.Token)
-            );
+            await _clientConnectionManager.WhenAllCompleted().OrSilentCancelAsync(source.Token);
         }
         catch (OperationCanceledException)
         {
