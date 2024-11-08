@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Azure.SignalR.Tests.TestHubs;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,30 +54,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
 
             var ccm = server.Services.GetService<IClientConnectionManager>();
 
-            await PollWait(() => ccm.TryGetClientConnection("conn1", out var connection));
-        }
-
-        private static async Task PollWait(Func<bool> pollFunc, int count = 5)
-        {
-            bool result = false;
-            int times = 0;
-            while (!result)
-            {
-                times++;
-                result = pollFunc();
-                if (result)
-                {
-                    return;
-                }
-                else if (times > count)
-                {
-                    break;
-                }
-
-                await Task.Delay(1000);
-            }
-
-            Assert.Fail("Poll wait failed");
+            await Utils.PollWait(() => ccm.TryGetClientConnection("conn1", out var connection));
         }
 
         private sealed class TestStartup<THub> : IStartup

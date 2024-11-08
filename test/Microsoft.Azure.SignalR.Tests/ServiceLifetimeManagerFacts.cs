@@ -145,7 +145,9 @@ public class ServiceLifetimeManagerFacts
 
         if (typeof(IAckableMessage).IsAssignableFrom(messageType))
         {
-            await proxy.WriteMessageAsync(new AckMessage((message as IAckableMessage).AckId, (int)AckStatus.Ok));
+            var ackId = (message as IAckableMessage).AckId;
+            Assert.NotEqual(0, ackId);
+            await proxy.WriteMessageAsync(new AckMessage(ackId, (int)AckStatus.Ok));
         }
 
         // Need to return in time, or it indicate a timeout when sending ack-able messages.
