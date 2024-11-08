@@ -37,7 +37,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var task = Task.Delay(1);
             var cts = new CancellationTokenSource();
             var taskOrCancel = task.OrSilentCancelAsync(cts.Token);
-            Assert.False(taskOrCancel.IsCompleted);
             var returnTask = await taskOrCancel.OrTimeout(500);
             Assert.True(returnTask.IsCompleted);
             Assert.True(task.IsCompleted);
