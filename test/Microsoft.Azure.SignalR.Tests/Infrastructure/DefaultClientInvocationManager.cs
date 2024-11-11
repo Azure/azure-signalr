@@ -7,44 +7,40 @@ using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal class DefaultClientInvocationManager : IClientInvocationManager
 {
-    internal class DefaultClientInvocationManager : IClientInvocationManager
+    public ICallerClientResultsManager Caller { get; }
+
+    public IRoutedClientResultsManager Router { get; }
+
+    public DefaultClientInvocationManager()
     {
-        public ICallerClientResultsManager Caller { get; }
-        public IRoutedClientResultsManager Router { get; }
+        var hubProtocolResolver = new DefaultHubProtocolResolver(
+                new IHubProtocol[] {
+                    new JsonHubProtocol(),
+                    new MessagePackHubProtocol()
+                },
+                NullLogger<DefaultHubProtocolResolver>.Instance);
+        var loggerFactory = new NullLoggerFactory();
+        var serviceEndpointManager = new ServiceEndpointManager(
+            new AccessKeySynchronizer(loggerFactory),
+            new TestOptionsMonitor(),
+            loggerFactory
+        );
+        Caller = new CallerClientResultsManager(hubProtocolResolver, serviceEndpointManager, new DefaultEndpointRouter());
+        Router = new RoutedClientResultsManager();
+    }
 
-        public DefaultClientInvocationManager()
-        {
-            var hubProtocolResolver = new DefaultHubProtocolResolver(
-                    new IHubProtocol[] { 
-                        new JsonHubProtocol(), 
-                        new MessagePackHubProtocol() 
-                    },
-                    NullLogger<DefaultHubProtocolResolver>.Instance);
-            var loggerFactory = new NullLoggerFactory();
-            var serviceEndpointManager = new ServiceEndpointManager(
-                new AccessKeySynchronizer(loggerFactory),
-                new TestOptionsMonitor(), 
-                loggerFactory
-            );
-            Caller = new CallerClientResultsManager(hubProtocolResolver, serviceEndpointManager, new DefaultEndpointRouter());
-            Router = new RoutedClientResultsManager();
-        }
+    public bool TryGetInvocationReturnType(string invocationId, out Type type)
+    {
+        return Router.TryGetInvocationReturnType(invocationId, out type) || Caller.TryGetInvocationReturnType(invocationId, out type);
+    }
 
-        public bool TryGetInvocationReturnType(string invocationId, out Type type)
-        {
-            if (Router.TryGetInvocationReturnType(invocationId, out type))
-            {
-                return true;
-            }
-            return Caller.TryGetInvocationReturnType(invocationId, out type);
-        }
-
-        public void CleanupInvocationsByConnection(string connectionId)
-        {
-            Caller.CleanupInvocationsByConnection(connectionId);
-            Router.CleanupInvocationsByConnection(connectionId);
-        }
+    public void CleanupInvocationsByConnection(string connectionId)
+    {
+        Caller.CleanupInvocationsByConnection(connectionId);
+        Router.CleanupInvocationsByConnection(connectionId);
     }
 }

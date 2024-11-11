@@ -116,12 +116,11 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         throw latest ?? new InvalidOperationException();
     }
 
-    public async Task<string> GenerateAccessTokenAsync(
-        string audience,
-        IEnumerable<Claim> claims,
-        TimeSpan lifetime,
-        AccessTokenAlgorithm algorithm,
-        CancellationToken ctoken = default)
+    public async Task<string> GenerateAccessTokenAsync(string audience,
+                                                       IEnumerable<Claim> claims,
+                                                       TimeSpan lifetime,
+                                                       AccessTokenAlgorithm algorithm,
+                                                       CancellationToken ctoken = default)
     {
         var task = await Task.WhenAny(InitializedTask, ctoken.AsTask());
 

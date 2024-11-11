@@ -3,36 +3,31 @@
 
 using Microsoft.Extensions.Logging;
 
-namespace Microsoft.Azure.SignalR.AspNet
+namespace Microsoft.Azure.SignalR.AspNet;
+
+internal class ServiceEndpointManager : ServiceEndpointManagerBase
 {
-    internal class ServiceEndpointManager : ServiceEndpointManagerBase
+    private readonly ServiceOptions _options;
+
+    private readonly IAccessKeySynchronizer _synchronizer;
+
+    public ServiceEndpointManager(IAccessKeySynchronizer synchronizer,
+                                  ServiceOptions options,
+                                  ILoggerFactory loggerFactory) :
+        base(options,
+             loggerFactory?.CreateLogger<ServiceEndpointManager>())
     {
-        private readonly ServiceOptions _options;
+        _options = options;
+        _synchronizer = synchronizer;
+    }
 
-        private readonly IAccessKeySynchronizer _synchronizer;
-
-        public ServiceEndpointManager(
-            IAccessKeySynchronizer synchronizer,
-            ServiceOptions options,
-            ILoggerFactory loggerFactory) :
-            base(
-                options,
-                loggerFactory?.CreateLogger<ServiceEndpointManager>()
-            )
+    public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
+    {
+        if (endpoint == null)
         {
-            _options = options;
-            _synchronizer = synchronizer;
+            return null;
         }
-
-        public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
-        {
-            if (endpoint == null)
-            {
-                return null;
-            }
-
-            _synchronizer.AddServiceEndpoint(endpoint);
-            return new ServiceEndpointProvider(endpoint, _options);
-        }
+        _synchronizer.AddServiceEndpoint(endpoint);
+        return new ServiceEndpointProvider(endpoint, _options);
     }
 }
