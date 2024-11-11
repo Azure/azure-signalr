@@ -177,13 +177,10 @@ public class MicrosoftEntraAccessKeyTests
     public async Task TestUpdateAccessKeySendRequest(string expectedKeyStr)
     {
         var expectedKid = "foo";
+        var text = "{" + string.Format("\"AccessKey\": \"{0}\", \"KeyId\": \"{1}\"", expectedKeyStr, expectedKid) + "}";
         var httpClientFactory = new TestHttpClientFactory(new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = JsonContent.Create(new AccessKeyResponse()
-            {
-                KeyId = expectedKid,
-                AccessKey = expectedKeyStr,
-            })
+            Content = TextHttpContent.From(text),
         });
 
         var credential = new TestTokenCredential(TokenType.MicrosoftEntra);

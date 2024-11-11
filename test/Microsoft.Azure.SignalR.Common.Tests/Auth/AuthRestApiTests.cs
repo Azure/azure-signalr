@@ -18,7 +18,7 @@ public class AuthRestApiTests
     public static readonly Regex CommonAnnotatedKeyRegex = new("[A-Za-z0-9]{52}JQQJ9(9|D)[A-Za-z0-9][A-L][A-Za-z0-9]{16}[A-Za-z][A-Za-z0-9]{7}([A-Za-z0-9]{2}==)?",
                                                                RegexOptions.ExplicitCapture | RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-    private const string Endpoint = "provice a valid endpoint";
+    private const string Endpoint = "provide a valid endpoint";
 
     [Fact(Skip = "local test only")]
     public async Task TestGetAccessKey()
