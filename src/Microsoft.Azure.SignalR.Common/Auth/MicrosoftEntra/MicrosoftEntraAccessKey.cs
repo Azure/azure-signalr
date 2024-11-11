@@ -30,9 +30,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     private const int GetMicrosoftEntraTokenMaxRetryTimes = 3;
 
-    private const string DefaultScope = "https://signalr.azure.com/.default";
-
-    private static readonly TokenRequestContext DefaultRequestContext = new TokenRequestContext(new string[] { DefaultScope });
+    private static readonly TokenRequestContext DefaultRequestContext = new TokenRequestContext(new string[] { Constants.AsrsDefaultScope });
 
     private static readonly TimeSpan GetAccessKeyInterval = TimeSpan.FromMinutes(GetAccessKeyIntervalInMinute);
 

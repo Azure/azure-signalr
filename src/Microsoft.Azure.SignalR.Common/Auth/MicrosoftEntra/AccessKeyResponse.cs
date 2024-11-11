@@ -13,13 +13,13 @@ public class AccessKeyResponse
     /// <summary>
     /// The string value of the access key for SignalR app server to sign client tokens.
     /// </summary>
-    [JsonPropertyName("accessKey")]
+    [JsonPropertyName("AccessKey")]
     public string AccessKey { get; set; }
 
     /// <summary>
     /// The ID of the access key.
     /// </summary>
-    [JsonPropertyName("keyId")]
+    [JsonPropertyName("KeyId")]
     public string KeyId { get; set; }
 }
 

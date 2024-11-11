@@ -174,14 +174,15 @@ public class MicrosoftEntraAccessKeyTests
     [Theory]
     [InlineData(DefaultSigningKey)]
     [InlineData("fooooooooooooooooooooooooooooooooobar")]
-    public async Task TestUpdateAccessKeySendRequest(string signingKey)
+    public async Task TestUpdateAccessKeySendRequest(string expectedKeyStr)
     {
+        var expectedKid = "foo";
         var httpClientFactory = new TestHttpClientFactory(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent.Create(new AccessKeyResponse()
             {
-                KeyId = "foo",
-                AccessKey = signingKey,
+                KeyId = expectedKid,
+                AccessKey = expectedKeyStr,
             })
         });
 
@@ -191,8 +192,8 @@ public class MicrosoftEntraAccessKeyTests
         await key.UpdateAccessKeyAsync();
 
         Assert.True(key.IsAuthorized);
-        Assert.Equal("foo", key.Kid);
-        Assert.Equal(signingKey, Encoding.UTF8.GetString(key.KeyBytes));
+        Assert.Equal(expectedKid, key.Kid);
+        Assert.Equal(expectedKeyStr, Encoding.UTF8.GetString(key.KeyBytes));
     }
 
     [Theory]
