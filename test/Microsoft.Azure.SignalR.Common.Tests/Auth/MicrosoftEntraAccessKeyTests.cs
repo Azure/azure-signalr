@@ -139,9 +139,10 @@ public class MicrosoftEntraAccessKeyTests
         var key = new MicrosoftEntraAccessKey(DefaultEndpoint, mockCredential.Object);
 
         var source = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-        await Assert.ThrowsAsync<OperationCanceledException>(
+        var exception = await Assert.ThrowsAsync<TaskCanceledException>(
             async () => await key.GenerateAccessTokenAsync("", [], TimeSpan.FromSeconds(1), AccessTokenAlgorithm.HS256, source.Token)
         );
+        Assert.Contains("initialization timed out", exception.Message);
     }
 
     [Theory]

@@ -118,7 +118,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
                                                        AccessTokenAlgorithm algorithm,
                                                        CancellationToken ctoken = default)
     {
-        await _initializedTcs.Task.OrCancelAsync(ctoken);
+        await _initializedTcs.Task.OrCancelAsync(ctoken, "The access key initialization timed out.");
 
         return IsAuthorized
             ? AuthUtility.GenerateAccessToken(KeyBytes, Kid, audience, claims, lifetime, algorithm)

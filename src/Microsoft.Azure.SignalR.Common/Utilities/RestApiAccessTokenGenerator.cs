@@ -9,11 +9,11 @@ namespace Microsoft.Azure.SignalR;
 
 internal class RestApiAccessTokenGenerator
 {
+    private const AccessTokenAlgorithm DefaultAlgorithm = AccessTokenAlgorithm.HS256;
+
     private readonly IAccessKey _accessKey;
 
     private readonly Claim[] _claims;
-
-    private const AccessTokenAlgorithm DefaultAlgorithm = AccessTokenAlgorithm.HS256;
 
     public RestApiAccessTokenGenerator(IAccessKey accessKey, string serverName = null)
     {
@@ -25,6 +25,11 @@ internal class RestApiAccessTokenGenerator
         };
     }
 
+    public static string GenerateServerName()
+    {
+        return $"{Environment.MachineName}_{Guid.NewGuid():N}";
+    }
+
     public Task<string> Generate(string audience, TimeSpan? lifetime = null)
     {
         if (_accessKey is MicrosoftEntraAccessKey key)
@@ -32,15 +37,9 @@ internal class RestApiAccessTokenGenerator
             return key.GetMicrosoftEntraTokenAsync();
         }
 
-        return _accessKey.GenerateAccessTokenAsync(
-            audience,
-            _claims,
-            lifetime ?? Constants.Periods.DefaultAccessTokenLifetime,
-            DefaultAlgorithm);
-    }
-
-    public static string GenerateServerName()
-    {
-        return $"{Environment.MachineName}_{Guid.NewGuid():N}";
+        return _accessKey.GenerateAccessTokenAsync(audience,
+                                                   _claims,
+                                                   lifetime ?? Constants.Periods.DefaultAccessTokenLifetime,
+                                                   DefaultAlgorithm);
     }
 }
