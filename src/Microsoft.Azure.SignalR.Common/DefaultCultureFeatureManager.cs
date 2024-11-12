@@ -39,13 +39,13 @@ internal class DefaultCultureFeatureManager : ICultureFeatureManager
 
     public void Cleanup()
     {
-        foreach (var key in _cultures.Keys)
+        foreach (var item in _cultures)
         {
-            if (_cultures.TryGetValue(key, out var cultureWithTimestamp))
+            if (_cultures.TryGetValue(item.Key, out var cultureWithTimestamp))
             {
                 if (Stopwatch.GetTimestamp() - cultureWithTimestamp.Timestamp > _cacheTimeoutTicks)
                 {
-                    _cultures.TryRemove(key, out _);
+                    _cultures.TryRemove(item.Key, out _);
                 }
             }
         }
