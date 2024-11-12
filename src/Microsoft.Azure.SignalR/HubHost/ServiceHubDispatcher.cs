@@ -142,16 +142,7 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
         try
         {
             var source = new CancellationTokenSource(_options.GracefulShutdown.Timeout);
-
-            Log.SettingServerOffline(_logger, _hubName);
-
-            await _serviceConnectionManager.OfflineAsync(options.Mode, source.Token).OrSilentCancelAsync(source.Token);
-
-            Log.TriggeringShutdownHooks(_logger, _hubName);
-            await options.OnShutdown(Context).OrSilentCancelAsync(source.Token);
-
-            Log.WaitingClientConnectionsToClose(_logger, _hubName);
-            await _clientConnectionManager.WhenAllCompleted().OrSilentCancelAsync(source.Token);
+            await GracefulShutdownAsync(options, source.Token).OrCancelAsync(source.Token);
         }
         catch (OperationCanceledException)
         {
@@ -160,6 +151,18 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
 
         Log.StoppingServer(_logger, _hubName);
         await _serviceConnectionManager.StopAsync();
+    }
+
+    private async Task GracefulShutdownAsync(GracefulShutdownOptions options, CancellationToken cancellationToken)
+    {
+        Log.SettingServerOffline(_logger, _hubName);
+        await _serviceConnectionManager.OfflineAsync(options.Mode, cancellationToken);
+
+        Log.TriggeringShutdownHooks(_logger, _hubName);
+        await options.OnShutdown(Context);
+
+        Log.WaitingClientConnectionsToClose(_logger, _hubName);
+        await _clientConnectionManager.WhenAllCompleted();
     }
 
     private IServiceConnectionContainer GetServiceConnectionContainer(ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)

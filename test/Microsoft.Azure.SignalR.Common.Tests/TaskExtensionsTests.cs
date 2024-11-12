@@ -2,45 +2,47 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Testing.xunit;
-using Microsoft.Azure.SignalR.Tests.Common;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
-using Xunit.Abstractions;
-using Xunit.Sdk;
 
 namespace Microsoft.Azure.SignalR.Common.Tests
 {
     public class TaskExtensionsTests
     {
         [Fact]
-        public async Task TestOrSilentCancelAsyncCouldCancel()
+        public async Task TestCancelCouldThrow()
         {
             var task = Task.Delay(10000);
             var cts = new CancellationTokenSource();
-            var taskOrCancel = task.OrSilentCancelAsync(cts.Token);
+            var taskOrCancel = task.OrCancelAsync(cts.Token);
             Assert.False(taskOrCancel.IsCompleted);
             cts.Cancel();
-            var returnTask = await taskOrCancel.OrTimeout(500);
-            Assert.True(returnTask.IsCompleted);
-            Assert.False(task.IsCompleted);
-            Assert.NotEqual(task, returnTask);
+            await Assert.ThrowsAsync<OperationCanceledException>(() => taskOrCancel.OrTimeout());
         }
 
         [Fact]
-        public async Task TestOrSilentCancelAsyncCouldSucceed()
+        public async Task TestCancelCouldSucceed()
         {
-            var task = Task.Delay(1);
+            var task = Task.Delay(500);
             var cts = new CancellationTokenSource();
-            var taskOrCancel = task.OrSilentCancelAsync(cts.Token);
-            var returnTask = await taskOrCancel.OrTimeout(500);
-            Assert.True(returnTask.IsCompleted);
-            Assert.True(task.IsCompleted);
-            Assert.Equal(task, returnTask);
+            var taskOrCancel = task.OrCancelAsync(cts.Token);
+            Assert.False(taskOrCancel.IsCompleted);
+            await taskOrCancel.OrTimeout();
+        }
+
+        [Fact]
+        public async Task TestTaskWithCancelCouldThrow()
+        {
+            var task = Task.Run(async () =>
+            {
+                await Task.Delay(500);
+                throw new InvalidOperationException();
+            });
+            var cts = new CancellationTokenSource();
+            var taskOrCancel = task.OrCancelAsync(cts.Token);
+            Assert.False(taskOrCancel.IsCompleted);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => taskOrCancel.OrTimeout());
         }
     }
 }

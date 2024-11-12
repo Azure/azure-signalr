@@ -5,11 +5,21 @@ namespace System.Threading.Tasks;
 
 internal static class TaskExtenstions
 {
-    public static Task<Task> OrSilentCancelAsync(this Task task, CancellationToken token)
+    public static async Task OrCancelAsync(this Task task, CancellationToken token)
     {
         var tcs = new TaskCompletionSource<object>();
         token.Register(() => tcs.TrySetResult(null));
 
-        return Task.WhenAny(task, tcs.Task);
+        var anyTask = await Task.WhenAny(task, tcs.Task);
+
+        if (anyTask == task)
+        {
+            // make sure the task throws exception if any
+            await anyTask;
+        }
+        else
+        {
+            throw new OperationCanceledException();
+        }
     }
 }
