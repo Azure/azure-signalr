@@ -136,5 +136,10 @@ public class ServiceHubDispatcherTests
         {
             throw new NotImplementedException();
         }
+
+        public Task CloseClientConnections(CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

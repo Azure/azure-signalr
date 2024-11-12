@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
@@ -68,5 +69,10 @@ internal sealed class TestSimpleServiceConnection : IServiceConnection
 
         _writeAsyncTcs?.TrySetResult(null);
         return Task.FromResult(true);
+    }
+
+    public Task CloseClientConnections(CancellationToken token)
+    {
+        throw new NotImplementedException();
     }
 }

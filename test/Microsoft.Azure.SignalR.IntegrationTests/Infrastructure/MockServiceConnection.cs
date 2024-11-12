@@ -64,4 +64,6 @@ internal class MockServiceConnection : IServiceConnection
         await WriteAsync(serviceMessage);
         return true;
     }
+
+    public Task CloseClientConnections(CancellationToken token) => Task.CompletedTask;
 }

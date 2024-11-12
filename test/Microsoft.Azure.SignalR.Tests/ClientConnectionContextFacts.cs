@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
@@ -404,6 +405,11 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
 
         public void Dispose()
         {
+        }
+
+        public Task CloseClientConnections(CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
     }
 }

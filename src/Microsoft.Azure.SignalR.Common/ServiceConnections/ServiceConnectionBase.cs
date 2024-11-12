@@ -431,6 +431,11 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
         return Task.CompletedTask;
     }
 
+    public virtual Task CloseClientConnections(CancellationToken token)
+    {
+        return Task.CompletedTask;
+    }
+
     private async Task PauseClientConnectionAsync(IClientConnection clientConnection)
     {
         await clientConnection.PauseAsync();

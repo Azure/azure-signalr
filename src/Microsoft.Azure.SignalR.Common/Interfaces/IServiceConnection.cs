@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
@@ -20,6 +21,8 @@ internal interface IServiceConnection
     Task ConnectionInitializedTask { get; }
 
     Task ConnectionOfflineTask { get; }
+
+    Task CloseClientConnections(CancellationToken token);
 
     event Action<StatusChange> ConnectionStatusChanged;
 

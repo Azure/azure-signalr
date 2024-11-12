@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Azure.SignalR.Protocol;
@@ -289,6 +290,11 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
             {
                 return false;
             }
+        }
+
+        public Task CloseClientConnections(CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
     }
 }

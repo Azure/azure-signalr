@@ -116,6 +116,8 @@ namespace Microsoft.Azure.SignalR.Management
 
             public Task StopGetServersPing() => throw new NotSupportedException();
 
+            public Task CloseClientConnections(CancellationToken token) => throw new NotSupportedException();
+
             #endregion Not supported method or properties
         }
     }
