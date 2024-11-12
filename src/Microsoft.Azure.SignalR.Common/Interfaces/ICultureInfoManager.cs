@@ -1,19 +1,18 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
+// IRequestCultureFeature is unavailable in net462. See https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.localization.irequestculturefeature#applies-to
+#if NETSTANDARD2_0 || NET6_0_OR_GREATER
+using Microsoft.AspNetCore.Localization;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal interface ICultureInfoManager
 {
-    internal interface ICultureInfoManager
-    {
-        bool TryAddCulture(string clientRequestId, CultureInfo culture, CultureInfo uiCulture);
+    bool TryAddCulture(string clientRequestId, IRequestCultureFeature cultureFeature);
 
-        bool TryApplyCulture(string clientRequestId);
+    bool TryApplyCulture(string clientRequestId);
 
-        public void Cleanup();
-    }
+    public void Cleanup();
 }
+#endif

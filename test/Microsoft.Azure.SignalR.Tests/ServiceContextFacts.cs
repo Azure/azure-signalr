@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
 using Xunit;
@@ -257,19 +258,22 @@ public class ServiceContextFacts
     {
         var (originalCulture, originalUICulture) = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
 
-        var cultureManager = new DefaultCultureInfoManager();
+        var timeoutSeconds = 1;
+        var cultureManager = new DefaultCultureInfoManager(timeoutSeconds);
 
         var requestIdProvider = new DefaultConnectionRequestIdProvider();
         var requestId1 = "1";
         var requestId2 = "2";
-        cultureManager.TryAddCulture(requestId1, expectCulture, expectUICulture);
-        cultureManager.TryAddCulture(requestId2, expectCulture, expectUICulture);
+        var feature = new RequestCultureFeature(new RequestCulture(expectCulture, expectUICulture), null);
+        cultureManager.TryAddCulture(requestId1, feature);
+        cultureManager.TryAddCulture(requestId2, feature);
+        cultureManager.Cleanup(); // should take no effect
 
         Assert.True(cultureManager.TryApplyCulture(requestId1));
         Assert.Equal(expectCulture, CultureInfo.CurrentCulture);
         Assert.Equal(expectUICulture, CultureInfo.CurrentUICulture);
 
-        await Task.Delay(31000);
+        await Task.Delay(timeoutSeconds * 1000 + 100);
         cultureManager.Cleanup();
         Assert.False(cultureManager.TryApplyCulture(requestId2));
     }

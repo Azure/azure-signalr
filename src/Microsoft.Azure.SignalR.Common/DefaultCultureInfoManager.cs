@@ -1,53 +1,56 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+# if NETSTANDARD2_0 || NET6_0_OR_GREATER
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal class DefaultCultureInfoManager : ICultureInfoManager
 {
-    internal class DefaultCultureInfoManager : ICultureInfoManager
+    private readonly long _cacheTimeoutTicks;
+
+    private readonly ConcurrentDictionary<string, RequestCultureFeatureWithTimestamp> _cultures = new ConcurrentDictionary<string, RequestCultureFeatureWithTimestamp>();
+
+    public DefaultCultureInfoManager(long cacheTimeoutInSecond = 30)
     {
-        private static readonly TimeSpan CultureCacheTimeout = TimeSpan.FromSeconds(30);
+        _cacheTimeoutTicks = cacheTimeoutInSecond * Stopwatch.Frequency;
+    }
 
-        private static readonly long CultureCacheTimeoutTicks = (long)(CultureCacheTimeout.TotalSeconds * Stopwatch.Frequency);
+    public bool TryAddCulture(string requestId, IRequestCultureFeature feature)
+    {
+        return _cultures.TryAdd(requestId, new RequestCultureFeatureWithTimestamp(feature, Stopwatch.GetTimestamp()));
+    }
 
-
-        private readonly ConcurrentDictionary<string, RequestCultureWithTimestamp> _cultures = new ConcurrentDictionary<string, RequestCultureWithTimestamp>();
-
-        public bool TryAddCulture(string requestId, CultureInfo culture, CultureInfo uiCulture)
+    public bool TryApplyCulture(string requestId)
+    {
+        if (_cultures.TryRemove(requestId, out var featureWithTimeout))
         {
-            return _cultures.TryAdd(requestId, new RequestCultureWithTimestamp(culture, uiCulture, Stopwatch.GetTimestamp()));
+            (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture) = (featureWithTimeout.Feature.RequestCulture.Culture, featureWithTimeout.Feature.RequestCulture.UICulture);
+            return true;
         }
+        return false;
+    }
 
-        public bool TryApplyCulture(string requestId)
+    public void Cleanup()
+    {
+        foreach (var key in _cultures.Keys)
         {
-            if (_cultures.TryRemove(requestId, out var requestCulture))
+            if (_cultures.TryGetValue(key, out var cultureWithTimestamp))
             {
-                (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture) = (requestCulture.Culture, requestCulture.UICulture);
-                return true;
-            }
-            return false;
-        }
-
-        public void Cleanup()
-        {
-            foreach (var key in _cultures.Keys)
-            {
-                if (_cultures.TryGetValue(key, out var cultureWithTimestamp))
+                if (Stopwatch.GetTimestamp() - cultureWithTimestamp.Timestamp > _cacheTimeoutTicks)
                 {
-                    if (Stopwatch.GetTimestamp() - cultureWithTimestamp.Timestamp > CultureCacheTimeoutTicks)
-                    {
-                        _cultures.TryRemove(key, out _);
-                    }
+                    _cultures.TryRemove(key, out _);
                 }
             }
         }
+    }
 
-        private record RequestCultureWithTimestamp(CultureInfo Culture, CultureInfo UICulture, long Timestamp)
-        {
-        }
+    private record RequestCultureFeatureWithTimestamp(IRequestCultureFeature Feature, long Timestamp)
+    {
     }
 }
+#endif
