@@ -54,6 +54,7 @@ internal class NegotiateHandler<THub> where THub : Hub
 #if NET6_0_OR_GREATER
     private readonly HttpConnectionDispatcherOptions _dispatcherOptions;
 #endif
+    private readonly ICultureFeatureManager _cultureInfoManager;
 
     public NegotiateHandler(
         IOptions<HubOptions> globalHubOptions,
@@ -89,67 +90,51 @@ internal class NegotiateHandler<THub> where THub : Hub
 #if NET6_0_OR_GREATER
         _dispatcherOptions = GetDispatcherOptions(endpointDataSource, typeof(THub));
 #endif
-    }
-
-    public async Task<NegotiationResponse> Process(HttpContext context)
-    {
-        var claims = BuildClaims(context);
-        var request = context.Request;
-        var cultureName = context.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture.Name;
-        var uiCultureName = context.Features.Get<IRequestCultureFeature>()?.RequestCulture.UICulture.Name;
-        var originalPath = GetOriginalPath(request.Path);
-        var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(context, _endpointManager.GetEndpoints(_hubName)));
-
-        if (provider == null)
-        {
-            return null;
+            _cultureInfoManager = cultureInfoManager ?? throw new ArgumentNullException(nameof(cultureInfoManager));
         }
 
-        var queryString = GetQueryString(
-            request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null,
-            cultureName,
-            uiCultureName
-        );
-
-        return new NegotiationResponse
+        public async Task<NegotiationResponse> Process(HttpContext context)
         {
-            Url = provider.GetClientEndpoint(_hubName, originalPath, queryString),
-            AccessToken = await provider.GenerateClientAccessTokenAsync(_hubName, claims),
-            // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
-            AvailableTransports = new List<AvailableTransport>()
-        };
-    }
+            var claims = BuildClaims(context);
+            var request = context.Request;
+            var cultureFeature = context.Features.Get<IRequestCultureFeature>();
+            var originalPath = GetOriginalPath(request.Path);
+            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(context, _endpointManager.GetEndpoints(_hubName)));
 
-    private static string GetOriginalPath(string path)
-    {
-        path = path.TrimEnd('/');
-        return path.EndsWith(Constants.Path.Negotiate)
-            ? path.Substring(0, path.Length - Constants.Path.Negotiate.Length)
-            : string.Empty;
-    }
+            if (provider == null)
+            {
+                return null;
+            }
 
-    private string GetQueryString(string originalQueryString, string cultureName, string uiCultureName)
-    {
-        var clientRequestId = _connectionRequestIdProvider.GetRequestId();
-        if (clientRequestId != null)
-        {
-            clientRequestId = WebUtility.UrlEncode(clientRequestId);
+            var clientRequestId = _connectionRequestIdProvider.GetRequestId(context.TraceIdentifier);
+            var queryString = GetQueryString(
+                request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null,
+                clientRequestId
+            );
+
+            _cultureInfoManager.TryAddCultureFeature(clientRequestId, cultureFeature);
+
+            return new NegotiationResponse
+            {
+                Url = provider.GetClientEndpoint(_hubName, originalPath, queryString),
+                AccessToken = await provider.GenerateClientAccessTokenAsync(_hubName, claims),
+                // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
+                AvailableTransports = new List<AvailableTransport>()
+            };
         }
 
-        var queryString = $"{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
-        if (!string.IsNullOrEmpty(cultureName))
+        private string GetQueryString(string originalQueryString, string clientRequestId)
         {
-            queryString += $"&{Constants.QueryParameter.RequestCulture}={cultureName}";
-        }
-        if (!string.IsNullOrEmpty(uiCultureName))
-        {
-            queryString += $"&{Constants.QueryParameter.RequestUICulture}={uiCultureName}";
-        }
+            if (clientRequestId != null)
+            {
+                clientRequestId = WebUtility.UrlEncode(clientRequestId);
+            }
 
-        return originalQueryString != null
-            ? $"{originalQueryString}&{queryString}"
-            : queryString;
-    }
+            var queryString = $"{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
+            return originalQueryString != null
+                ? $"{originalQueryString}&{queryString}"
+                : queryString;
+        }
 
     private IEnumerable<Claim> BuildClaims(HttpContext context)
     {

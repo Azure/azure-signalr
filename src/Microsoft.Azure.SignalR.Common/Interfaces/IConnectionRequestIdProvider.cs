@@ -5,13 +5,13 @@ namespace Microsoft.Azure.SignalR;
 
 internal interface IConnectionRequestIdProvider
 {
-    string GetRequestId();
+    string GetRequestId(string traceIdentifier);
 }
 
 internal class DefaultConnectionRequestIdProvider : IConnectionRequestIdProvider
 {
-    public string GetRequestId()
+    public string GetRequestId(string traceIdentifier)
     {
-        return AuthUtility.GenerateRequestId();
+        return AuthUtility.GenerateRequestId(traceIdentifier);
     }
 }

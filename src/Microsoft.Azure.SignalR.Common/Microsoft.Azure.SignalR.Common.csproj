@@ -9,7 +9,7 @@
     <TargetFrameworks>netstandard2.0;net6.0;net8.0;net462;</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-
+  
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Azure.SignalR.Protocols\Microsoft.Azure.SignalR.Protocols.csproj" />
   </ItemGroup>

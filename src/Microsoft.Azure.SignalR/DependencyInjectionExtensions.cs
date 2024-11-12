@@ -100,6 +100,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton(typeof(IServerNameProvider), typeof(DefaultServerNameProvider))
                 .AddSingleton(typeof(IBlazorDetector), typeof(DefaultBlazorDetector))
                 .AddSingleton(typeof(IConnectionFactory), typeof(ConnectionFactory))
+                .AddSingleton(typeof(ICultureFeatureManager), typeof(DefaultCultureFeatureManager))
                 .AddSingleton(typeof(ServiceHubDispatcher<>))
                 .AddSingleton(typeof(ServerLifetimeManager))
                 .AddSingleton(typeof(AzureSignalRMarkerService))

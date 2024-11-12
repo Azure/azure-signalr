@@ -63,6 +63,9 @@ internal partial class ServiceConnection
         private static readonly Action<ILogger, int, string, Exception> _closingClientConnections =
             LoggerMessage.Define<int, string>(LogLevel.Information, new EventId(25, "ClosingClientConnections"), "Closing {ClientCount} client connection(s) for server connection {ServerConnectionId}.");
 
+        private static readonly Action<ILogger, string, Exception> _applyCultureInfoFailed =
+            LoggerMessage.Define<string>(LogLevel.Information, new EventId(26, "ApplyCultureInfoFailed"), "Error applying culture info for connection request id {requestId}.");
+
         public static void WaitingForTransport(ILogger logger)
         {
             _waitingForTransport(logger, null);
@@ -91,6 +94,11 @@ internal partial class ServiceConnection
         public static void ClosingClientConnections(ILogger logger, int clientCount, string serverConnectionId)
         {
             _closingClientConnections(logger, clientCount, serverConnectionId, null);
+        }
+
+        public static void FailedToApplyCultureInfo(ILogger logger, string requestId)
+        {
+            _applyCultureInfoFailed(logger, requestId, null);
         }
 
         public static void FailedToCleanupConnections(ILogger logger, Exception exception)

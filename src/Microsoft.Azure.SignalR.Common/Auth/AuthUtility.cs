@@ -65,8 +65,8 @@ internal static class AuthUtility
         return jwtToken.Length > MaxTokenLength ? throw new AzureSignalRAccessTokenTooLongException() : jwtToken;
     }
 
-    public static string GenerateRequestId()
+    public static string GenerateRequestId(string traceIdentifier)
     {
-        return Convert.ToBase64String(BitConverter.GetBytes(Stopwatch.GetTimestamp()));
+        return $"{traceIdentifier}-{Convert.ToBase64String(BitConverter.GetBytes(Stopwatch.GetTimestamp()))}";
     }
 }
