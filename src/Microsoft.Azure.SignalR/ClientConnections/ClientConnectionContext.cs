@@ -75,6 +75,8 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
 
+    private readonly CancellationTokenSource _connectionClosedCts = new CancellationTokenSource();
+
     private readonly object _heartbeatLock = new object();
 
     private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
@@ -96,6 +98,10 @@ internal partial class ClientConnectionContext : ConnectionContext,
     private long _lastMessageReceivedAt;
 
     private long _receivedBytes;
+
+#if !NETSTANDARD
+    public override CancellationToken ConnectionClosed => _connectionClosedCts.Token;
+#endif
 
     public override string ConnectionId { get; set; }
 
@@ -135,8 +141,6 @@ internal partial class ClientConnectionContext : ConnectionContext,
     public long ReceivedBytes => Volatile.Read(ref _receivedBytes);
 
     public ILogger<ServiceConnection> Logger { get; init; } = NullLogger<ServiceConnection>.Instance;
-
-    private Task DelayTask => Task.Delay(_closeTimeOutMilliseconds);
 
     private CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
 
@@ -282,13 +286,14 @@ internal partial class ClientConnectionContext : ConnectionContext,
         return false;
     }
 
-    internal async Task ProcessOutgoingMessagesAsync(SignalRProtocol.IHubProtocol protocol)
+    internal async Task ProcessOutgoingMessagesAsync(SignalRProtocol.IHubProtocol protocol, CancellationToken token = default)
     {
+        var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(OutgoingAborted, token);
         try
         {
             while (true)
             {
-                var result = await Application.Input.ReadAsync(OutgoingAborted);
+                var result = await Application.Input.ReadAsync(linkedCts.Token);
 
                 if (result.IsCanceled)
                 {
@@ -328,9 +333,9 @@ internal partial class ClientConnectionContext : ConnectionContext,
                     if (HandshakeResponseTask.IsCompleted)
                     {
                         var next = buffer;
-                        while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
+                        while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message) && !linkedCts.IsCancellationRequested)
                         {
-                            if (!await _pauseHandler.WaitAsync(StaticRandom.Next(500, 1500), OutgoingAborted))
+                            if (!await _pauseHandler.WaitAsync(StaticRandom.Next(500, 1500), linkedCts.Token))
                             {
                                 Log.OutgoingTaskPaused(Logger, ConnectionId);
                                 buffer = buffer.Slice(0);
@@ -373,6 +378,10 @@ internal partial class ClientConnectionContext : ConnectionContext,
                 Application.Input.AdvanceTo(buffer.Start, buffer.End);
             }
         }
+        catch (OperationCanceledException)
+        {
+            // cancelled, do nothing
+        }
         catch (ForwardMessageException)
         {
             // do nothing.
@@ -400,11 +409,6 @@ internal partial class ClientConnectionContext : ConnectionContext,
             // Wait for the application task to complete
             // application task can end when exception, or Context.Abort() from hub
             await connectionDelegate(this);
-        }
-        catch (ObjectDisposedException)
-        {
-            // When the application shuts down and disposes IServiceProvider, HubConnectionHandler.RunHubAsync is still running and runs into _dispatcher.OnDisconnectedAsync
-            // no need to throw the error out
         }
         catch (Exception ex)
         {
@@ -434,14 +438,20 @@ internal partial class ClientConnectionContext : ConnectionContext,
         // Wait for the connection's lifetime task to end
         // Wait on the application task to complete
         // We wait gracefully here to be consistent with self-host SignalR
-        await Task.WhenAny(LifetimeTask, DelayTask);
-
-        if (!LifetimeTask.IsCompleted)
+        using var cts = new CancellationTokenSource(_closeTimeOutMilliseconds);
+        try
         {
-            Log.DetectedLongRunningApplicationTask(Logger, ConnectionId);
+            await LifetimeTask.OrCancelAsync(cts.Token);
+            cts.Cancel();
         }
+        catch (OperationCanceledException)
+        {
 
-        await LifetimeTask;
+            Log.DetectedLongRunningApplicationTask(Logger, ConnectionId);
+#if !NETSTANDARD
+            _connectionClosedCts.Cancel();
+#endif
+        }
     }
 
     internal async Task ProcessConnectionDataMessageAsync(ConnectionDataMessage connectionDataMessage)
