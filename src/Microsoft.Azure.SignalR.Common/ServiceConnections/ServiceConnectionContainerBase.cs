@@ -406,13 +406,15 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
             var message = RuntimeServicePingMessage.GetFinPingMessage(mode);
             _ = c.WriteAsync(message);
-            var task = await c.ConnectionOfflineTask.OrSilentCancelAsync(source.Token);
-
-            if (task == c.ConnectionOfflineTask)
+            try
             {
+                await c.ConnectionOfflineTask.OrCancelAsync(source.Token);
                 source.Cancel();
                 Log.ReceivedFinAckPing(Logger);
                 return;
+            }
+            catch (OperationCanceledException)
+            {
             }
             retry++;
         }
