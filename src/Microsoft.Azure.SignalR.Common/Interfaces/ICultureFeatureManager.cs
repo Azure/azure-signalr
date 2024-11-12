@@ -7,11 +7,11 @@ using Microsoft.AspNetCore.Localization;
 
 namespace Microsoft.Azure.SignalR;
 
-internal interface ICultureInfoManager
+internal interface ICultureFeatureManager
 {
-    bool TryAddCulture(string clientRequestId, IRequestCultureFeature cultureFeature);
+    bool TryAddCultureFeature(string clientRequestId, IRequestCultureFeature cultureFeature);
 
-    bool TryApplyCulture(string clientRequestId);
+    bool TryRemoveCultureFeature(string clientRequestId, out IRequestCultureFeature feature);
 
     public void Cleanup();
 }

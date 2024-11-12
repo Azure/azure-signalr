@@ -5,33 +5,35 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices.ComTypes;
 using Microsoft.AspNetCore.Localization;
 
 namespace Microsoft.Azure.SignalR;
 
-internal class DefaultCultureInfoManager : ICultureInfoManager
+internal class DefaultCultureFeatureManager : ICultureFeatureManager
 {
     private readonly long _cacheTimeoutTicks;
 
     private readonly ConcurrentDictionary<string, RequestCultureFeatureWithTimestamp> _cultures = new ConcurrentDictionary<string, RequestCultureFeatureWithTimestamp>();
 
-    public DefaultCultureInfoManager(long cacheTimeoutInSecond = 30)
+    public DefaultCultureFeatureManager(long cacheTimeoutInSecond = 30)
     {
         _cacheTimeoutTicks = cacheTimeoutInSecond * Stopwatch.Frequency;
     }
 
-    public bool TryAddCulture(string requestId, IRequestCultureFeature feature)
+    public bool TryAddCultureFeature(string requestId, IRequestCultureFeature feature)
     {
         return _cultures.TryAdd(requestId, new RequestCultureFeatureWithTimestamp(feature, Stopwatch.GetTimestamp()));
     }
 
-    public bool TryApplyCulture(string requestId)
+    public bool TryRemoveCultureFeature(string requestId, out IRequestCultureFeature feature)
     {
         if (_cultures.TryRemove(requestId, out var featureWithTimeout))
         {
-            (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture) = (featureWithTimeout.Feature.RequestCulture.Culture, featureWithTimeout.Feature.RequestCulture.UICulture);
+            feature = featureWithTimeout.Feature;
             return true;
         }
+        feature = null;
         return false;
     }
 

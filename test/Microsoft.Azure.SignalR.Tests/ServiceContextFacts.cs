@@ -259,22 +259,21 @@ public class ServiceContextFacts
         var (originalCulture, originalUICulture) = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
 
         var timeoutSeconds = 1;
-        var cultureManager = new DefaultCultureInfoManager(timeoutSeconds);
+        var cultureManager = new DefaultCultureFeatureManager(timeoutSeconds);
 
         var requestIdProvider = new DefaultConnectionRequestIdProvider();
         var requestId1 = "1";
         var requestId2 = "2";
-        var feature = new RequestCultureFeature(new RequestCulture(expectCulture, expectUICulture), null);
-        cultureManager.TryAddCulture(requestId1, feature);
-        cultureManager.TryAddCulture(requestId2, feature);
+        var expectFeature = new RequestCultureFeature(new RequestCulture(expectCulture, expectUICulture), null);
+        cultureManager.TryAddCultureFeature(requestId1, expectFeature);
+        cultureManager.TryAddCultureFeature(requestId2, expectFeature);
         cultureManager.Cleanup(); // should take no effect
 
-        Assert.True(cultureManager.TryApplyCulture(requestId1));
-        Assert.Equal(expectCulture, CultureInfo.CurrentCulture);
-        Assert.Equal(expectUICulture, CultureInfo.CurrentUICulture);
+        Assert.True(cultureManager.TryRemoveCultureFeature(requestId1, out var actualFeature));
+        Assert.Equal(expectFeature, actualFeature);
 
         await Task.Delay(timeoutSeconds * 1000 + 100);
         cultureManager.Cleanup();
-        Assert.False(cultureManager.TryApplyCulture(requestId2));
+        Assert.False(cultureManager.TryRemoveCultureFeature(requestId2, out var _));
     }
 }
