@@ -18,17 +18,14 @@ internal class DefaultClientInvocationManager : IClientInvocationManager
     public DefaultClientInvocationManager()
     {
         var hubProtocolResolver = new DefaultHubProtocolResolver(
-                new IHubProtocol[] {
-                    new JsonHubProtocol(),
-                    new MessagePackHubProtocol()
-                },
-                NullLogger<DefaultHubProtocolResolver>.Instance);
-        var loggerFactory = new NullLoggerFactory();
+            new IHubProtocol[] {
+                new JsonHubProtocol(),
+                new MessagePackHubProtocol()
+            },
+            NullLogger<DefaultHubProtocolResolver>.Instance);
         var serviceEndpointManager = new ServiceEndpointManager(
-            new AccessKeySynchronizer(loggerFactory),
             new TestOptionsMonitor(),
-            loggerFactory
-        );
+            NullLoggerFactory.Instance);
         Caller = new CallerClientResultsManager(hubProtocolResolver, serviceEndpointManager, new DefaultEndpointRouter());
         Router = new RoutedClientResultsManager();
     }

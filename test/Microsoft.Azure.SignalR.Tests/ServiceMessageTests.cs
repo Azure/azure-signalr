@@ -205,7 +205,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.StartAsync();
         await connection.ConnectionInitializedTask.OrTimeout(1000);
 
-        if (endpoint.AccessKey is TestAadAccessKey aadKey)
+        if (endpoint.AccessKey is TestMicrosoftEntraAccessKey aadKey)
         {
             var message = await connection.ExpectServiceMessage<AccessKeyRequestMessage>().OrTimeout(3000);
             Assert.Equal(aadKey.Token, message.Token);
@@ -359,25 +359,11 @@ public class ServiceMessageTests : VerifiableLoggedTest
             case nameof(MicrosoftEntraAccessKey):
                 var endpoint = new ServiceEndpoint(MicrosoftEntraConnectionString);
                 var p = typeof(ServiceEndpoint).GetProperty("AccessKey", BindingFlags.NonPublic | BindingFlags.Instance);
-                p.SetValue(endpoint, new TestAadAccessKey());
+                p.SetValue(endpoint, new TestMicrosoftEntraAccessKey());
                 return endpoint;
 
             default:
                 throw new NotImplementedException();
-        }
-    }
-
-    private class TestAadAccessKey : MicrosoftEntraAccessKey
-    {
-        public string Token { get; } = Guid.NewGuid().ToString();
-
-        public TestAadAccessKey() : base(new Uri("http://localhost:80"), new DefaultAzureCredential())
-        {
-        }
-
-        public override Task<string> GetMicrosoftEntraTokenAsync(CancellationToken ctoken = default)
-        {
-            return Task.FromResult(Token);
         }
     }
 

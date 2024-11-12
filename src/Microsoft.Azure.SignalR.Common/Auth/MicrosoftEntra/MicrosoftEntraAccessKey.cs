@@ -20,19 +20,23 @@ namespace Microsoft.Azure.SignalR;
 
 #nullable enable
 
-internal class MicrosoftEntraAccessKey : IAccessKey
+internal class MicrosoftEntraAccessKey : IAccessKey, IDisposable
 {
-    internal static readonly TimeSpan GetAccessKeyTimeout = TimeSpan.FromSeconds(100);
-
-    private const int GetAccessKeyIntervalInMinute = 55;
-
     private const int GetAccessKeyMaxRetryTimes = 3;
 
     private const int GetMicrosoftEntraTokenMaxRetryTimes = 3;
 
+    private const int StateIdle = 0;
+
+    private const int StateInitializing = 1;
+
     private static readonly TokenRequestContext DefaultRequestContext = new TokenRequestContext(new string[] { Constants.AsrsDefaultScope });
 
-    private static readonly TimeSpan GetAccessKeyInterval = TimeSpan.FromMinutes(GetAccessKeyIntervalInMinute);
+    private static readonly TimeSpan GetAccessKeyTimeout = TimeSpan.FromSeconds(100);
+
+    private static readonly TimeSpan GetAccessKeyInterval = TimeSpan.FromMinutes(55);
+
+    private static readonly TimeSpan AccessKeyExpireTime = TimeSpan.FromMinutes(120);
 
     private static readonly TimeSpan GetAccessKeyIntervalWhenUnauthorized = TimeSpan.FromMinutes(5);
 
@@ -40,13 +44,17 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     private readonly IHttpClientFactory _httpClientFactory;
 
+    private readonly TimerAwaitable _timer = new TimerAwaitable(TimeSpan.Zero, TimeSpan.FromMinutes(1));
+
     private volatile bool _isAuthorized = false;
 
-    private DateTime _lastUpdatedTime = DateTime.MinValue;
+    private DateTime _updateAt = DateTime.MinValue;
 
     private volatile string? _kid;
 
     private volatile byte[]? _keyBytes;
+
+    private volatile int _state = StateIdle;
 
     public bool IsAuthorized
     {
@@ -58,7 +66,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             {
                 LastException = null;
             }
-            _lastUpdatedTime = DateTime.UtcNow;
+            _updateAt = DateTime.UtcNow;
             _isAuthorized = value;
             _initializedTcs.TrySetResult(null);
         }
@@ -75,8 +83,6 @@ internal class MicrosoftEntraAccessKey : IAccessKey
     internal Exception? LastException { get; private set; }
 
     internal string GetAccessKeyUrl { get; }
-
-    internal bool HasExpired => DateTime.UtcNow - _lastUpdatedTime > TimeSpan.FromMinutes(GetAccessKeyIntervalInMinute * 2);
 
     internal TimeSpan GetAccessKeyRetryInterval { get; set; } = TimeSpan.FromSeconds(3);
 
@@ -118,6 +124,10 @@ internal class MicrosoftEntraAccessKey : IAccessKey
                                                        AccessTokenAlgorithm algorithm,
                                                        CancellationToken ctoken = default)
     {
+        if (Interlocked.CompareExchange(ref _state, StateInitializing, StateIdle) == StateIdle)
+        {
+            _ = InitializeAccessKeyAsync();
+        }
         await _initializedTcs.Task.OrCancelAsync(ctoken, "The access key initialization timed out.");
 
         return IsAuthorized
@@ -125,8 +135,32 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, LastException);
     }
 
-    internal void UpdateAccessKey(string kid, string keyStr)
+    public void Dispose()
     {
+        _timer.Stop();
+        (_timer as IDisposable)?.Dispose();
+    }
+
+    internal async Task InitializeAccessKeyAsync()
+    {
+        using (_timer)
+        {
+            _timer.Start();
+
+            while (await _timer)
+            {
+                _ = UpdateAccessKeyAsync();
+            }
+        }
+    }
+
+    internal void UpdateAccessKey(string kid, string keyStr, DateTime? dateTime = null)
+    {
+        if ((dateTime ?? DateTime.UtcNow) < _updateAt)
+        {
+            return;
+        }
+
         _keyBytes = Encoding.UTF8.GetBytes(keyStr);
         _kid = kid;
         IsAuthorized = true;
@@ -134,7 +168,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     internal async Task UpdateAccessKeyAsync(CancellationToken ctoken = default)
     {
-        var delta = DateTime.UtcNow - _lastUpdatedTime;
+        var delta = DateTime.UtcNow - _updateAt;
         if (IsAuthorized && delta < GetAccessKeyInterval)
         {
             return;
@@ -172,7 +206,10 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             }
         }
 
-        IsAuthorized = false;
+        if (!IsAuthorized || DateTime.UtcNow - _updateAt > AccessKeyExpireTime)
+        {
+            IsAuthorized = false;
+        }
     }
 
     private static async Task ThrowExceptionOnResponseFailureAsync(HttpRequestMessage request, HttpResponseMessage response)

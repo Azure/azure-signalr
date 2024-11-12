@@ -411,11 +411,6 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
             {
                 key.UpdateAccessKey(keyMessage.Kid, keyMessage.AccessKey);
             }
-            else if (key.HasExpired)
-            {
-                Log.AuthorizeFailed(Logger, _endpointName, keyMessage.ErrorMessage, null);
-                return Task.CompletedTask;
-            }
         }
         return Task.CompletedTask;
     }
@@ -618,7 +613,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
     {
         try
         {
-            var source = new CancellationTokenSource(MicrosoftEntraAccessKey.GetAccessKeyTimeout);
+            var source = new CancellationTokenSource(TimeSpan.FromSeconds(100));
             var token = await key.GetMicrosoftEntraTokenAsync(source.Token);
             var message = new AccessKeyRequestMessage(token);
             await SafeWriteAsync(message);

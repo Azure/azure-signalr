@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Json;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
@@ -25,6 +24,13 @@ public class MicrosoftEntraAccessKeyTests
     private const string DefaultToken = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     private static readonly Uri DefaultEndpoint = new("http://localhost");
+
+    public enum TokenType
+    {
+        Local,
+
+        MicrosoftEntra,
+    }
 
     [Theory]
     [InlineData("https://a.bc", "https://a.bc/api/v1/auth/accessKey")]
@@ -59,13 +65,15 @@ public class MicrosoftEntraAccessKeyTests
     }
 
     [Theory]
-    [InlineData(false, 1, true)]
-    [InlineData(false, 4, true)]
-    [InlineData(false, 6, false)]
-    [InlineData(true, 6, true)]
-    [InlineData(true, 54, true)]
-    [InlineData(true, 56, false)]
-    public async Task TestUpdateAccessKeyAsyncShouldSkip(bool isAuthorized, int timeElapsed, bool shouldSkip)
+    [InlineData(false, 1, true, false)]
+    [InlineData(false, 4, true, false)]
+    [InlineData(false, 6, false, true)] // > 5, should try update when unauthorized
+    [InlineData(true, 1, true, false)]
+    [InlineData(true, 54, true, false)]
+    [InlineData(true, 56, true, true)] // > 55, should try update and log the exception
+    [InlineData(true, 119, true, true)] // > 55, should try update and log the exception
+    [InlineData(true, 121, false, true)] // > 120, should set key unauthorized and log the exception
+    public async Task TestUpdateAccessKeyAsyncShouldSkipUpdatingUnauthorizedStatus(bool isAuthorized, int timeElapsed, bool skip, bool hasException)
     {
         var mockCredential = new Mock<TokenCredential>();
         mockCredential.Setup(credential => credential.GetTokenAsync(
@@ -76,33 +84,41 @@ public class MicrosoftEntraAccessKeyTests
         {
             GetAccessKeyRetryInterval = TimeSpan.Zero
         };
+
         var isAuthorizedField = typeof(MicrosoftEntraAccessKey).GetField("_isAuthorized", BindingFlags.NonPublic | BindingFlags.Instance);
         isAuthorizedField.SetValue(key, isAuthorized);
         Assert.Equal(isAuthorized, (bool)isAuthorizedField.GetValue(key));
 
-        var lastUpdatedTime = DateTime.UtcNow - TimeSpan.FromMinutes(timeElapsed);
-        var lastUpdatedTimeField = typeof(MicrosoftEntraAccessKey).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
-        lastUpdatedTimeField.SetValue(key, lastUpdatedTime);
+        var updateAt = DateTime.UtcNow - TimeSpan.FromMinutes(timeElapsed);
+        var updateAtField = typeof(MicrosoftEntraAccessKey).GetField("_updateAt", BindingFlags.NonPublic | BindingFlags.Instance);
+        updateAtField.SetValue(key, updateAt);
 
         var initializedTcsField = typeof(MicrosoftEntraAccessKey).GetField("_initializedTcs", BindingFlags.NonPublic | BindingFlags.Instance);
         var initializedTcs = (TaskCompletionSource<object>)initializedTcsField.GetValue(key);
 
         await key.UpdateAccessKeyAsync().OrTimeout(TimeSpan.FromSeconds(30));
-        var actualLastUpdatedTime = Assert.IsType<DateTime>(lastUpdatedTimeField.GetValue(key));
+        var actualUpdateAt = Assert.IsType<DateTime>(updateAtField.GetValue(key));
 
-        if (shouldSkip)
+        Assert.Equal(skip && isAuthorized, Assert.IsType<bool>(isAuthorizedField.GetValue(key)));
+
+        if (skip)
         {
-            Assert.Equal(isAuthorized, Assert.IsType<bool>(isAuthorizedField.GetValue(key)));
-            Assert.Equal(lastUpdatedTime, actualLastUpdatedTime);
-            Assert.Null(key.LastException);
+            Assert.Equal(updateAt, actualUpdateAt);
             Assert.False(initializedTcs.Task.IsCompleted);
         }
         else
         {
-            Assert.False(Assert.IsType<bool>(isAuthorizedField.GetValue(key)));
-            Assert.True(lastUpdatedTime < actualLastUpdatedTime);
-            Assert.NotNull(Assert.IsType<InvalidOperationException>(key.LastException));
+            Assert.True(updateAt < actualUpdateAt);
             Assert.True(initializedTcs.Task.IsCompleted);
+        }
+
+        if (hasException)
+        {
+            Assert.NotNull(key.LastException);
+        }
+        else
+        {
+            Assert.Null(key.LastException);
         }
     }
 
@@ -323,12 +339,6 @@ public class MicrosoftEntraAccessKeyTests
             length = _content.Length;
             return true;
         }
-    }
-
-    public enum TokenType
-    {
-        Local,
-        MicrosoftEntra,
     }
 
     private sealed class TestTokenCredential(TokenType tokenType) : TokenCredential
