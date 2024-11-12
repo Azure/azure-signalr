@@ -80,8 +80,6 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     internal TimeSpan GetAccessKeyRetryInterval { get; set; } = TimeSpan.FromSeconds(3);
 
-    private Task<object?> InitializedTask => _initializedTcs.Task;
-
     public MicrosoftEntraAccessKey(Uri endpoint,
                                    TokenCredential credential,
                                    Uri? serverEndpoint = null,
@@ -120,20 +118,11 @@ internal class MicrosoftEntraAccessKey : IAccessKey
                                                        AccessTokenAlgorithm algorithm,
                                                        CancellationToken ctoken = default)
     {
-        var task = await Task.WhenAny(InitializedTask, ctoken.AsTask());
+        await _initializedTcs.Task.OrCancelAsync(ctoken, "The access key initialization timed out.");
 
-        if (task == InitializedTask || InitializedTask.IsCompleted)
-        {
-            await task;
-
-            return IsAuthorized
-                ? AuthUtility.GenerateAccessToken(KeyBytes, Kid, audience, claims, lifetime, algorithm)
-                : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, LastException);
-        }
-        else
-        {
-            throw new TaskCanceledException("Timeout reached when authorizing AzureAD identity.");
-        }
+        return IsAuthorized
+            ? AuthUtility.GenerateAccessToken(KeyBytes, Kid, audience, claims, lifetime, algorithm)
+            : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, LastException);
     }
 
     internal void UpdateAccessKey(string kid, string keyStr)
@@ -196,10 +185,10 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         var content = await response.Content.ReadAsStringAsync();
 
 #if NET5_0_OR_GREATER
-            var innerException = new HttpRequestException(
-                $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})",
-                null,
-                response.StatusCode);
+        var innerException = new HttpRequestException(
+            $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})",
+            null,
+            response.StatusCode);
 #else
         var innerException = new HttpRequestException(
             $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})");

@@ -3,11 +3,13 @@
 
 namespace System.Threading.Tasks;
 
+#nullable enable
+
 internal static class TaskExtenstions
 {
-    public static async Task OrCancelAsync(this Task task, CancellationToken token)
+    public static async Task OrCancelAsync(this Task task, CancellationToken token, string? message = null)
     {
-        var tcs = new TaskCompletionSource<object>();
+        var tcs = new TaskCompletionSource<object?>();
         token.Register(() => tcs.TrySetResult(null));
 
         var anyTask = await Task.WhenAny(task, tcs.Task);
@@ -19,7 +21,7 @@ internal static class TaskExtenstions
         }
         else
         {
-            throw new OperationCanceledException();
+            throw message == null ? new TaskCanceledException() : new TaskCanceledException(message);
         }
     }
 }
