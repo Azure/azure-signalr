@@ -113,7 +113,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     public override Task CloseClientConnections(CancellationToken token)
     {
-        return Task.WhenAll(_clientConnectionManager.ClientConnections.Select(i => ((ClientConnectionContext)i).PerformDisconnectAsync()));
+        return Task.WhenAll(_clientConnectionManager.ClientConnections.Select(c => ((ClientConnectionContext)c).PerformDisconnectAsync()));
     }
 
     protected override Task CleanupClientConnections(string fromInstanceId = null)

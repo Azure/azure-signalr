@@ -97,6 +97,11 @@ internal partial class ServiceConnection : ServiceConnectionBase
         return Task.CompletedTask;
     }
 
+    public override Task CloseClientConnections(CancellationToken token)
+    {
+        throw new NotSupportedException();
+    }
+
     protected override Task OnClientConnectedAsync(OpenConnectionMessage openConnectionMessage)
     {
         // Create empty transport with only channel for async processing messages
