@@ -51,11 +51,6 @@ public class MicrosoftEntraAccessKeyTests
         var lifetime = TimeSpan.FromHours(1);
         var algorithm = AccessTokenAlgorithm.HS256;
 
-        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-        await Assert.ThrowsAsync<TaskCanceledException>(
-            async () => await key.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm, cts.Token)
-        );
-
         var (kid, accessKey) = ("foo", DefaultSigningKey);
         key.UpdateAccessKey(kid, accessKey);
 
@@ -135,6 +130,19 @@ public class MicrosoftEntraAccessKeyTests
             async () => await key.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm)
         );
         Assert.IsType<InvalidOperationException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task TestNotInitialized()
+    {
+        var mockCredential = new Mock<TokenCredential>();
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, mockCredential.Object);
+
+        var source = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        var exception = await Assert.ThrowsAsync<TaskCanceledException>(
+            async () => await key.GenerateAccessTokenAsync("", [], TimeSpan.FromSeconds(1), AccessTokenAlgorithm.HS256, source.Token)
+        );
+        Assert.Contains("initialization timed out", exception.Message);
     }
 
     [Theory]
