@@ -249,29 +249,20 @@ public class ServiceMessageTests : VerifiableLoggedTest
     }
 
     [Theory]
-    [InlineData(5, 0)]
-    [InlineData(60, 0)]
-    [InlineData(120, 1)]
-    public async Task TestAccessKeyResponseMessageWithError(int minutesElapsed, int expectedLogCount)
+    [InlineData(5, true)]
+    [InlineData(60, true)]
+    [InlineData(119, true)]
+    [InlineData(121, false)] // becomes unavailable only after the key has expired.
+    public async Task TestAccessKeyResponseMessageWithError(int minutesElapsed, bool expectAvailable)
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Error, expectedErrors: c => true,
-            logChecker: logs =>
-            {
-                Assert.Equal(expectedLogCount, logs.Count);
-                if (logs.Count > 0)
-                {
-                    Assert.Equal("Service '(Primary)https://localhost(hub=foo)' returned 401 unauthorized. Authorization failed. Please check your role assignments. Note: New role assignments will take up to 30 minutes to take effect. Error detail: This is a error messsage.", logs[0].Write.Message);
-                }
-                return true;
-            }))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Error, expectedErrors: c => true))
         {
             var endpoint = new TestHubServiceEndpoint(endpoint: new TestServiceEndpoint(new DefaultAzureCredential()));
+            var key = Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
+            key.UpdateAccessKey("foo", "bar");
 
-            if (endpoint.AccessKey is MicrosoftEntraAccessKey key)
-            {
-                var field = typeof(MicrosoftEntraAccessKey).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
-                field.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(minutesElapsed));
-            }
+            var field = typeof(MicrosoftEntraAccessKey).GetField("_updateAt", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(minutesElapsed));
 
             var clientInvocationManager = new DefaultClientInvocationManager();
 
@@ -295,6 +286,8 @@ public class ServiceMessageTests : VerifiableLoggedTest
             Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
 
             Assert.Empty(connection.ClientConnectionManager.ClientConnections);
+
+            Assert.Equal(expectAvailable, key.Available);
         }
     }
 

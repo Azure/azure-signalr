@@ -69,7 +69,7 @@ public class MicrosoftEntraApplicationTests
         var key = new MicrosoftEntraAccessKey(new Uri("https://localhost:8080"), options);
         await key.UpdateAccessKeyAsync();
 
-        Assert.True(key.IsAuthorized);
+        Assert.True(key.Available);
         Assert.NotNull(key.Kid);
         Assert.NotNull(key.KeyBytes);
     }

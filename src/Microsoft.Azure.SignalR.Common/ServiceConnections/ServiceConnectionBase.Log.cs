@@ -72,9 +72,6 @@ internal abstract partial class ServiceConnectionBase
         private static readonly Action<ILogger, string, Exception> _receivedInstanceOfflinePing =
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(31, "ReceivedInstanceOfflinePing"), "Received instance offline service ping: {InstanceId}");
 
-        private static readonly Action<ILogger, string, string, Exception> _authorizeFailed =
-            LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(32, "AuthorizeFailed"), "Service '{Endpoint}' returned 401 unauthorized. Authorization failed. Please check your role assignments. Note: New role assignments will take up to 30 minutes to take effect. Error detail: {Error}.");
-
         private static readonly Action<ILogger, string, string, Exception> _sendAccessKeyRequestMessageFailed =
             LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(33, "SendAccessKeyRequestFailed"), "Cannot send AccessKeyRequestMessage to '{Endpoint}' via server connections, authentication failures may occur if this warning continues. Error detail: {Message}");
 
@@ -84,11 +81,6 @@ internal abstract partial class ServiceConnectionBase
         public static void FailedToWrite(ILogger logger, ulong? tracingId, string serviceConnectionId, Exception exception)
         {
             _failedToWrite(logger, tracingId, exception.Message, serviceConnectionId, null);
-        }
-
-        public static void AuthorizeFailed(ILogger logger, string endpoint, string message, Exception exception)
-        {
-            _authorizeFailed(logger, endpoint, message, exception);
         }
 
         public static void SendAccessKeyRequestFailed(ILogger logger, string endpoint, string message, Exception exception)

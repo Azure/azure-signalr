@@ -411,11 +411,6 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
             {
                 key.UpdateAccessKey(keyMessage.Kid, keyMessage.AccessKey);
             }
-            else if (key.HasExpired)
-            {
-                Log.AuthorizeFailed(Logger, _endpointName, keyMessage.ErrorMessage, null);
-                return Task.CompletedTask;
-            }
         }
         return Task.CompletedTask;
     }

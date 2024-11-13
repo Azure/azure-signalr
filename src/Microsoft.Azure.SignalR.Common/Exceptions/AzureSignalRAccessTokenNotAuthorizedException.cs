@@ -6,6 +6,8 @@ using Azure.Core;
 
 namespace Microsoft.Azure.SignalR.Common;
 
+#nullable enable
+
 /// <summary>
 /// The exception throws when AccessKey is not authorized.
 /// </summary>
@@ -36,17 +38,17 @@ public class AzureSignalRAccessTokenNotAuthorizedException : AzureSignalRExcepti
     /// <summary>
     /// Initializes a new instance of the <see cref="AzureSignalRAccessTokenNotAuthorizedException"/> class.
     /// </summary>
-    internal AzureSignalRAccessTokenNotAuthorizedException(TokenCredential credential, Exception inner) :
+    internal AzureSignalRAccessTokenNotAuthorizedException(TokenCredential credential, Exception? inner) :
         base(string.Format(Template, credential.GetType().Name, GetInnerReason(inner)), inner)
     {
     }
 
-    private static string GetInnerReason(Exception exception)
+    private static string GetInnerReason(Exception? exception)
     {
         return exception switch
         {
             AzureSignalRUnauthorizedException => AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra,
-            _ => exception.Message,
+            _ => exception?.Message ?? "The access key has expired.",
         };
     }
 }
