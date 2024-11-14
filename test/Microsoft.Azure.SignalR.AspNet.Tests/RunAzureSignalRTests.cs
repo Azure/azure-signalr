@@ -859,7 +859,7 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
             _id = id;
         }
 
-        public string GetRequestId(string traceIdentifer = "")
+        public string GetRequestId(string traceIdentifer = "ut")
         {
             return _id;
         }
