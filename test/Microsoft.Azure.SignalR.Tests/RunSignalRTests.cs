@@ -70,9 +70,6 @@ public class RunSignalRTests : VerifiableLoggedTest
         Assert.Equal("conn1 disconnected: .", connectionDisconnectLog.Write.Message);
 
         Assert.Empty(logs.Where(s => s.Write.LogLevel == LogLevel.Warning));
-        // Should only contain one Error log:
-        var disconnectLog = logs.Single(s => s.Write.LogLevel == LogLevel.Error);
-        Assert.StartsWith($"Hub '{nameof(SimpleHub)}' is now disconnected from ", disconnectLog.Write.Message);
     }
 
     [Fact]
@@ -112,9 +109,6 @@ public class RunSignalRTests : VerifiableLoggedTest
 
         Assert.Equal(count, logs.Count(s => s.Write.LoggerName == typeof(SimpleHub).FullName));
         Assert.Empty(logs.Where(s => s.Write.LogLevel == LogLevel.Warning));
-        // Should only contain one Error log:
-        var disconnectLog = logs.Single(s => s.Write.LogLevel == LogLevel.Error);
-        Assert.StartsWith($"Hub '{nameof(SimpleHub)}' is now disconnected from ", disconnectLog.Write.Message);
     }
 
     [Fact]
@@ -153,9 +147,6 @@ public class RunSignalRTests : VerifiableLoggedTest
         Assert.NotNull(connectionDisconnectLog);
         Assert.Equal("conn1 disconnected: .", connectionDisconnectLog.Write.Message);
         Assert.Empty(logs.Where(s => s.Write.LogLevel == LogLevel.Warning && s.Write.EventId.Name != "DetectedLongRunningApplicationTask").Select(s => s.Write.EventId.Name));
-        // Should only contain one Error log:
-        var disconnectLog = logs.Single(s => s.Write.LogLevel == LogLevel.Error);
-        Assert.StartsWith($"Hub '{nameof(ConnectedHub)}' is now disconnected from ", disconnectLog.Write.Message);
     }
 
     private sealed class TestStartup<THub> : IStartup

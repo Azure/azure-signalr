@@ -221,7 +221,7 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(4, "TriggeringShutdownHooks"), "[{hubName}] Triggering shutdown hooks...");
 
         private static readonly Action<ILogger, string, Exception> _waitingClientConnectionsToClose =
-            LoggerMessage.Define<string>(LogLevel.Information, new EventId(5, "WaitingClientConnectionsToClose"), "[{hubName}] Waiting client connections to close...");
+            LoggerMessage.Define<string>(LogLevel.Information, new EventId(5, "WaitingClientConnectionsToClose"), "[{hubName}] Waiting for client connections to close...");
 
         private static readonly Action<ILogger, string, Exception> _stoppingServer =
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(6, "StoppingServer"), "[{hubName}] Stopping the hub server...");
