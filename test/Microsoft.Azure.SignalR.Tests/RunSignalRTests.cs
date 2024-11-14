@@ -47,6 +47,7 @@ public class RunSignalRTests : VerifiableLoggedTest
             .ConfigureLogging(logging => logging.AddXunit(_output))
             .ConfigureLogging(logging => logging.AddProvider(provider))
             .ConfigureLogging(logging => logging.AddFilter("Microsoft.Azure.SignalR", LogLevel.Debug))
+            .ConfigureLogging(logging => logging.AddFilter("Microsoft.AspNetCore.DataProtection", LogLevel.None))
             .UseStartup(c => startup);
 
         using (var server = new TestServer(builder))
@@ -86,6 +87,7 @@ public class RunSignalRTests : VerifiableLoggedTest
         var builder = WebHost.CreateDefaultBuilder()
             .ConfigureLogging(logging => logging.AddXunit(_output))
             .ConfigureLogging(logging => logging.AddProvider(provider))
+            .ConfigureLogging(logging => logging.AddFilter("Microsoft.AspNetCore.DataProtection", LogLevel.None))
             .UseStartup(c => startup);
         const int count = 1111;
 
@@ -127,6 +129,7 @@ public class RunSignalRTests : VerifiableLoggedTest
         var builder = WebHost.CreateDefaultBuilder()
             .ConfigureLogging(logging => logging.AddXunit(_output))
             .ConfigureLogging(logging => logging.AddProvider(provider))
+            .ConfigureLogging(logging => logging.AddFilter("Microsoft.AspNetCore.DataProtection", LogLevel.None))
             .UseStartup(c => startup);
 
         using (var server = new TestServer(builder))
