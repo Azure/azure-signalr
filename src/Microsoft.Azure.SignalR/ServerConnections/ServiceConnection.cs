@@ -281,9 +281,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
     {
         try
         {
-            var cts = new CancellationTokenSource();
             // Writing from the application to the service
-            var transport = connection.ProcessOutgoingMessagesAsync(protocol, cts.Token);
+            var transport = connection.ProcessOutgoingMessagesAsync(protocol);
 
             // Waiting for the application to shutdown so we can clean up the connection
             var app = connection.ProcessApplicationAsync(_connectionDelegate);
@@ -305,7 +304,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
                 // app task completes connection.Transport.Output, which will completes connection.Application.Input and ends the transport
                 // Transports are written by us and are well behaved, wait for them to drain
                 connection.CancelOutgoing(true);
-                cts.Cancel();
                 // transport never throws
                 await transport;
             }

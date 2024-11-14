@@ -286,14 +286,13 @@ internal partial class ClientConnectionContext : ConnectionContext,
         return false;
     }
 
-    internal async Task ProcessOutgoingMessagesAsync(SignalRProtocol.IHubProtocol protocol, CancellationToken token = default)
+    internal async Task ProcessOutgoingMessagesAsync(SignalRProtocol.IHubProtocol protocol)
     {
-        var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(OutgoingAborted, token);
         try
         {
             while (true)
             {
-                var result = await Application.Input.ReadAsync(linkedCts.Token);
+                var result = await Application.Input.ReadAsync(OutgoingAborted);
 
                 if (result.IsCanceled)
                 {
@@ -333,9 +332,10 @@ internal partial class ClientConnectionContext : ConnectionContext,
                     if (HandshakeResponseTask.IsCompleted)
                     {
                         var next = buffer;
-                        while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message) && !linkedCts.IsCancellationRequested)
+                        while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
                         {
-                            if (!await _pauseHandler.WaitAsync(StaticRandom.Next(500, 1500), linkedCts.Token))
+                            // we still want messages to successfully going out when application completes
+                            if (!await _pauseHandler.WaitAsync(StaticRandom.Next(500, 1500), OutgoingAborted))
                             {
                                 Log.OutgoingTaskPaused(Logger, ConnectionId);
                                 buffer = buffer.Slice(0);

@@ -87,7 +87,7 @@ public class RunSignalRTests : VerifiableLoggedTest
             .ConfigureLogging(logging => logging.AddXunit(_output))
             .ConfigureLogging(logging => logging.AddProvider(provider))
             .UseStartup(c => startup);
-        const int count = 1000;
+        const int count = 1111;
 
         using (var server = new TestServer(builder))
         {
