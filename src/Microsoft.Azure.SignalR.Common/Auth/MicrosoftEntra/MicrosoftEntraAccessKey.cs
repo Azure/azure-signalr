@@ -120,7 +120,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
         return Available
             ? AuthUtility.GenerateAccessToken(KeyBytes, Kid, audience, claims, lifetime, algorithm)
-            : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, LastException);
+            : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, GetExceptionMessage(LastException), LastException);
     }
 
     internal void UpdateAccessKey(string kid, string keyStr)
@@ -175,6 +175,15 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             // Update the status only when it becomes "not available" due to expiration to refresh updateAt.
             Available = false;
         }
+    }
+
+    private static string GetExceptionMessage(Exception? exception)
+    {
+        return exception switch
+        {
+            AzureSignalRUnauthorizedException => AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra,
+            _ => exception?.Message ?? "The access key has expired.",
+        };
     }
 
     private static async Task ThrowExceptionOnResponseFailureAsync(HttpRequestMessage request, HttpResponseMessage response)
