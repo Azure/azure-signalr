@@ -10,6 +10,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -189,7 +191,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
             if (_cultureFeatureManager.TryRemoveCultureFeature(connection.RequestId, out var cultureFeature))
             {
                 CultureInfo.CurrentCulture = cultureFeature.RequestCulture.Culture;
-                CultureInfo.CurrentUICulture = cultureFeature.RequestCulture.UICulture;       
+                CultureInfo.CurrentUICulture = cultureFeature.RequestCulture.UICulture;
+                connection.GetHttpContext().Features.Set<IRequestCultureFeature>(cultureFeature);
             }
             else
             {
