@@ -378,10 +378,6 @@ internal partial class ClientConnectionContext : ConnectionContext,
                 Application.Input.AdvanceTo(buffer.Start, buffer.End);
             }
         }
-        catch (OperationCanceledException)
-        {
-            // cancelled, do nothing
-        }
         catch (ForwardMessageException)
         {
             // do nothing.
