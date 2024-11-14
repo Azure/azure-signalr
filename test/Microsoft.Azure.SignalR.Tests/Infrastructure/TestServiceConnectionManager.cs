@@ -60,4 +60,6 @@ internal class TestServiceConnectionManager<THub> : IServiceConnectionManager<TH
     }
 
     public Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token) => Task.CompletedTask;
+
+    public Task CloseClientConnections(CancellationToken token) => Task.CompletedTask;
 }

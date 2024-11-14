@@ -34,6 +34,11 @@ internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionM
         await _serviceConnection.OfflineAsync(mode, token);
     }
 
+    public async Task CloseClientConnections(CancellationToken cancellationToken)
+    {
+        await _serviceConnection.CloseClientConnections(cancellationToken);
+    }
+
     public Task WriteAsync(ServiceMessage serviceMessage)
     {
         if (_serviceConnection == null)

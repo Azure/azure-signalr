@@ -255,6 +255,11 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         return Task.WhenAll(ServiceConnections.Select(c => RemoveConnectionAsync(c, mode, token)));
     }
 
+    public virtual Task CloseClientConnections(CancellationToken token)
+    {
+        return Task.WhenAll(ServiceConnections.Select(c => c.CloseClientConnections(token)));
+    }
+
     public Task StartGetServersPing()
     {
         if (_serversPing.Start())

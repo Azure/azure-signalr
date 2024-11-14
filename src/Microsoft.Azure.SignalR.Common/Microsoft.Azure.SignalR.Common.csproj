@@ -20,6 +20,7 @@
 	
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="$(MicrosoftAspNetCoreSignalRPackageVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.Localization" Version="$(MicrosoftAspNetCoreLocalizationPackageVersion)" />
   </ItemGroup>
 	
   <!-- New packages should be added to Directory.Build.props! -->

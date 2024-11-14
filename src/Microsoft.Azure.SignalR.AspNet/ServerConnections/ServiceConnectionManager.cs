@@ -83,17 +83,22 @@ internal class ServiceConnectionManager : IServiceConnectionManager
 
     public Task StartAsync()
     {
-        return Task.WhenAll(GetConnections().Select(s => s.StartAsync()));
+        return Task.WhenAll(GetConnections().Select(c => c.StartAsync()));
     }
 
     public Task StopAsync()
     {
-        return Task.WhenAll(GetConnections().Select(s => s.StopAsync()));
+        return Task.WhenAll(GetConnections().Select(c => c.StopAsync()));
     }
 
     public Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
     {
-        return Task.WhenAll(GetConnections().Select(s => s.OfflineAsync(mode, token)));
+        return Task.WhenAll(GetConnections().Select(c => c.OfflineAsync(mode, token)));
+    }
+
+    public Task CloseClientConnections(CancellationToken token)
+    {
+        return Task.WhenAll(GetConnections().Select(c => c.CloseClientConnections(token)));
     }
 
     public IServiceConnectionContainer WithHub(string hubName)

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
@@ -108,6 +109,11 @@ internal partial class ServiceConnection : ServiceConnectionBase
     protected override Task DisposeConnection(ConnectionContext connection)
     {
         return _connectionFactory.DisposeAsync(connection);
+    }
+
+    public override Task CloseClientConnections(CancellationToken token)
+    {
+        return Task.WhenAll(_clientConnectionManager.ClientConnections.Select(c => ((ClientConnectionContext)c).PerformDisconnectAsync()));
     }
 
     protected override Task CleanupClientConnections(string fromInstanceId = null)

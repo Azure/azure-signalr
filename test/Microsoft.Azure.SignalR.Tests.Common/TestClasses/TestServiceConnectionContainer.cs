@@ -104,4 +104,9 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
     public void Dispose()
     {
     }
+
+    public Task CloseClientConnections(CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
 }

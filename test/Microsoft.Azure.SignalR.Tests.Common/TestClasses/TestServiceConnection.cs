@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.IO.Pipelines;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
@@ -52,6 +53,11 @@ internal class TestServiceConnection(ServiceConnectionStatus status = ServiceCon
     public void Stop()
     {
         _connection?.Transport.Input.CancelPendingRead();
+    }
+
+    public override Task CloseClientConnections(CancellationToken token)
+    {
+        throw new NotImplementedException();
     }
 
     public override Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)

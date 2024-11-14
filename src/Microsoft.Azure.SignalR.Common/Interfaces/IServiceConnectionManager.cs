@@ -13,4 +13,6 @@ internal interface IServiceConnectionManager : IServiceMessageWriter
     Task StopAsync();
 
     Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token);
+
+    Task CloseClientConnections(CancellationToken token);
 }
