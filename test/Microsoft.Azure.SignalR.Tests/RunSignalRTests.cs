@@ -149,7 +149,7 @@ public class RunSignalRTests : VerifiableLoggedTest
         var connectionDisconnectLog = logs.FirstOrDefault(s => s.Write.LoggerName == typeof(ConnectedHub).FullName);
         Assert.NotNull(connectionDisconnectLog);
         Assert.Equal("conn1 disconnected: .", connectionDisconnectLog.Write.Message);
-        Assert.Empty(logs.Where(s => s.Write.LogLevel == LogLevel.Warning && s.Write.EventId.Name != "DetectedLongRunningApplicationTask"));
+        Assert.Empty(logs.Where(s => s.Write.LogLevel == LogLevel.Warning && s.Write.EventId.Name != "DetectedLongRunningApplicationTask").Select(s => s.Write.EventId.Name));
         // Should only contain one Error log:
         var disconnectLog = logs.Single(s => s.Write.LogLevel == LogLevel.Error);
         Assert.StartsWith($"Hub '{nameof(ConnectedHub)}' is now disconnected from ", disconnectLog.Write.Message);
