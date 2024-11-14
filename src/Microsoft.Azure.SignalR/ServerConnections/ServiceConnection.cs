@@ -49,7 +49,9 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     private readonly IHubProtocolResolver _hubProtocolResolver;
 
-    private readonly ICultureFeatureManager _cultureInfoManager;
+    private readonly IBlazorDetector _blazorDetector;
+
+    private readonly ICultureFeatureManager _cultureFeatureManager;
 
     public Action<HttpContext> ConfigureContext { get; set; }
 
@@ -66,7 +68,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
                              IServiceEventHandler serviceEventHandler,
                              IClientInvocationManager clientInvocationManager,
                              IHubProtocolResolver hubProtocolResolver,
-                             ICultureFeatureManager cultureInfoManager,
+                             IBlazorDetector blazorDetector,
+                             ICultureFeatureManager cultureFeatureManager,
                              ServiceConnectionType connectionType = ServiceConnectionType.Default,
                              GracefulShutdownMode mode = GracefulShutdownMode.Off,
                              bool allowStatefulReconnects = false)
@@ -88,7 +91,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
         _clientConnectionFactory = clientConnectionFactory;
         _clientInvocationManager = clientInvocationManager;
         _hubProtocolResolver = hubProtocolResolver;
-        _cultureInfoManager = cultureInfoManager;
+        _blazorDetector = blazorDetector;
+        _cultureFeatureManager = cultureFeatureManager;
     }
 
     public override bool TryAddClientConnection(IClientConnection connection)
@@ -183,11 +187,17 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
         connection.Features.Set<IConnectionMigrationFeature>(null);
 
-        if (!_cultureInfoManager.TryRemoveCultureFeature(connection.RequestId, out var cultureFeature))
-        {
-            Log.FailedToApplyCultureInfo(Logger, connection.RequestId);
+        if (_blazorDetector.IsBlazor(HubEndpoint.Hub)) {
+            if (_cultureFeatureManager.TryRemoveCultureFeature(connection.RequestId, out var cultureFeature))
+            {
+                CultureInfo.CurrentCulture = cultureFeature.RequestCulture.Culture;
+                CultureInfo.CurrentUICulture = cultureFeature.RequestCulture.UICulture;       
+            }
+            else
+            {
+                Log.FailedToApplyCultureInfo(Logger, connection.RequestId);
+            }
         }
-        connection.GetHttpContext().Features.Set<IRequestCultureFeature>(cultureFeature);
 
         if (message.Headers.TryGetValue(Constants.AsrsMigrateFrom, out var from))
         {

@@ -13,14 +13,14 @@ internal class HeartBeat : BackgroundService
     private static readonly TimeSpan HeartbeatTickRate = TimeSpan.FromSeconds(1);
 
     private readonly IClientConnectionManager _connectionManager;
-    private readonly ICultureFeatureManager _cultureInfoManager;
+    private readonly ICultureFeatureManager _cultureFeatureManager;
 
     private readonly TimerAwaitable _nextHeartbeat;
 
-    public HeartBeat(IClientConnectionManager connectionManager, ICultureFeatureManager cultureInfoManager)
+    public HeartBeat(IClientConnectionManager connectionManager, ICultureFeatureManager cultureFeatureManager)
     {
         _connectionManager = connectionManager;
-        _cultureInfoManager = cultureInfoManager;
+        _cultureFeatureManager = cultureFeatureManager;
         _nextHeartbeat = new TimerAwaitable(HeartbeatTickRate, HeartbeatTickRate);
     }
 
@@ -52,7 +52,7 @@ internal class HeartBeat : BackgroundService
                 {
                     (connection as ClientConnectionContext).TickHeartbeat();
                 }
-                _cultureInfoManager.Cleanup();
+                _cultureFeatureManager.Cleanup();
             }
         }
     }

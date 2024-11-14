@@ -198,7 +198,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                 "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
-                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance), null);
+                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance), null, null);
 
             var connectionTask = connection.StartAsync();
 
@@ -258,7 +258,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                 "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
-                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance), null);
+                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance), null, null);
 
             var connectionTask = connection.StartAsync();
 
@@ -317,7 +317,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                 "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
-                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance), null);
+                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance), null, null);
 
             var connectionTask = connection.StartAsync();
 
@@ -393,6 +393,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    new DefaultClientInvocationManager(),
                                                    hubProtocolResolver,
+                                                   null,
                                                    null);
 
             var connectionTask = connection.StartAsync();
@@ -462,6 +463,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    new DefaultClientInvocationManager(),
                                                    hubProtocolResolver,
+                                                   null,
                                                    null);
 
             var connectionTask = connection.StartAsync();
@@ -530,6 +532,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    new DefaultClientInvocationManager(),
                                                    hubProtocolResolver,
+                                                   null,
                                                    null);
 
             var connectionTask = connection.StartAsync();
@@ -613,6 +616,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    new DefaultClientInvocationManager(),
                                                    defaultHubProtocolResolver,
+                                                   null,
                                                    null);
 
             var connectionTask = connection.StartAsync();
@@ -690,6 +694,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    new DefaultClientInvocationManager(),
                                                    defaultHubProtocolResolver,
+                                                   null,
                                                    null);
 
             var connectionTask = connection.StartAsync();
@@ -779,6 +784,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    new DefaultClientInvocationManager(),
                                                    hubProtocolResolver,
+                                                   null,
                                                    null);
 
             var connectionTask = connection.StartAsync();
@@ -847,6 +853,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    new DefaultClientInvocationManager(),
                                                    hubProcotolResolver,
+                                                   null,
                                                    null);
 
             var connectionTask = connection.StartAsync().OrTimeout();
@@ -946,6 +953,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    new DefaultClientInvocationManager(),
                                                    hubProtocolResolver,
+                                                   null,
                                                    null);
 
             var connectionTask = connection.StartAsync();
@@ -1027,6 +1035,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                      null,
                                      new DefaultClientInvocationManager(),
                                      new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
+                                     null,
                                      null);
     }
 

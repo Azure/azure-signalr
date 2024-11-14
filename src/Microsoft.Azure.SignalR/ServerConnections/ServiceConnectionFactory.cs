@@ -29,7 +29,9 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
 
     private readonly IHubProtocolResolver _hubProtocolResolver;
 
-    private readonly ICultureFeatureManager _cultureInfoManager;
+    private readonly IBlazorDetector _blazorDetector;
+
+    private readonly ICultureFeatureManager _cultureFeatureManager;
 
     public GracefulShutdownMode ShutdownMode { get; set; } = GracefulShutdownMode.Off;
 
@@ -48,7 +50,8 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
         IServiceEventHandler serviceEventHandler,
         IClientInvocationManager clientInvocationManager,
         IHubProtocolResolver hubProtocolResolver,
-        ICultureFeatureManager cultureInfoManager)
+        IBlazorDetector blazorDetector,
+        ICultureFeatureManager cultureFeatureManager)
     {
         _serviceProtocol = serviceProtocol;
         _clientConnectionManager = clientConnectionManager;
@@ -60,7 +63,8 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
         _serviceEventHandler = serviceEventHandler;
         _clientInvocationManager = clientInvocationManager;
         _hubProtocolResolver = hubProtocolResolver;
-        _cultureInfoManager = cultureInfoManager;
+        _blazorDetector = blazorDetector;
+        _cultureFeatureManager = cultureFeatureManager;
     }
 
     public virtual IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, AckHandler ackHandler, ServiceConnectionType type)
@@ -79,7 +83,8 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
             _serviceEventHandler,
             _clientInvocationManager,
             _hubProtocolResolver,
-            _cultureInfoManager,
+            _blazorDetector,
+            _cultureFeatureManager,
             type,
             ShutdownMode,
             allowStatefulReconnects: AllowStatefulReconnects

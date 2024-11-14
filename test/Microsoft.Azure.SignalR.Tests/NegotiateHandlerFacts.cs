@@ -435,46 +435,6 @@ namespace Microsoft.Azure.SignalR.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Process(httpContext));
         }
 
-        [Fact]
-        public async Task TestNegotiateHandlerRespectClientRequestCulture()
-        {
-            var config = new ConfigurationBuilder().Build();
-            var serviceProvider = new ServiceCollection()
-                .AddSignalR(o => o.EnableDetailedErrors = false)
-                .AddAzureSignalR(
-                o =>
-                {
-                    o.ConnectionString = DefaultConnectionString;
-                    o.AccessTokenLifetime = TimeSpan.FromDays(1);
-                })
-                .Services
-                .AddLogging()
-                .AddSingleton<IConfiguration>(config)
-                .BuildServiceProvider();
-
-            var features = new FeatureCollection();
-            var requestFeature = new HttpRequestFeature
-            {
-                Path = "/user/path/negotiate/",
-                QueryString = "?endpoint=chosen"
-            };
-            features.Set<IHttpRequestFeature>(requestFeature);
-            var customCulture = new RequestCulture("ar-SA", "en-US");
-            features.Set<IRequestCultureFeature>(
-                new RequestCultureFeature(customCulture,
-                new AcceptLanguageHeaderRequestCultureProvider()));
-
-            var httpContext = new DefaultHttpContext(features);
-
-            var handler = serviceProvider.GetRequiredService<NegotiateHandler<Hub>>();
-            var negotiateResponse = await handler.Process(httpContext);
-
-            var queryContainsCulture = negotiateResponse.Url.Contains($"{Constants.QueryParameter.RequestCulture}=ar-SA");
-            var queryContainsUICulture = negotiateResponse.Url.Contains($"{Constants.QueryParameter.RequestUICulture}=en-US");
-            Assert.True(queryContainsCulture);
-            Assert.True(queryContainsUICulture);
-        }
-
         [Theory]
         [InlineData(-10)]
         [InlineData(0)]

@@ -34,6 +34,7 @@ internal class MockServiceConnectionFactory : ServiceConnectionFactory
                 null,
                 clientInvocationManager,
                 hubProtocolResolver,
+                null,
                 null)
     {
         _mockService = mockService;

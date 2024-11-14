@@ -54,7 +54,7 @@ internal class NegotiateHandler<THub> where THub : Hub
 #if NET6_0_OR_GREATER
     private readonly HttpConnectionDispatcherOptions _dispatcherOptions;
 #endif
-    private readonly ICultureFeatureManager _cultureInfoManager;
+    private readonly ICultureFeatureManager _cultureFeatureManager;
 
     public NegotiateHandler(
         IOptions<HubOptions> globalHubOptions,
@@ -90,51 +90,54 @@ internal class NegotiateHandler<THub> where THub : Hub
 #if NET6_0_OR_GREATER
         _dispatcherOptions = GetDispatcherOptions(endpointDataSource, typeof(THub));
 #endif
-            _cultureInfoManager = cultureInfoManager ?? throw new ArgumentNullException(nameof(cultureInfoManager));
-        }
+        _cultureFeatureManager = cultureFeatureManager ?? throw new ArgumentNullException(nameof(cultureFeatureManager));
+    }
 
-        public async Task<NegotiationResponse> Process(HttpContext context)
+    public async Task<NegotiationResponse> Process(HttpContext context)
+    {
+        var claims = BuildClaims(context);
+        var request = context.Request;
+        var cultureFeature = context.Features.Get<IRequestCultureFeature>();
+        var originalPath = GetOriginalPath(request.Path);
+        var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(context, _endpointManager.GetEndpoints(_hubName)));
+
+        if (provider == null)
         {
-            var claims = BuildClaims(context);
-            var request = context.Request;
-            var cultureFeature = context.Features.Get<IRequestCultureFeature>();
-            var originalPath = GetOriginalPath(request.Path);
-            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(context, _endpointManager.GetEndpoints(_hubName)));
-
-            if (provider == null)
-            {
-                return null;
-            }
-
-            var clientRequestId = _connectionRequestIdProvider.GetRequestId(context.TraceIdentifier);
-            var queryString = GetQueryString(
-                request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null,
-                clientRequestId
-            );
-
-            _cultureInfoManager.TryAddCultureFeature(clientRequestId, cultureFeature);
-
-            return new NegotiationResponse
-            {
-                Url = provider.GetClientEndpoint(_hubName, originalPath, queryString),
-                AccessToken = await provider.GenerateClientAccessTokenAsync(_hubName, claims),
-                // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
-                AvailableTransports = new List<AvailableTransport>()
-            };
+            return null;
         }
 
-        private string GetQueryString(string originalQueryString, string clientRequestId)
+        var clientRequestId = _connectionRequestIdProvider.GetRequestId(context.TraceIdentifier);
+        var queryString = GetQueryString(
+            request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null,
+            clientRequestId
+        );
+
+        if (_blazorDetector.IsBlazor(_hubName))
         {
-            if (clientRequestId != null)
-            {
-                clientRequestId = WebUtility.UrlEncode(clientRequestId);
-            }
-
-            var queryString = $"{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
-            return originalQueryString != null
-                ? $"{originalQueryString}&{queryString}"
-                : queryString;
+            _cultureFeatureManager.TryAddCultureFeature(clientRequestId, cultureFeature);
         }
+
+        return new NegotiationResponse
+        {
+            Url = provider.GetClientEndpoint(_hubName, originalPath, queryString),
+            AccessToken = await provider.GenerateClientAccessTokenAsync(_hubName, claims),
+            // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
+            AvailableTransports = new List<AvailableTransport>()
+        };
+    }
+
+    private string GetQueryString(string originalQueryString, string clientRequestId)
+    {
+        if (clientRequestId != null)
+        {
+            clientRequestId = WebUtility.UrlEncode(clientRequestId);
+        }
+
+        var queryString = $"{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
+        return originalQueryString != null
+            ? $"{originalQueryString}&{queryString}"
+            : queryString;
+    }
 
     private IEnumerable<Claim> BuildClaims(HttpContext context)
     {

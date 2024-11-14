@@ -67,6 +67,8 @@ internal static class AuthUtility
 
     public static string GenerateRequestId(string traceIdentifier)
     {
-        return $"{traceIdentifier}-{Convert.ToBase64String(BitConverter.GetBytes(Stopwatch.GetTimestamp()))}";
+        // Before filled into query string, this id will be process by "WebUtility.UrlEncode(...)". So base64 encoding is not needed.
+        // Use hex to shorten the length.
+        return $"{traceIdentifier}:{Stopwatch.GetTimestamp().ToString("X")}";
     }
 }
