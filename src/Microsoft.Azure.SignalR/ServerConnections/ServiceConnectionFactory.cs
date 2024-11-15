@@ -29,8 +29,6 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
 
     private readonly IHubProtocolResolver _hubProtocolResolver;
 
-    private readonly IBlazorDetector _blazorDetector;
-
     private readonly ICultureFeatureManager _cultureFeatureManager;
 
     public GracefulShutdownMode ShutdownMode { get; set; } = GracefulShutdownMode.Off;
@@ -50,7 +48,6 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
         IServiceEventHandler serviceEventHandler,
         IClientInvocationManager clientInvocationManager,
         IHubProtocolResolver hubProtocolResolver,
-        IBlazorDetector blazorDetector,
         ICultureFeatureManager cultureFeatureManager)
     {
         _serviceProtocol = serviceProtocol;
@@ -63,7 +60,6 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
         _serviceEventHandler = serviceEventHandler;
         _clientInvocationManager = clientInvocationManager;
         _hubProtocolResolver = hubProtocolResolver;
-        _blazorDetector = blazorDetector;
         _cultureFeatureManager = cultureFeatureManager;
     }
 
@@ -83,7 +79,6 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
             _serviceEventHandler,
             _clientInvocationManager,
             _hubProtocolResolver,
-            _blazorDetector,
             _cultureFeatureManager,
             type,
             ShutdownMode,

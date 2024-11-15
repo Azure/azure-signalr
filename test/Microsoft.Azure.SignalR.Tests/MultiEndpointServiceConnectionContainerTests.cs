@@ -1657,7 +1657,6 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                                                     null,
                                                     clientInvocationManager,
                                                     hubProtocolResolver,
-                                                    null,
                                                     null);
 
             var connection2 = new ServiceConnection(protocol,
@@ -1673,7 +1672,6 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                                                     null,
                                                     clientInvocationManager,
                                                     hubProtocolResolver,
-                                                    null,
                                                     null);
 
             var connection22 = new ServiceConnection(protocol,
@@ -1689,7 +1687,6 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                                                      null,
                                                      clientInvocationManager,
                                                      hubProtocolResolver,
-                                                     null,
                                                      null);
 
             var router = new TestEndpointRouter();

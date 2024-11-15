@@ -112,7 +112,7 @@ internal class NegotiateHandler<THub> where THub : Hub
             clientRequestId
         );
 
-        if (_blazorDetector.IsBlazor(_hubName))
+        if (_blazorDetector.IsBlazor(_hubName) && cultureFeature != null && !_cultureFeatureManager.IsDefaultFeature(cultureFeature))
         {
             _cultureFeatureManager.TryAddCultureFeature(clientRequestId, cultureFeature);
         }

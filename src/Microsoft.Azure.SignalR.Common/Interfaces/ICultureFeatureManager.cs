@@ -13,6 +13,8 @@ internal interface ICultureFeatureManager
 
     bool TryRemoveCultureFeature(string clientRequestId, out IRequestCultureFeature feature);
 
+    bool IsDefaultFeature(IRequestCultureFeature feature);
+
     public void Cleanup();
 }
 #endif

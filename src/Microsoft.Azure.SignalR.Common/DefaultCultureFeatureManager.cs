@@ -37,6 +37,12 @@ internal class DefaultCultureFeatureManager : ICultureFeatureManager
         return false;
     }
 
+    public bool IsDefaultFeature(IRequestCultureFeature feature)
+    {
+        // this is the default feature value in blazor when no culture feature is configured by app server
+        return feature.RequestCulture.Culture == CultureInfo.DefaultThreadCurrentCulture && feature.RequestCulture.UICulture == CultureInfo.DefaultThreadCurrentUICulture && feature.Provider is AcceptLanguageHeaderRequestCultureProvider;
+    }
+
     public void Cleanup()
     {
         foreach (var item in _cultures)
