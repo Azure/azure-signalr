@@ -19,16 +19,12 @@ internal class ServiceEndpointManager : ServiceEndpointManagerBase
 
     private readonly TimeSpan _scaleTimeout;
 
-    private readonly IAccessKeySynchronizer _synchronizer;
-
-    public ServiceEndpointManager(IAccessKeySynchronizer synchronizer,
-                                  IOptionsMonitor<ServiceOptions> optionsMonitor,
+    public ServiceEndpointManager(IOptionsMonitor<ServiceOptions> optionsMonitor,
                                   ILoggerFactory loggerFactory) :
         base(optionsMonitor.CurrentValue, loggerFactory.CreateLogger<ServiceEndpointManager>())
     {
         _options = optionsMonitor.CurrentValue;
         _logger = loggerFactory?.CreateLogger<ServiceEndpointManager>() ?? throw new ArgumentNullException(nameof(loggerFactory));
-        _synchronizer = synchronizer;
 
         optionsMonitor.OnChange(OnChange);
         _scaleTimeout = _options.ServiceScaleTimeout;
@@ -40,8 +36,6 @@ internal class ServiceEndpointManager : ServiceEndpointManagerBase
         {
             return null;
         }
-
-        _synchronizer.AddServiceEndpoint(endpoint);
         return new ServiceEndpointProvider(endpoint, _options);
     }
 
@@ -53,7 +47,6 @@ internal class ServiceEndpointManager : ServiceEndpointManagerBase
 
     private Task ReloadServiceEndpointsAsync(IEnumerable<ServiceEndpoint> serviceEndpoints)
     {
-        _synchronizer.UpdateServiceEndpoints(serviceEndpoints);
         return ReloadServiceEndpointsAsync(serviceEndpoints, _scaleTimeout);
     }
 

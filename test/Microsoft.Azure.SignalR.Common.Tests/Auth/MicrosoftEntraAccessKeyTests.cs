@@ -26,6 +26,13 @@ public class MicrosoftEntraAccessKeyTests
 
     private static readonly Uri DefaultEndpoint = new("http://localhost");
 
+    public enum TokenType
+    {
+        Local,
+
+        MicrosoftEntra,
+    }
+
     [Theory]
     [InlineData("https://a.bc", "https://a.bc/api/v1/auth/accessKey")]
     [InlineData("https://a.bc:80", "https://a.bc:80/api/v1/auth/accessKey")]
@@ -210,6 +217,35 @@ public class MicrosoftEntraAccessKeyTests
         Assert.Equal(expectedKeyStr, Encoding.UTF8.GetString(key.KeyBytes));
     }
 
+    [Fact]
+    public async Task TestGenerateAccessTokenAsync()
+    {
+        var text = "{" + string.Format("\"AccessKey\": \"{0}\", \"KeyId\": \"{1}\"", DefaultSigningKey, "foo") + "}";
+        var httpClientFactory = new TestHttpClientFactory(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = TextHttpContent.From(text),
+        });
+
+        var credential = new TestTokenCredential(TokenType.MicrosoftEntra);
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, credential, httpClientFactory: httpClientFactory);
+
+        Assert.True(key.UpdateAccessKeyTask.IsCompleted);
+
+        var claims = Array.Empty<Claim>();
+        var lifetime = TimeSpan.FromHours(1);
+        var algorithm = AccessTokenAlgorithm.HS256;
+
+        var token1 = await key.GenerateAccessTokenAsync("http://localhost/foo", claims, lifetime, algorithm);
+        Assert.NotEmpty(token1);
+
+        var keyTask = key.UpdateAccessKeyTask;
+        Assert.False(key.UpdateAccessKeyTask.IsCompleted);
+
+        var token2 = await key.GenerateAccessTokenAsync("http://localhost/bar", claims, lifetime, algorithm);
+        Assert.NotEqual(token1, token2);
+        Assert.Same(key.UpdateAccessKeyTask, keyTask);
+    }
+
     [Theory]
     [InlineData(TokenType.Local)]
     [InlineData(TokenType.MicrosoftEntra)]
@@ -332,12 +368,6 @@ public class MicrosoftEntraAccessKeyTests
             length = _content.Length;
             return true;
         }
-    }
-
-    public enum TokenType
-    {
-        Local,
-        MicrosoftEntra,
     }
 
     private sealed class TestTokenCredential(TokenType tokenType) : TokenCredential

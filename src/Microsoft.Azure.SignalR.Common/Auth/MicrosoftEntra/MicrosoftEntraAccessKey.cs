@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR;
 
 #nullable enable
 
-internal class MicrosoftEntraAccessKey : IAccessKey
+internal class MicrosoftEntraAccessKey : IAccessKey, IDisposable
 {
     internal static readonly TimeSpan GetAccessKeyTimeout = TimeSpan.FromSeconds(100);
 
@@ -40,6 +40,8 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     private readonly IHttpClientFactory _httpClientFactory;
 
+    private readonly TimerAwaitable _timer = new TimerAwaitable(TimeSpan.Zero, TimeSpan.FromMinutes(1));
+
     private volatile bool _isAuthorized = false;
 
     private DateTime _updateAt = DateTime.MinValue;
@@ -47,6 +49,12 @@ internal class MicrosoftEntraAccessKey : IAccessKey
     private volatile string? _kid;
 
     private volatile byte[]? _keyBytes;
+
+    private volatile int _started = 0;
+
+    public Task UpdateAccessKeyTask { get; private set; } = Task.CompletedTask;
+
+    private bool _disposedValue;
 
     public bool Available
     {
@@ -116,11 +124,21 @@ internal class MicrosoftEntraAccessKey : IAccessKey
                                                        AccessTokenAlgorithm algorithm,
                                                        CancellationToken ctoken = default)
     {
+        if (Interlocked.CompareExchange(ref _started, 1, 0) == 0)
+        {
+            UpdateAccessKeyTask = UpdateAccessKeyPrivateTask();
+        }
         await _initializedTcs.Task.OrCancelAsync(ctoken, "The access key initialization timed out.");
 
         return Available
             ? AuthUtility.GenerateAccessToken(KeyBytes, Kid, audience, claims, lifetime, algorithm)
             : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, GetExceptionMessage(LastException), LastException);
+    }
+
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 
     internal void UpdateAccessKey(string kid, string keyStr)
@@ -177,6 +195,20 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         }
     }
 
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposedValue)
+        {
+            if (disposing)
+            {
+                _timer.Stop();
+                (_timer as IDisposable).Dispose();
+            }
+
+            _disposedValue = true;
+        }
+    }
+
     private static string GetExceptionMessage(Exception? exception)
     {
         return exception switch
@@ -214,6 +246,19 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(requestUri, innerException),
             _ => new AzureSignalRRuntimeException(requestUri, innerException, response.StatusCode, content),
         };
+    }
+
+    private async Task UpdateAccessKeyPrivateTask()
+    {
+        using (_timer)
+        {
+            _timer.Start();
+
+            while (await _timer)
+            {
+                _ = UpdateAccessKeyAsync();
+            }
+        }
     }
 
     private async Task UpdateAccessKeyInternalAsync(CancellationToken ctoken)
