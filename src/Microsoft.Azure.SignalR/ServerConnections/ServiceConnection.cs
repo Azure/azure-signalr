@@ -183,7 +183,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
         connection.Features.Set<IConnectionMigrationFeature>(null);
 
-        if (_cultureFeatureManager.TryRemoveCultureFeature(connection.RequestId, out var cultureFeature))
+        if (_cultureFeatureManager != null && connection.RequestId != null && _cultureFeatureManager.TryRemoveCultureFeature(connection.RequestId, out var cultureFeature))
         {
             CultureInfo.CurrentCulture = cultureFeature.RequestCulture.Culture;
             CultureInfo.CurrentUICulture = cultureFeature.RequestCulture.UICulture;
