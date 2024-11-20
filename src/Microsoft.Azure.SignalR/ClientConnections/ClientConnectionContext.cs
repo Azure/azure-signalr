@@ -378,6 +378,10 @@ internal partial class ClientConnectionContext : ConnectionContext,
                 Application.Input.AdvanceTo(buffer.Start, buffer.End);
             }
         }
+        catch (OperationCanceledException)
+        {
+            // cancelled
+        }
         catch (ForwardMessageException)
         {
             // do nothing.
@@ -443,7 +447,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
         catch (OperationCanceledException)
         {
 
-            Log.DetectedLongRunningApplicationTask(Logger, ConnectionId);
+            Log.DetectedLongRunningApplicationTask(Logger, ConnectionId, _closeTimeOutMilliseconds);
 #if !NETSTANDARD
             _connectionClosedCts.Cancel();
 #endif
