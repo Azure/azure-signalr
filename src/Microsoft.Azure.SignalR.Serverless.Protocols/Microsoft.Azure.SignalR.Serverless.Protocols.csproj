@@ -1,14 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Description>.NET Standard SDK for Azure SignalR Service serverless protocol.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Microsoft.Azure.SignalR.Serverless.Protocols</RootNamespace>
   </PropertyGroup>
-  
-  <ItemGroup>
-    <Compile Include="..\Common\MemoryBufferWriter.cs" Link="Internal\MemoryBufferWriter.cs" />
-  </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryPackageVersion)" />
@@ -38,6 +34,7 @@
     <Compile Include="$(MessagePackRoot)BufferWriter.cs" LinkBase="MessagePack" />
     <Compile Include="$(MessagePackRoot)SequencePool.cs" LinkBase="MessagePack" />
     <Compile Include="$(MessagePackRoot)Utilities.cs" LinkBase="MessagePack" />
+    <Compile Include="..\Common\MemoryBufferWriter.cs" Link="Internal\MemoryBufferWriter.cs" />
     <Compile Include="..\Common\SequenceOfT.cs" LinkBase="MessagePack" />
   </ItemGroup>
   
