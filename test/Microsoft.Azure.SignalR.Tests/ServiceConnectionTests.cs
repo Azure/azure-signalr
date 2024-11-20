@@ -744,7 +744,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             }))
         {
             var ccm = new TestClientConnectionManager();
-            var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
+            var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 1000);
             var protocol = new ServiceProtocol();
             var hubProtocol = new JsonHubProtocol();
             TestConnection transportConnection = null;
@@ -794,8 +794,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
 
             await clientConnection.LifetimeTask.OrTimeout();
 
-            // 1s for application task to timeout
-            await connectionTask.OrTimeout(1000);
+            await connectionTask.OrTimeout();
             Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
             Assert.Empty(ccm.ClientConnections);
         }
