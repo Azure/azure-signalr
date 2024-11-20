@@ -1,4 +1,10 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <Import Project="..\build\dependencies.private.props" />
+  <PropertyGroup>
+    <WarningsNotAsErrors>NU1902</WarningsNotAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MessagePack" Version="$(MessagePackPackageVersion)" />
+  </ItemGroup>
 </Project>
