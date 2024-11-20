@@ -309,7 +309,7 @@ public class ServiceLifetimeManagerFacts
         switch (methodName)
         {
             case "SendAllAsync":
-                Assert.Null(((BroadcastDataMessage)serviceMessage).ExcludedList);
+                Assert.Empty(((BroadcastDataMessage)serviceMessage).ExcludedList);
                 break;
             case "SendAllExceptAsync":
                 Assert.Equal(TestConnectionIds, ((BroadcastDataMessage)serviceMessage).ExcludedList);
@@ -322,7 +322,7 @@ public class ServiceLifetimeManagerFacts
                 break;
             case "SendGroupAsync":
                 Assert.Equal(TestGroups[0], ((GroupBroadcastDataMessage)serviceMessage).GroupName);
-                Assert.Null(((GroupBroadcastDataMessage)serviceMessage).ExcludedList);
+                Assert.Empty(((GroupBroadcastDataMessage)serviceMessage).ExcludedList);
                 break;
             case "SendGroupsAsync":
                 Assert.Equal(TestGroups, ((MultiGroupBroadcastDataMessage)serviceMessage).GroupList);
