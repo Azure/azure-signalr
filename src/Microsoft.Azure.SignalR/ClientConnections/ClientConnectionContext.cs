@@ -660,7 +660,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
         ProcessQuery(message.QueryString, out var originalPath);
         var requestFeature = new HttpRequestFeature
         {
-            Headers = new HeaderDictionary((Dictionary<string, StringValues>)message.Headers),
+            Headers = new HeaderDictionary(new Dictionary<string, StringValues>(message.Headers, StringComparer.OrdinalIgnoreCase)),
             QueryString = message.QueryString,
             Path = originalPath
         };

@@ -19,9 +19,9 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// </summary>
     public class ServiceProtocol : IServiceProtocol
     {
-        private static readonly IDictionary<string, ReadOnlyMemory<byte>> EmptyReadOnlyMemoryDictionary = new ReadOnlyDictionary<string, ReadOnlyMemory<byte>>(new Dictionary<string, ReadOnlyMemory<byte>>());
+        private static readonly IDictionary<string, ReadOnlyMemory<byte>> EmptyReadOnlyMemoryDictionary = new Dictionary<string, ReadOnlyMemory<byte>>();
 
-        private static readonly IDictionary<string, StringValues> EmptyStringValuesDictionary = new ReadOnlyDictionary<string, StringValues>(new Dictionary<string, StringValues>());
+        private static readonly IDictionary<string, StringValues> EmptyStringValuesDictionaryIgnoreCase = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
 
         private static readonly int ProtocolVersion = 1;
 
@@ -1400,7 +1400,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 return headers;
             }
 
-            return EmptyStringValuesDictionary;
+            return EmptyStringValuesDictionaryIgnoreCase;
         }
 
         private static bool ReadBoolean(ref MessagePackReader reader, string field)
