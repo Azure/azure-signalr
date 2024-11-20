@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#nullable enable
 
 using System;
 using System.Buffers;
@@ -79,7 +80,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the protocol for new connection.
         /// </summary>
-        public string Protocol { get; set; }
+        public string? Protocol { get; set; }
     }
 
     /// <summary>
@@ -98,7 +99,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="errorMessage">Optional error message.</param>
         /// <param name="headers">A <see cref="IDictionary{TKey,TValue}"/> associated with the connection.</param>
-        public CloseConnectionMessage(string connectionId, string errorMessage, IDictionary<string, StringValues> headers = null) : base(connectionId)
+        public CloseConnectionMessage(string connectionId, string errorMessage, IDictionary<string, StringValues>? headers = null) : base(connectionId)
         {
             ErrorMessage = errorMessage ?? "";
             Headers = headers ?? new Dictionary<string, StringValues>();
@@ -239,7 +240,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the connection protocol.
         /// </summary>
-        public string Protocol { get; set; }
+        public string? Protocol { get; set; }
 
         /// <summary>
         /// Gets or sets the binary payload.
