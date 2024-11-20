@@ -13,7 +13,7 @@
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRPackageVersion>
     <MicrosoftAspNetCoreLocalizationPackageVersion>2.1.0</MicrosoftAspNetCoreLocalizationPackageVersion>
     <SystemBuffersPackageVersion>4.5.1</SystemBuffersPackageVersion>
-    <SystemMemoryPackageVersion>4.5.4</SystemMemoryPackageVersion>
+    <SystemMemoryPackageVersion>4.5.5</SystemMemoryPackageVersion>
     <SystemRuntimeCompilerServicesUnsafePackageVersion>6.0.0</SystemRuntimeCompilerServicesUnsafePackageVersion>
     <AzureIdentityPackageVersion>1.11.4</AzureIdentityPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
