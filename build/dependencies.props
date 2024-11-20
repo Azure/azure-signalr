@@ -40,7 +40,7 @@
     <MicrosoftAspNetCoreSignalRCommonNet8PackageVersion>8.0.8</MicrosoftAspNetCoreSignalRCommonNet8PackageVersion>
 
     <!-- SignalR Management -->
-    <AzureCorePackageVersion>1.39.0</AzureCorePackageVersion>
+    <AzureCorePackageVersion>1.44.1</AzureCorePackageVersion>
     <MicrosoftAzureCoreNewtonsoftJsonPackageVersion>1.0.0</MicrosoftAzureCoreNewtonsoftJsonPackageVersion>
     <MicrosoftExtensionsHostingVersion>2.1.0</MicrosoftExtensionsHostingVersion>
 
