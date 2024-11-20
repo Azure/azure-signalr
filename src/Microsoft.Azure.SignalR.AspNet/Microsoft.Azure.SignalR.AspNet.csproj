@@ -5,6 +5,8 @@
     <LangVersion>11</LangVersion>
     <RootNamespace>Microsoft.Azure.SignalR.AspNet</RootNamespace>
     <TargetFramework>net462</TargetFramework>
+    <!-- jQuery is not used in this library, upgrading jQuery to 3.x might potentially break users using 1.x, so ignore this warning -->
+    <WarningsNotAsErrors>NU1902</WarningsNotAsErrors>
   </PropertyGroup>
   
   <ItemGroup>
@@ -12,7 +14,6 @@
     <PackageReference Include="Microsoft.Owin" Version="$(MicrosoftOwinPackageVersion)" />
     <PackageReference Include="Microsoft.AspNet.SignalR" Version="$(MicrosoftAspNetSignalRPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging.EventSource" Version="$(MicrosoftExtensionsLoggingEventSourcePackageVersion)" />
-    
   </ItemGroup>
 
   <ItemGroup>

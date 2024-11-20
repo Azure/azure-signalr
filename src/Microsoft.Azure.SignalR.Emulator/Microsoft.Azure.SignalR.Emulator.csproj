@@ -15,5 +15,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="$(EmulatorMicrosoftPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(EmulatorMicrosoftPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="$(MicrosoftExtensionsCommandLineUtilsPackageVersion)" />
+    <PackageReference Include="MessagePack" Version="$(MessagePackPackageVersion)" />
+    <PackageReference Include="System.Net.Http" Version="$(SystemNetHttpPackageVersion)" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="$(SystemTextRegularExpressionsPackageVersion)" />
   </ItemGroup>
 </Project>
