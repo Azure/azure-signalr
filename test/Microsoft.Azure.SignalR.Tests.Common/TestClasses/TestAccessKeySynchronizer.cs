@@ -8,11 +8,9 @@ internal class TestAccessKeySynchronizer : IAccessKeySynchronizer
 
     public void UpdateServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints)
     {
-        return;
     }
 
     public void AddServiceEndpoint(ServiceEndpoint endpoint)
     {
-        return;
     }
 }
