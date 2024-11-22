@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the list of excluded connection Ids.
         /// </summary>
-        public IReadOnlyList<string>? ExcludedList { get; set; }
+        public IReadOnlyList<string> ExcludedList { get; set; } = [];
 
         public CloseMultiConnectionsWithAckMessage(int ackId) : base(ackId) { }
     }

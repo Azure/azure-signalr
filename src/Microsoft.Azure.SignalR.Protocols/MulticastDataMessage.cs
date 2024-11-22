@@ -129,7 +129,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the list of excluded connection Ids.
         /// </summary>
-        public IReadOnlyList<string>? ExcludedList { get; set; }
+        public IReadOnlyList<string> ExcludedList { get; set; } = [];
 
         public byte PartitionKey => Key;
 
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="tracingId">The tracing Id of the message.</param>
         public BroadcastDataMessage(IReadOnlyList<string>? excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
-            ExcludedList = excludedList;
+            ExcludedList = excludedList ?? [];
         }
     }
 
@@ -169,12 +169,12 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the list of excluded connection Ids.
         /// </summary>
-        public IReadOnlyList<string>? ExcludedList { get; set; }
+        public IReadOnlyList<string> ExcludedList { get; set; } = [];
 
         /// <summary>
         /// Gets or sets the list of excluded user Ids.
         /// </summary>
-        public IReadOnlyList<string>? ExcludedUserList { get; set; }
+        public IReadOnlyList<string> ExcludedUserList { get; set; } = [];
 
         /// <summary>
         /// Gets or sets the user ID of the message caller
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             : base(payloads, tracingId)
         {
             GroupName = groupName;
-            ExcludedList = excludedList;
+            ExcludedList = excludedList ?? [];
         }
     }
 
