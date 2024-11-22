@@ -134,19 +134,14 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
     public async Task ShutdownAsync()
     {
         var options = _options.GracefulShutdown;
-        if (options.Mode == GracefulShutdownMode.Off)
-        {
-            return;
-        }
-
         try
         {
-            var source = new CancellationTokenSource(_options.GracefulShutdown.Timeout);
+            var source = new CancellationTokenSource(options.Timeout);
             await GracefulShutdownAsync(options, source.Token).OrCancelAsync(source.Token);
         }
         catch (OperationCanceledException)
         {
-            Log.GracefulShutdownTimeoutExceeded(_logger, _hubName, Convert.ToInt32(_options.GracefulShutdown.Timeout.TotalMilliseconds));
+            Log.GracefulShutdownTimeoutExceeded(_logger, _hubName, Convert.ToInt32(options.Timeout.TotalMilliseconds));
         }
 
         Log.StoppingServer(_logger, _hubName);
@@ -158,8 +153,17 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
         Log.SettingServerOffline(_logger, _hubName);
         await _serviceConnectionManager.OfflineAsync(options.Mode, cancellationToken);
 
-        Log.TriggeringShutdownHooks(_logger, _hubName);
-        await options.OnShutdown(Context);
+        if (options.Mode == GracefulShutdownMode.Off)
+        {
+            // By default we directly close all the client connections
+            Log.CloseClientConnections(_logger, _hubName);
+            await _serviceConnectionManager.CloseClientConnections(cancellationToken);
+        }
+        else
+        {
+            Log.TriggeringShutdownHooks(_logger, _hubName);
+            await options.OnShutdown(Context);
+        }
 
         Log.WaitingClientConnectionsToClose(_logger, _hubName);
         await _clientConnectionManager.WhenAllCompleted();
@@ -217,10 +221,13 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(4, "TriggeringShutdownHooks"), "[{hubName}] Triggering shutdown hooks...");
 
         private static readonly Action<ILogger, string, Exception> _waitingClientConnectionsToClose =
-            LoggerMessage.Define<string>(LogLevel.Information, new EventId(5, "WaitingClientConnectionsToClose"), "[{hubName}] Waiting client connections to close...");
+            LoggerMessage.Define<string>(LogLevel.Information, new EventId(5, "WaitingClientConnectionsToClose"), "[{hubName}] Waiting for client connections to close...");
 
         private static readonly Action<ILogger, string, Exception> _stoppingServer =
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(6, "StoppingServer"), "[{hubName}] Stopping the hub server...");
+
+        private static readonly Action<ILogger, string, Exception> _closeClientConnections =
+            LoggerMessage.Define<string>(LogLevel.Information, new EventId(7, "CloseClientConnections"), "[{hubName}] Closing client connections...");
 
         public static void StartingConnection(ILogger logger, string name, int connectionNumber)
         {
@@ -245,6 +252,11 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
         public static void WaitingClientConnectionsToClose(ILogger logger, string hubName)
         {
             _waitingClientConnectionsToClose(logger, hubName, null);
+        }
+
+        public static void CloseClientConnections(ILogger logger, string hubName)
+        {
+            _closeClientConnections(logger, hubName, null);
         }
 
         public static void StoppingServer(ILogger logger, string hubName)

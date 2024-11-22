@@ -359,7 +359,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             {
                 Assert.Single(logs);
                 Assert.Equal("DetectedLongRunningApplicationTask", logs[0].Write.EventId.Name);
-                Assert.Equal($"The connection {clientConnectionId} has a long running application logic that prevents the connection from complete.", logs[0].Write.Message);
+                Assert.Equal($"The connection {clientConnectionId} has a long running application logic that prevents the connection from complete after 1 milliseconds.", logs[0].Write.Message);
                 return true;
             }))
         {
@@ -426,8 +426,8 @@ public class ServiceConnectionTests : VerifiableLoggedTest
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
             logChecker: logs =>
             {
-                Assert.Single(logs);
-                Assert.Equal("SendLoopStopped", logs[0].Write.EventId.Name);
+                // Cancel does not need to throw
+                Assert.Empty(logs);
                 return true;
             }))
         {
@@ -744,7 +744,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             }))
         {
             var ccm = new TestClientConnectionManager();
-            var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
+            var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 1000);
             var protocol = new ServiceProtocol();
             var hubProtocol = new JsonHubProtocol();
             TestConnection transportConnection = null;
@@ -794,8 +794,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
 
             await clientConnection.LifetimeTask.OrTimeout();
 
-            // 1s for application task to timeout
-            await connectionTask.OrTimeout(1000);
+            await connectionTask.OrTimeout();
             Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
             Assert.Empty(ccm.ClientConnections);
         }

@@ -18,6 +18,7 @@ internal static class TaskExtenstions
         {
             // make sure the task throws exception if any
             await anyTask;
+            tcs.TrySetCanceled();
         }
         else
         {

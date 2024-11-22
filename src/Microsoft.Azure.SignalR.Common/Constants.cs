@@ -22,7 +22,7 @@ internal static class Constants
     public const string AsrsDefaultScope = "https://signalr.azure.com/.default";
 
 
-    public const int DefaultCloseTimeoutMilliseconds = 30000;
+    public const int DefaultCloseTimeoutMilliseconds = 10000;
 
     public static class Keys
     {
