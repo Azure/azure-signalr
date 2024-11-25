@@ -21,7 +21,6 @@ internal static class Constants
 
     public const string AsrsDefaultScope = "https://signalr.azure.com/.default";
 
-
     public const int DefaultCloseTimeoutMilliseconds = 10000;
 
     public static class Keys
@@ -44,6 +43,8 @@ internal static class Constants
         public const int DefaultHandshakeTimeout = 15;
 
         public const int MaxCustomHandshakeTimeout = 30;
+
+        public static readonly TimeSpan DefaultUpdateAccessKeyTimeout = TimeSpan.FromMinutes(2);
 
         public static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
 

@@ -24,6 +24,10 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 {
     internal static readonly TimeSpan GetAccessKeyTimeout = TimeSpan.FromSeconds(100);
 
+    private const int UpdateTaskIdle = 0;
+
+    private const int UpdateTaskRunning = 1;
+
     private const int GetAccessKeyMaxRetryTimes = 3;
 
     private const int GetMicrosoftEntraTokenMaxRetryTimes = 3;
@@ -36,9 +40,11 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     private static readonly TimeSpan AccessKeyExpireTime = TimeSpan.FromMinutes(120);
 
-    private readonly TaskCompletionSource<object?> _initializedTcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object?> _initializedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly IHttpClientFactory _httpClientFactory;
+
+    private volatile int _updateState = 0;
 
     private volatile bool _isAuthorized = false;
 
@@ -47,6 +53,8 @@ internal class MicrosoftEntraAccessKey : IAccessKey
     private volatile string? _kid;
 
     private volatile byte[]? _keyBytes;
+
+    public bool Initialized => _initializedTcs.Task.IsCompleted;
 
     public bool Available
     {
@@ -116,6 +124,12 @@ internal class MicrosoftEntraAccessKey : IAccessKey
                                                        AccessTokenAlgorithm algorithm,
                                                        CancellationToken ctoken = default)
     {
+        if (!_initializedTcs.Task.IsCompleted)
+        {
+            var source = new CancellationTokenSource(Constants.Periods.DefaultUpdateAccessKeyTimeout);
+            _ = UpdateAccessKeyAsync(source.Token);
+        }
+
         await _initializedTcs.Task.OrCancelAsync(ctoken, "The access key initialization timed out.");
 
         return Available
@@ -142,26 +156,35 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             return;
         }
 
+        if (Interlocked.CompareExchange(ref _updateState, UpdateTaskRunning, UpdateTaskIdle) != UpdateTaskIdle)
+        {
+            return;
+        }
+
         for (var i = 0; i < GetAccessKeyMaxRetryTimes; i++)
         {
+            if (ctoken.IsCancellationRequested)
+            {
+                break;
+            }
+
             var source = new CancellationTokenSource(GetAccessKeyTimeout);
-            var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(source.Token, ctoken);
             try
             {
-                await UpdateAccessKeyInternalAsync(linkedSource.Token);
+                await UpdateAccessKeyInternalAsync(source.Token).OrCancelAsync(ctoken);
+                Interlocked.Exchange(ref _updateState, UpdateTaskIdle);
                 return;
             }
             catch (OperationCanceledException e)
             {
-                LastException = e;
-                break;
+                LastException = e; // retry immediately
             }
             catch (Exception e)
             {
                 LastException = e;
                 try
                 {
-                    await Task.Delay(GetAccessKeyRetryInterval, ctoken);
+                    await Task.Delay(GetAccessKeyRetryInterval, ctoken); // retry after interval.
                 }
                 catch (OperationCanceledException)
                 {
@@ -175,6 +198,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             // Update the status only when it becomes "not available" due to expiration to refresh updateAt.
             Available = false;
         }
+        Interlocked.Exchange(ref _updateState, UpdateTaskIdle);
     }
 
     private static string GetExceptionMessage(Exception? exception)
@@ -232,11 +256,11 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         await ThrowExceptionOnResponseFailureAsync(request, response);
     }
 
-    private async Task<bool> HandleHttpResponseAsync(HttpResponseMessage response)
+    private async Task HandleHttpResponseAsync(HttpResponseMessage response)
     {
         if (response.StatusCode != HttpStatusCode.OK)
         {
-            return false;
+            return;
         }
 
         var content = await response.Content.ReadAsStringAsync();
@@ -250,8 +274,6 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         {
             throw new AzureSignalRException("Missing required <AccessKey> field.");
         }
-
         UpdateAccessKey(obj.KeyId, obj.AccessKey);
-        return true;
     }
 }
