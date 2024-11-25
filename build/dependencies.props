@@ -33,11 +33,11 @@
     <SystemIOPipelinesPackageVersion>8.0.0</SystemIOPipelinesPackageVersion>
     <MicrosoftOwinPackageVersion>4.2.2</MicrosoftOwinPackageVersion>
     <OwinPackageVersion>1.0.0</OwinPackageVersion>
-    <MicrosoftAspNetCoreConnectionsAbstractionsNet8PackageVersion>8.0.8</MicrosoftAspNetCoreConnectionsAbstractionsNet8PackageVersion>
+    <MicrosoftAspNetCoreConnectionsAbstractionsNet8PackageVersion>8.0.11</MicrosoftAspNetCoreConnectionsAbstractionsNet8PackageVersion>
     <MicrosoftExtensionsDependencyInjectionNet8PackageVersion>8.0.0</MicrosoftExtensionsDependencyInjectionNet8PackageVersion>
-    <MicrosoftAspNetCoreHttpConnectionsCommonNet8PackageVersion>8.0.8</MicrosoftAspNetCoreHttpConnectionsCommonNet8PackageVersion>
+    <MicrosoftAspNetCoreHttpConnectionsCommonNet8PackageVersion>8.0.11</MicrosoftAspNetCoreHttpConnectionsCommonNet8PackageVersion>
     <MicrosoftExtensionsLoggingAbstractionsNet8PackageVersion>8.0.1</MicrosoftExtensionsLoggingAbstractionsNet8PackageVersion>
-    <MicrosoftAspNetCoreSignalRCommonNet8PackageVersion>8.0.8</MicrosoftAspNetCoreSignalRCommonNet8PackageVersion>
+    <MicrosoftAspNetCoreSignalRCommonNet8PackageVersion>8.0.11</MicrosoftAspNetCoreSignalRCommonNet8PackageVersion>
 
     <!-- SignalR Management -->
     <AzureCorePackageVersion>1.39.0</AzureCorePackageVersion>
@@ -55,6 +55,13 @@
 
     <!--Emulator, self-contained, always try the latest version -->
     <MicrosoftExtensionsCommandLineUtilsPackageVersion>1.1.1</MicrosoftExtensionsCommandLineUtilsPackageVersion>
-    <EmulatorMicrosoftPackageVersion>8.0.8</EmulatorMicrosoftPackageVersion></PropertyGroup>
+    <EmulatorMicrosoftPackageVersion>8.0.11</EmulatorMicrosoftPackageVersion>
+    
+    <!-- Vulnerability fix-->
+    <jQueryPackageVersion>3.7.1</jQueryPackageVersion>
+    <MessagePackPackageVersion>2.5.192</MessagePackPackageVersion>
+    <SystemNetHttpPackageVersion>4.3.4</SystemNetHttpPackageVersion>
+    <SystemTextRegularExpressionsPackageVersion>4.3.1</SystemTextRegularExpressionsPackageVersion>
+  </PropertyGroup>
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition=" '$(DotNetPackageVersionPropsPath)' != '' " />
 </Project>
