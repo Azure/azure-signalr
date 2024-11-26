@@ -448,16 +448,7 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
     [Fact]
     public async Task TestRunAzureSignalRWithDefaultRouterNegotiateWithFallback()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: e => true, logChecker: s =>
-        {
-            Assert.Equal(4, s.Count);
-            Assert.True(s.All(ss => ss.Write.EventId.Name == "EndpointOffline"));
-            Assert.Contains("Hub 'AzureSignalRTest' is now disconnected from '[tt3](Primary)http://localhost3(hub=AzureSignalRTest)'. Please check log for detailed info.", s.Select(ss => ss.Write.Message));
-            Assert.Contains("Hub 'AzureSignalRTest' is now disconnected from '[tt4](Secondary)http://localhost4(hub=AzureSignalRTest)'. Please check log for detailed info.", s.Select(ss => ss.Write.Message));
-            Assert.Contains("Hub 'chat' is now disconnected from '[tt3](Primary)http://localhost3(hub=chat)'. Please check log for detailed info.", s.Select(ss => ss.Write.Message));
-            Assert.Contains("Hub 'chat' is now disconnected from '[tt4](Secondary)http://localhost4(hub=chat)'. Please check log for detailed info.", s.Select(ss => ss.Write.Message));
-            return true;
-        }))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: e => true))
         {
             // Prepare the configuration
             var hubConfig = Utility.GetTestHubConfig(loggerFactory, "chat");

@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#nullable enable
 
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the reason for the close.
         /// </summary>
-        public string Reason { get; set; }
+        public string? Reason { get; set; }
 
         public CloseWithAckMessage(int ackId)
         {
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the list of excluded connection Ids.
         /// </summary>
-        public IReadOnlyList<string> ExcludedList { get; set; }
+        public IReadOnlyList<string> ExcludedList { get; set; } = [];
 
         public CloseMultiConnectionsWithAckMessage(int ackId) : base(ackId) { }
     }

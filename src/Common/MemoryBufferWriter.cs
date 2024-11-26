@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#nullable enable
 
 using System;
 using System.Buffers;
@@ -14,7 +15,7 @@ namespace Microsoft.Azure.SignalR
     internal sealed class MemoryBufferWriter : Stream, IBufferWriter<byte>
     {
         [ThreadStatic]
-        private static MemoryBufferWriter _cachedInstance;
+        private static MemoryBufferWriter? _cachedInstance;
 
 #if DEBUG
         private bool _inUse;
@@ -23,8 +24,8 @@ namespace Microsoft.Azure.SignalR
         private readonly int _minimumSegmentSize;
         private int _bytesWritten;
 
-        private List<CompletedBuffer> _completedSegments;
-        private byte[] _currentSegment;
+        private List<CompletedBuffer>? _completedSegments;
+        private byte[]? _currentSegment;
         private int _position;
 
         public MemoryBufferWriter(int minimumSegmentSize = 4096)
@@ -107,14 +108,14 @@ namespace Microsoft.Azure.SignalR
         {
             EnsureCapacity(sizeHint);
 
-            return _currentSegment.AsMemory(_position, _currentSegment.Length - _position);
+            return _currentSegment.AsMemory(_position, _currentSegment!.Length - _position);
         }
 
         public Span<byte> GetSpan(int sizeHint = 0)
         {
             EnsureCapacity(sizeHint);
 
-            return _currentSegment.AsSpan(_position, _currentSegment.Length - _position);
+            return _currentSegment.AsSpan(_position, _currentSegment!.Length - _position);
         }
 
         public void CopyTo(IBufferWriter<byte> destination)
@@ -137,7 +138,7 @@ namespace Microsoft.Azure.SignalR
             if (_completedSegments == null)
             {
                 // There is only one segment so write without awaiting.
-                return destination.WriteAsync(_currentSegment, 0, _position);
+                return destination.WriteAsync(_currentSegment!, 0, _position);
             }
 
             return CopyToSlowAsync(destination);
@@ -194,7 +195,7 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
-            await destination.WriteAsync(_currentSegment, 0, _position);
+            await destination.WriteAsync(_currentSegment!, 0, _position);
         }
 
         public byte[] ToArray()
@@ -270,7 +271,7 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 AddSegment();
-                _currentSegment[0] = value;
+                _currentSegment![0] = value;
             }
 
             _position++;

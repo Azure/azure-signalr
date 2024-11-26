@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#nullable enable
 
 using System;
 
@@ -68,7 +69,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Clone should make a copy of everything that may get modified throughout the lifetime of the message
         /// The default implementation is a shallow copy as it fits the current needs.
         /// </summary>
-        public virtual ServiceMessage Clone() => MemberwiseClone() as ServiceMessage;
+        public virtual ServiceMessage Clone() => (MemberwiseClone() as ServiceMessage)!;
 
         public static byte GeneratePartitionKey(string input)
         {
@@ -238,13 +239,13 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the Azure Active Directory token.
         /// </summary>
-        public string Token { get; set; }
+        public string? Token { get; set; }
 
         /// <summary>
         /// Gets or sets the key Id.
         /// <c>null</c>
         /// </summary>
-        public string Kid { get; set; }
+        public string? Kid { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AccessKeyRequestMessage"/> class.
@@ -271,22 +272,22 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the key Id.
         /// </summary>
-        public string Kid { get; set; }
+        public string? Kid { get; set; }
 
         /// <summary>
         /// Gets or sets the access key.
         /// </summary>
-        public string AccessKey { get; set; }
+        public string? AccessKey { get; set; }
 
         /// <summary>
         /// Gets or sets error type.
         /// </summary>
-        public string ErrorType { get; set; }
+        public string? ErrorType { get; set; }
 
         /// <summary>
         /// Gets or sets error message.
         /// </summary>
-        public string ErrorMessage { get; set; }
+        public string? ErrorMessage { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AccessKeyResponseMessage"/> class.
@@ -342,7 +343,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the target of service connection, only work for OnDemand connections.
         /// </summary>
-        public string Target { get; set; }
+        public string? Target { get; set; }
 
         /// <summary>
         /// Gets or sets the migratable flag.
@@ -397,7 +398,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the id of this connection.
         /// </summary>
-        public string ConnectionId { get; set; }
+        public string? ConnectionId { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HandshakeResponseMessage"/> class.

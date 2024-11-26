@@ -1,9 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#nullable enable
 
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Claims;
@@ -17,13 +19,17 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// </summary>
     public class ServiceProtocol : IServiceProtocol
     {
+        private static readonly IDictionary<string, ReadOnlyMemory<byte>> EmptyReadOnlyMemoryDictionary = new Dictionary<string, ReadOnlyMemory<byte>>();
+
+        private static readonly IDictionary<string, StringValues> EmptyStringValuesDictionaryIgnoreCase = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
+
         private static readonly int ProtocolVersion = 1;
 
         /// <inheritdoc />
         public int Version => ProtocolVersion;
 
         /// <inheritdoc />
-        public bool TryParseMessage(ref ReadOnlySequence<byte> input, out ServiceMessage message)
+        public bool TryParseMessage(ref ReadOnlySequence<byte> input, out ServiceMessage? message)
         {
             if (!BinaryMessageParser.TryParseMessage(ref input, out var payload))
             {
@@ -37,7 +43,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             return true;
         }
 
-        private static ServiceMessage ParseMessage(ref MessagePackReader reader)
+        private static ServiceMessage? ParseMessage(ref MessagePackReader reader)
         {
             var arrayLength = reader.ReadArrayHeader();
 
@@ -715,7 +721,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             message.WriteExtensionMembers(ref writer);
         }
 
-        private static void WriteStringArray(ref MessagePackWriter writer, IReadOnlyList<string> array)
+        private static void WriteStringArray(ref MessagePackWriter writer, IReadOnlyList<string>? array)
         {
             if (array?.Count > 0)
             {
@@ -1351,7 +1357,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 return claims;
             }
 
-            return null;
+            return [];
         }
 
         private static IDictionary<string, ReadOnlyMemory<byte>> ReadPayloads(ref MessagePackReader reader)
@@ -1370,10 +1376,10 @@ namespace Microsoft.Azure.SignalR.Protocol
                 return payloads;
             }
 
-            return null;
+            return EmptyReadOnlyMemoryDictionary;
         }
 
-        private static Dictionary<string, StringValues> ReadHeaders(ref MessagePackReader reader)
+        private static IDictionary<string, StringValues> ReadHeaders(ref MessagePackReader reader)
         {
             var headerCount = ReadMapLength(ref reader, "headers");
             if (headerCount > 0)
@@ -1394,7 +1400,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 return headers;
             }
 
-            return new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
+            return EmptyStringValuesDictionaryIgnoreCase;
         }
 
         private static bool ReadBoolean(ref MessagePackReader reader, string field)
@@ -1472,7 +1478,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 return array;
             }
 
-            return null;
+            return [];
         }
 
         private static byte[] ReadBytes(ref MessagePackReader reader, string field)

@@ -758,7 +758,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
             LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(1, "EndpointOnline"), "Hub '{hub}' is now connected to '{endpoint}'.");
 
         private static readonly Action<ILogger, string, string, Exception> _endpointOffline =
-            LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(2, "EndpointOffline"), "Hub '{hub}' is now disconnected from '{endpoint}'. Please check log for detailed info.");
+            LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(2, "EndpointOffline"), "Hub '{hub}' is now disconnected from '{endpoint}'. Please check log for detailed info.");
 
         private static readonly Action<ILogger, Exception> _receivedFinAckPing =
             LoggerMessage.Define(LogLevel.Information, new EventId(3, "ReceivedFinAckPing"), "Received FinAck ping.");

@@ -3,23 +3,22 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.Azure.SignalR
-{
-    internal static class ServiceEndpointUtility
-    {
-        public static IEnumerable<ServiceEndpoint> Merge(string connectionString, IEnumerable<ServiceEndpoint> endpoints)
-        {
-            if (!string.IsNullOrEmpty(connectionString))
-            {
-                yield return new ServiceEndpoint(connectionString);
-            }
+namespace Microsoft.Azure.SignalR;
 
-            if (endpoints != null)
+internal static class ServiceEndpointUtility
+{
+    public static IEnumerable<ServiceEndpoint> Merge(string connectionString, IEnumerable<ServiceEndpoint> endpoints)
+    {
+        if (!string.IsNullOrEmpty(connectionString))
+        {
+            yield return new ServiceEndpoint(connectionString);
+        }
+
+        if (endpoints != null)
+        {
+            foreach (var endpoint in endpoints)
             {
-                foreach (var endpoint in endpoints)
-                {
-                    yield return endpoint;
-                }
+                yield return endpoint;
             }
         }
     }

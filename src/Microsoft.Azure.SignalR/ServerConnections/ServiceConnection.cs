@@ -111,9 +111,29 @@ internal partial class ServiceConnection : ServiceConnectionBase
         return _connectionFactory.DisposeAsync(connection);
     }
 
-    public override Task CloseClientConnections(CancellationToken token)
+    public override async Task CloseClientConnections(CancellationToken token)
     {
-        return Task.WhenAll(_clientConnectionManager.ClientConnections.Select(c => ((ClientConnectionContext)c).PerformDisconnectAsync()));
+        var tasks = new List<Task>();
+        foreach (var entity in _connectionIds)
+        {
+            if (_clientConnectionManager.TryGetClientConnection(entity.Key, out var c) && c is ClientConnectionContext connection)
+            {
+                // batch remove 100 connections once
+                if (tasks.Count % 100 == 0)
+                {
+                    await Task.Delay(1);
+                    await Task.WhenAll(tasks);
+                    tasks.Clear();
+                }
+                // Add a little delay to avoid too much pressure closing all the clients at one time
+                tasks.Add(connection.PerformDisconnectAsync());
+            }
+        }
+
+        if (tasks.Count > 0)
+        {
+            await Task.WhenAll(tasks);
+        }
     }
 
     protected override Task CleanupClientConnections(string fromInstanceId = null)
@@ -284,7 +304,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
                 // app task completes connection.Transport.Output, which will completes connection.Application.Input and ends the transport
                 // Transports are written by us and are well behaved, wait for them to drain
                 connection.CancelOutgoing(true);
-
                 // transport never throws
                 await transport;
             }

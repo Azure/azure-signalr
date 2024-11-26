@@ -3,10 +3,9 @@
 
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal interface IAccessTokenProvider
 {
-    internal interface IAccessTokenProvider
-    {
-        Task<string> ProvideAsync();
-    }
+    Task<string> ProvideAsync();
 }
