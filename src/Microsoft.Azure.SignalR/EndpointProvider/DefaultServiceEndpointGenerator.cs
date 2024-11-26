@@ -4,63 +4,67 @@
 using System.Net;
 using System.Text;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+#nullable enable
+
+internal sealed class DefaultServiceEndpointGenerator : IServiceEndpointGenerator
 {
-    internal sealed class DefaultServiceEndpointGenerator : IServiceEndpointGenerator
+    private const string ClientPath = "client";
+
+    private const string ServerPath = "server";
+
+    public string? Version { get; }
+
+    public string AudienceBaseUrl { get; }
+
+    public string ClientEndpoint { get; }
+
+    public string ServerEndpoint { get; }
+
+    public DefaultServiceEndpointGenerator(ServiceEndpoint endpoint)
     {
-        private const string ClientPath = "client";
-        private const string ServerPath = "server";
+        Version = endpoint.Version;
+        AudienceBaseUrl = endpoint.AudienceBaseUrl;
+        ClientEndpoint = endpoint.ClientEndpoint.AbsoluteUri;
+        ServerEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
+    }
 
-        public string Version { get; }
+    public string GetClientAudience(string hubName, string applicationName) =>
+        InternalGetUri(ClientPath, hubName, applicationName, AudienceBaseUrl);
 
-        public string AudienceBaseUrl { get; }
-        public string ClientEndpoint { get; }
-        public string ServerEndpoint { get; }
-
-        public DefaultServiceEndpointGenerator(ServiceEndpoint endpoint)
+    public string GetClientEndpoint(string hubName, string applicationName, string originalPath, string queryString)
+    {
+        var queryBuilder = new StringBuilder();
+        if (!string.IsNullOrEmpty(originalPath))
         {
-            Version = endpoint.Version;
-            AudienceBaseUrl = endpoint.AudienceBaseUrl;
-            ClientEndpoint = endpoint.ClientEndpoint.AbsoluteUri;
-            ServerEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
+            queryBuilder.Append('&')
+                .Append(Constants.QueryParameter.OriginalPath)
+                .Append('=')
+                .Append(WebUtility.UrlEncode(originalPath));
         }
 
-        public string GetClientAudience(string hubName, string applicationName) =>
-            InternalGetUri(ClientPath, hubName, applicationName, AudienceBaseUrl);
-
-        public string GetClientEndpoint(string hubName, string applicationName, string originalPath, string queryString)
+        if (!string.IsNullOrEmpty(queryString))
         {
-            var queryBuilder = new StringBuilder();
-            if (!string.IsNullOrEmpty(originalPath))
-            {
-                queryBuilder.Append("&")
-                    .Append(Constants.QueryParameter.OriginalPath)
-                    .Append("=")
-                    .Append(WebUtility.UrlEncode(originalPath));
-            }
-
-            if (!string.IsNullOrEmpty(queryString))
-            {
-                queryBuilder.Append("&").Append(queryString);
-            }
-
-            return $"{InternalGetUri(ClientPath, hubName, applicationName, ClientEndpoint)}{queryBuilder}";
+            queryBuilder.Append('&').Append(queryString);
         }
 
-        public string GetServerAudience(string hubName, string applicationName) =>
-            InternalGetUri(ServerPath, hubName, applicationName, AudienceBaseUrl);
+        return $"{InternalGetUri(ClientPath, hubName, applicationName, ClientEndpoint)}{queryBuilder}";
+    }
 
-        public string GetServerEndpoint(string hubName, string applicationName) =>
-            InternalGetUri(ServerPath, hubName, applicationName, ServerEndpoint);
+    public string GetServerAudience(string hubName, string applicationName) =>
+        InternalGetUri(ServerPath, hubName, applicationName, AudienceBaseUrl);
 
-        private string GetPrefixedHubName(string applicationName, string hubName)
-        {
-            return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
-        }
+    public string GetServerEndpoint(string hubName, string applicationName) =>
+        InternalGetUri(ServerPath, hubName, applicationName, ServerEndpoint);
 
-        private string InternalGetUri(string path, string hubName, string applicationName, string target)
-        {
-            return $"{target}{path}/?hub={GetPrefixedHubName(applicationName, hubName)}";
-        }
+    private static string GetPrefixedHubName(string applicationName, string hubName)
+    {
+        return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
+    }
+
+    private static string InternalGetUri(string path, string hubName, string applicationName, string target)
+    {
+        return $"{target}{path}/?hub={GetPrefixedHubName(applicationName, hubName)}";
     }
 }

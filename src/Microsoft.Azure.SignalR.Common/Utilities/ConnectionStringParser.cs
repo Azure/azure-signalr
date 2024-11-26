@@ -8,6 +8,8 @@ using Azure.Identity;
 
 namespace Microsoft.Azure.SignalR;
 
+#nullable enable
+
 internal static class ConnectionStringParser
 {
     private const string AccessKeyProperty = "accesskey";
@@ -16,15 +18,15 @@ internal static class ConnectionStringParser
 
     private const string ClientCertProperty = "clientCert";
 
-    private const string ClientEndpointProperty = "clientEndpoint";
-
     private const string ClientIdProperty = "clientId";
 
     private const string ClientSecretProperty = "clientSecret";
 
     private const string EndpointProperty = "endpoint";
 
-    private const string ServerEndpointProperty = "ServerEndpoint";
+    private const string ClientEndpointProperty = "clientEndpoint";
+
+    private const string ServerEndpointProperty = "serverEndpoint";
 
     private const string InvalidVersionValueFormat = "Version {0} is not supported.";
 
@@ -47,11 +49,13 @@ internal static class ConnectionStringParser
 
     private const string VersionProperty = "version";
 
-    private static readonly string InvalidClientEndpointProperty = $"Invalid value for {ClientEndpointProperty} property, it must be a valid URI.";
-
     private static readonly string InvalidEndpointProperty = $"Invalid value for {EndpointProperty} property, it must be a valid URI.";
 
-    private static readonly string InvalidPortValue = $"Invalid value for {PortProperty} property, it must be an positive integer between (0, 65536)";
+    private static readonly string InvalidClientEndpointProperty = $"Invalid value for {ClientEndpointProperty} property, it must be a valid URI.";
+
+    private static readonly string InvalidServerEndpointProperty = $"Invalid value for {ServerEndpointProperty} property, it must be a valid URI.";
+
+    private static readonly string InvalidPortValue = $"Invalid value for {PortProperty} property, it must be an positive integer between (0, 65536).";
 
     private static readonly char[] KeyValueSeparator = { '=' };
 
@@ -65,10 +69,10 @@ internal static class ConnectionStringParser
         $"Connection string missing required properties {ClientSecretProperty} or {ClientCertProperty}.";
 
     private static readonly string MissingEndpointProperty =
-                                        $"Connection string missing required properties {EndpointProperty}.";
+        $"Connection string missing required properties {EndpointProperty}.";
 
     private static readonly string MissingTenantIdProperty =
-                        $"Connection string missing required properties {TenantIdProperty}.";
+        $"Connection string missing required properties {TenantIdProperty}.";
 
     private static readonly char[] PropertySeparator = { ';' };
 
@@ -83,14 +87,14 @@ internal static class ConnectionStringParser
         }
         endpoint = endpoint.TrimEnd('/');
 
-        if (!TryGetEndpointUri(endpoint, out var endpointUri))
+        if (!TryCreateEndpointUri(endpoint, out var endpointUri))
         {
             throw new ArgumentException(InvalidEndpointProperty, nameof(endpoint));
         }
-        var builder = new UriBuilder(endpointUri);
+        var builder = new UriBuilder(endpointUri!);
 
         // parse and validate version.
-        string version = null;
+        string? version = null;
         if (dict.TryGetValue(VersionProperty, out var v))
         {
             if (!Regex.IsMatch(v, ValidVersionRegex))
@@ -113,13 +117,13 @@ internal static class ConnectionStringParser
             }
         }
 
-        Uri clientEndpointUri = null;
-        Uri serverEndpointUri = null;
+        Uri? clientEndpointUri = null;
+        Uri? serverEndpointUri = null;
 
         // parse and validate clientEndpoint.
         if (dict.TryGetValue(ClientEndpointProperty, out var clientEndpoint))
         {
-            if (!TryGetEndpointUri(clientEndpoint, out clientEndpointUri))
+            if (!TryCreateEndpointUri(clientEndpoint, out clientEndpointUri))
             {
                 throw new ArgumentException(InvalidClientEndpointProperty, nameof(clientEndpoint));
             }
@@ -128,9 +132,9 @@ internal static class ConnectionStringParser
         // parse and validate clientEndpoint.
         if (dict.TryGetValue(ServerEndpointProperty, out var serverEndpoint))
         {
-            if (!TryGetEndpointUri(serverEndpoint, out serverEndpointUri))
+            if (!TryCreateEndpointUri(serverEndpoint, out serverEndpointUri))
             {
-                throw new ArgumentException($"{ServerEndpointProperty} property in connection string is not a valid URI: {serverEndpoint}.");
+                throw new ArgumentException(InvalidServerEndpointProperty, nameof(serverEndpoint));
             }
         }
 
@@ -155,13 +159,13 @@ internal static class ConnectionStringParser
         };
     }
 
-    internal static bool TryGetEndpointUri(string endpoint, out Uri uriResult)
+    private static bool TryCreateEndpointUri(string endpoint, out Uri? uriResult)
     {
-        return Uri.TryCreate(endpoint, UriKind.Absolute, out uriResult) &&
-               (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        return Uri.TryCreate(endpoint, UriKind.Absolute, out uriResult)
+            && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 
-    private static IAccessKey BuildAzureADAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
+    private static IAccessKey BuildAzureADAccessKey(Uri uri, Uri? serverEndpointUri, Dictionary<string, string> dict)
     {
         if (dict.TryGetValue(ClientIdProperty, out var clientId))
         {
@@ -198,12 +202,12 @@ internal static class ConnectionStringParser
             : throw new ArgumentException(MissingAccessKeyProperty, AccessKeyProperty);
     }
 
-    private static IAccessKey BuildAzureAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
+    private static IAccessKey BuildAzureAccessKey(Uri uri, Uri? serverEndpointUri, Dictionary<string, string> dict)
     {
         return new MicrosoftEntraAccessKey(uri, new DefaultAzureCredential(), serverEndpointUri);
     }
 
-    private static IAccessKey BuildAzureAppAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
+    private static IAccessKey BuildAzureAppAccessKey(Uri uri, Uri? serverEndpointUri, Dictionary<string, string> dict)
     {
         if (!dict.TryGetValue(ClientIdProperty, out var clientId))
         {
@@ -226,7 +230,7 @@ internal static class ConnectionStringParser
         throw new ArgumentException(MissingClientSecretProperty, ClientSecretProperty);
     }
 
-    private static IAccessKey BuildAzureMsiAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
+    private static IAccessKey BuildAzureMsiAccessKey(Uri uri, Uri? serverEndpointUri, Dictionary<string, string> dict)
     {
         return dict.TryGetValue(ClientIdProperty, out var clientId)
             ? new MicrosoftEntraAccessKey(uri, new ManagedIdentityCredential(clientId), serverEndpointUri)

@@ -46,12 +46,22 @@ public class ConnectionStringParserTests
 
     [Theory]
     [InlineData("endpoint=https://aaa;clientEndpoint=aaa;AccessKey=bbb;")]
-    [InlineData("endpoint=https://aaa;ClientEndpoint=endpoint=aaa;AccessKey=bbb;")]
+    [InlineData("endpoint=https://aaa;ClientEndpoint=aaa;AccessKey=bbb;")]
     public void InvalidClientEndpoint(string connectionString)
     {
         var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
         Assert.Contains("Invalid value for clientEndpoint property, it must be a valid URI. (Parameter 'clientEndpoint')", exception.Message);
     }
+
+    [Theory]
+    [InlineData("endpoint=https://aaa;serverEndpoint=aaa;AccessKey=bbb;")]
+    [InlineData("endpoint=https://aaa;ServerEndpoint=aaa;AccessKey=bbb;")]
+    public void InvalidServerEndpoint(string connectionString)
+    {
+        var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
+        Assert.Contains("Invalid value for serverEndpoint property, it must be a valid URI. (Parameter 'serverEndpoint')", exception.Message);
+    }
+
 
     [Theory]
     [InlineData("Endpoint=xxx")]
@@ -80,7 +90,7 @@ public class ConnectionStringParserTests
     public void InvalidPort(string connectionString)
     {
         var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-        Assert.Contains("Invalid value for port property, it must be an positive integer between (0, 65536) (Parameter 'port')", exception.Message);
+        Assert.Contains("Invalid value for port property, it must be an positive integer between (0, 65536). (Parameter 'port')", exception.Message);
     }
 
     [Theory]
