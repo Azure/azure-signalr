@@ -4,13 +4,12 @@
 using System;
 using System.Linq;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal static class UriExtensions
 {
-    internal static class UriExtensions
+    public static Uri Append(this Uri uri, params string[] paths)
     {
-        public static Uri Append(this Uri uri, params string[] paths)
-        {
-            return new Uri(paths.Aggregate(uri.AbsoluteUri, (current, path) => string.Format("{0}/{1}", current.TrimEnd('/'), path.TrimStart('/'))));
-        }
+        return new Uri(paths.Aggregate(uri.AbsoluteUri, (current, path) => string.Format("{0}/{1}", current.TrimEnd('/'), path.TrimStart('/'))));
     }
 }

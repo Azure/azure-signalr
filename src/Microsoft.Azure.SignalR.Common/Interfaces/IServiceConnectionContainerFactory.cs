@@ -3,10 +3,9 @@
 
 using System;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal interface IServiceConnectionContainerFactory
 {
-    internal interface IServiceConnectionContainerFactory
-    {
-        IServiceConnectionContainer Create(string hub, TimeSpan? serviceScaleTimeout = null);
-    }
+    IServiceConnectionContainer Create(string hub, TimeSpan? serviceScaleTimeout = null);
 }
