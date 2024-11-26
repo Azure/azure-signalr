@@ -5,7 +5,6 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Claims;
@@ -849,7 +848,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             if (arrayLength > 1)
             {
                 var length = arrayLength - 1;
-                var values = new string[length];
+                var values = new string?[length];
                 for (int i = 0; i < length; i++)
                 {
                     values[i] = ReadString(ref reader, "messages[{0}]", i);
@@ -862,7 +861,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static OpenConnectionMessage CreateOpenConnectionMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var connectionId = ReadString(ref reader, "connectionId");
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
             var claims = ReadClaims(ref reader);
 
             // Backward compatible with old versions
@@ -885,7 +884,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static CloseConnectionMessage CreateCloseConnectionMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var connectionId = ReadString(ref reader, "connectionId");
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
             var errorMessage = ReadString(ref reader, "errorMessage");
             var headers = arrayLength >= 4 ? ReadHeaders(ref reader) : new Dictionary<string, StringValues>();
             var result = new CloseConnectionMessage(connectionId, errorMessage, headers);
@@ -899,7 +898,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         [Obsolete]
         private static CloseConnectionWithAckMessage CreateCloseConnectionWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var connectionId = ReadString(ref reader, "connectionId");
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
             var reason = ReadString(ref reader, "reason");
             var ackId = ReadInt32(ref reader, "ackId");
             var result = new CloseConnectionWithAckMessage(connectionId, ackId)
@@ -934,7 +933,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static CloseUserConnectionsWithAckMessage CreateCloseUserConnectionsWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var userId = ReadString(ref reader, "userId");
+            var userId = ReadString(ref reader, "userId").ThrowWhenNull();
             var reason = ReadString(ref reader, "reason");
             var ackId = ReadInt32(ref reader, "ackId");
             var excluded = ReadStringArray(ref reader, "excluded");
@@ -953,7 +952,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static CloseGroupConnectionsWithAckMessage CreateCloseGroupConnectionsWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var group = ReadString(ref reader, "group");
+            var group = ReadString(ref reader, "group").ThrowWhenNull();
             var reason = ReadString(ref reader, "reason");
             var ackId = ReadInt32(ref reader, "ackId");
             var excluded = ReadStringArray(ref reader, "excluded");
@@ -972,7 +971,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static ConnectionDataMessage CreateConnectionDataMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var connectionId = ReadString(ref reader, "connectionId");
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
             var payload = ReadBytes(ref reader, "payload");
 
             var result = new ConnectionDataMessage(connectionId, payload);
@@ -985,7 +984,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static ConnectionReconnectMessage CreateConnectionReconnectMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var connectionId = ReadString(ref reader, "connectionId");
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
 
             var result = new ConnectionReconnectMessage(connectionId);
             result.ReadExtensionMembers(ref reader);
@@ -1007,7 +1006,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static ServiceMessage CreateUserDataMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var userId = ReadString(ref reader, "userId");
+            var userId = ReadString(ref reader, "userId").ThrowWhenNull();
             var payloads = ReadPayloads(ref reader);
 
             var result = new UserDataMessage(userId, payloads);
@@ -1046,8 +1045,8 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static JoinGroupMessage CreateJoinGroupMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var connectionId = ReadString(ref reader, "connectionId");
-            var groupName = ReadString(ref reader, "groupName");
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
+            var groupName = ReadString(ref reader, "groupName").ThrowWhenNull();
 
             var result = new JoinGroupMessage(connectionId, groupName);
             if (arrayLength >= 4)
@@ -1059,8 +1058,8 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static LeaveGroupMessage CreateLeaveGroupMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var connectionId = ReadString(ref reader, "connectionId");
-            var groupName = ReadString(ref reader, "groupName");
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
+            var groupName = ReadString(ref reader, "groupName").ThrowWhenNull();
 
             var result = new LeaveGroupMessage(connectionId, groupName);
             if (arrayLength >= 4)
@@ -1072,8 +1071,8 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static UserJoinGroupMessage CreateUserJoinGroupMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var userId = ReadString(ref reader, "userId");
-            var groupName = ReadString(ref reader, "groupName");
+            var userId = ReadString(ref reader, "userId").ThrowWhenNull();
+            var groupName = ReadString(ref reader, "groupName").ThrowWhenNull();
 
             var result = new UserJoinGroupMessage(userId, groupName);
             if (arrayLength >= 4)
@@ -1085,8 +1084,8 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static UserLeaveGroupMessage CreateUserLeaveGroupMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var userId = ReadString(ref reader, "userId");
-            var groupName = ReadString(ref reader, "groupName");
+            var userId = ReadString(ref reader, "userId").ThrowWhenNull();
+            var groupName = ReadString(ref reader, "groupName").ThrowWhenNull();
 
             var result = new UserLeaveGroupMessage(userId, groupName);
             if (arrayLength >= 4)
@@ -1098,8 +1097,8 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static UserJoinGroupWithAckMessage CreateUserJoinGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var userId = ReadString(ref reader, "userId");
-            var groupName = ReadString(ref reader, "groupName");
+            var userId = ReadString(ref reader, "userId").ThrowWhenNull();
+            var groupName = ReadString(ref reader, "groupName").ThrowWhenNull();
             var ackId = ReadInt32(ref reader, "ackId");
 
             var result = new UserJoinGroupWithAckMessage(userId, groupName, ackId);
@@ -1109,8 +1108,8 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static UserLeaveGroupWithAckMessage CreateUserLeaveGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var userId = ReadString(ref reader, "userId");
-            var groupName = ReadString(ref reader, "groupName");
+            var userId = ReadString(ref reader, "userId").ThrowWhenNull();
+            var groupName = ReadString(ref reader, "groupName").ThrowWhenNull();
             var ackId = ReadInt32(ref reader, "ackId");
 
             var result = new UserLeaveGroupWithAckMessage(userId, groupName, ackId);
@@ -1120,7 +1119,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static GroupBroadcastDataMessage CreateGroupBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var groupName = ReadString(ref reader, "groupName");
+            var groupName = ReadString(ref reader, "groupName").ThrowWhenNull();
             var excludedList = ReadStringArray(ref reader, "excludedList");
             var payloads = ReadPayloads(ref reader);
 
@@ -1162,7 +1161,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private static ServiceEventMessage CreateServiceEventMessage(ref MessagePackReader reader)
         {
             var type = ReadInt32(ref reader, "type");
-            var id = ReadString(ref reader, "id");
+            var id = ReadString(ref reader, "id").ThrowWhenNull();
             var kind = ReadInt32(ref reader, "kind");
             var message = ReadString(ref reader, "message");
             var result = new ServiceEventMessage((ServiceEventObjectType)type, id, (ServiceEventKind)kind, message);
@@ -1172,8 +1171,8 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static JoinGroupWithAckMessage CreateJoinGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var connectionId = ReadString(ref reader, "connectionId");
-            var groupName = ReadString(ref reader, "groupName");
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
+            var groupName = ReadString(ref reader, "groupName").ThrowWhenNull();
             var ackId = ReadInt32(ref reader, "ackId");
 
             var result = new JoinGroupWithAckMessage(connectionId, groupName, ackId);
@@ -1186,8 +1185,8 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static LeaveGroupWithAckMessage CreateLeaveGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var connectionId = ReadString(ref reader, "connectionId");
-            var groupName = ReadString(ref reader, "groupName");
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
+            var groupName = ReadString(ref reader, "groupName").ThrowWhenNull();
             var ackId = ReadInt32(ref reader, "ackId");
 
             var result = new LeaveGroupWithAckMessage(connectionId, groupName, ackId);
@@ -1200,8 +1199,8 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static CheckUserInGroupWithAckMessage CreateCheckUserInGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var userId = ReadString(ref reader, "userId");
-            var groupName = ReadString(ref reader, "groupName");
+            var userId = ReadString(ref reader, "userId").ThrowWhenNull();
+            var groupName = ReadString(ref reader, "groupName").ThrowWhenNull();
             var ackId = ReadInt32(ref reader, "ackId");
 
             var result = new CheckUserInGroupWithAckMessage(userId, groupName, ackId);
@@ -1214,7 +1213,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static CheckGroupExistenceWithAckMessage CreateGroupExistenceWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var groupName = ReadString(ref reader, "groupName");
+            var groupName = ReadString(ref reader, "groupName").ThrowWhenNull();
             var ackId = ReadInt32(ref reader, "ackId");
 
             var result = new CheckGroupExistenceWithAckMessage(groupName, ackId);
@@ -1224,7 +1223,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static CheckConnectionExistenceWithAckMessage CreateCheckConnectionExistenceWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var connectionId = ReadString(ref reader, "connectionId");
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
             var ackId = ReadInt32(ref reader, "ackId");
 
             var result = new CheckConnectionExistenceWithAckMessage(connectionId, ackId);
@@ -1234,7 +1233,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static CheckUserExistenceWithAckMessage CreateCheckUserExistenceWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var userId = ReadString(ref reader, "userId");
+            var userId = ReadString(ref reader, "userId").ThrowWhenNull();
             var ackId = ReadInt32(ref reader, "ackId");
 
             var result = new CheckUserExistenceWithAckMessage(userId, ackId);
@@ -1258,9 +1257,9 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static ClientInvocationMessage CreateClientInvocationMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var invocationId = ReadString(ref reader, "invocationId");
-            var connectionId = ReadString(ref reader, "connectionId");
-            var callerServerId = ReadString(ref reader, "callerServerId");
+            var invocationId = ReadString(ref reader, "invocationId").ThrowWhenNull();
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
+            var callerServerId = ReadString(ref reader, "callerServerId").ThrowWhenNull();
             var payloads = ReadPayloads(ref reader);
 
             var result = new ClientInvocationMessage(invocationId, connectionId, callerServerId, payloads);
@@ -1270,9 +1269,9 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static ClientCompletionMessage CreateClientCompletionMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var invocationId = ReadString(ref reader, "invocationId");
-            var connectionId = ReadString(ref reader, "connectionId");
-            var callerServerId = ReadString(ref reader, "callerServerId");
+            var invocationId = ReadString(ref reader, "invocationId").ThrowWhenNull();
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
+            var callerServerId = ReadString(ref reader, "callerServerId").ThrowWhenNull();
             var protocol = ReadString(ref reader, "protocol");
             var payload = ReadBytes(ref reader, "payload");
 
@@ -1284,9 +1283,9 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static ErrorCompletionMessage CreateErrorCompletionMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var invocationId = ReadString(ref reader, "invocationId");
-            var connectionId = ReadString(ref reader, "connectionId");
-            var callerServerId = ReadString(ref reader, "callerServerId");
+            var invocationId = ReadString(ref reader, "invocationId").ThrowWhenNull();
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
+            var callerServerId = ReadString(ref reader, "callerServerId").ThrowWhenNull();
             var error = ReadString(ref reader, "error");
 
             var result = new ErrorCompletionMessage(invocationId, connectionId, callerServerId, error);
@@ -1297,9 +1296,9 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static ServiceMappingMessage CreateServiceMappingMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var invocationId = ReadString(ref reader, "invocationId");
-            var connectionId = ReadString(ref reader, "connectionId");
-            var instanceId = ReadString(ref reader, "instanceId");
+            var invocationId = ReadString(ref reader, "invocationId").ThrowWhenNull();
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
+            var instanceId = ReadString(ref reader, "instanceId").ThrowWhenNull();
 
             var result = new ServiceMappingMessage(invocationId, connectionId, instanceId);
 
@@ -1309,7 +1308,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static ConnectionFlowControlMessage CreateConnectionFlowControlMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var connectionId = ReadString(ref reader, "connectionId");
+            var connectionId = ReadString(ref reader, "connectionId").ThrowWhenNull();
             var connectionType = ReadInt32(ref reader, "connectionType");
             var operation = ReadInt32(ref reader, "operation");
 
@@ -1368,7 +1367,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 var payloads = new ArrayDictionary<string, ReadOnlyMemory<byte>>((int)payloadCount, StringComparer.OrdinalIgnoreCase);
                 for (var i = 0; i < payloadCount; i++)
                 {
-                    var key = ReadString(ref reader, "payloads[{0}].key", i);
+                    var key = ReadString(ref reader, "payloads[{0}].key", i).ThrowWhenNull();
                     var value = ReadBytes(ref reader, "payloads[{0}].value", i);
                     payloads.Add(key, value);
                 }
@@ -1387,9 +1386,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                 var headers = new Dictionary<string, StringValues>((int)headerCount, StringComparer.OrdinalIgnoreCase);
                 for (var i = 0; i < headerCount; i++)
                 {
-                    var key = ReadString(ref reader, $"headers[{i}].key");
+                    var key = ReadString(ref reader, $"headers[{i}].key").ThrowWhenNull();
                     var count = ReadArrayLength(ref reader, $"headers[{i}].value.length");
-                    var stringValues = new string[count];
+                    var stringValues = new string?[count];
                     for (var j = 0; j < count; j++)
                     {
                         stringValues[j] = ReadString(ref reader, $"headers[{i}].value[{j}]");
@@ -1428,7 +1427,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         }
 
-        private static string ReadString(ref MessagePackReader reader, string field)
+        private static string? ReadString(ref MessagePackReader reader, string field)
         {
             try
             {
@@ -1440,7 +1439,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
-        private static string ReadString(ref MessagePackReader reader, string formatField, int param)
+        private static string? ReadString(ref MessagePackReader reader, string formatField, int param)
         {
             try
             {
@@ -1452,7 +1451,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
-        private static string ReadString(ref MessagePackReader reader, string formatField, string param1, int param2)
+        private static string? ReadString(ref MessagePackReader reader, string formatField, string param1, int param2)
         {
             try
             {
@@ -1472,7 +1471,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 var array = new string[arrayLength];
                 for (int i = 0; i < arrayLength; i++)
                 {
-                    array[i] = ReadString(ref reader, "{0}[{1}]", field, i);
+                    array[i] = ReadString(ref reader, "{0}[{1}]", field, i).ThrowWhenNull();
                 }
 
                 return array;
