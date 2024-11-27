@@ -5,23 +5,17 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Http;
 
-namespace Microsoft.Azure.SignalR.Management
+namespace Microsoft.Azure.SignalR.Management;
+
+/// <summary>
+/// An endpoint router that always return a fixed collection of endpoints.
+/// </summary>
+internal class FixedEndpointRouter(IEnumerable<ServiceEndpoint> serviceEndpoints) : EndpointRouterDecorator
 {
-    /// <summary>
-    /// An endpoint router that always return a fixed collection of endpoints.
-    /// </summary>
-    internal class FixedEndpointRouter : EndpointRouterDecorator
+    private readonly IEnumerable<ServiceEndpoint> _serviceEndpoints = serviceEndpoints;
+
+    public override ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
     {
-        private readonly IEnumerable<ServiceEndpoint> _serviceEndpoints;
-
-        public FixedEndpointRouter(IEnumerable<ServiceEndpoint> serviceEndpoints)
-        {
-            _serviceEndpoints = serviceEndpoints;
-        }
-
-        public override ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
-        {
-            return _serviceEndpoints.First();
-        }
+        return _serviceEndpoints.First();
     }
 }
