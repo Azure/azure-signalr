@@ -7,9 +7,9 @@ namespace Microsoft.Azure.SignalR.Protocol;
 
 internal static class ServiceProtocolExtensions
 {
-    public static string ThrowWhenNull(this string? input)
+    public static string ThrowWhenNull(this string? input, string parameterName)
     {
-        return input ?? throw new ArgumentNullException(nameof(input));
+        return input ?? throw new ArgumentNullException(parameterName);
     }
 }
 
