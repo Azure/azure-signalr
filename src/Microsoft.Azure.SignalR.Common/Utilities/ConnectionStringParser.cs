@@ -161,7 +161,7 @@ internal static class ConnectionStringParser
                (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 
-    private static IAccessKey BuildAzureADAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
+    private static AccessKey BuildAzureADAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
     {
         if (dict.TryGetValue(ClientIdProperty, out var clientId))
         {
@@ -191,19 +191,19 @@ internal static class ConnectionStringParser
         }
     }
 
-    private static IAccessKey BuildAccessKey(Uri uri, Dictionary<string, string> dict)
+    private static AccessKey BuildAccessKey(Uri uri, Dictionary<string, string> dict)
     {
         return dict.TryGetValue(AccessKeyProperty, out var key)
-            ? new AccessKey(uri, key)
+            ? new LocalAccessKey(uri, key)
             : throw new ArgumentException(MissingAccessKeyProperty, AccessKeyProperty);
     }
 
-    private static IAccessKey BuildAzureAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
+    private static AccessKey BuildAzureAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
     {
         return new MicrosoftEntraAccessKey(uri, new DefaultAzureCredential(), serverEndpointUri);
     }
 
-    private static IAccessKey BuildAzureAppAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
+    private static AccessKey BuildAzureAppAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
     {
         if (!dict.TryGetValue(ClientIdProperty, out var clientId))
         {
@@ -226,7 +226,7 @@ internal static class ConnectionStringParser
         throw new ArgumentException(MissingClientSecretProperty, ClientSecretProperty);
     }
 
-    private static IAccessKey BuildAzureMsiAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
+    private static AccessKey BuildAzureMsiAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
     {
         return dict.TryGetValue(ClientIdProperty, out var clientId)
             ? new MicrosoftEntraAccessKey(uri, new ManagedIdentityCredential(clientId), serverEndpointUri)

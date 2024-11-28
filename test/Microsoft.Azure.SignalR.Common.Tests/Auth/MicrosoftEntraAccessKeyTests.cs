@@ -331,7 +331,7 @@ public class MicrosoftEntraAccessKeyTests
 
         public IEnumerator<object[]> GetEnumerator()
         {
-            var accessKey = new AccessKey(new Uri("https://localhost:443"), DefaultSigningKey);
+            var accessKey = new LocalAccessKey(new Uri("https://localhost:443"), DefaultSigningKey);
             var token1 = AuthUtility.GenerateJwtToken(accessKey.KeyBytes, issuer: Constants.AsrsTokenIssuer);
             var token2 = AuthUtility.GenerateJwtToken(accessKey.KeyBytes, issuer: "microsoft.com");
 
@@ -399,7 +399,7 @@ public class MicrosoftEntraAccessKeyTests
                 TokenType.MicrosoftEntra => "microsoft.com",
                 _ => throw new NotImplementedException(),
             };
-            var key = new AccessKey(new Uri("https://foo.bar"), DefaultSigningKey);
+            var key = new LocalAccessKey(new Uri("https://foo.bar"), DefaultSigningKey);
             var token = AuthUtility.GenerateJwtToken(key.KeyBytes, issuer: issuer);
             return new AccessToken(token, DateTimeOffset.UtcNow.Add(TimeSpan.FromHours(1)));
         }

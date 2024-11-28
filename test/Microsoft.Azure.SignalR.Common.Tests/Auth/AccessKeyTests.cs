@@ -18,7 +18,7 @@ public class AccessKeyTests
     [Fact]
     public async Task TestGenerateAccessToken()
     {
-        var accessKey = new AccessKey(new Uri(Endpoint), SigningKey);
+        var accessKey = new LocalAccessKey(new Uri(Endpoint), SigningKey);
         var token = await accessKey.GenerateAccessTokenAsync(Audience, [], TimeSpan.FromHours(1), AccessTokenAlgorithm.HS256);
         Assert.True(TokenUtilities.TryParseIssuer(token, out var iss));
         Assert.Equal(Constants.AsrsTokenIssuer, iss);

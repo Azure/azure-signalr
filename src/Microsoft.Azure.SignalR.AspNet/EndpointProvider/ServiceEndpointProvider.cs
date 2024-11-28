@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly string _serverEndpoint;
 
-        private readonly IAccessKey _accessKey;
+        private readonly AccessKey _accessKey;
 
         private readonly string _appName;
 
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 return new MicrosoftEntraTokenProvider(key);
             }
-            else if (_accessKey is AccessKey key2)
+            else if (_accessKey is LocalAccessKey key2)
             {
                 var audience = $"{_audienceBaseUrl}{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
                 var claims = serverId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, serverId) } : null;

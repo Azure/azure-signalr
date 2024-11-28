@@ -4,38 +4,22 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR;
 
-internal class AccessKey : IAccessKey
+internal abstract class AccessKey
 {
-    public string Kid { get; }
+    public abstract string Kid { get; }
 
-    public byte[] KeyBytes { get; }
+    public abstract byte[] KeyBytes { get; }
 
-    public Uri Endpoint { get; }
+    public abstract Uri Endpoint { get; }
 
-    public AccessKey(Uri uri, string key) : this(uri)
-    {
-        Kid = key.GetHashCode().ToString();
-        KeyBytes = Encoding.UTF8.GetBytes(key);
-    }
-
-    private AccessKey(Uri uri)
-    {
-        Endpoint = uri;
-    }
-
-    public virtual Task<string> GenerateAccessTokenAsync(string audience,
-                                                         IEnumerable<Claim> claims,
-                                                         TimeSpan lifetime,
-                                                         AccessTokenAlgorithm algorithm,
-                                                         CancellationToken ctoken = default)
-    {
-        var token = AuthUtility.GenerateAccessToken(KeyBytes, Kid, audience, claims, lifetime, algorithm);
-        return Task.FromResult(token);
-    }
+    public abstract Task<string> GenerateAccessTokenAsync(string audience,
+                                                          IEnumerable<Claim> claims,
+                                                          TimeSpan lifetime,
+                                                          AccessTokenAlgorithm algorithm,
+                                                          CancellationToken ctoken = default);
 }

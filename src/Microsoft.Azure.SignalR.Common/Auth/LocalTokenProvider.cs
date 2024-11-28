@@ -10,7 +10,7 @@ namespace Microsoft.Azure.SignalR;
 
 internal class LocalTokenProvider : IAccessTokenProvider
 {
-    private readonly AccessKey _accessKey;
+    private readonly LocalAccessKey _accessKey;
 
     private readonly AccessTokenAlgorithm _algorithm;
 
@@ -21,7 +21,7 @@ internal class LocalTokenProvider : IAccessTokenProvider
     private readonly IEnumerable<Claim> _claims;
 
     public LocalTokenProvider(
-        AccessKey accessKey,
+        LocalAccessKey accessKey,
         string audience,
         IEnumerable<Claim> claims,
         AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256,

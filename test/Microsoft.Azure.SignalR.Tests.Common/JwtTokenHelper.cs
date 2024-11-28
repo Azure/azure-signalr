@@ -45,7 +45,7 @@ internal static class JwtTokenHelper
 
     public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string key, IEnumerable<Claim> customClaims = null)
     {
-        return GenerateExpectedAccessToken(token, audience, new AccessKey(new Uri(TestEndpoint), key), customClaims: customClaims);
+        return GenerateExpectedAccessToken(token, audience, new LocalAccessKey(new Uri(TestEndpoint), key), customClaims: customClaims);
     }
 
     public static string GenerateJwtToken(string audience,
@@ -53,7 +53,7 @@ internal static class JwtTokenHelper
                                           DateTime expires,
                                           DateTime notBefore,
                                           DateTime issueAt,
-                                          IAccessKey signingKey)
+                                          AccessKey signingKey)
     {
         return AuthUtility.GenerateJwtToken(
             signingKey.KeyBytes,
@@ -74,6 +74,6 @@ internal static class JwtTokenHelper
                                           DateTime issueAt,
                                           string signingKey)
     {
-        return GenerateJwtToken(audience, subject, expires, notBefore, issueAt, new AccessKey(new Uri(TestEndpoint), signingKey));
+        return GenerateJwtToken(audience, subject, expires, notBefore, issueAt, new LocalAccessKey(new Uri(TestEndpoint), signingKey));
     }
 }

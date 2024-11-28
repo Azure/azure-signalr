@@ -7,7 +7,7 @@ namespace Microsoft.Azure.SignalR;
 
 internal class ParsedConnectionString
 {
-    internal IAccessKey AccessKey { get; set; }
+    internal AccessKey AccessKey { get; set; }
 
     internal Uri Endpoint { get; set; }
 

@@ -19,7 +19,7 @@ public class ServiceEndpoint
 
     private readonly object _lock = new object();
 
-    private volatile IAccessKey _accessKey;
+    private volatile AccessKey _accessKey;
 
     public string ConnectionString { get; }
 
@@ -78,7 +78,7 @@ public class ServiceEndpoint
 
     internal string Version { get; }
 
-    internal IAccessKey AccessKey
+    internal AccessKey AccessKey
     {
         get
         {

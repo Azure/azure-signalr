@@ -192,7 +192,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
     }
 
     [Theory]
-    [InlineData(typeof(AccessKey))]
+    [InlineData(typeof(LocalAccessKey))]
     [InlineData(typeof(MicrosoftEntraAccessKey))]
     public async Task TestAccessKeyRequestMessage(Type keyType)
     {
@@ -217,7 +217,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
     }
 
     [Theory]
-    [InlineData(typeof(AccessKey))]
+    [InlineData(typeof(LocalAccessKey))]
     [InlineData(typeof(MicrosoftEntraAccessKey))]
     public async Task TestAccessKeyResponseMessage(Type keyType)
     {
@@ -346,7 +346,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
     {
         switch (keyTypeName)
         {
-            case nameof(AccessKey):
+            case nameof(LocalAccessKey):
                 return new ServiceEndpoint(LocalConnectionString);
 
             case nameof(MicrosoftEntraAccessKey):

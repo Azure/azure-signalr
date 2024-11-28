@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR;
 
 #nullable enable
 
-internal class MicrosoftEntraAccessKey : IAccessKey
+internal class MicrosoftEntraAccessKey : AccessKey
 {
     internal static readonly TimeSpan GetAccessKeyTimeout = TimeSpan.FromSeconds(100);
 
@@ -74,11 +74,11 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     public TokenCredential TokenCredential { get; }
 
-    public string Kid => _kid ?? throw new ArgumentNullException(nameof(Kid));
+    public override string Kid => _kid ?? throw new ArgumentNullException(nameof(Kid));
 
-    public byte[] KeyBytes => _keyBytes ?? throw new ArgumentNullException(nameof(KeyBytes));
+    public override byte[] KeyBytes => _keyBytes ?? throw new ArgumentNullException(nameof(KeyBytes));
 
-    public Uri Endpoint { get; }
+    public override Uri Endpoint { get; }
 
     internal Exception? LastException { get; private set; }
 
@@ -118,11 +118,11 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         throw latest ?? new InvalidOperationException();
     }
 
-    public async Task<string> GenerateAccessTokenAsync(string audience,
-                                                       IEnumerable<Claim> claims,
-                                                       TimeSpan lifetime,
-                                                       AccessTokenAlgorithm algorithm,
-                                                       CancellationToken ctoken = default)
+    public override async Task<string> GenerateAccessTokenAsync(string audience,
+                                                                IEnumerable<Claim> claims,
+                                                                TimeSpan lifetime,
+                                                                AccessTokenAlgorithm algorithm,
+                                                                CancellationToken ctoken = default)
     {
         if (!_initializedTcs.Task.IsCompleted)
         {

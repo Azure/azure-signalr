@@ -11,11 +11,11 @@ internal class RestApiAccessTokenGenerator
 {
     private const AccessTokenAlgorithm DefaultAlgorithm = AccessTokenAlgorithm.HS256;
 
-    private readonly IAccessKey _accessKey;
+    private readonly AccessKey _accessKey;
 
     private readonly Claim[] _claims;
 
-    public RestApiAccessTokenGenerator(IAccessKey accessKey, string serverName = null)
+    public RestApiAccessTokenGenerator(AccessKey accessKey, string serverName = null)
     {
         serverName ??= GenerateServerName();
         _accessKey = accessKey;

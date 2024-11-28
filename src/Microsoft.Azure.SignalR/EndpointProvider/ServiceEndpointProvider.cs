@@ -16,7 +16,7 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
         $"Please specify a configuration entry for {Constants.Keys.ConnectionStringDefaultKey}, " +
         "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
-    private readonly IAccessKey _accessKey;
+    private readonly AccessKey _accessKey;
 
     private readonly string _appName;
 
@@ -65,7 +65,7 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
         {
             return new MicrosoftEntraTokenProvider(key);
         }
-        else if (_accessKey is AccessKey key2)
+        else if (_accessKey is LocalAccessKey key2)
         {
             var audience = _generator.GetServerAudience(hubName, _appName);
             var claims = serverId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, serverId) } : null;
