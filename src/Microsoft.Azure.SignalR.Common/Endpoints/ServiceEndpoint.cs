@@ -13,9 +13,9 @@ public class ServiceEndpoint
 {
     private readonly Uri _serviceEndpoint;
 
-    private readonly Uri _serverEndpoint;
+    private readonly Uri? _serverEndpoint;
 
-    private readonly Uri _clientEndpoint;
+    private readonly Uri? _clientEndpoint;
 
     private readonly TokenCredential? _tokenCredential;
 
@@ -125,8 +125,8 @@ public class ServiceEndpoint
 
         _accessKey = result.AccessKey;
         _serviceEndpoint = result.Endpoint;
-        _clientEndpoint = result.ClientEndpoint ?? result.Endpoint;
-        _serverEndpoint = result.ServerEndpoint ?? result.Endpoint;
+        _clientEndpoint = result.ClientEndpoint;
+        _serverEndpoint = result.ServerEndpoint;
 
         Endpoint = BuildEndpointString(_serviceEndpoint);
         AudienceBaseUrl = BuildAudienceBaseUrlEndWithSlash(_serviceEndpoint);
