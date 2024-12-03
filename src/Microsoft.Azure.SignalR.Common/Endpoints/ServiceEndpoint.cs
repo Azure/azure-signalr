@@ -166,8 +166,8 @@ public class ServiceEndpoint
         Name = name;
 
         _serviceEndpoint = CheckScheme(endpoint);
-        _serverEndpoint = CheckScheme(serverEndpoint ?? endpoint);
-        _clientEndpoint = CheckScheme(clientEndpoint ?? endpoint);
+        _serverEndpoint = serverEndpoint == null ? serverEndpoint : CheckScheme(serverEndpoint);
+        _clientEndpoint = clientEndpoint == null ? clientEndpoint : CheckScheme(clientEndpoint);
 
         AudienceBaseUrl = BuildAudienceBaseUrlEndWithSlash(_serviceEndpoint);
         Endpoint = BuildEndpointString(_serviceEndpoint);
