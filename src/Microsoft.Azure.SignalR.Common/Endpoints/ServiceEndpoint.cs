@@ -187,6 +187,7 @@ public class ServiceEndpoint
         AudienceBaseUrl = other.AudienceBaseUrl;
 
         _accessKey = other._accessKey;
+        _tokenCredential = other._tokenCredential;
         _serviceEndpoint = other._serviceEndpoint;
         _clientEndpoint = other._clientEndpoint;
         _serverEndpoint = other._serverEndpoint;

@@ -351,8 +351,8 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
             case nameof(MicrosoftEntraAccessKey):
                 var endpoint = new ServiceEndpoint(MicrosoftEntraConnectionString);
-                var p = typeof(ServiceEndpoint).GetProperty("AccessKey", BindingFlags.NonPublic | BindingFlags.Instance);
-                p.SetValue(endpoint, new TestAadAccessKey());
+                var field = typeof(ServiceEndpoint).GetField("_accessKey", BindingFlags.NonPublic | BindingFlags.Instance);
+                field.SetValue(endpoint, new TestAadAccessKey());
                 return endpoint;
 
             default:
