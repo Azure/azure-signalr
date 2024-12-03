@@ -13,9 +13,9 @@ public class ServiceEndpoint
 {
     private readonly Uri _serviceEndpoint;
 
-    private readonly Uri? _serverEndpoint;
+    private readonly Uri _serverEndpoint;
 
-    private readonly Uri? _clientEndpoint;
+    private readonly Uri _clientEndpoint;
 
     private readonly TokenCredential? _tokenCredential;
 
@@ -89,7 +89,6 @@ public class ServiceEndpoint
             }
             return _accessKey;
         }
-        private init => _accessKey = value;
     }
 
     // Flag to indicate an updaing endpoint needs staging
@@ -121,13 +120,13 @@ public class ServiceEndpoint
         ConnectionString = connectionString;
 
         var result = ConnectionStringParser.Parse(connectionString);
-        AccessKey = result.AccessKey;
         EndpointType = type;
         Name = name;
 
+        _accessKey = result.AccessKey;
         _serviceEndpoint = result.Endpoint;
-        _clientEndpoint = result.ClientEndpoint ?? _serviceEndpoint;
-        _serverEndpoint = result.ServerEndpoint ?? _serviceEndpoint;
+        _clientEndpoint = result.ClientEndpoint ?? result.Endpoint;
+        _serverEndpoint = result.ServerEndpoint ?? result.Endpoint;
 
         Endpoint = BuildEndpointString(_serviceEndpoint);
         AudienceBaseUrl = BuildAudienceBaseUrlEndWithSlash(_serviceEndpoint);
@@ -184,12 +183,13 @@ public class ServiceEndpoint
         EndpointType = other.EndpointType;
         Name = other.Name;
         Version = other.Version;
-        AccessKey = other.AccessKey;
         Endpoint = other.Endpoint;
-        ClientEndpoint = other.ClientEndpoint;
-        ServerEndpoint = other.ServerEndpoint;
         AudienceBaseUrl = other.AudienceBaseUrl;
+
+        _accessKey = other._accessKey;
         _serviceEndpoint = other._serviceEndpoint;
+        _clientEndpoint = other._clientEndpoint;
+        _serverEndpoint = other._serverEndpoint;
     }
 
     public override string ToString()

@@ -149,9 +149,8 @@ internal static class ConnectionStringParser
             _ => BuildAccessKey(builder.Uri, dict),
         };
 
-        return new ParsedConnectionString()
+        return new ParsedConnectionString(builder.Uri)
         {
-            Endpoint = builder.Uri,
             ClientEndpoint = clientEndpointUri,
             AccessKey = accessKey,
             Version = version,

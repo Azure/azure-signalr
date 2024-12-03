@@ -5,16 +5,22 @@ using System;
 
 namespace Microsoft.Azure.SignalR;
 
+#nullable enable
+
 internal class ParsedConnectionString
 {
-    internal IAccessKey AccessKey { get; set; }
+    internal Uri Endpoint { get; }
 
-    internal Uri Endpoint { get; set; }
+    internal IAccessKey? AccessKey { get; set; }
 
-    internal Uri ClientEndpoint { get; set; }
+    internal Uri? ClientEndpoint { get; set; }
 
-    internal Uri ServerEndpoint { get; set; }
+    internal Uri? ServerEndpoint { get; set; }
 
-    internal string Version { get; set; }
+    internal string? Version { get; set; }
 
+    public ParsedConnectionString(Uri endpoint)
+    {
+        Endpoint = endpoint;
+    }
 }
