@@ -8,8 +8,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR;
 
@@ -17,26 +15,19 @@ internal sealed class AccessKeySynchronizer : IAccessKeySynchronizer, IDisposabl
 {
     private readonly ConcurrentDictionary<MicrosoftEntraAccessKey, bool> _keyMap = new(ReferenceEqualityComparer.Instance);
 
-    private readonly ILogger<AccessKeySynchronizer> _logger;
-
-    private readonly TimerAwaitable _timer = new TimerAwaitable(TimeSpan.Zero, TimeSpan.FromMinutes(1));
+    private readonly TimerAwaitable _timer = new TimerAwaitable(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
 
     internal IEnumerable<MicrosoftEntraAccessKey> InitializedKeyList => _keyMap.Where(x => x.Key.Initialized).Select(x => x.Key);
 
-    public AccessKeySynchronizer(ILoggerFactory loggerFactory) : this(loggerFactory, true)
-    {
-    }
-
     /// <summary>
-    /// Test only.
+    /// Test only
     /// </summary>
-    internal AccessKeySynchronizer(ILoggerFactory loggerFactory, bool start)
+    /// <returns></returns>
+    internal int Count => _keyMap.Count;
+
+    public AccessKeySynchronizer()
     {
-        if (start)
-        {
-            _ = UpdateAllAccessKeyAsync();
-        }
-        _logger = (loggerFactory ?? NullLoggerFactory.Instance).CreateLogger<AccessKeySynchronizer>();
+        _ = UpdateAllAccessKeyTask();
     }
 
     public void AddServiceEndpoint(ServiceEndpoint endpoint)
@@ -65,13 +56,23 @@ internal sealed class AccessKeySynchronizer : IAccessKeySynchronizer, IDisposabl
     /// <returns></returns>
     internal bool ContainsKey(ServiceEndpoint e) => _keyMap.ContainsKey(e.AccessKey as MicrosoftEntraAccessKey);
 
-    /// <summary>
-    /// Test only
-    /// </summary>
-    /// <returns></returns>
-    internal int Count() => _keyMap.Count;
+    internal void UpdateAllAccessKey()
+    {
+        foreach (var key in InitializedKeyList)
+        {
+            if (key.IsActive)
+            {
+                var source = new CancellationTokenSource(Constants.Periods.DefaultUpdateAccessKeyTimeout);
+                _ = key.UpdateAccessKeyAsync(source.Token);
+            }
+            else
+            {
+                _keyMap.TryRemove(key, out _);
+            }
+        }
+    }
 
-    private async Task UpdateAllAccessKeyAsync()
+    private async Task UpdateAllAccessKeyTask()
     {
         using (_timer)
         {
@@ -79,11 +80,7 @@ internal sealed class AccessKeySynchronizer : IAccessKeySynchronizer, IDisposabl
 
             while (await _timer)
             {
-                foreach (var key in InitializedKeyList)
-                {
-                    var source = new CancellationTokenSource(Constants.Periods.DefaultUpdateAccessKeyTimeout);
-                    _ = key.UpdateAccessKeyAsync(source.Token);
-                }
+                UpdateAllAccessKey();
             }
         }
     }

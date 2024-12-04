@@ -64,7 +64,7 @@ internal class DispatcherHelper
         var synchronizer = configuration.Resolver.Resolve<IAccessKeySynchronizer>();
         if (synchronizer == null)
         {
-            synchronizer = new AccessKeySynchronizer(loggerFactory);
+            synchronizer = new AccessKeySynchronizer();
             configuration.Resolver.Register(typeof(IAccessKeySynchronizer), () => synchronizer);
         }
 

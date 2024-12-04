@@ -50,15 +50,19 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     private DateTime _updateAt = DateTime.MinValue;
 
+    private DateTime _lastUsedAt = DateTime.UtcNow;
+
     private volatile string? _kid;
 
     private volatile byte[]? _keyBytes;
 
     public bool Initialized => _initializedTcs.Task.IsCompleted;
 
+    public bool IsActive => _lastUsedAt > DateTime.UtcNow - AccessKeyExpireTime;
+
     public bool Available
     {
-        get => _isAuthorized && DateTime.UtcNow - _updateAt < AccessKeyExpireTime;
+        get => _isAuthorized && _updateAt > DateTime.UtcNow - AccessKeyExpireTime;
 
         private set
         {
@@ -124,6 +128,8 @@ internal class MicrosoftEntraAccessKey : IAccessKey
                                                        AccessTokenAlgorithm algorithm,
                                                        CancellationToken ctoken = default)
     {
+        _lastUsedAt = DateTime.UtcNow;
+
         if (!_initializedTcs.Task.IsCompleted)
         {
             var source = new CancellationTokenSource(Constants.Periods.DefaultUpdateAccessKeyTimeout);
@@ -152,6 +158,10 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             return;
         }
         else if (!Available && delta < GetAccessKeyIntervalWhenUnauthorized)
+        {
+            return;
+        }
+        else if (!IsActive)
         {
             return;
         }
