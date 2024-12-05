@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the group name.
         /// </summary>
-        public string GroupName { get; set; }
+        public string? GroupName { get; set; }
 
         /// <summary>
         /// Gets or sets the tracing Id
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="groupName">The group name, from which the connection will leave.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public LeaveGroupMessage(string connectionId, string groupName, ulong? tracingId = null)
+        public LeaveGroupMessage(string connectionId, string? groupName, ulong? tracingId = null)
         {
             ConnectionId = connectionId;
             GroupName = groupName;
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the group name.
         /// </summary>
-        public string GroupName { get; set; }
+        public string? GroupName { get; set; }
         
         /// <summary>
         /// Gets or sets the tracing Id
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="userId">The user Id.</param>
         /// <param name="groupName">The group name, from which the user will leave.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public UserLeaveGroupMessage(string userId, string groupName, ulong? tracingId = null)
+        public UserLeaveGroupMessage(string userId, string? groupName, ulong? tracingId = null)
         {
             UserId = userId;
             GroupName = groupName;
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the group name.
         /// </summary>
-        public string GroupName { get; set; }
+        public string? GroupName { get; set; }
 
         /// <summary>
         /// Gets or sets the tracing Id
@@ -237,7 +237,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="groupName">The group name, from which the user will leave.</param>
         /// <param name="ackId">The ack Id.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public UserLeaveGroupWithAckMessage(string userId, string groupName, int ackId, ulong? tracingId = null)
+        public UserLeaveGroupWithAckMessage(string userId, string? groupName, int ackId, ulong? tracingId = null)
         {
             UserId = userId;
             GroupName = groupName;
@@ -312,7 +312,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the group name.
         /// </summary>
-        public string GroupName { get; set; }
+        public string? GroupName { get; set; }
 
         /// <summary>
         /// Gets or sets the ack id.
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="groupName">The group name, from which the connection will leave.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public LeaveGroupWithAckMessage(string connectionId, string groupName, ulong? tracingId = null): this(connectionId, groupName, 0, tracingId)
+        public LeaveGroupWithAckMessage(string connectionId, string? groupName, ulong? tracingId = null): this(connectionId, groupName, 0, tracingId)
         {
         }
 
@@ -343,7 +343,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="groupName">The group name, from which the connection will leave.</param>
         /// <param name="ackId">The ack Id</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public LeaveGroupWithAckMessage(string connectionId, string groupName, int ackId, ulong? tracingId = null)
+        public LeaveGroupWithAckMessage(string connectionId, string? groupName, int ackId, ulong? tracingId = null)
         {
             ConnectionId = connectionId;
             GroupName = groupName;

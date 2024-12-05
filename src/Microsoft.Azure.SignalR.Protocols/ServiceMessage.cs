@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public virtual ServiceMessage Clone() => (MemberwiseClone() as ServiceMessage)!;
 
-        public static byte GeneratePartitionKey(string input)
+        public static byte GeneratePartitionKey(string? input)
         {
             return (byte)((input?.GetHashCode() ?? 0) & 0xFF);
         }
@@ -463,7 +463,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the id of event object.
         /// </summary>
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
         /// <summary>
         /// Gets or sets the kind of event.
@@ -482,7 +482,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="id">An id of event object.</param>
         /// <param name="kind">A kind of event.</param>
         /// <param name="message">A message of event.</param>
-        public ServiceEventMessage(ServiceEventObjectType type, string id, ServiceEventKind kind, string? message)
+        public ServiceEventMessage(ServiceEventObjectType type, string? id, ServiceEventKind kind, string? message)
         {
             Type = type;
             Id = id;
