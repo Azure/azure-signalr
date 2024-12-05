@@ -82,7 +82,7 @@ public class ServiceEndpoint
                 }
                 lock (_lock)
                 {
-                    _accessKey ??= new MicrosoftEntraAccessKey(_serviceEndpoint, _tokenCredential, ServerEndpoint);
+                    _accessKey ??= new MicrosoftEntraAccessKey(ServerEndpoint, _tokenCredential);
                 }
             }
             return _accessKey;
@@ -106,8 +106,8 @@ public class ServiceEndpoint
     private static IAccessKey BuildAccessKey(ParsedConnectionString parsed)
     {
         return string.IsNullOrEmpty(parsed.AccessKey)
-            ? new MicrosoftEntraAccessKey(parsed.Endpoint, parsed.TokenCredential, parsed.ServerEndpoint)
-            : new AccessKey(parsed.Endpoint, parsed.AccessKey);
+            ? new MicrosoftEntraAccessKey(parsed.ServerEndpoint ?? parsed.Endpoint, parsed.TokenCredential)
+            : new AccessKey(parsed.AccessKey);
     }
 
     /// <summary>
