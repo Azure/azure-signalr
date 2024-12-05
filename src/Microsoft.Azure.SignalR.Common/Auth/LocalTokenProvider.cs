@@ -20,12 +20,11 @@ internal class LocalTokenProvider : IAccessTokenProvider
 
     private readonly IEnumerable<Claim> _claims;
 
-    public LocalTokenProvider(
-        AccessKey accessKey,
-        string audience,
-        IEnumerable<Claim> claims,
-        AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256,
-        TimeSpan? tokenLifetime = null)
+    public LocalTokenProvider(AccessKey accessKey,
+                              string audience,
+                              IEnumerable<Claim> claims,
+                              AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256,
+                              TimeSpan? tokenLifetime = null)
     {
         _accessKey = accessKey ?? throw new ArgumentNullException(nameof(accessKey));
         _algorithm = algorithm;

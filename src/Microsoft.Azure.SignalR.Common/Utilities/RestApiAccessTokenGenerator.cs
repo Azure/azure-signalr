@@ -36,10 +36,7 @@ internal class RestApiAccessTokenGenerator
         {
             return key.GetMicrosoftEntraTokenAsync();
         }
-
-        return _accessKey.GenerateAccessTokenAsync(audience,
-                                                   _claims,
-                                                   lifetime ?? Constants.Periods.DefaultAccessTokenLifetime,
-                                                   DefaultAlgorithm);
+        var time = lifetime ?? Constants.Periods.DefaultAccessTokenLifetime;
+        return _accessKey.GenerateAccessTokenAsync(audience, _claims, time, DefaultAlgorithm);
     }
 }

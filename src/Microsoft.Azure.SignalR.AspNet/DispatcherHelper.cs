@@ -61,14 +61,7 @@ internal class DispatcherHelper
             configuration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
         }
 
-        var synchronizer = configuration.Resolver.Resolve<IAccessKeySynchronizer>();
-        if (synchronizer == null)
-        {
-            synchronizer = new AccessKeySynchronizer(loggerFactory);
-            configuration.Resolver.Register(typeof(IAccessKeySynchronizer), () => synchronizer);
-        }
-
-        var endpoint = new ServiceEndpointManager(synchronizer, options, loggerFactory);
+        var endpoint = new ServiceEndpointManager(options, loggerFactory);
         configuration.Resolver.Register(typeof(IServiceEndpointManager), () => endpoint);
 
         var requestIdProvider = configuration.Resolver.Resolve<IConnectionRequestIdProvider>();

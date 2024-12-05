@@ -36,7 +36,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     private static readonly TimeSpan GetAccessKeyInterval = TimeSpan.FromMinutes(55);
 
-    private static readonly TimeSpan GetAccessKeyIntervalWhenUnauthorized = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan GetAccessKeyIntervalUnavailable = TimeSpan.FromMinutes(5);
 
     private static readonly TimeSpan AccessKeyExpireTime = TimeSpan.FromMinutes(120);
 
@@ -55,6 +55,8 @@ internal class MicrosoftEntraAccessKey : IAccessKey
     private volatile byte[]? _keyBytes;
 
     public bool Initialized => _initializedTcs.Task.IsCompleted;
+
+    public bool NeedRefresh => DateTime.UtcNow - _updateAt > (Available ? GetAccessKeyInterval : GetAccessKeyIntervalUnavailable);
 
     public bool Available
     {
@@ -119,7 +121,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
                                                        AccessTokenAlgorithm algorithm,
                                                        CancellationToken ctoken = default)
     {
-        if (!_initializedTcs.Task.IsCompleted)
+        if (!_initializedTcs.Task.IsCompleted || NeedRefresh)
         {
             var source = new CancellationTokenSource(Constants.Periods.DefaultUpdateAccessKeyTimeout);
             _ = UpdateAccessKeyAsync(source.Token);
@@ -127,9 +129,23 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
         await _initializedTcs.Task.OrCancelAsync(ctoken, "The access key initialization timed out.");
 
-        return Available
-            ? AuthUtility.GenerateAccessToken(KeyBytes, Kid, audience, claims, lifetime, algorithm)
-            : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, GetExceptionMessage(LastException), LastException);
+        if (Available)
+        {
+            return AuthUtility.GenerateAccessToken(KeyBytes, Kid, audience, claims, lifetime, algorithm);
+        }
+        else
+        {
+            while (true)
+            {
+                if (_updateState == UpdateTaskIdle)
+                {
+                    return Available
+                        ? AuthUtility.GenerateAccessToken(KeyBytes, Kid, audience, claims, lifetime, algorithm)
+                        : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, GetExceptionMessage(LastException), LastException);
+                }
+                await Task.Delay(100, ctoken);
+            }
+        }
     }
 
     internal void UpdateAccessKey(string kid, string keyStr)
@@ -141,16 +157,6 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     internal async Task UpdateAccessKeyAsync(CancellationToken ctoken = default)
     {
-        var delta = DateTime.UtcNow - _updateAt;
-        if (Available && delta < GetAccessKeyInterval)
-        {
-            return;
-        }
-        else if (!Available && delta < GetAccessKeyIntervalWhenUnauthorized)
-        {
-            return;
-        }
-
         if (Interlocked.CompareExchange(ref _updateState, UpdateTaskRunning, UpdateTaskIdle) != UpdateTaskIdle)
         {
             return;

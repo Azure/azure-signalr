@@ -55,7 +55,6 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
     public Task<string> GenerateClientAccessTokenAsync(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
     {
         var audience = $"{_audienceBaseUrl}{ClientPath}";
-
         return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
     }
 

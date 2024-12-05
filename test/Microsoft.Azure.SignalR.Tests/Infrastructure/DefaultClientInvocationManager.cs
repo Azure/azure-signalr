@@ -25,7 +25,6 @@ internal class DefaultClientInvocationManager : IClientInvocationManager
                 NullLogger<DefaultHubProtocolResolver>.Instance);
         var loggerFactory = new NullLoggerFactory();
         var serviceEndpointManager = new ServiceEndpointManager(
-            new AccessKeySynchronizer(loggerFactory),
             new TestOptionsMonitor(),
             loggerFactory
         );
