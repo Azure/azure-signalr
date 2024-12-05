@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using Azure.Core;
 
 namespace Microsoft.Azure.SignalR;
 
@@ -11,14 +12,17 @@ internal class ParsedConnectionString
 {
     internal Uri Endpoint { get; }
 
-    internal IAccessKey? AccessKey { get; set; }
+    internal string? AccessKey { get; init; }
 
-    internal Uri? ClientEndpoint { get; set; }
+    internal TokenCredential TokenCredential { get; }
 
-    internal Uri? ServerEndpoint { get; set; }
+    internal Uri? ClientEndpoint { get; init; }
 
-    public ParsedConnectionString(Uri endpoint)
+    internal Uri? ServerEndpoint { get; init; }
+
+    public ParsedConnectionString(Uri endpoint, TokenCredential tokenCredential)
     {
         Endpoint = endpoint;
+        TokenCredential = tokenCredential;
     }
 }
