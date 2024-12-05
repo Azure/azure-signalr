@@ -70,8 +70,6 @@ public class ServiceEndpoint
 
     internal string AudienceBaseUrl { get; }
 
-    internal string? Version { get; }
-
     internal IAccessKey AccessKey
     {
         get
@@ -182,7 +180,6 @@ public class ServiceEndpoint
         ConnectionString = other.ConnectionString;
         EndpointType = other.EndpointType;
         Name = other.Name;
-        Version = other.Version;
         Endpoint = other.Endpoint;
         AudienceBaseUrl = other.AudienceBaseUrl;
 

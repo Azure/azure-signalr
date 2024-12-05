@@ -153,7 +153,6 @@ internal static class ConnectionStringParser
         {
             ClientEndpoint = clientEndpointUri,
             AccessKey = accessKey,
-            Version = version,
             ServerEndpoint = serverEndpointUri
         };
     }

@@ -17,8 +17,6 @@ internal class ParsedConnectionString
 
     internal Uri? ServerEndpoint { get; set; }
 
-    internal string? Version { get; set; }
-
     public ParsedConnectionString(Uri endpoint)
     {
         Endpoint = endpoint;

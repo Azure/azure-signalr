@@ -113,7 +113,6 @@ public class ConnectionStringParserTests
         var key = Assert.IsType<MicrosoftEntraAccessKey>(r.AccessKey);
         Assert.IsType<ClientSecretCredential>(key.TokenCredential);
         Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
-        Assert.Null(r.Version);
         Assert.Null(r.ClientEndpoint);
     }
 
@@ -137,15 +136,6 @@ public class ConnectionStringParserTests
         var expectedUri = expectedServerEndpoint == null ? null : new Uri(expectedServerEndpoint);
         Assert.Equal(expectedUri, r.ServerEndpoint);
         Assert.Equal(expectedPort, r.ServerEndpoint?.Port);
-    }
-
-    [Theory]
-    [ClassData(typeof(VersionTestData))]
-    public void TestVersion(string connectionString, string expectedVersion)
-    {
-        var r = ConnectionStringParser.Parse(connectionString);
-        Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
-        Assert.Equal(expectedVersion, r.Version);
     }
 
     [Theory]
@@ -215,18 +205,6 @@ public class ConnectionStringParserTests
             yield return new object[] { $"endpoint={HttpEndpoint}/;accesskey={DefaultKey}", HttpEndpoint };
             yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey}", HttpsEndpoint };
             yield return new object[] { $"endpoint={HttpsEndpoint}/;accesskey={DefaultKey}", HttpsEndpoint };
-        }
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-
-    public class VersionTestData : IEnumerable<object[]>
-    {
-        public IEnumerator<object[]> GetEnumerator()
-        {
-            yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", null };
-            yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey};version=1.0", "1.0" };
-            yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey};version=1.1-preview", "1.1-preview" };
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

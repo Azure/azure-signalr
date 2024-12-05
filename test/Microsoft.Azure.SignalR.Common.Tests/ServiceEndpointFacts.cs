@@ -116,7 +116,6 @@ public class ServiceEndpointFacts
         Assert.Equal(serviceEndpoint.Name, cloned.Name);
         Assert.Equal(serviceEndpoint.ConnectionString, cloned.ConnectionString);
         Assert.Equal(serviceEndpoint.AudienceBaseUrl, cloned.AudienceBaseUrl);
-        Assert.Equal(serviceEndpoint.Version, cloned.Version);
         Assert.Equal(serviceEndpoint.AccessKey, cloned.AccessKey);
     }
 
@@ -285,7 +284,6 @@ public class ServiceEndpointFacts
         Assert.Equal(endpoint.EndpointType, other.EndpointType);
         Assert.Equal(endpoint.Endpoint, other.Endpoint);
         Assert.Equal(endpoint.ClientEndpoint, other.ClientEndpoint);
-        Assert.Equal(endpoint.Version, other.Version);
         Assert.Equal(endpoint.AccessKey, other.AccessKey);
     }
 

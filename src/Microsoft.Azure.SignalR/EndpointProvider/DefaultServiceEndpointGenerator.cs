@@ -14,8 +14,6 @@ internal sealed class DefaultServiceEndpointGenerator : IServiceEndpointGenerato
 
     private const string ServerPath = "server";
 
-    public string? Version { get; }
-
     public string AudienceBaseUrl { get; }
 
     public string ClientEndpoint { get; }
@@ -24,7 +22,6 @@ internal sealed class DefaultServiceEndpointGenerator : IServiceEndpointGenerato
 
     public DefaultServiceEndpointGenerator(ServiceEndpoint endpoint)
     {
-        Version = endpoint.Version;
         AudienceBaseUrl = endpoint.AudienceBaseUrl;
         ClientEndpoint = endpoint.ClientEndpoint.AbsoluteUri;
         ServerEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
