@@ -28,6 +28,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// <response code="200">The service is healthy</response>
         [HttpGet("health"), HttpHead("health")]
         [ProducesResponseType(200)]
+        [AllowAnonymous]
         public abstract IActionResult GetHealthStatus();
 
         // POST /api/v1/hubs/chat
