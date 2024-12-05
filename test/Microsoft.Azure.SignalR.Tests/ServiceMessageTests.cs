@@ -9,6 +9,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Core;
 using Azure.Identity;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
@@ -30,6 +31,10 @@ public class ServiceMessageTests : VerifiableLoggedTest
     private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     private const string MicrosoftEntraConnectionString = "endpoint=https://localhost;authType=aad;";
+
+    private static readonly Uri DefaultEndpoint = new("http://localhost");
+
+    private const string DefaultAudience = "https://localhost";
 
     private const string LocalConnectionString = "endpoint=https://localhost;accessKey=" + SigningKey;
 
@@ -205,10 +210,10 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.StartAsync();
         await connection.ConnectionInitializedTask.OrTimeout(1000);
 
-        if (endpoint.AccessKey is TestAadAccessKey aadKey)
+        if (endpoint.AccessKey is MicrosoftEntraAccessKey)
         {
             var message = await connection.ExpectServiceMessage<AccessKeyRequestMessage>().OrTimeout(3000);
-            Assert.Equal(aadKey.Token, message.Token);
+            Assert.True(Guid.TryParse(message.Token, out _));
         }
         else
         {
@@ -221,6 +226,10 @@ public class ServiceMessageTests : VerifiableLoggedTest
     [InlineData(typeof(MicrosoftEntraAccessKey))]
     public async Task TestAccessKeyResponseMessage(Type keyType)
     {
+        var emptyClaims = Array.Empty<Claim>();
+        var lifetime = TimeSpan.FromHours(1);
+        var algorithm = AccessTokenAlgorithm.HS256;
+
         var endpoint = MockServiceEndpoint(keyType.Name);
         Assert.IsAssignableFrom(keyType, endpoint.AccessKey);
         var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
@@ -230,6 +239,14 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.StartAsync();
         await connection.ConnectionInitializedTask.OrTimeout(1000);
 
+        switch (endpoint.AccessKey)
+        {
+            case MicrosoftEntraAccessKey key:
+                var source = new CancellationTokenSource(3000);
+                await Assert.ThrowsAsync<TaskCanceledException>(async () => await key.GenerateAccessTokenAsync(DefaultAudience, emptyClaims, lifetime, algorithm, source.Token));
+                break;
+        }
+
         var message = new AccessKeyResponseMessage()
         {
             Kid = "foo",
@@ -237,13 +254,9 @@ public class ServiceMessageTests : VerifiableLoggedTest
         };
         await connection.WriteFromServiceAsync(message);
 
-        var audience = "http://localhost/chat";
-        var claims = Array.Empty<Claim>();
-        var lifetime = TimeSpan.FromHours(1);
-        var algorithm = AccessTokenAlgorithm.HS256;
-
-        var clientToken = await endpoint.AccessKey.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm).OrTimeout(TimeSpan.FromSeconds(3));
-        Assert.NotNull(clientToken);
+        var clientToken = await endpoint.AccessKey.GenerateAccessTokenAsync(DefaultAudience, emptyClaims, lifetime, algorithm).OrTimeout(3000);
+        Assert.True(TokenUtilities.TryParseIssuer(clientToken, out var issuer));
+        Assert.Equal(Constants.AsrsTokenIssuer, issuer);
 
         await connection.StopAsync();
     }
@@ -344,33 +357,27 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
     private ServiceEndpoint MockServiceEndpoint(string keyTypeName)
     {
-        switch (keyTypeName)
+        return keyTypeName switch
         {
-            case nameof(AccessKey):
-                return new ServiceEndpoint(LocalConnectionString);
-
-            case nameof(MicrosoftEntraAccessKey):
-                var endpoint = new ServiceEndpoint(MicrosoftEntraConnectionString);
-                var field = typeof(ServiceEndpoint).GetField("_accessKey", BindingFlags.NonPublic | BindingFlags.Instance);
-                field.SetValue(endpoint, new TestAadAccessKey());
-                return endpoint;
-
-            default:
-                throw new NotImplementedException();
-        }
+            nameof(AccessKey) => new ServiceEndpoint(LocalConnectionString),
+            nameof(MicrosoftEntraAccessKey) => new ServiceEndpoint(new Uri("http://localhost"), new TestTokenCredential()),
+            _ => throw new NotImplementedException(),
+        };
     }
 
-    private class TestAadAccessKey : MicrosoftEntraAccessKey
+    private class TestTokenCredential : TokenCredential
     {
         public string Token { get; } = Guid.NewGuid().ToString();
 
-        public TestAadAccessKey() : base(new Uri("http://localhost:80"), new DefaultAzureCredential())
+        public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
         {
+            return new AccessToken(Token, DateTimeOffset.UtcNow.Add(TimeSpan.FromHours(1)));
         }
 
-        public override Task<string> GetMicrosoftEntraTokenAsync(CancellationToken ctoken = default)
+        public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
         {
-            return Task.FromResult(Token);
+            var token = GetToken(requestContext, cancellationToken);
+            return new ValueTask<AccessToken>(token);
         }
     }
 

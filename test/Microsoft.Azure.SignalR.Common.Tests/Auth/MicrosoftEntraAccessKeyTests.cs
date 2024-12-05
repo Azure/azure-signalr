@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
@@ -22,7 +23,13 @@ public class MicrosoftEntraAccessKeyTests
 {
     private const string DefaultSigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
+    private const string DefaultToken = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    private const string DefaultAudience = "https://localhost";
+
     private static readonly Uri DefaultEndpoint = new("http://localhost");
+
+    private static readonly FieldInfo? UpdateAtField = typeof(MicrosoftEntraAccessKey).GetField("_updateAt", BindingFlags.Instance | BindingFlags.NonPublic);
 
     public enum TokenType
     {
@@ -46,68 +53,12 @@ public class MicrosoftEntraAccessKeyTests
     {
         var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential());
 
-        var audience = "http://localhost/chat";
-        var claims = Array.Empty<Claim>();
-        var lifetime = TimeSpan.FromHours(1);
-        var algorithm = AccessTokenAlgorithm.HS256;
-
         var (kid, accessKey) = ("foo", DefaultSigningKey);
         key.UpdateAccessKey(kid, accessKey);
 
-        var token = await key.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm);
+        var token = await key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromHours(1), AccessTokenAlgorithm.HS256);
         Assert.NotNull(token);
-    }
-
-    [Theory]
-    [InlineData(false, 1, true, false)]
-    [InlineData(false, 4, true, false)]
-    [InlineData(false, 6, false, true)] // > 5, should try update when unauthorized
-    [InlineData(true, 1, true, false)]
-    [InlineData(true, 54, true, false)]
-    [InlineData(true, 56, true, true)] // > 55, should try update and log the exception
-    [InlineData(true, 119, true, true)] // > 55, should try update and log the exception
-    [InlineData(true, 121, false, true)] // > 120, should set key unauthorized and log the exception
-    public async Task TestUpdateAccessKeyAsyncShouldSkip(bool isAuthorized, int timeElapsed, bool skip, bool hasException)
-    {
-        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential())
-        {
-            GetAccessKeyRetryInterval = TimeSpan.Zero
-        };
-        var isAuthorizedField = typeof(MicrosoftEntraAccessKey).GetField("_isAuthorized", BindingFlags.NonPublic | BindingFlags.Instance);
-        isAuthorizedField?.SetValue(key, isAuthorized);
-        Assert.Equal(isAuthorized, Assert.IsType<bool>(isAuthorizedField?.GetValue(key)));
-
-        var updateAt = DateTime.UtcNow - TimeSpan.FromMinutes(timeElapsed);
-        var updateAtField = typeof(MicrosoftEntraAccessKey).GetField("_updateAt", BindingFlags.NonPublic | BindingFlags.Instance);
-        updateAtField?.SetValue(key, updateAt);
-
-        var initializedTcsField = typeof(MicrosoftEntraAccessKey).GetField("_initializedTcs", BindingFlags.NonPublic | BindingFlags.Instance);
-        var initializedTcs = Assert.IsType<TaskCompletionSource<object>>(initializedTcsField?.GetValue(key));
-
-        await key.UpdateAccessKeyAsync().OrTimeout(TimeSpan.FromSeconds(30));
-        var actualUpdateAt = Assert.IsType<DateTime>(updateAtField?.GetValue(key));
-
-        Assert.Equal(skip && isAuthorized, Assert.IsType<bool>(isAuthorizedField.GetValue(key)));
-
-        if (skip)
-        {
-            Assert.Equal(updateAt, actualUpdateAt);
-            Assert.False(initializedTcs.Task.IsCompleted);
-        }
-        else
-        {
-            Assert.True(updateAt < actualUpdateAt);
-            Assert.True(initializedTcs.Task.IsCompleted);
-        }
-
-        if (hasException)
-        {
-            Assert.NotNull(key.LastException);
-        }
-        else
-        {
-            Assert.Null(key.LastException);
-        }
+        Assert.True(TokenUtilities.TryParseIssuer(token, out var issuer) && string.Equals(Constants.AsrsTokenIssuer, issuer));
     }
 
     [Fact]
@@ -118,30 +69,49 @@ public class MicrosoftEntraAccessKeyTests
             GetAccessKeyRetryInterval = TimeSpan.Zero
         };
 
-        var audience = "http://localhost/chat";
-        var claims = Array.Empty<Claim>();
-        var lifetime = TimeSpan.FromHours(1);
-        var algorithm = AccessTokenAlgorithm.HS256;
-
         await key.UpdateAccessKeyAsync();
 
-        var exception = await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(
-            async () => await key.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm)
-        );
+        var task = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromHours(1), AccessTokenAlgorithm.HS256);
+        var exception = await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await task);
         Assert.IsType<InvalidOperationException>(exception.InnerException);
     }
 
     [Fact]
-    public async Task TestNotInitialized()
+    public async Task TestNotInitailized()
     {
-        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential());
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential(delay: 10000));
+        Assert.False(key.Available);
 
         var source = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-        var exception = await Assert.ThrowsAsync<TaskCanceledException>(
-            async () => await key.GenerateAccessTokenAsync("", [], TimeSpan.FromSeconds(1), AccessTokenAlgorithm.HS256, source.Token)
-        );
-        Assert.Contains("initialization timed out", exception.Message);
+        var task1 = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromHours(1), AccessTokenAlgorithm.HS256, source.Token);
+
+        Assert.Equal(task1, await Task.WhenAny(task1, Task.Delay(5000)));
+
+        var exception = await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await task1);
+        Assert.Contains("is not available for signing client tokens", exception.Message);
+        Assert.Contains("has not been initialized.", exception.Message);
     }
+
+    [Fact]
+    public async Task TestUnavailable()
+    {
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential(delay: 10000));
+        key.UpdateAccessKey("foo", "bar");
+        Assert.True(key.Available);
+
+        UpdateAtField?.SetValue(key, DateTime.UtcNow - TimeSpan.FromHours(3));
+        Assert.False(key.Available);
+
+        var source = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        var task1 = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromHours(1), AccessTokenAlgorithm.HS256, source.Token);
+
+        Assert.Equal(task1, await Task.WhenAny(task1, Task.Delay(5000)));
+
+        var exception = await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await task1);
+        Assert.Contains("is not available for signing client tokens", exception.Message);
+        Assert.Contains("has expired.", exception.Message);
+    }
+
 
     [Theory]
     [ClassData(typeof(NotAuthorizedTestData))]
@@ -152,16 +122,10 @@ public class MicrosoftEntraAccessKeyTests
             GetAccessKeyRetryInterval = TimeSpan.Zero,
         };
 
-        var audience = "http://localhost/chat";
-        var claims = Array.Empty<Claim>();
-        var lifetime = TimeSpan.FromHours(1);
-        var algorithm = AccessTokenAlgorithm.HS256;
-
         await key.UpdateAccessKeyAsync();
 
-        var exception = await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(
-            async () => await key.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm)
-        );
+        var task = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromHours(1), AccessTokenAlgorithm.HS256);
+        var exception = await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await task);
         Assert.Same(exception.InnerException, e);
         Assert.Same(exception.InnerException, key.LastException);
         Assert.StartsWith($"{nameof(TestTokenCredential)} is not available for signing client tokens", exception.Message);
@@ -169,7 +133,7 @@ public class MicrosoftEntraAccessKeyTests
 
         var (kid, accessKey) = ("foo", DefaultSigningKey);
         key.UpdateAccessKey(kid, accessKey);
-        Assert.Null(key.LastException);
+        Assert.Contains("has expired", key.LastException.Message);
     }
 
     [Theory]
@@ -197,9 +161,11 @@ public class MicrosoftEntraAccessKeyTests
     [Fact]
     public async Task TestLazyLoadAccessKey()
     {
-        var expectedKeyStr = DefaultSigningKey;
-        var expectedKid = "foo";
-        var text = "{" + string.Format("\"AccessKey\": \"{0}\", \"KeyId\": \"{1}\"", expectedKeyStr, expectedKid) + "}";
+        var text = JsonSerializer.Serialize(new AccessKeyResponse()
+        {
+            AccessKey = DefaultSigningKey,
+            KeyId = "foo"
+        });
         var httpClientFactory = new TestHttpClientFactory(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = TextHttpContent.From(text),
@@ -208,12 +174,8 @@ public class MicrosoftEntraAccessKeyTests
         var credential = new TestTokenCredential(TokenType.MicrosoftEntra);
         var key = new MicrosoftEntraAccessKey(DefaultEndpoint, credential, httpClientFactory: httpClientFactory);
 
-        Assert.False(key.Initialized);
-
         var token = await key.GenerateAccessTokenAsync("https://localhost", [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
         Assert.NotNull(token);
-
-        Assert.True(key.Initialized);
     }
 
     [Fact]
@@ -224,15 +186,119 @@ public class MicrosoftEntraAccessKeyTests
             GetAccessKeyRetryInterval = TimeSpan.FromSeconds(1),
         };
 
-        Assert.False(key.Initialized);
-
-        var task1 = key.GenerateAccessTokenAsync("https://localhost", [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
+        var task1 = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
         var task2 = key.UpdateAccessKeyAsync();
-        Assert.True(task2.IsCompleted); // another task is in progress.
+        Assert.False(task2.IsCompleted);
 
         await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await task1);
+        await task2;
+        Assert.False(key.Available);
+        Assert.False(key.NeedRefresh);
+    }
 
-        Assert.True(key.Initialized);
+    [Fact]
+    public async Task TestRefreshAccessKey()
+    {
+        var text = JsonSerializer.Serialize(new AccessKeyResponse()
+        {
+            AccessKey = DefaultSigningKey,
+            KeyId = "foo"
+        });
+        var httpClientFactory = new TestHttpClientFactory(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = TextHttpContent.From(text),
+        });
+
+        var credential = new TestTokenCredential(TokenType.MicrosoftEntra);
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, credential, httpClientFactory: httpClientFactory);
+        Assert.False(key.Available);
+        Assert.True(key.NeedRefresh);
+
+        var token = await key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
+        Assert.True(TokenUtilities.TryParseIssuer(token, out var issuer));
+        Assert.Equal(Constants.AsrsTokenIssuer, issuer);
+
+        Assert.True(key.Available);
+        Assert.False(key.NeedRefresh);
+
+        UpdateAtField?.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(56));
+        Assert.True(key.Available);
+        Assert.True(key.NeedRefresh);
+
+        Assert.Equal(1, credential.Count);
+        var task1 = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
+        var task2 = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
+        await Task.WhenAll(task1, task2);
+        Assert.True(TokenUtilities.TryParseIssuer(await task1, out issuer));
+        Assert.Equal(Constants.AsrsTokenIssuer, issuer);
+
+        Assert.True(key.Available);
+        Assert.False(key.NeedRefresh);
+        Assert.Equal(2, credential.Count);
+    }
+
+    [Fact]
+    public async Task TestRefreshAccessKeyUnauthorized()
+    {
+        var text = JsonSerializer.Serialize(new AccessKeyResponse()
+        {
+            AccessKey = DefaultSigningKey,
+            KeyId = "foo"
+        });
+        var httpClientFactory = new TestHttpClientFactory(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = TextHttpContent.From(text),
+        });
+
+        var credential = new TestTokenCredential(TokenType.MicrosoftEntra) { Exception = new InvalidOperationException() };
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, credential, httpClientFactory: httpClientFactory)
+        {
+            GetAccessKeyRetryInterval = TimeSpan.FromSeconds(1)
+        };
+        Assert.False(key.Available);
+        Assert.True(key.NeedRefresh);
+
+        await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256));
+
+        Assert.False(key.Available);
+        Assert.False(key.NeedRefresh);
+
+        Assert.Equal(9, credential.Count); // GetMicrosoftEntraTokenRetry * GetAccessKeyRetry = 3 * 3
+        await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256));
+        Assert.Equal(9, credential.Count); // Does not trigger refresh
+
+        // refresh, but still failed.
+        UpdateAtField?.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(6));
+        Assert.False(key.Available);
+        Assert.True(key.NeedRefresh);
+        
+        var task1 = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
+        var task2 = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
+        await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await Task.WhenAll(task1, task2));
+
+        await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await task1);
+        await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await task2);
+
+        Assert.False(key.Available);
+        Assert.False(key.NeedRefresh);
+        Assert.Equal(18, credential.Count);
+
+        // refresh, succeed.
+        credential.Exception = null;
+        UpdateAtField?.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(6));
+        Assert.False(key.Available);
+        Assert.True(key.NeedRefresh);
+
+        task1 = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
+        task2 = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
+        await Task.WhenAll(task1, task2);
+
+        Assert.True(TokenUtilities.TryParseIssuer(await task1, out var issuer));
+        Assert.Equal(Constants.AsrsTokenIssuer, issuer);
+
+        Assert.True(key.Available);
+        Assert.False(key.NeedRefresh);
+        Assert.Equal(19, credential.Count);
     }
 
     [Theory]
@@ -365,12 +431,20 @@ public class MicrosoftEntraAccessKeyTests
         }
     }
 
-    private sealed class TestTokenCredential(TokenType? tokenType = null) : TokenCredential
+    private sealed class TestTokenCredential(TokenType? tokenType = null, int delay = 0) : TokenCredential
     {
-        public Exception? Exception { get; init; }
+        public Exception? Exception { get; set; }
+
+        private volatile int _count;
+
+        public Exception Error { get; set; } = new InvalidOperationException();
+
+        public int Count => _count;
 
         public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
         {
+            Interlocked.Increment(ref _count);
+
             if (Exception != null)
             {
                 throw Exception;
@@ -382,14 +456,14 @@ public class MicrosoftEntraAccessKeyTests
                 TokenType.MicrosoftEntra => "microsoft.com",
                 _ => throw new InvalidOperationException(),
             };
-            var key = new AccessKey(DefaultSigningKey);
-            var token = AuthUtility.GenerateJwtToken(key.KeyBytes, issuer: issuer);
+            var token = AuthUtility.GenerateJwtToken(Encoding.UTF8.GetBytes(DefaultSigningKey), issuer: issuer);
             return new AccessToken(token, DateTimeOffset.UtcNow.Add(TimeSpan.FromHours(1)));
         }
 
-        public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+        public override async ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
         {
-            return ValueTask.FromResult(GetToken(requestContext, cancellationToken));
+            await Task.Delay(delay, cancellationToken);
+            return GetToken(requestContext, cancellationToken);
         }
     }
 }

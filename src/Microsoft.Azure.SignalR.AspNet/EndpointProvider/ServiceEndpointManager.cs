@@ -9,16 +9,12 @@ internal class ServiceEndpointManager : ServiceEndpointManagerBase
 {
     private readonly ServiceOptions _options;
 
-    private readonly IAccessKeySynchronizer _synchronizer;
-
-    public ServiceEndpointManager(IAccessKeySynchronizer synchronizer,
-                                  ServiceOptions options,
+    public ServiceEndpointManager(ServiceOptions options,
                                   ILoggerFactory loggerFactory) :
         base(options,
              loggerFactory?.CreateLogger<ServiceEndpointManager>())
     {
         _options = options;
-        _synchronizer = synchronizer;
     }
 
     public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
@@ -27,7 +23,6 @@ internal class ServiceEndpointManager : ServiceEndpointManagerBase
         {
             return null;
         }
-        _synchronizer.AddServiceEndpoint(endpoint);
         return new ServiceEndpointProvider(endpoint, _options);
     }
 }
