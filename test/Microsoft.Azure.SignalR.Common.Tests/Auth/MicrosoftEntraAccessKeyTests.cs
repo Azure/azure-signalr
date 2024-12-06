@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Json;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
@@ -21,8 +20,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth;
 public class MicrosoftEntraAccessKeyTests
 {
     private const string DefaultSigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-    private const string DefaultToken = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     private static readonly Uri DefaultEndpoint = new("http://localhost");
 
@@ -331,7 +328,7 @@ public class MicrosoftEntraAccessKeyTests
 
         public IEnumerator<object[]> GetEnumerator()
         {
-            var accessKey = new AccessKey(new Uri("https://localhost:443"), DefaultSigningKey);
+            var accessKey = new AccessKey(DefaultSigningKey);
             var token1 = AuthUtility.GenerateJwtToken(accessKey.KeyBytes, issuer: Constants.AsrsTokenIssuer);
             var token2 = AuthUtility.GenerateJwtToken(accessKey.KeyBytes, issuer: "microsoft.com");
 
@@ -399,7 +396,7 @@ public class MicrosoftEntraAccessKeyTests
                 TokenType.MicrosoftEntra => "microsoft.com",
                 _ => throw new NotImplementedException(),
             };
-            var key = new AccessKey(new Uri("https://foo.bar"), DefaultSigningKey);
+            var key = new AccessKey(DefaultSigningKey);
             var token = AuthUtility.GenerateJwtToken(key.KeyBytes, issuer: issuer);
             return new AccessToken(token, DateTimeOffset.UtcNow.Add(TimeSpan.FromHours(1)));
         }

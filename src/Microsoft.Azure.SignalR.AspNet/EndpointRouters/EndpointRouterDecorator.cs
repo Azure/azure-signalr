@@ -4,40 +4,39 @@
 using System.Collections.Generic;
 using Microsoft.Owin;
 
-namespace Microsoft.Azure.SignalR.AspNet
+namespace Microsoft.Azure.SignalR.AspNet;
+
+public class EndpointRouterDecorator : IEndpointRouter
 {
-    public class EndpointRouterDecorator : IEndpointRouter
+    private readonly IEndpointRouter _inner;
+
+    public EndpointRouterDecorator(IEndpointRouter router = null)
     {
-        private readonly IEndpointRouter _inner;
+        _inner = router ?? new DefaultEndpointRouter();
+    }
 
-        public EndpointRouterDecorator(IEndpointRouter router = null)
-        {
-            _inner = router ?? new DefaultEndpointRouter();
-        }
+    public virtual ServiceEndpoint GetNegotiateEndpoint(IOwinContext owinContext, IEnumerable<ServiceEndpoint> endpoints)
+    {
+        return _inner.GetNegotiateEndpoint(owinContext, endpoints);
+    }
 
-        public virtual ServiceEndpoint GetNegotiateEndpoint(IOwinContext owinContext, IEnumerable<ServiceEndpoint> endpoints)
-        {
-            return _inner.GetNegotiateEndpoint(owinContext, endpoints);
-        }
+    public virtual IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> endpoints)
+    {
+        return _inner.GetEndpointsForBroadcast(endpoints);
+    }
 
-        public virtual IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> endpoints)
-        {
-            return _inner.GetEndpointsForBroadcast(endpoints);
-        }
+    public virtual IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints)
+    {
+        return _inner.GetEndpointsForConnection(connectionId, endpoints);
+    }
 
-        public virtual IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints)
-        {
-            return _inner.GetEndpointsForConnection(connectionId, endpoints);
-        }
+    public virtual IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> endpoints)
+    {
+        return _inner.GetEndpointsForGroup(groupName, endpoints);
+    }
 
-        public virtual IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> endpoints)
-        {
-            return _inner.GetEndpointsForGroup(groupName, endpoints);
-        }
-
-        public virtual IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> endpoints)
-        {
-            return _inner.GetEndpointsForUser(userId, endpoints);
-        }
+    public virtual IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> endpoints)
+    {
+        return _inner.GetEndpointsForUser(userId, endpoints);
     }
 }

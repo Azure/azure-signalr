@@ -13,8 +13,6 @@ internal static class JwtTokenHelper
 {
     public static readonly JwtSecurityTokenHandler JwtHandler = new JwtSecurityTokenHandler();
 
-    private const string TestEndpoint = "http://localhost:443";
-
     public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, AccessKey accessKey, IEnumerable<Claim> customClaims = null)
     {
         var requestId = token.Claims.FirstOrDefault(claim => claim.Type == Constants.ClaimType.Id)?.Value;
@@ -45,7 +43,7 @@ internal static class JwtTokenHelper
 
     public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string key, IEnumerable<Claim> customClaims = null)
     {
-        return GenerateExpectedAccessToken(token, audience, new AccessKey(new Uri(TestEndpoint), key), customClaims: customClaims);
+        return GenerateExpectedAccessToken(token, audience, new AccessKey(key), customClaims: customClaims);
     }
 
     public static string GenerateJwtToken(string audience,
@@ -74,6 +72,6 @@ internal static class JwtTokenHelper
                                           DateTime issueAt,
                                           string signingKey)
     {
-        return GenerateJwtToken(audience, subject, expires, notBefore, issueAt, new AccessKey(new Uri(TestEndpoint), signingKey));
+        return GenerateJwtToken(audience, subject, expires, notBefore, issueAt, new AccessKey(signingKey));
     }
 }

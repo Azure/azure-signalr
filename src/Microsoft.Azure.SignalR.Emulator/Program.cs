@@ -18,8 +18,9 @@ namespace Microsoft.Azure.SignalR.Emulator
         private const int DefaultPort = 8888;
         private static readonly string SettingsFileName = "settings.json";
         private static readonly string SettingsFile = Path.GetFullPath(SettingsFileName);
-        private static readonly string ProgramDefaultSettingsFile = Path.Combine(AppContext.BaseDirectory, SettingsFileName);
         private static readonly string AppSettingsFile = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+
+        internal static readonly string ProgramDefaultSettingsFile = Path.Combine(AppContext.BaseDirectory, SettingsFileName);
 
         public static void Main(string[] args)
         {

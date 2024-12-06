@@ -4,9 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Azure.Core;
 using Azure.Identity;
 
 namespace Microsoft.Azure.SignalR;
+
+#nullable enable
 
 internal static class ConnectionStringParser
 {
@@ -16,15 +19,15 @@ internal static class ConnectionStringParser
 
     private const string ClientCertProperty = "clientCert";
 
-    private const string ClientEndpointProperty = "clientEndpoint";
-
     private const string ClientIdProperty = "clientId";
 
     private const string ClientSecretProperty = "clientSecret";
 
     private const string EndpointProperty = "endpoint";
 
-    private const string ServerEndpointProperty = "ServerEndpoint";
+    private const string ClientEndpointProperty = "clientEndpoint";
+
+    private const string ServerEndpointProperty = "serverEndpoint";
 
     private const string InvalidVersionValueFormat = "Version {0} is not supported.";
 
@@ -37,6 +40,7 @@ internal static class ConnectionStringParser
 
     private const string TypeAzure = "azure";
 
+    [Obsolete]
     private const string TypeAzureAD = "aad";
 
     private const string TypeAzureApp = "azure.app";
@@ -47,11 +51,13 @@ internal static class ConnectionStringParser
 
     private const string VersionProperty = "version";
 
-    private static readonly string InvalidClientEndpointProperty = $"Invalid value for {ClientEndpointProperty} property, it must be a valid URI.";
-
     private static readonly string InvalidEndpointProperty = $"Invalid value for {EndpointProperty} property, it must be a valid URI.";
 
-    private static readonly string InvalidPortValue = $"Invalid value for {PortProperty} property, it must be an positive integer between (0, 65536)";
+    private static readonly string InvalidClientEndpointProperty = $"Invalid value for {ClientEndpointProperty} property, it must be a valid URI.";
+
+    private static readonly string InvalidServerEndpointProperty = $"Invalid value for {ServerEndpointProperty} property, it must be a valid URI.";
+
+    private static readonly string InvalidPortValue = $"Invalid value for {PortProperty} property, it must be an positive integer between (0, 65536).";
 
     private static readonly char[] KeyValueSeparator = { '=' };
 
@@ -65,10 +71,10 @@ internal static class ConnectionStringParser
         $"Connection string missing required properties {ClientSecretProperty} or {ClientCertProperty}.";
 
     private static readonly string MissingEndpointProperty =
-                                        $"Connection string missing required properties {EndpointProperty}.";
+        $"Connection string missing required properties {EndpointProperty}.";
 
     private static readonly string MissingTenantIdProperty =
-                        $"Connection string missing required properties {TenantIdProperty}.";
+        $"Connection string missing required properties {TenantIdProperty}.";
 
     private static readonly char[] PropertySeparator = { ';' };
 
@@ -83,14 +89,14 @@ internal static class ConnectionStringParser
         }
         endpoint = endpoint.TrimEnd('/');
 
-        if (!TryGetEndpointUri(endpoint, out var endpointUri))
+        if (!TryCreateEndpointUri(endpoint, out var endpointUri))
         {
             throw new ArgumentException(InvalidEndpointProperty, nameof(endpoint));
         }
-        var builder = new UriBuilder(endpointUri);
+        var builder = new UriBuilder(endpointUri!);
 
         // parse and validate version.
-        string version = null;
+        string? version = null;
         if (dict.TryGetValue(VersionProperty, out var v))
         {
             if (!Regex.IsMatch(v, ValidVersionRegex))
@@ -103,23 +109,18 @@ internal static class ConnectionStringParser
         // parse and validate port.
         if (dict.TryGetValue(PortProperty, out var s))
         {
-            if (int.TryParse(s, out var port) && port > 0 && port <= 0xFFFF)
-            {
-                builder.Port = port;
-            }
-            else
-            {
-                throw new ArgumentException(InvalidPortValue, nameof(port));
-            }
+            builder.Port = int.TryParse(s, out var port) && port > 0 && port <= 0xFFFF
+                ? port
+                : throw new ArgumentException(InvalidPortValue, nameof(port));
         }
 
-        Uri clientEndpointUri = null;
-        Uri serverEndpointUri = null;
+        Uri? clientEndpointUri = null;
+        Uri? serverEndpointUri = null;
 
         // parse and validate clientEndpoint.
         if (dict.TryGetValue(ClientEndpointProperty, out var clientEndpoint))
         {
-            if (!TryGetEndpointUri(clientEndpoint, out clientEndpointUri))
+            if (!TryCreateEndpointUri(clientEndpoint, out clientEndpointUri))
             {
                 throw new ArgumentException(InvalidClientEndpointProperty, nameof(clientEndpoint));
             }
@@ -128,40 +129,42 @@ internal static class ConnectionStringParser
         // parse and validate clientEndpoint.
         if (dict.TryGetValue(ServerEndpointProperty, out var serverEndpoint))
         {
-            if (!TryGetEndpointUri(serverEndpoint, out serverEndpointUri))
+            if (!TryCreateEndpointUri(serverEndpoint, out serverEndpointUri))
             {
-                throw new ArgumentException($"{ServerEndpointProperty} property in connection string is not a valid URI: {serverEndpoint}.");
+                throw new ArgumentException(InvalidServerEndpointProperty, nameof(serverEndpoint));
             }
         }
 
         // try building accesskey.
         dict.TryGetValue(AuthTypeProperty, out var type);
-        var accessKey = type?.ToLower() switch
+        var tokenCredential = type?.ToLower() switch
         {
-            TypeAzureAD => BuildAzureADAccessKey(builder.Uri, serverEndpointUri, dict),
-            TypeAzure => BuildAzureAccessKey(builder.Uri, serverEndpointUri, dict),
-            TypeAzureApp => BuildAzureAppAccessKey(builder.Uri, serverEndpointUri, dict),
-            TypeAzureMsi => BuildAzureMsiAccessKey(builder.Uri, serverEndpointUri, dict),
-            _ => BuildAccessKey(builder.Uri, dict),
+            TypeAzureApp => BuildApplicationCredential(dict),
+            TypeAzureMsi => BuildManagedIdentityCredential(dict),
+#pragma warning disable CS0612 // Type or member is obsolete
+            TypeAzureAD => BuildAzureTokenCredential(dict),
+#pragma warning restore CS0612 // Type or member is obsolete
+            _ => new DefaultAzureCredential(),
         };
 
-        return new ParsedConnectionString()
+        dict.TryGetValue(AccessKeyProperty, out var accessKey);
+
+        return new ParsedConnectionString(builder.Uri, tokenCredential)
         {
-            Endpoint = builder.Uri,
-            ClientEndpoint = clientEndpointUri,
             AccessKey = accessKey,
-            Version = version,
+            ClientEndpoint = clientEndpointUri,
             ServerEndpoint = serverEndpointUri
         };
     }
 
-    internal static bool TryGetEndpointUri(string endpoint, out Uri uriResult)
+    private static bool TryCreateEndpointUri(string endpoint, out Uri? uriResult)
     {
-        return Uri.TryCreate(endpoint, UriKind.Absolute, out uriResult) &&
-               (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        return Uri.TryCreate(endpoint, UriKind.Absolute, out uriResult)
+            && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 
-    private static IAccessKey BuildAzureADAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
+    [Obsolete]
+    private static TokenCredential BuildAzureTokenCredential(Dictionary<string, string> dict)
     {
         if (dict.TryGetValue(ClientIdProperty, out var clientId))
         {
@@ -169,11 +172,11 @@ internal static class ConnectionStringParser
             {
                 if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
                 {
-                    return new MicrosoftEntraAccessKey(uri, new ClientSecretCredential(tenantId, clientId, clientSecret), serverEndpointUri);
+                    return new ClientSecretCredential(tenantId, clientId, clientSecret);
                 }
                 else if (dict.TryGetValue(ClientCertProperty, out var clientCertPath))
                 {
-                    return new MicrosoftEntraAccessKey(uri, new ClientCertificateCredential(tenantId, clientId, clientCertPath), serverEndpointUri);
+                    return new ClientCertificateCredential(tenantId, clientId, clientCertPath);
                 }
                 else
                 {
@@ -182,28 +185,16 @@ internal static class ConnectionStringParser
             }
             else
             {
-                return new MicrosoftEntraAccessKey(uri, new ManagedIdentityCredential(clientId), serverEndpointUri);
+                return new ManagedIdentityCredential(clientId);
             }
         }
         else
         {
-            return new MicrosoftEntraAccessKey(uri, new ManagedIdentityCredential(), serverEndpointUri);
+            return new ManagedIdentityCredential();
         }
     }
 
-    private static IAccessKey BuildAccessKey(Uri uri, Dictionary<string, string> dict)
-    {
-        return dict.TryGetValue(AccessKeyProperty, out var key)
-            ? new AccessKey(uri, key)
-            : throw new ArgumentException(MissingAccessKeyProperty, AccessKeyProperty);
-    }
-
-    private static IAccessKey BuildAzureAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
-    {
-        return new MicrosoftEntraAccessKey(uri, new DefaultAzureCredential(), serverEndpointUri);
-    }
-
-    private static IAccessKey BuildAzureAppAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
+    private static TokenCredential BuildApplicationCredential(Dictionary<string, string> dict)
     {
         if (!dict.TryGetValue(ClientIdProperty, out var clientId))
         {
@@ -217,20 +208,20 @@ internal static class ConnectionStringParser
 
         if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
         {
-            return new MicrosoftEntraAccessKey(uri, new ClientSecretCredential(tenantId, clientId, clientSecret), serverEndpointUri);
+            return new ClientSecretCredential(tenantId, clientId, clientSecret);
         }
         else if (dict.TryGetValue(ClientCertProperty, out var clientCertPath))
         {
-            return new MicrosoftEntraAccessKey(uri, new ClientCertificateCredential(tenantId, clientId, clientCertPath), serverEndpointUri);
+            return new ClientCertificateCredential(tenantId, clientId, clientCertPath);
         }
         throw new ArgumentException(MissingClientSecretProperty, ClientSecretProperty);
     }
 
-    private static IAccessKey BuildAzureMsiAccessKey(Uri uri, Uri serverEndpointUri, Dictionary<string, string> dict)
+    private static TokenCredential BuildManagedIdentityCredential(Dictionary<string, string> dict)
     {
         return dict.TryGetValue(ClientIdProperty, out var clientId)
-            ? new MicrosoftEntraAccessKey(uri, new ManagedIdentityCredential(clientId), serverEndpointUri)
-            : new MicrosoftEntraAccessKey(uri, new ManagedIdentityCredential(), serverEndpointUri);
+            ? new ManagedIdentityCredential(clientId)
+            : new ManagedIdentityCredential();
     }
 
     private static Dictionary<string, string> ToDictionary(string connectionString)

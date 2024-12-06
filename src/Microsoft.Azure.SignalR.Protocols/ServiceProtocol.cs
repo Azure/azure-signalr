@@ -1,6 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-#nullable enable
 
 using System;
 using System.Buffers;
@@ -699,7 +698,7 @@ public class ServiceProtocol : IServiceProtocol
         writer.Write(message.Error);
         message.WriteExtensionMembers(ref writer);
     }
-
+    
     private static void WriteServiceMappingMessage(ref MessagePackWriter writer, ServiceMappingMessage message)
     {
         writer.WriteArrayHeader(5);
@@ -1414,6 +1413,7 @@ public class ServiceProtocol : IServiceProtocol
         catch (Exception ex)
         {
             throw new InvalidDataException($"Reading '{field}' as Boolean failed.", ex);
+
         }
     }
 
@@ -1427,6 +1427,7 @@ public class ServiceProtocol : IServiceProtocol
         {
             throw new InvalidDataException($"Reading '{field}' as Int32 failed.", ex);
         }
+    }
 
     }
 
@@ -1452,7 +1453,9 @@ public class ServiceProtocol : IServiceProtocol
         catch (Exception ex)
         {
             throw new InvalidDataException($"Reading '{field}' as String failed.", ex);
+
         }
+    }
 
         if (result == null)
         {

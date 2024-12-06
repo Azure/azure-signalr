@@ -7,15 +7,15 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR;
 
+#nullable enable
+
 internal class HubServiceEndpoint : ServiceEndpoint
 {
     private static long s_currentIndex;
 
     private readonly ServiceEndpoint _endpoint;
 
-    private readonly long _uniqueIndex;
-
-    private TaskCompletionSource<bool> _scaleTcs;
+    private TaskCompletionSource<bool>? _scaleTcs;
 
     public string Hub { get; }
 
@@ -23,14 +23,14 @@ internal class HubServiceEndpoint : ServiceEndpoint
 
     public IServiceEndpointProvider Provider { get; }
 
-    public IServiceConnectionContainer ConnectionContainer { get; set; }
+    public IServiceConnectionContainer? ConnectionContainer { get; set; }
 
     /// <summary>
     /// Task waiting for HubServiceEndpoint turn ready when live add/remove endpoint
     /// </summary>
     public Task ScaleTask => _scaleTcs?.Task ?? Task.CompletedTask;
 
-    public long UniqueIndex => _uniqueIndex;
+    public long UniqueIndex { get; }
 
     // Value here is not accurate.
     internal override bool PendingReload => throw new NotSupportedException();
@@ -43,7 +43,7 @@ internal class HubServiceEndpoint : ServiceEndpoint
         Provider = provider;
         _endpoint = endpoint;
         _scaleTcs = endpoint.PendingReload ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : null;
-        _uniqueIndex = Interlocked.Increment(ref s_currentIndex);
+        UniqueIndex = Interlocked.Increment(ref s_currentIndex);
     }
 
     public void CompleteScale()

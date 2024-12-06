@@ -371,7 +371,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
                     {
                         while (ServiceProtocol.TryParseMessage(ref buffer, out var message))
                         {
-                            Messages.Add(message);
+                            Messages.Add(message!);
                         }
                     }
 

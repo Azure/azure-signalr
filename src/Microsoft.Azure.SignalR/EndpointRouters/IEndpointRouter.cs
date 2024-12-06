@@ -4,16 +4,15 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+public interface IEndpointRouter : IMessageRouter
 {
-    public interface IEndpointRouter : IMessageRouter
-    {
-        /// <summary>
-        /// Get the service endpoint for the client to connect to
-        /// </summary>
-        /// <param name="context">The http context of the incoming request</param>
-        /// <param name="endpoints">All the available endpoints</param>
-        /// <returns></returns>
-        ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints);
-    }
+    /// <summary>
+    /// Get the service endpoint for the client to connect to
+    /// </summary>
+    /// <param name="context">The http context of the incoming request</param>
+    /// <param name="endpoints">All the available endpoints</param>
+    /// <returns></returns>
+    ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints);
 }

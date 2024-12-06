@@ -78,22 +78,17 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     public byte[] KeyBytes => _keyBytes ?? throw new ArgumentNullException(nameof(KeyBytes));
 
-    public Uri Endpoint { get; }
-
     internal Exception? LastException { get; private set; }
 
     internal string GetAccessKeyUrl { get; }
 
     internal TimeSpan GetAccessKeyRetryInterval { get; set; } = TimeSpan.FromSeconds(3);
 
-    public MicrosoftEntraAccessKey(Uri endpoint,
+    public MicrosoftEntraAccessKey(Uri serverEndpoint,
                                    TokenCredential credential,
-                                   Uri? serverEndpoint = null,
                                    IHttpClientFactory? httpClientFactory = null)
     {
-        Endpoint = endpoint;
-
-        var authorizeUri = (serverEndpoint ?? endpoint).Append("/api/v1/auth/accessKey");
+        var authorizeUri = serverEndpoint.Append("/api/v1/auth/accessKey");
         GetAccessKeyUrl = authorizeUri.AbsoluteUri;
         TokenCredential = credential;
 
