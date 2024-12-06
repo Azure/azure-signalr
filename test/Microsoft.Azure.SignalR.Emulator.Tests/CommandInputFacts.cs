@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -23,61 +24,69 @@ public class CommandInputFacts : IDisposable
     private readonly ITestOutputHelper _output;
 
     private const string HelpInfo = @"
+Description:
+  The local emulator for Azure SignalR Serverless features.
 
-Usage: asrs-emulator [options] [command]
+Usage:
+  asrs-emulator [command] [options]
 
 Options:
-  -h|--help  Show help information
+  --version       Show version information
+  -?, -h, --help  Show help and usage information
 
 Commands:
-  start     To start the emulator.
   upstream  To init/list the upstream options
-
-Use ""asrs-emulator [command] --help"" for more information about a command.
-
+  start     To start the emulator.
 ";
     private const string StartHelpInfo = @"
+Description:
+  To start the emulator.
 
-Usage: asrs-emulator start [options]
+Usage:
+  asrs-emulator start [options]
 
 Options:
-  -p|--port    Specify the port to use.
-  -i|--ip      Specify the IP address to use.
-  -c|--config  Specify the upstream settings file to load from.
-  -h|--help    Show help information
-
+  -p, --port <port>      Specify the port to use. [default: 8888]
+  -i, --ip <ip>          Specify the IP address to use.
+  -c, --config <config>  Specify the upstream settings file to load from.
+  -?, -h, --help         Show help and usage information
 ";
     private const string UpstreamHelpInfo = @"
+Description:
+  To init/list the upstream options
 
-Usage: asrs-emulator upstream [options] [command]
+Usage:
+  asrs-emulator upstream [command] [options]
 
 Options:
-  -h|--help  Show help information
+  -?, -h, --help  Show help and usage information
 
 Commands:
-  init  Init the default upstream options into a settings.json config. Use -o to specify the folder to export the default settings.
-  list  List current upstream options. Use -c to specify the folder or file to read the settings.
-
-Use ""upstream [command] --help"" for more information about a command.
-
+  init  Init the default upstream options into a settings.json config
+  list  List current upstream options
 ";
     private const string UpstreamInitHelpInfo = @"
+Description:
+  Init the default upstream options into a settings.json config
 
-Usage: asrs-emulator upstream init [options]
+Usage:
+  asrs-emulator upstream init [options]
 
 Options:
-  -o|--output  Specify the folder to init the upstream settings file.
-  -h|--help    Show help information
+  -o, --output <output>  Specify the folder to init the upstream settings file.
+  -?, -h, --help         Show help and usage information
 
 ";
     private const string UpstreamListHelpInfo = @"
+Description:
+  List current upstream options
 
-Usage: asrs-emulator upstream list [options]
+Usage:
+  asrs-emulator upstream list [options]
 
 Options:
-  -c|--config  Specify the upstream settings file to load from.
-  -h|--help    Show help information
-
+  -c, --config <config>  Specify the upstream settings file to load from.
+  -?, -h, --help         Show help and usage information
 ";
     public static IEnumerable<object[]> TestData =
         new List<(string command, string output)>
@@ -93,11 +102,11 @@ Options:
             ("upstream init --help", UpstreamInitHelpInfo),
             ("upstream list -h", UpstreamListHelpInfo),
             ("upstream list --help", UpstreamListHelpInfo),
-            ("invalid", @"Specify --help for a list of available options and commands.
-Error starting emulator: Unrecognized command or argument 'invalid'.
-"),
-            ("-a", @"Specify --help for a list of available options and commands.
-Error starting emulator: Unrecognized option '-a'.
+            ("invalid", HelpInfo),
+            ("-a", $@"
+'-a' was not matched. Did you mean one of the following?
+-h
+{HelpInfo}
 "),
             ("upstream list", $@"Loaded upstream settings from '{Program.ProgramDefaultSettingsFile}'
 Current Upstream Settings:
@@ -112,10 +121,10 @@ Current Upstream Settings:
 
     [Theory]
     [MemberData(nameof(TestData))]
-    public void CommandTests(string input, string expectedOutput)
+    public async Task CommandTests(string input, string expectedOutput)
     {
         Console.WriteLine(input);
-        Program.Main(GetArgs(input));
+        await Program.Main(GetArgs(input));
         var output = _writer.ToString();
         _output.WriteLine(output);
         Assert.Equal(Normalize(input + expectedOutput), Normalize(output));

@@ -2,15 +2,18 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
+#nullable enable
 namespace Microsoft.Azure.SignalR.Emulator
 {
     public class Program
@@ -19,189 +22,199 @@ namespace Microsoft.Azure.SignalR.Emulator
         private static readonly string SettingsFileName = "settings.json";
         private static readonly string SettingsFile = Path.GetFullPath(SettingsFileName);
         private static readonly string AppSettingsFile = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
-
         internal static readonly string ProgramDefaultSettingsFile = Path.Combine(AppContext.BaseDirectory, SettingsFileName);
 
-        public static void Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
-            var app = new CommandLineApplication();
-            app.Name = "asrs-emulator";
-            app.Description = "The local emulator for Azure SignalR Serverless features.";
-            app.HelpOption("-h|--help");
-            
-            app.Command("upstream", command =>
+            var rootCommand = new RootCommand("The local emulator for Azure SignalR Serverless features.")
             {
-                command.Description = "To init/list the upstream options";
-                command.HelpOption("-h|--help");
-                command.Command("init", c =>
-                {
-                    c.Description = "Init the default upstream options into a settings.json config. Use -o to specify the folder to export the default settings.";
-                    var configOptions = c.Option("-o|--output", "Specify the folder to init the upstream settings file.", CommandOptionType.SingleValue);
-                    c.HelpOption("-h|--help");
-                    c.OnExecute(() =>
-                    {
-                        string outputFile = configOptions.HasValue() ? Path.GetFullPath(Path.Combine(configOptions.Value(), SettingsFileName)) : SettingsFile;
-                        if (File.Exists(outputFile))
-                        {
-                            Console.WriteLine($"Already contains '{outputFile}', still want to override it with the default one? (N/y)");
-                            if (Console.ReadKey().Key != ConsoleKey.Y)
-                            {
-                                return 0;
-                            }
+                Name = "asrs-emulator"
+            };
 
-                            Console.WriteLine();
-                        }
+            rootCommand.AddCommand(CreateUpstreamCommand());
+            rootCommand.AddCommand(CreateStartCommand());
 
-                        Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
-                        File.Copy(ProgramDefaultSettingsFile, outputFile, true);
-
-                        Console.WriteLine($"Exported default settings to '{outputFile}'.");
-                        return 0;
-                    });
-                });
-                command.Command("list", c =>
-                {
-                    c.Description = "List current upstream options. Use -c to specify the folder or file to read the settings.";
-                    var configOptions = c.Option("-c|--config", "Specify the upstream settings file to load from.", CommandOptionType.SingleValue);
-                    c.HelpOption("-h|--help");
-                    c.OnExecute(() =>
-                    {
-                        if (!TryGetConfigFilePath(configOptions, out var config))
-                        {
-                            return 1;
-                        }
-
-                        var host = CreateHostBuilder(args, null, DefaultPort, config).Build();
-                        
-                        Console.WriteLine($"Loaded upstream settings from '{config}'");
-                        
-                        var option = host.Services.GetRequiredService<IOptions<UpstreamOptions>>();
-                        option.Value.Print();
-                        return 0;
-                    });
-                });
-            });
-
-            app.Command("start", command =>
-            {
-                command.Description = "To start the emulator.";
-                var portOptions = command.Option("-p|--port", "Specify the port to use.", CommandOptionType.SingleValue);
-                var ipOptions = command.Option("-i|--ip", "Specify the IP address to use.", CommandOptionType.SingleValue);
-                var configOptions = command.Option("-c|--config", "Specify the upstream settings file to load from.", CommandOptionType.SingleValue);
-                command.HelpOption("-h|--help");
-                command.OnExecute(() =>
-                {
-                    if (!TryGetPort(portOptions, out var port) || !TryGetConfigFilePath(configOptions, out var config) || !TryGetIpAddress(ipOptions, out var ip))
-                    {
-                        return 1;
-                    }
-
-                    Console.WriteLine($"Loaded settings from '{config}'. Changes to the settings file will be hot-loaded into the emulator.");
-
-                    CreateHostBuilder(args, ip, port, config).Build().Run();
-                    return 0;
-                });
-            });
-
-            app.OnExecute(() =>
-            {
-                app.ShowHelp();
-                return 0;
-            });
-
-            try
-            {
-                app.Execute(args);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Error starting emulator: {e.Message}.");
-            }
+            return await rootCommand.InvokeAsync(args);
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args, IPAddress ip, int port, string configFile)
+        private static Command CreateUpstreamCommand()
+        {
+            var upstreamCommand = new Command("upstream", "To init/list the upstream options")
+            {
+                CreateInitCommand(),
+                CreateListCommand()
+            };
+
+            return upstreamCommand;
+        }
+
+        private static Command CreateInitCommand()
+        {
+            var outputOption = new Option<string?>(
+                new[] { "-o", "--output" },
+                "Specify the folder to init the upstream settings file."
+            );
+
+            var initCommand = new Command("init", "Init the default upstream options into a settings.json config")
+            {
+                outputOption
+            };
+
+            initCommand.SetHandler((string? output) =>
+            {
+                string outputFile = !string.IsNullOrEmpty(output)
+                    ? Path.GetFullPath(Path.Combine(output, SettingsFileName))
+                    : SettingsFile;
+
+                if (File.Exists(outputFile))
+                {
+                    Console.WriteLine($"Already contains '{outputFile}', still want to override it with the default one? (N/y)");
+                    if (Console.ReadKey().Key != ConsoleKey.Y)
+                    {
+                        return;
+                    }
+
+                    Console.WriteLine();
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(outputFile)!);
+                File.Copy(ProgramDefaultSettingsFile, outputFile, true);
+
+                Console.WriteLine($"Exported default settings to '{outputFile}'.");
+            }, outputOption);
+
+            return initCommand;
+        }
+
+        private static Command CreateListCommand()
+        {
+            var configOption = new Option<string?>(
+                new[] { "-c", "--config" },
+                "Specify the upstream settings file to load from."
+            );
+
+            var listCommand = new Command("list", "List current upstream options")
+            {
+                configOption
+            };
+
+            listCommand.SetHandler((string? config) =>
+            {
+                if (!TryGetConfigFilePath(config, out var configFile))
+                {
+                    return;
+                }
+
+                var host = CreateHostBuilder(null, null, DefaultPort, configFile).Build();
+
+                Console.WriteLine($"Loaded upstream settings from '{configFile}'");
+
+                var options = host.Services.GetRequiredService<IOptions<UpstreamOptions>>();
+                options.Value.Print();
+            }, configOption);
+
+            return listCommand;
+        }
+
+        private static Command CreateStartCommand()
+        {
+            var portOption = new Option<int?>(
+                new[] { "-p", "--port" },
+                () => DefaultPort,
+                "Specify the port to use."
+            );
+            var ipOption = new Option<string?>(
+                new[] { "-i", "--ip" },
+                "Specify the IP address to use."
+            );
+            var configOption = new Option<string?>(
+                new[] { "-c", "--config" },
+                "Specify the upstream settings file to load from."
+            );
+
+            var startCommand = new Command("start", "To start the emulator.")
+            {
+                portOption,
+                ipOption,
+                configOption
+            };
+
+            startCommand.SetHandler((int? port, string? ip, string? config) =>
+            {
+                if (!TryGetPort(port, out var actualPort) ||
+                    !TryGetConfigFilePath(config, out var configFile) ||
+                    !TryGetIpAddress(ip, out var actualIp))
+                {
+                    return;
+                }
+
+                Console.WriteLine($"Loaded settings from '{configFile}'. Changes to the settings file will be hot-loaded into the emulator.");
+
+                CreateHostBuilder(null, actualIp, actualPort, configFile).Build().Run();
+            }, portOption, ipOption, configOption);
+
+            return startCommand;
+        }
+
+        private static IHostBuilder CreateHostBuilder(string[]? args, IPAddress? ip, int port, string configFile)
         {
             return Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.UseKestrel(o =>
+                    webBuilder.UseKestrel(options =>
                     {
                         if (ip == null)
                         {
-                            o.ListenLocalhost(port);
+                            options.ListenLocalhost(port);
                         }
                         else
                         {
-                            o.Listen(ip, port);
+                            options.Listen(ip, port);
                         }
                     });
                 })
-                .ConfigureAppConfiguration(s =>
+                .ConfigureAppConfiguration(config =>
                 {
-                    s.AddJsonFile(AppSettingsFile, optional: true, reloadOnChange: true);
-                    s.AddJsonFile(configFile, optional: true, reloadOnChange: true);
+                    config.AddJsonFile(AppSettingsFile, optional: true, reloadOnChange: true);
+                    config.AddJsonFile(configFile, optional: true, reloadOnChange: true);
                 });
         }
 
-        private static bool TryGetIpAddress(CommandOption ipOptions, out IPAddress ip)
+        private static bool TryGetIpAddress(string? ipOption, out IPAddress? ip)
         {
-            if (ipOptions.HasValue())
+            if (!string.IsNullOrEmpty(ipOption))
             {
-                var val = ipOptions.Value();
-
-                if (IPAddress.TryParse(val, out ip))
+                if (IPAddress.TryParse(ipOption, out ip))
                 {
                     return true;
                 }
-                else
-                {
-                    Console.WriteLine($"Invalid IP address value: {val}");
-                    return false;
-                }
+
+                Console.WriteLine($"Invalid IP address value: {ipOption}");
+                return false;
             }
-            else
-            {
-                ip = null;
-                return true;
-            }
+
+            ip = null;
+            return true;
         }
 
-        private static bool TryGetPort(CommandOption portOption, out int port)
+        private static bool TryGetPort(int? portOption, out int port)
         {
-            if (portOption.HasValue())
-            {
-                var val = portOption.Value();
-
-                if( int.TryParse(val, out port))
-                {
-                    return true;
-                }
-                else
-                {
-                    Console.WriteLine($"Invalid port value: {val}");
-                    return false;
-                }
-            }
-            else
-            {
-                port = DefaultPort;
-                return true;
-            }
+            port = portOption ?? DefaultPort;
+            return true;
         }
 
-        private static bool TryGetConfigFilePath(CommandOption configOption, out string path)
+        private static bool TryGetConfigFilePath(string? configOption, [NotNullWhen(true)]out string? path)
         {
-            if (configOption.HasValue())
+            if (!string.IsNullOrEmpty(configOption))
             {
-                var fileAttempt = Path.GetFullPath(configOption.Value());
+                var fileAttempt = Path.GetFullPath(configOption);
                 if (File.Exists(fileAttempt))
                 {
                     path = fileAttempt;
                     return true;
                 }
 
-                // Try this as a folder
                 var folderAttempt = Path.GetFullPath(Path.Combine(fileAttempt, SettingsFileName));
                 if (File.Exists(folderAttempt))
                 {
@@ -213,11 +226,9 @@ namespace Microsoft.Azure.SignalR.Emulator
                 path = null;
                 return false;
             }
-            else
-            {
-                path = SettingsFile;
-                return true;
-            }
+
+            path = SettingsFile;
+            return true;
         }
     }
 }

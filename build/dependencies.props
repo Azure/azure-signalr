@@ -54,7 +54,7 @@
     <MicrosoftSourceLinkGitHubPackageVersion>1.1.1</MicrosoftSourceLinkGitHubPackageVersion>
 
     <!--Emulator, self-contained, always try the latest version -->
-    <MicrosoftExtensionsCommandLineUtilsPackageVersion>1.1.1</MicrosoftExtensionsCommandLineUtilsPackageVersion>
+    <SystemCommandLinePackageVersion>2.0.0-beta4.22272.1</SystemCommandLinePackageVersion>
     <EmulatorMicrosoftPackageVersion>8.0.11</EmulatorMicrosoftPackageVersion>
     
     <!-- Vulnerability fix-->
