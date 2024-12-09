@@ -1429,8 +1429,6 @@ public class ServiceProtocol : IServiceProtocol
         }
     }
 
-    }
-
     private static string? ReadString(ref MessagePackReader reader, string field)
     {
         try
@@ -1455,7 +1453,6 @@ public class ServiceProtocol : IServiceProtocol
             throw new InvalidDataException($"Reading '{field}' as String failed.", ex);
 
         }
-    }
 
         if (result == null)
         {
