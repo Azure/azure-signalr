@@ -12,8 +12,6 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.Protocol;
 
-#nullable enable
-
 /// <summary>
 /// Implements the Azure SignalR Service Protocol.
 /// </summary>
@@ -700,7 +698,7 @@ public class ServiceProtocol : IServiceProtocol
         writer.Write(message.Error);
         message.WriteExtensionMembers(ref writer);
     }
-
+    
     private static void WriteServiceMappingMessage(ref MessagePackWriter writer, ServiceMappingMessage message)
     {
         writer.WriteArrayHeader(5);
@@ -849,7 +847,7 @@ public class ServiceProtocol : IServiceProtocol
         if (arrayLength > 1)
         {
             var length = arrayLength - 1;
-            var values = new string[length];
+            var values = new string?[length];
             for (int i = 0; i < length; i++)
             {
                 values[i] = ReadString(ref reader, "messages[{0}]", i);
@@ -862,7 +860,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static OpenConnectionMessage CreateOpenConnectionMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionId = ReadString(ref reader, "connectionId");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
         var claims = ReadClaims(ref reader);
 
         // Backward compatible with old versions
@@ -885,7 +883,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static CloseConnectionMessage CreateCloseConnectionMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionId = ReadString(ref reader, "connectionId");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
         var errorMessage = ReadString(ref reader, "errorMessage");
         var headers = arrayLength >= 4 ? ReadHeaders(ref reader) : new Dictionary<string, StringValues>();
         var result = new CloseConnectionMessage(connectionId, errorMessage, headers);
@@ -899,7 +897,7 @@ public class ServiceProtocol : IServiceProtocol
     [Obsolete]
     private static CloseConnectionWithAckMessage CreateCloseConnectionWithAckMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionId = ReadString(ref reader, "connectionId");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
         var reason = ReadString(ref reader, "reason");
         var ackId = ReadInt32(ref reader, "ackId");
         var result = new CloseConnectionWithAckMessage(connectionId, ackId)
@@ -934,7 +932,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static CloseUserConnectionsWithAckMessage CreateCloseUserConnectionsWithAckMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var userId = ReadString(ref reader, "userId");
+        var userId = ReadStringNotNull(ref reader, "userId");
         var reason = ReadString(ref reader, "reason");
         var ackId = ReadInt32(ref reader, "ackId");
         var excluded = ReadStringArray(ref reader, "excluded");
@@ -953,7 +951,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static CloseGroupConnectionsWithAckMessage CreateCloseGroupConnectionsWithAckMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var group = ReadString(ref reader, "group");
+        var group = ReadStringNotNull(ref reader, "group");
         var reason = ReadString(ref reader, "reason");
         var ackId = ReadInt32(ref reader, "ackId");
         var excluded = ReadStringArray(ref reader, "excluded");
@@ -972,7 +970,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static ConnectionDataMessage CreateConnectionDataMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionId = ReadString(ref reader, "connectionId");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
         var payload = ReadBytes(ref reader, "payload");
 
         var result = new ConnectionDataMessage(connectionId, payload);
@@ -985,7 +983,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static ConnectionReconnectMessage CreateConnectionReconnectMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionId = ReadString(ref reader, "connectionId");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
 
         var result = new ConnectionReconnectMessage(connectionId);
         result.ReadExtensionMembers(ref reader);
@@ -1007,7 +1005,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static ServiceMessage CreateUserDataMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var userId = ReadString(ref reader, "userId");
+        var userId = ReadStringNotNull(ref reader, "userId");
         var payloads = ReadPayloads(ref reader);
 
         var result = new UserDataMessage(userId, payloads);
@@ -1046,8 +1044,8 @@ public class ServiceProtocol : IServiceProtocol
 
     private static JoinGroupMessage CreateJoinGroupMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionId = ReadString(ref reader, "connectionId");
-        var groupName = ReadString(ref reader, "groupName");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
+        var groupName = ReadStringNotNull(ref reader, "groupName");
 
         var result = new JoinGroupMessage(connectionId, groupName);
         if (arrayLength >= 4)
@@ -1059,7 +1057,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static LeaveGroupMessage CreateLeaveGroupMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionId = ReadString(ref reader, "connectionId");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
         var groupName = ReadString(ref reader, "groupName");
 
         var result = new LeaveGroupMessage(connectionId, groupName);
@@ -1072,8 +1070,8 @@ public class ServiceProtocol : IServiceProtocol
 
     private static UserJoinGroupMessage CreateUserJoinGroupMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var userId = ReadString(ref reader, "userId");
-        var groupName = ReadString(ref reader, "groupName");
+        var userId = ReadStringNotNull(ref reader, "userId");
+        var groupName = ReadStringNotNull(ref reader, "groupName");
 
         var result = new UserJoinGroupMessage(userId, groupName);
         if (arrayLength >= 4)
@@ -1085,7 +1083,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static UserLeaveGroupMessage CreateUserLeaveGroupMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var userId = ReadString(ref reader, "userId");
+        var userId = ReadStringNotNull(ref reader, "userId");
         var groupName = ReadString(ref reader, "groupName");
 
         var result = new UserLeaveGroupMessage(userId, groupName);
@@ -1098,8 +1096,8 @@ public class ServiceProtocol : IServiceProtocol
 
     private static UserJoinGroupWithAckMessage CreateUserJoinGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var userId = ReadString(ref reader, "userId");
-        var groupName = ReadString(ref reader, "groupName");
+        var userId = ReadStringNotNull(ref reader, "userId");
+        var groupName = ReadStringNotNull(ref reader, "groupName");
         var ackId = ReadInt32(ref reader, "ackId");
 
         var result = new UserJoinGroupWithAckMessage(userId, groupName, ackId);
@@ -1109,7 +1107,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static UserLeaveGroupWithAckMessage CreateUserLeaveGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var userId = ReadString(ref reader, "userId");
+        var userId = ReadStringNotNull(ref reader, "userId");
         var groupName = ReadString(ref reader, "groupName");
         var ackId = ReadInt32(ref reader, "ackId");
 
@@ -1120,7 +1118,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static GroupBroadcastDataMessage CreateGroupBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var groupName = ReadString(ref reader, "groupName");
+        var groupName = ReadStringNotNull(ref reader, "groupName");
         var excludedList = ReadStringArray(ref reader, "excludedList");
         var payloads = ReadPayloads(ref reader);
 
@@ -1172,8 +1170,8 @@ public class ServiceProtocol : IServiceProtocol
 
     private static JoinGroupWithAckMessage CreateJoinGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionId = ReadString(ref reader, "connectionId");
-        var groupName = ReadString(ref reader, "groupName");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
+        var groupName = ReadStringNotNull(ref reader, "groupName");
         var ackId = ReadInt32(ref reader, "ackId");
 
         var result = new JoinGroupWithAckMessage(connectionId, groupName, ackId);
@@ -1186,7 +1184,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static LeaveGroupWithAckMessage CreateLeaveGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionId = ReadString(ref reader, "connectionId");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
         var groupName = ReadString(ref reader, "groupName");
         var ackId = ReadInt32(ref reader, "ackId");
 
@@ -1200,8 +1198,8 @@ public class ServiceProtocol : IServiceProtocol
 
     private static CheckUserInGroupWithAckMessage CreateCheckUserInGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var userId = ReadString(ref reader, "userId");
-        var groupName = ReadString(ref reader, "groupName");
+        var userId = ReadStringNotNull(ref reader, "userId");
+        var groupName = ReadStringNotNull(ref reader, "groupName");
         var ackId = ReadInt32(ref reader, "ackId");
 
         var result = new CheckUserInGroupWithAckMessage(userId, groupName, ackId);
@@ -1214,7 +1212,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static CheckGroupExistenceWithAckMessage CreateGroupExistenceWithAckMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var groupName = ReadString(ref reader, "groupName");
+        var groupName = ReadStringNotNull(ref reader, "groupName");
         var ackId = ReadInt32(ref reader, "ackId");
 
         var result = new CheckGroupExistenceWithAckMessage(groupName, ackId);
@@ -1224,7 +1222,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static CheckConnectionExistenceWithAckMessage CreateCheckConnectionExistenceWithAckMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionId = ReadString(ref reader, "connectionId");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
         var ackId = ReadInt32(ref reader, "ackId");
 
         var result = new CheckConnectionExistenceWithAckMessage(connectionId, ackId);
@@ -1234,7 +1232,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static CheckUserExistenceWithAckMessage CreateCheckUserExistenceWithAckMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var userId = ReadString(ref reader, "userId");
+        var userId = ReadStringNotNull(ref reader, "userId");
         var ackId = ReadInt32(ref reader, "ackId");
 
         var result = new CheckUserExistenceWithAckMessage(userId, ackId);
@@ -1258,9 +1256,9 @@ public class ServiceProtocol : IServiceProtocol
 
     private static ClientInvocationMessage CreateClientInvocationMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var invocationId = ReadString(ref reader, "invocationId");
-        var connectionId = ReadString(ref reader, "connectionId");
-        var callerServerId = ReadString(ref reader, "callerServerId");
+        var invocationId = ReadStringNotNull(ref reader, "invocationId");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
+        var callerServerId = ReadStringNotNull(ref reader, "callerServerId");
         var payloads = ReadPayloads(ref reader);
 
         var result = new ClientInvocationMessage(invocationId, connectionId, callerServerId, payloads);
@@ -1270,9 +1268,9 @@ public class ServiceProtocol : IServiceProtocol
 
     private static ClientCompletionMessage CreateClientCompletionMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var invocationId = ReadString(ref reader, "invocationId");
-        var connectionId = ReadString(ref reader, "connectionId");
-        var callerServerId = ReadString(ref reader, "callerServerId");
+        var invocationId = ReadStringNotNull(ref reader, "invocationId");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
+        var callerServerId = ReadStringNotNull(ref reader, "callerServerId");
         var protocol = ReadString(ref reader, "protocol");
         var payload = ReadBytes(ref reader, "payload");
 
@@ -1284,9 +1282,9 @@ public class ServiceProtocol : IServiceProtocol
 
     private static ErrorCompletionMessage CreateErrorCompletionMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var invocationId = ReadString(ref reader, "invocationId");
-        var connectionId = ReadString(ref reader, "connectionId");
-        var callerServerId = ReadString(ref reader, "callerServerId");
+        var invocationId = ReadStringNotNull(ref reader, "invocationId");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
+        var callerServerId = ReadStringNotNull(ref reader, "callerServerId");
         var error = ReadString(ref reader, "error");
 
         var result = new ErrorCompletionMessage(invocationId, connectionId, callerServerId, error);
@@ -1297,9 +1295,9 @@ public class ServiceProtocol : IServiceProtocol
 
     private static ServiceMappingMessage CreateServiceMappingMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var invocationId = ReadString(ref reader, "invocationId");
-        var connectionId = ReadString(ref reader, "connectionId");
-        var instanceId = ReadString(ref reader, "instanceId");
+        var invocationId = ReadStringNotNull(ref reader, "invocationId");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
+        var instanceId = ReadStringNotNull(ref reader, "instanceId");
 
         var result = new ServiceMappingMessage(invocationId, connectionId, instanceId);
 
@@ -1309,7 +1307,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static ConnectionFlowControlMessage CreateConnectionFlowControlMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionId = ReadString(ref reader, "connectionId");
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
         var connectionType = ReadInt32(ref reader, "connectionType");
         var operation = ReadInt32(ref reader, "operation");
 
@@ -1368,7 +1366,9 @@ public class ServiceProtocol : IServiceProtocol
             var payloads = new ArrayDictionary<string, ReadOnlyMemory<byte>>((int)payloadCount, StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < payloadCount; i++)
             {
-                var key = ReadString(ref reader, "payloads[{0}].key", i);
+                var keyName = $"payloads[{i}].key";
+
+                var key = ReadStringNotNull(ref reader, keyName);
                 var value = ReadBytes(ref reader, "payloads[{0}].value", i);
                 payloads.Add(key, value);
             }
@@ -1387,9 +1387,10 @@ public class ServiceProtocol : IServiceProtocol
             var headers = new Dictionary<string, StringValues>((int)headerCount, StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < headerCount; i++)
             {
-                var key = ReadString(ref reader, $"headers[{i}].key");
+                var keyName = $"headers[{i}].key";
+                var key = ReadStringNotNull(ref reader, keyName);
                 var count = ReadArrayLength(ref reader, $"headers[{i}].value.length");
-                var stringValues = new string[count];
+                var stringValues = new string?[count];
                 for (var j = 0; j < count; j++)
                 {
                     stringValues[j] = ReadString(ref reader, $"headers[{i}].value[{j}]");
@@ -1412,6 +1413,7 @@ public class ServiceProtocol : IServiceProtocol
         catch (Exception ex)
         {
             throw new InvalidDataException($"Reading '{field}' as Boolean failed.", ex);
+
         }
     }
 
@@ -1425,10 +1427,9 @@ public class ServiceProtocol : IServiceProtocol
         {
             throw new InvalidDataException($"Reading '{field}' as Int32 failed.", ex);
         }
-
     }
 
-    private static string ReadString(ref MessagePackReader reader, string field)
+    private static string? ReadString(ref MessagePackReader reader, string field)
     {
         try
         {
@@ -1440,7 +1441,28 @@ public class ServiceProtocol : IServiceProtocol
         }
     }
 
-    private static string ReadString(ref MessagePackReader reader, string formatField, int param)
+    private static string ReadStringNotNull(ref MessagePackReader reader, string field)
+    {
+        string? result = null;  
+        try
+        {
+            result = reader.ReadString();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidDataException($"Reading '{field}' as String failed.", ex);
+
+        }
+
+        if (result == null)
+        {
+            throw new InvalidDataException($"Reading '{field}' as Not-Null String failed.");
+        }
+
+        return result;
+    }
+
+    private static string? ReadString(ref MessagePackReader reader, string formatField, int param)
     {
         try
         {
@@ -1452,18 +1474,6 @@ public class ServiceProtocol : IServiceProtocol
         }
     }
 
-    private static string ReadString(ref MessagePackReader reader, string formatField, string param1, int param2)
-    {
-        try
-        {
-            return reader.ReadString();
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidDataException($"Reading '{string.Format(formatField, param1, param2)}' as String failed.", ex);
-        }
-    }
-
     private static string[] ReadStringArray(ref MessagePackReader reader, string field)
     {
         var arrayLength = ReadArrayLength(ref reader, field);
@@ -1472,7 +1482,8 @@ public class ServiceProtocol : IServiceProtocol
             var array = new string[arrayLength];
             for (int i = 0; i < arrayLength; i++)
             {
-                array[i] = ReadString(ref reader, "{0}[{1}]", field, i);
+                var fieldName = $"{field}[{i}]";
+                array[i] = ReadStringNotNull(ref reader, fieldName);
             }
 
             return array;

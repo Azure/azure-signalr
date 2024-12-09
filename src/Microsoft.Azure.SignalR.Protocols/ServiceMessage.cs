@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public virtual ServiceMessage Clone() => (MemberwiseClone() as ServiceMessage)!;
 
-        public static byte GeneratePartitionKey(string input)
+        public static byte GeneratePartitionKey(string? input)
         {
             return (byte)((input?.GetHashCode() ?? 0) & 0xFF);
         }
@@ -393,7 +393,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the optional error message.
         /// </summary>
-        public string ErrorMessage { get; set; }
+        public string? ErrorMessage { get; set; }
 
         /// <summary>
         /// Gets or sets the id of this connection.
@@ -411,7 +411,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Initializes a new instance of the <see cref="HandshakeResponseMessage"/> class.
         /// </summary>
         /// <param name="errorMessage">An optional response error message. A <c>null</c> or empty error message indicates a successful handshake.</param>
-        public HandshakeResponseMessage(string errorMessage)
+        public HandshakeResponseMessage(string? errorMessage)
         {
             ErrorMessage = errorMessage;
         }
@@ -427,7 +427,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public static PingMessage Instance = new PingMessage();
 
-        public string[] Messages { get; set; } = Array.Empty<string>();
+        public string?[] Messages { get; set; } = Array.Empty<string?>();
     }
 
     /// <summary>
@@ -444,9 +444,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Initializes a new instance of the <see cref="ServiceErrorMessage"/> class.
         /// </summary>
         /// <param name="errorMessage">An error message.</param>
-        public ServiceErrorMessage(string errorMessage)
+        public ServiceErrorMessage(string? errorMessage)
         {
-            ErrorMessage = errorMessage;
+            ErrorMessage = errorMessage ?? string.Empty;
         }
     }
 
@@ -463,7 +463,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the id of event object.
         /// </summary>
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
         /// <summary>
         /// Gets or sets the kind of event.
@@ -482,12 +482,12 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="id">An id of event object.</param>
         /// <param name="kind">A kind of event.</param>
         /// <param name="message">A message of event.</param>
-        public ServiceEventMessage(ServiceEventObjectType type, string id, ServiceEventKind kind, string message)
+        public ServiceEventMessage(ServiceEventObjectType type, string? id, ServiceEventKind kind, string? message)
         {
             Type = type;
             Id = id;
             Kind = kind;
-            Message = message;
+            Message = message ?? string.Empty;
         }
     }
 
@@ -526,11 +526,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="ackId">The ack Id</param>
         /// <param name="status">The status code</param>
         /// <param name="message">The ack message</param>
-        public AckMessage(int ackId, int status, string message)
+        public AckMessage(int ackId, int status, string? message)
         {
             AckId = ackId;
             Status = status;
-            Message = message;
+            Message = message ?? string.Empty;
         }
     }
 

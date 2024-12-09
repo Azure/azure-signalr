@@ -4,6 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Microsoft.Azure.SignalR.Protocol</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

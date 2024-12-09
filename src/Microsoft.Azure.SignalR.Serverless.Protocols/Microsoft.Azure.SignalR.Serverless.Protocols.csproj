@@ -4,6 +4,7 @@
     <Description>.NET Standard SDK for Azure SignalR Service serverless protocol.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Microsoft.Azure.SignalR.Serverless.Protocols</RootNamespace>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   
   <ItemGroup>

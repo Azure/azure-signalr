@@ -54,7 +54,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="claims">An array of <see cref="Claim"/> associated with the connection.</param>
         /// <param name="headers">A <see cref="IDictionary{TKey,TValue}"/> associated with the connection.</param>
         /// <param name="queryString">Query string associated with the connection.</param>
-        public OpenConnectionMessage(string connectionId, Claim[]? claims, IDictionary<string, StringValues> headers, string queryString)
+        public OpenConnectionMessage(string connectionId, Claim[]? claims, IDictionary<string, StringValues> headers, string? queryString)
             : base(connectionId)
         {
             Claims = claims ?? [];
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the associated query string.
         /// </summary>
-        public string QueryString { get; set; }
+        public string? QueryString { get; set; }
 
         /// <summary>
         /// Gets or sets the protocol for new connection.
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="errorMessage">Optional error message.</param>
         /// <param name="headers">A <see cref="IDictionary{TKey,TValue}"/> associated with the connection.</param>
-        public CloseConnectionMessage(string connectionId, string errorMessage, IDictionary<string, StringValues>? headers = null) : base(connectionId)
+        public CloseConnectionMessage(string connectionId, string? errorMessage, IDictionary<string, StringValues>? headers = null) : base(connectionId)
         {
             ErrorMessage = errorMessage ?? "";
             Headers = headers ?? new Dictionary<string, StringValues>();
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="protocol">The protocol of the connection.</param>
         /// <param name="payload">The payload of the completion result.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public ClientCompletionMessage(string invocationId, string connectionId, string callerServerId, string protocol, ReadOnlyMemory<byte> payload, ulong? tracingId = null)
+        public ClientCompletionMessage(string invocationId, string connectionId, string callerServerId, string? protocol, ReadOnlyMemory<byte> payload, ulong? tracingId = null)
             : base(invocationId, connectionId, callerServerId, tracingId)
         {
             Protocol = protocol;
@@ -261,10 +261,10 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="callerServerId">The serverId that wrap the completion result.</param>
         /// <param name="error">The error information about invacation failure.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public ErrorCompletionMessage(string invocationId, string connectionId, string callerServerId, string error, ulong? tracingId = null)
+        public ErrorCompletionMessage(string invocationId, string connectionId, string callerServerId, string? error, ulong? tracingId = null)
             : base(invocationId, connectionId, callerServerId, tracingId)
         {
-            Error = error;
+            Error = error ?? string.Empty;
         }
 
         /// <summary>
