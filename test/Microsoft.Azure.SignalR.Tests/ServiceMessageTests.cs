@@ -14,6 +14,7 @@ using Azure.Identity;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
@@ -243,7 +244,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         {
             case MicrosoftEntraAccessKey key:
                 var source = new CancellationTokenSource(3000);
-                await Assert.ThrowsAsync<TaskCanceledException>(async () => await key.GenerateAccessTokenAsync(DefaultAudience, emptyClaims, lifetime, algorithm, source.Token));
+                await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await key.GenerateAccessTokenAsync(DefaultAudience, emptyClaims, lifetime, algorithm, source.Token));
                 break;
         }
 
