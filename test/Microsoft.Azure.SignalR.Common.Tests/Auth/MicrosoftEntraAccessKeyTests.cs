@@ -133,7 +133,7 @@ public class MicrosoftEntraAccessKeyTests
 
         var (kid, accessKey) = ("foo", DefaultSigningKey);
         key.UpdateAccessKey(kid, accessKey);
-        Assert.Contains("has expired", key.LastException.Message);
+        Assert.Null(key.LastException);
     }
 
     [Theory]

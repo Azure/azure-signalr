@@ -60,7 +60,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         {
             if (value)
             {
-                LastException = new Exception("The access key has expired.");
+                LastException = null;
             }
             _updateAt = DateTime.UtcNow;
             _isAuthorized = value;
@@ -73,7 +73,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     public byte[] KeyBytes => _keyBytes ?? throw new ArgumentNullException(nameof(KeyBytes));
 
-    internal Exception LastException { get; private set; } = new Exception("The access key has not been initialized.");
+    internal Exception? LastException { get; private set; }
 
     internal string GetAccessKeyUrl { get; }
 
@@ -135,7 +135,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         }
         return Available
             ? AuthUtility.GenerateAccessToken(KeyBytes, Kid, audience, claims, lifetime, algorithm)
-            : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, GetExceptionMessage(LastException), LastException);
+            : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, GetExceptionMessage(LastException, _keyBytes != null), LastException);
     }
 
     internal void UpdateAccessKey(string kid, string keyStr)
@@ -199,12 +199,12 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         tcs.TrySetResult(false);
     }
 
-    private static string GetExceptionMessage(Exception exception)
+    private static string GetExceptionMessage(Exception? exception, bool initialized)
     {
         return exception switch
         {
             AzureSignalRUnauthorizedException => AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra,
-            _ => exception.Message,
+            _ => exception?.Message ?? (initialized ? "The access key has expired." : "The access key has not been initialized."),
         };
     }
 
