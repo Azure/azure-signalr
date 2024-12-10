@@ -36,7 +36,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     private static readonly TimeSpan GetAccessKeyInterval = TimeSpan.FromMinutes(55);
 
-    private static readonly TimeSpan GetAccessKeyIntervalWhenUnauthorized = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan GetAccessKeyIntervalUnavailable = TimeSpan.FromMinutes(5);
 
     private static readonly TimeSpan AccessKeyExpireTime = TimeSpan.FromMinutes(120);
 
@@ -55,6 +55,8 @@ internal class MicrosoftEntraAccessKey : IAccessKey
     private volatile byte[]? _keyBytes;
 
     public bool Initialized => _initializedTcs.Task.IsCompleted;
+
+    public bool NeedRefresh => DateTime.UtcNow - _updateAt > (Available ? GetAccessKeyInterval : GetAccessKeyIntervalUnavailable);
 
     public bool Available
     {
@@ -121,8 +123,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
     {
         if (!_initializedTcs.Task.IsCompleted)
         {
-            var source = new CancellationTokenSource(Constants.Periods.DefaultUpdateAccessKeyTimeout);
-            _ = UpdateAccessKeyAsync(source.Token);
+            _ = UpdateAccessKeyAsync();
         }
 
         await _initializedTcs.Task.OrCancelAsync(ctoken, "The access key initialization timed out.");
@@ -139,14 +140,9 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         Available = true;
     }
 
-    internal async Task UpdateAccessKeyAsync(CancellationToken ctoken = default)
+    internal async Task UpdateAccessKeyAsync()
     {
-        var delta = DateTime.UtcNow - _updateAt;
-        if (Available && delta < GetAccessKeyInterval)
-        {
-            return;
-        }
-        else if (!Available && delta < GetAccessKeyIntervalWhenUnauthorized)
+        if (!NeedRefresh)
         {
             return;
         }
@@ -158,15 +154,10 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
         for (var i = 0; i < GetAccessKeyMaxRetryTimes; i++)
         {
-            if (ctoken.IsCancellationRequested)
-            {
-                break;
-            }
-
             var source = new CancellationTokenSource(GetAccessKeyTimeout);
             try
             {
-                await UpdateAccessKeyInternalAsync(source.Token).OrCancelAsync(ctoken);
+                await UpdateAccessKeyInternalAsync(source.Token);
                 Interlocked.Exchange(ref _updateState, UpdateTaskIdle);
                 return;
             }
@@ -179,7 +170,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
                 LastException = e;
                 try
                 {
-                    await Task.Delay(GetAccessKeyRetryInterval, ctoken); // retry after interval.
+                    await Task.Delay(GetAccessKeyRetryInterval); // retry after interval.
                 }
                 catch (OperationCanceledException)
                 {
