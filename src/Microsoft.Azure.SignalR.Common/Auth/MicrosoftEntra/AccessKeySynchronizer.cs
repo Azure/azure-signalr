@@ -81,8 +81,7 @@ internal sealed class AccessKeySynchronizer : IAccessKeySynchronizer, IDisposabl
             {
                 foreach (var key in InitializedKeyList)
                 {
-                    var source = new CancellationTokenSource(Constants.Periods.DefaultUpdateAccessKeyTimeout);
-                    _ = key.UpdateAccessKeyAsync(source.Token);
+                    _ = key.UpdateAccessKeyAsync();
                 }
             }
         }

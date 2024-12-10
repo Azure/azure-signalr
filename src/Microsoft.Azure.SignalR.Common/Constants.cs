@@ -44,8 +44,6 @@ internal static class Constants
 
         public const int MaxCustomHandshakeTimeout = 30;
 
-        public static readonly TimeSpan DefaultUpdateAccessKeyTimeout = TimeSpan.FromMinutes(2);
-
         public static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
 
         public static readonly TimeSpan DefaultScaleTimeout = TimeSpan.FromMinutes(5);
