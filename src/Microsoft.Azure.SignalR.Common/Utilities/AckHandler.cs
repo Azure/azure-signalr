@@ -132,16 +132,13 @@ namespace Microsoft.Azure.SignalR
                 {
                     if (_acks.TryRemove(id, out _))
                     {
-                        if (ack is SingleAckInfo<AckStatus> singleAckInfo)
-                        {
-                            singleAckInfo.Ack(AckStatus.Timeout);
-                        }
-                        else if (ack is MultiAckWithStatusInfo multipleAckInfo)
+                        if (ack is MultiAckWithStatusInfo multipleAckInfo)
                         {
                             multipleAckInfo.ForceAck(AckStatus.Timeout);
                         }
                         else
                         {
+                            ack.Ack(AckStatus.Timeout);
                             ack.Cancel();
                         }
                     }
@@ -217,6 +214,10 @@ namespace Microsoft.Azure.SignalR
             public SingleAckWithMessagePackPayloadInfo(TimeSpan timeout) : base(timeout) { }
             public override bool Ack(AckStatus status, ReadOnlySequence<byte>? payload = null)
             {
+                if (status == AckStatus.Timeout)
+                {
+                    return _tcs.TrySetException(new TimeoutException($"Waiting for a {typeof(T).Name} response timed out."));
+                }
                 if (payload == null)
                 {
                     throw new ArgumentNullException(nameof(payload));

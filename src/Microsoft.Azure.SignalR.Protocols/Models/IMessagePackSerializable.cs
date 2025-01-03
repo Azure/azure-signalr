@@ -15,7 +15,7 @@ internal interface IMessagePackSerializable
 
 internal static class IMessagePackSerializableExtensions
 {
-    public static TSelf Deserialize<TSelf>(this MessagePackReader reader, string fieldName) where TSelf : IMessagePackSerializable, new()
+    public static TSelf Deserialize<TSelf>(ref this MessagePackReader reader, string fieldName) where TSelf : IMessagePackSerializable, new()
     {
         var result = new TSelf();
         result.Load(ref reader, fieldName);
