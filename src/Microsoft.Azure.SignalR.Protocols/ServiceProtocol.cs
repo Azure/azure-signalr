@@ -6,9 +6,10 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Security.Claims;
 using MessagePack;
 using Microsoft.Extensions.Primitives;
+
+using static Microsoft.Azure.SignalR.Protocol.MessagePackUtils;
 
 namespace Microsoft.Azure.SignalR.Protocol;
 
@@ -17,12 +18,6 @@ namespace Microsoft.Azure.SignalR.Protocol;
 /// </summary>
 public class ServiceProtocol : IServiceProtocol
 {
-    private static readonly IDictionary<string, ReadOnlyMemory<byte>> EmptyReadOnlyMemoryDictionary = new Dictionary<string, ReadOnlyMemory<byte>>();
-
-    private static readonly IDictionary<string, StringValues> EmptyStringValuesDictionaryIgnoreCase = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
-
-    private static readonly int ProtocolVersion = 1;
-
     /// <inheritdoc />
     public int Version => ProtocolVersion;
 
@@ -661,7 +656,16 @@ public class ServiceProtocol : IServiceProtocol
         writer.Write(ServiceProtocolConstants.AckMessageType);
         writer.Write(message.AckId);
         writer.Write(message.Status);
+        if (message.Payload.HasValue)
+        {
+            writer.Write(message.Payload.Value);
+        }
+        else
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
         writer.Write(message.Message);
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
         message.WriteExtensionMembers(ref writer);
     }
 
@@ -1244,9 +1248,23 @@ public class ServiceProtocol : IServiceProtocol
     {
         var ackId = ReadInt32(ref reader, "ackId");
         var status = ReadInt32(ref reader, "status");
-        var message = ReadString(ref reader, "message");
+        ReadOnlySequence<byte>? payload = null;
+        string? message = null;
+        if (reader.NextMessagePackType == MessagePackType.Binary)
+        {
+            payload = reader.ReadBytes();
+        }
+        else
+        {
+            message = ReadString(ref reader, "message");
+        }
 
-        var result = new AckMessage(ackId, status, message);
+#pragma warning disable CS0612 // Type or member is obsolete
+        var result = new AckMessage(ackId, status, message)
+        {
+            Payload = payload
+        };
+#pragma warning restore CS0612 // Type or member is obsolete
         if (arrayLength >= 5)
         {
             result.ReadExtensionMembers(ref reader);

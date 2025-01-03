@@ -252,8 +252,16 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "lBQBZKA="),
             new ProtocolTestData(
                 name: "AckWithMessage_NoOptionalField",
+#pragma warning disable CS0612 // Type or member is obsolete
                 message: new AckMessage(2, 101, "Joined group successfully"),
+#pragma warning restore CS0612 // Type or member is obsolete
                 binary: "lBQCZblKb2luZWQgZ3JvdXAgc3VjY2Vzc2Z1bGx5"),
+            new ProtocolTestData(
+                name: "AckWithMessage",
+#pragma warning disable CS0612 // Type or member is obsolete
+                message: new AckMessage(2, 101, "Joined group successfully"),
+#pragma warning restore CS0612 // Type or member is obsolete
+                binary: "lRQCZblKb2luZWQgZ3JvdXAgc3VjY2Vzc2Z1bGx5gA=="),
             new ProtocolTestData(
                 name: "GroupBroadcastExcept",
                 message: new GroupBroadcastDataMessage("group3", new [] {"conn12", "conn13"},
@@ -283,8 +291,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "lQ2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoEBzQTS"),
         }.ToDictionary(t => t.Name);
 
+#pragma warning disable CS0612 // Type or member is obsolete
 #pragma warning disable CS0618 // Type or member is obsolete
-
         public static IDictionary<string, ProtocolTestData> TestData => new[]
         {
             new ProtocolTestData(
@@ -527,9 +535,12 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new AckMessage(1, 100),
                 binary: "lRQBZKCA"),
             new ProtocolTestData(
-                name: "AckWithMessage",
-                message: new AckMessage(2, 101, "Joined group successfully"),
-                binary: "lRQCZblKb2luZWQgZ3JvdXAgc3VjY2Vzc2Z1bGx5gA=="),
+                name: "AckWithPayload",
+                message: new AckMessage(2, 0)
+                {
+                    Payload = new ReadOnlySequence<byte>([1,2,3]),
+                },
+                binary: "lRQCAMQDAQIDgA=="),
 
             // messages with tracing id
             new ProtocolTestData(
@@ -706,6 +717,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         }.ToDictionary(t => t.Name);
 
 #pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning restore CS0612 // Type or member is obsolete
 
         [Theory]
         [MemberData(nameof(TestParseOldData))]

@@ -345,7 +345,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return x.AckId == y.AckId &&
                    x.Status == y.Status &&
+                   x.Payload.HasValue == y.Payload.HasValue && SequenceEqual(x.Payload.GetValueOrDefault().ToArray(), y.Payload.GetValueOrDefault().ToArray()) &&
+#pragma warning disable CS0618 // Type or member is obsolete
                    StringEqual(x.Message, y.Message);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         private bool ServiceWarningMessageEqual(ServiceEventMessage x, ServiceEventMessage y)

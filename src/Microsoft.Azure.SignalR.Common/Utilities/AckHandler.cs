@@ -1,7 +1,12 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using MessagePack;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 
@@ -35,13 +40,25 @@ namespace Microsoft.Azure.SignalR
             {
                 return Task.FromResult(AckStatus.Ok);
             }
-            var info = (IAckInfo<AckStatus>)_acks.GetOrAdd(id, _ => new SingleAckInfo(ackTimeout ?? _defaultAckTimeout));
-            if (info is MultiAckInfo)
+            var info = (IAckInfo<AckStatus>)_acks.GetOrAdd(id, _ => new SingleAckWithStatusInfo(ackTimeout ?? _defaultAckTimeout));
+            if (info is MultiAckWithStatusInfo)
             {
                 throw new InvalidOperationException();
             }
             cancellationToken.Register(() => info.Cancel());
             return info.Task;
+        }
+
+        public Task<T> CreateSingleAck<T>(out int id, TimeSpan? ackTimeout = default, CancellationToken cancellationToken = default) where T : IMessagePackSerializable, new()
+        {
+            id = NextId();
+            if (_disposed)
+            {
+                return Task.FromResult(new T());
+            }
+            var info = (IAckInfo<IMessagePackSerializable>)_acks.GetOrAdd(id, _ => new SingleAckWithMessagePackPayloadInfo<T>(ackTimeout ?? _defaultAckTimeout));
+            cancellationToken.Register(info.Cancel);
+            return info.Task.ContinueWith(task => (T)task.Result);
         }
 
         public static bool HandleAckStatus(IAckableMessage message, AckStatus status)
@@ -62,29 +79,19 @@ namespace Microsoft.Azure.SignalR
             {
                 return Task.FromResult(AckStatus.Ok);
             }
-            var info = (IAckInfo<AckStatus>)_acks.GetOrAdd(id, _ => new MultiAckInfo(ackTimeout ?? _defaultAckTimeout));
-            if (info is SingleAckInfo)
+            var info = (IAckInfo<AckStatus>)_acks.GetOrAdd(id, _ => new MultiAckWithStatusInfo(ackTimeout ?? _defaultAckTimeout));
+            if (info is SingleAckInfo<AckStatus>)
             {
                 throw new InvalidOperationException();
             }
             return info.Task;
         }
 
-        public void TriggerAck(int id, AckStatus status = AckStatus.Ok)
+        public void TriggerAck(int id, AckStatus status = AckStatus.Ok, ReadOnlySequence<byte>? payload = default)
         {
-            if (_acks.TryGetValue(id, out var info))
+            if (_acks.TryGetValue(id, out var info) && info.Ack(status, payload))
             {
-                switch (info)
-                {
-                    case IAckInfo<AckStatus> ackInfo:
-                        if (ackInfo.Ack(status))
-                        {
-                            _acks.TryRemove(id, out _);
-                        }
-                        break;
-                    default:
-                        throw new InvalidCastException($"Expected: IAckInfo<{typeof(IAckInfo<AckStatus>).Name}>, actual type: {info.GetType().Name}");
-                }
+                _acks.TryRemove(id, out _);
             }
         }
 
@@ -125,11 +132,11 @@ namespace Microsoft.Azure.SignalR
                 {
                     if (_acks.TryRemove(id, out _))
                     {
-                        if (ack is SingleAckInfo singleAckInfo)
+                        if (ack is SingleAckInfo<AckStatus> singleAckInfo)
                         {
                             singleAckInfo.Ack(AckStatus.Timeout);
                         }
-                        else if (ack is MultiAckInfo multipleAckInfo)
+                        else if (ack is MultiAckWithStatusInfo multipleAckInfo)
                         {
                             multipleAckInfo.ForceAck(AckStatus.Timeout);
                         }
@@ -170,12 +177,12 @@ namespace Microsoft.Azure.SignalR
         {
             DateTime TimeoutAt { get; }
             void Cancel();
+            bool Ack(AckStatus status, ReadOnlySequence<byte>? payload = null);
         }
 
         private interface IAckInfo<T> : IAckInfo
         {
             Task<T> Task { get; }
-            bool Ack(T status);
         }
 
         public interface IMultiAckInfo
@@ -183,26 +190,44 @@ namespace Microsoft.Azure.SignalR
             bool SetExpectedCount(int expectedCount);
         }
 
-        private sealed class SingleAckInfo : IAckInfo<AckStatus>
+        private abstract class SingleAckInfo<T> : IAckInfo<T>
         {
-            public readonly TaskCompletionSource<AckStatus> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
+            public readonly TaskCompletionSource<T> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
             public DateTime TimeoutAt { get; }
-
             public SingleAckInfo(TimeSpan timeout)
             {
                 TimeoutAt = DateTime.UtcNow + timeout;
             }
-
-            public bool Ack(AckStatus status = AckStatus.Ok) =>
-                _tcs.TrySetResult(status);
-
-            public Task<AckStatus> Task => _tcs.Task;
-
+            public abstract bool Ack(AckStatus status, ReadOnlySequence<byte>? payload = null);
+            public Task<T> Task => _tcs.Task;
             public void Cancel() => _tcs.TrySetCanceled();
         }
 
-        private sealed class MultiAckInfo : IAckInfo<AckStatus>, IMultiAckInfo
+        private class SingleAckWithStatusInfo : SingleAckInfo<AckStatus>
+        {
+
+            public SingleAckWithStatusInfo(TimeSpan timeout) : base(timeout) { }
+
+            public override bool Ack(AckStatus status, ReadOnlySequence<byte>? payload = null) =>
+                _tcs.TrySetResult(status);
+        }
+
+        private sealed class SingleAckWithMessagePackPayloadInfo<T> : SingleAckInfo<IMessagePackSerializable> where T : IMessagePackSerializable, new()
+        {
+            public SingleAckWithMessagePackPayloadInfo(TimeSpan timeout) : base(timeout) { }
+            public override bool Ack(AckStatus status, ReadOnlySequence<byte>? payload = null)
+            {
+                if (payload == null)
+                {
+                    throw new ArgumentNullException(nameof(payload));
+                }
+                var reader = new MessagePackReader(payload.Value);
+                var result = reader.Deserialize<T>(string.Empty);
+                return _tcs.TrySetResult(result);
+            }
+        }
+
+        private sealed class MultiAckWithStatusInfo : IAckInfo<AckStatus>, IMultiAckInfo
         {
             public readonly TaskCompletionSource<AckStatus> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -211,7 +236,7 @@ namespace Microsoft.Azure.SignalR
 
             public DateTime TimeoutAt { get; }
 
-            public MultiAckInfo(TimeSpan timeout)
+            public MultiAckWithStatusInfo(TimeSpan timeout)
             {
                 TimeoutAt = DateTime.UtcNow + timeout;
             }
@@ -239,7 +264,7 @@ namespace Microsoft.Azure.SignalR
                 return result;
             }
 
-            public bool Ack(AckStatus status = AckStatus.Ok)
+            public bool Ack(AckStatus status = AckStatus.Ok, ReadOnlySequence<byte>? payload = null)
             {
                 bool result;
                 lock (_tcs)
