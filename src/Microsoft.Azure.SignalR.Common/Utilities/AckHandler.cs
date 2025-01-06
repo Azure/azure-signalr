@@ -4,9 +4,9 @@
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using MessagePack;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 
@@ -17,6 +17,7 @@ namespace Microsoft.Azure.SignalR
     internal sealed class AckHandler : IDisposable
     {
         public static readonly AckHandler Singleton = new();
+        public static readonly ServiceModelProtocol _serviceModelProtocol = new();
         private readonly ConcurrentDictionary<int, IAckInfo> _acks = new();
         private readonly Timer _timer;
         private readonly TimeSpan _defaultAckTimeout;
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.SignalR
             {
                 return Task.FromResult(AckStatus.Ok);
             }
-            var info = (IAckInfo<AckStatus>)_acks.GetOrAdd(id, _ => new SingleAckWithStatusInfo(ackTimeout ?? _defaultAckTimeout));
+            var info = (IAckInfo<AckStatus>)_acks.GetOrAdd(id, _ => new SingleStatusAck(ackTimeout ?? _defaultAckTimeout));
             if (info is MultiAckWithStatusInfo)
             {
                 throw new InvalidOperationException();
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.SignalR
             {
                 return Task.FromResult(new T());
             }
-            var info = (IAckInfo<IMessagePackSerializable>)_acks.GetOrAdd(id, _ => new SingleAckWithMessagePackPayloadInfo<T>(ackTimeout ?? _defaultAckTimeout));
+            var info = (IAckInfo<IMessagePackSerializable>)_acks.GetOrAdd(id, _ => new SinglePayloadAck<T>(ackTimeout ?? _defaultAckTimeout));
             cancellationToken.Register(info.Cancel);
             return info.Task.ContinueWith(task => (T)task.Result);
         }
@@ -200,18 +201,18 @@ namespace Microsoft.Azure.SignalR
             public void Cancel() => _tcs.TrySetCanceled();
         }
 
-        private class SingleAckWithStatusInfo : SingleAckInfo<AckStatus>
+        private class SingleStatusAck : SingleAckInfo<AckStatus>
         {
 
-            public SingleAckWithStatusInfo(TimeSpan timeout) : base(timeout) { }
+            public SingleStatusAck(TimeSpan timeout) : base(timeout) { }
 
             public override bool Ack(AckStatus status, ReadOnlySequence<byte>? payload = null) =>
                 _tcs.TrySetResult(status);
         }
 
-        private sealed class SingleAckWithMessagePackPayloadInfo<T> : SingleAckInfo<IMessagePackSerializable> where T : IMessagePackSerializable, new()
+        private sealed class SinglePayloadAck<T> : SingleAckInfo<IMessagePackSerializable> where T : IMessagePackSerializable, new()
         {
-            public SingleAckWithMessagePackPayloadInfo(TimeSpan timeout) : base(timeout) { }
+            public SinglePayloadAck(TimeSpan timeout) : base(timeout) { }
             public override bool Ack(AckStatus status, ReadOnlySequence<byte>? payload = null)
             {
                 if (status == AckStatus.Timeout)
@@ -220,11 +221,18 @@ namespace Microsoft.Azure.SignalR
                 }
                 if (payload == null)
                 {
-                    throw new ArgumentNullException(nameof(payload));
+                    return _tcs.TrySetException(new InvalidDataException($"The expected payload is null."));
                 }
-                var reader = new MessagePackReader(payload.Value);
-                var result = reader.Deserialize<T>(string.Empty);
-                return _tcs.TrySetResult(result);
+
+                try
+                {
+                    var result = _serviceModelProtocol.ParseModel<T>(payload.Value);
+                    return _tcs.TrySetResult(result);
+                }
+                catch (Exception e)
+                {
+                    return _tcs.TrySetException(e);
+                }
             }
         }
 
