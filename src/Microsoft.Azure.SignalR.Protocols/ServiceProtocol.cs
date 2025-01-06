@@ -21,6 +21,35 @@ public class ServiceProtocol : IServiceProtocol
     /// <inheritdoc />
     public int Version => ProtocolVersion;
 
+    public T ParseMessagePayload<T>(ReadOnlySequence<byte> input) where T : notnull, new()
+    {
+        if (typeof(IMessagePackSerializable).IsAssignableFrom(typeof(T)))
+        {
+            var model = new T();
+            var reader = new MessagePackReader(input);
+            ((IMessagePackSerializable)model).Load(ref reader, typeof(T).Name);
+            return model;
+        }
+        else
+        {
+            throw new NotSupportedException($"Type {typeof(T).Name} is not supported.");
+        }
+    }
+
+    public void WriteMessagePayload<T>(T model, IBufferWriter<byte> output) where T : notnull, new()
+    {
+        if (typeof(IMessagePackSerializable).IsAssignableFrom(typeof(T)))
+        {
+            var writer = new MessagePackWriter(output);
+            ((IMessagePackSerializable)model).Serialize(ref writer);
+            writer.Flush();
+        }
+        else
+        {
+            throw new NotSupportedException($"Type {typeof(T).Name} is not supported.");
+        }
+    }
+
     /// <inheritdoc />
     public bool TryParseMessage(ref ReadOnlySequence<byte> input, out ServiceMessage? message)
     {

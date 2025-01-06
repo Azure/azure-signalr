@@ -17,7 +17,7 @@ namespace Microsoft.Azure.SignalR
     internal sealed class AckHandler : IDisposable
     {
         public static readonly AckHandler Singleton = new();
-        public static readonly ServiceModelProtocol _serviceModelProtocol = new();
+        public static readonly ServiceProtocol _serviceProtocol = new();
         private readonly ConcurrentDictionary<int, IAckInfo> _acks = new();
         private readonly Timer _timer;
         private readonly TimeSpan _defaultAckTimeout;
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.SignalR
 
                 try
                 {
-                    var result = _serviceModelProtocol.ParseModel<T>(payload.Value);
+                    var result = _serviceProtocol.ParseMessagePayload<T>(payload.Value);
                     return _tcs.TrySetResult(result);
                 }
                 catch (Exception e)
