@@ -104,6 +104,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return ServiceMappingMessageEqual(serviceMappingMessage, (ServiceMappingMessage)y);
                 case ConnectionFlowControlMessage connectionFlowControlMessage:
                     return ConnectionFlowControlMessageEqual(connectionFlowControlMessage, (ConnectionFlowControlMessage)y);
+                case GroupMemberQueryMessage groupMemberQueryMessage:
+                    return GroupMemberQueryMessageEqual(groupMemberQueryMessage, (GroupMemberQueryMessage)y);
                 default:
                     throw new InvalidOperationException($"Unknown message type: {x.GetType().FullName}");
             }
@@ -396,6 +398,15 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return StringEqual(x.ConnectionId, y.ConnectionId) &&
                 Equals(x.ConnectionType, y.ConnectionType) &&
                 Equals(x.Operation, y.Operation);
+        }
+
+        private bool GroupMemberQueryMessageEqual(GroupMemberQueryMessage x, GroupMemberQueryMessage y)
+        {
+            return x.AckId == y.AckId &&
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   x.Max == y.Max &&
+                   StringEqual(x.ContinuationToken, y.ContinuationToken) &&
+                   x.TracingId == y.TracingId;
         }
 
         private static bool StringEqual(string x, string y)

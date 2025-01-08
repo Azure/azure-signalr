@@ -9,8 +9,6 @@ using System.Security.Claims;
 using System.Text;
 
 using Microsoft.Extensions.Primitives;
-using Moq;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Protocol.Tests
@@ -704,6 +702,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: nameof(ConnectionFlowControlMessage) + "-2",
                 message: new ConnectionFlowControlMessage("conn2", ConnectionFlowControlOperation.Offline, ConnectionType.Server),
                 binary: "lSelY29ubjLSAAAAAtIAAAAEgA=="),
+            new ProtocolTestData(
+                name: "GroupMemberQueryMessage",
+                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1, Max = 10, ContinuationToken = "token", TracingId = 1234UL },
+                binary: "liiBAc0E0qVncm91cAEKpXRva2Vu"),
         }.ToDictionary(t => t.Name);
 
 #pragma warning restore CS0618 // Type or member is obsolete

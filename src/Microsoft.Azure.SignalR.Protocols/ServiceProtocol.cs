@@ -153,6 +153,8 @@ public class ServiceProtocol : IServiceProtocol
                 return CreateServiceMappingMessage(ref reader, arrayLength);
             case ServiceProtocolConstants.ConnectionFlowControlMessageType:
                 return CreateConnectionFlowControlMessage(ref reader, arrayLength);
+            case ServiceProtocolConstants.GroupMemberQueryMessageType:
+                return CreateGroupMemberQueryMessage(ref reader, arrayLength);
             default:
                 // Future protocol changes can add message types, old clients can ignore them
                 return null;
@@ -335,6 +337,9 @@ public class ServiceProtocol : IServiceProtocol
                 break;
             case ConnectionFlowControlMessage connectionFlowControlMessage:
                 WriteConnectionFlowControlMessage(ref writer, connectionFlowControlMessage);
+                break;
+            case GroupMemberQueryMessage groupMemberQueryMessage:
+                WriteGroupMemberQueryMessage(ref writer, groupMemberQueryMessage);
                 break;
             default:
                 throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
@@ -749,6 +754,17 @@ public class ServiceProtocol : IServiceProtocol
         writer.WriteInt32((int)message.ConnectionType);
         writer.WriteInt32((int)message.Operation);
         message.WriteExtensionMembers(ref writer);
+    }
+
+    private static void WriteGroupMemberQueryMessage(ref MessagePackWriter writer, GroupMemberQueryMessage message)
+    {
+        writer.WriteArrayHeader(6);
+        writer.Write(ServiceProtocolConstants.GroupMemberQueryMessageType);
+        message.WriteExtensionMembers(ref writer);
+        writer.Write(message.GroupName);
+        writer.Write(message.AckId);
+        writer.Write(message.Max);
+        writer.Write(message.ContinuationToken);
     }
 
     private static void WriteStringArray(ref MessagePackWriter writer, IReadOnlyList<string>? array)
@@ -1266,7 +1282,6 @@ public class ServiceProtocol : IServiceProtocol
     {
         var userId = ReadStringNotNull(ref reader, "userId");
         var ackId = ReadInt32(ref reader, "ackId");
-
         var result = new CheckUserExistenceWithAckMessage(userId, ackId);
         result.ReadExtensionMembers(ref reader);
         return result;
@@ -1370,6 +1385,17 @@ public class ServiceProtocol : IServiceProtocol
             connectionId,
             (ConnectionFlowControlOperation)operation,
             (ConnectionType)connectionType);
+        return result;
+    }
+
+    private static GroupMemberQueryMessage CreateGroupMemberQueryMessage(ref MessagePackReader reader, int arrayLength)
+    {
+        var result = new GroupMemberQueryMessage();
+        result.ReadExtensionMembers(ref reader);
+        result.GroupName = ReadStringNotNull(ref reader, nameof(GroupMemberQueryMessage.GroupName));
+        result.AckId = ReadInt32(ref reader, nameof(GroupMemberQueryMessage.AckId));
+        result.Max = ReadInt32(ref reader, nameof(GroupMemberQueryMessage.Max));
+        result.ContinuationToken = ReadString(ref reader, nameof(GroupMemberQueryMessage.ContinuationToken));
         return result;
     }
 }

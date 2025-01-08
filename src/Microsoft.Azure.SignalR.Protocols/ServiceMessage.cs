@@ -572,4 +572,38 @@ namespace Microsoft.Azure.SignalR.Protocol
             InstanceId = instanceId;
         }
     }
+
+    /// <summary>
+    /// A message to list connections in a group.
+    /// </summary>
+    /// <remarks>The expected response of this message is an <see cref="AckMessage"/> whose <see cref="AckMessage.Payload"/> is a serialized <see cref="GroupMemberQueryResponsePayload"/>.</remarks>
+    public class GroupMemberQueryMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
+    {
+        /// <summary>
+        /// The id to ack.
+        /// </summary>
+        public int AckId { get; set; }
+
+        /// <summary>
+        /// The name of the group to list.
+        /// </summary>
+        public string GroupName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The max count of connections to return.
+        /// </summary>
+        public int Max { get; set; }
+
+        /// <summary>
+        /// A token to indiate the start point of results.
+        /// This parameter is provided by the service in the response of a previous request when there are additional results to be fetched. 
+        /// Clients should include the continuationToken in the next request to receive the subsequent page of data. If this parameter is omitted, the server will return the first page of results.
+        /// </summary>
+        public string? ContinuationToken { get; set; }
+
+        /// <summary>
+        /// The tracing id.
+        /// </summary>
+        public ulong? TracingId { get; set; }
+    }
 }
