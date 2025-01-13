@@ -185,7 +185,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 ```
 - 5 - Message Type, indicating this is a `CloseConnection` message.
 - ConnectionId - A `String` encoding unique Id of the connection.
-- ErrorMessage - Optional `String` encoding error message.
+- ErrorMessage - A `String` encoding error message.
 - Headers (Optional) - A MessagePack Map containing all headers of this client.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
@@ -259,7 +259,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - 11 - Message Type, indicating this is a `JoinGroup` message.
 - ConnectionId - A `String` encoding unique Id for the connection.
 - GroupName - A `String` encoding group name, which the connection will join.
-- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
@@ -271,7 +271,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - 12 - Message Type, indicating this is a `LeaveGroup` message.
 - ConnectionId - A `String` encoding unique Id for the connection.
 - GroupName - A `String` encoding group name, which the connection will leave.
-- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
@@ -298,7 +298,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - 14 - Message Type, indicating this is a `MultiGroupBroadcastData` message.
 - GroupList - An array containing `String` encoding target group names.
 - Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
-- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
@@ -310,7 +310,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - 16 - Message Type, indicating this is a `UserJoinGroup` message.
 - UserId - A `String` encoding unique Id for the user.
 - GroupName - A `String` encoding group name, which the user will join.
-- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
@@ -322,7 +322,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - 17 - Message Type, indicating this is a `UserLeaveGroup` message.
 - UserId - A `String` encoding unique Id for the user.
 - GroupName - A `String` encoding group name, which the user will leave.
-- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
@@ -335,7 +335,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - ConnectionId - A `String` encoding unique Id for the connection.
 - GroupName - A `String` encoding group name, which the connection will join.
 - AckId - An `Int32` encoding Id number to identify the corresponding ack message.
-- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
@@ -348,7 +348,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - ConnectionId - A `String` encoding unique Id for the connection.
 - GroupName - A `String` encoding group name, which the connection will leave.
 - AckId - An `Int32` encoding Id number to identify the corresponding ack message.
-- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
@@ -362,7 +362,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - Status - A `Int32` encoding status code to indicate the operation result.
 - Message -  A `String` encoding ack message to explain status details.
 - ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
-- Payload (Optional) - An `Binary` encoding the payload to ack.
+- Payload (Optional) - A `Binary` encoding the payload to ack.
 
 #### Example: TODO
 
@@ -375,7 +375,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - UserId - A `String` encoding unique Id for the user.
 - GroupName - A `String` encoding group name.
 - AckId - An `Int32` encoding Id number to associate the corresponding message.
-- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
@@ -398,6 +398,6 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 	- 2, Not existed events. For example, the group is empty.
 	- 3, Buffer full events. For example, the server connection is sending too many messages, service buffer is full.
 - Message - A `String` encoding the detail message for the event.
-- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
