@@ -133,7 +133,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 	- 0, Default, it can carry clients, service runtime should always accept this kind of connection.
 	- 1, OnDemand, creating when service requested more connections, it can carry clients, but it may be rejected by service runtime.
 	- 2, Weak, it can not carry clients, but it can send message.
-- Target - A `string` indicates the target service.
+- Target - A `String` indicates the target service.
 - MigrationLevel (Optional) - An `Int32` encoding number indicates if further client connections associated with this server connection could be migrated.
 	- 0, Off, a client connection can not be migrated to another server.
 	- 1, ShutdownOnly, a client connection can be migrated only if the matched server was shutdown gracefully.
@@ -284,7 +284,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - GroupName - A `String` encoding target group name.
 - ExcludedList - An array containing `String` encoding Ids of the connections, which will not receive payload in this message.
 - Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
-- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 - ExcludedUserList (Optional) - An array containing `String` encoding Ids of the users, which will not receive payload in this message.
 - CallerUserId (Optional) - A `String ` encoding the caller user id.
 
