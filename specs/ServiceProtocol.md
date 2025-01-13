@@ -125,217 +125,279 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 ### HandshakeRequest Message
 `HandshakeRequest` messages have the following structure.
 ```
-[1, Version]
+[1, Version, ConnectionType, Target, MigrationLevel?, ExtensibleMembers?, AllowStatefulReconnects?]
 ```
 - 1 - Message Type, indicating this is a `HandshakeRequest` message.
-- Version - A `Int32` encoding number of the protocol version.
-- ConnectionType - A `Int32` encoding number of the connection type.
+- Version - An `Int32` encoding number of the protocol version.
+- ConnectionType - An `Int32` encoding number of the connection type.
 	- 0, Default, it can carry clients, service runtime should always accept this kind of connection.
 	- 1, OnDemand, creating when service requested more connections, it can carry clients, but it may be rejected by service runtime.
 	- 2, Weak, it can not carry clients, but it can send message.
-- MigrationLevel - A `Int32` encoding number indicates if further client connections associated with this server connection could be migrated.
+- Target - A `string` indicates the target service.
+- MigrationLevel (Optional) - An `Int32` encoding number indicates if further client connections associated with this server connection could be migrated.
 	- 0, Off, a client connection can not be migrated to another server.
 	- 1, ShutdownOnly, a client connection can be migrated only if the matched server was shutdown gracefully.
 	- 2, Any, a client connection can be migrated even if the matched server connection was dropped accidentally. (may cause data loss)
+- ExtensibleMembers (Optional) - A MessagePack Map indicates the extensible members.
+- AllowStatefulReconnects (Optional) - A `bool` indicates the app server allows stateful reconnects or not. 
 
 #### Example: TODO
 
 ### HandshakeResponse Message
 `HandshakeResponse` messages have the following structure.
 ```
-[2, ErrorMessage]
+[2, ErrorMessage, ExtensionMembers?, ConnectionId?]
 ```
 - 2 - Message Type, indicating this is a `HandshakeResponse` message.
 - ErrorMessage - A `String` encoding error message. Null means handshake success, otherwise it means there is error.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
+- ConnectionId (Optional) - A `String` for the connection id of current server connection.
 
 #### Example: TODO
 
 ### Ping Message
  `Ping` messages have the following structure.
 ```
-[3, Messages]
+[3, Messages?]
 ```
 - 3 - Message Type, indicating this is a `Ping` message.
-- Messages - An `Array` of `String` indicates `Ping` message type and value.
+- Messages (Optional) - An `Array` of `String` indicates `Ping` message type and value.
 
 #### Example: TODO
 
 ### OpenConnection Message
 `OpenConnection` messages have the following structure.
 ```
-[4, ConnectionId, Claims]
+[4, ConnectionId, Claims, Headers?, ExtensionMembers?]
 ```
 - 4 - Message Type, indicating this is a `OpenConnection` message.
 - ConnectionId - A `String` encoding unique Id for the connection.
 - Claims - A MessagePack Map containing all claims of this client.
+- Headers (Optional) - A MessagePack Map containing all headers of this client.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### CloseConnection Message
 `CloseConnection` messages have the following structure.
 ```
-[5, ConnectionId, ErrorMessage]
+[5, ConnectionId, ErrorMessage, Headers?, ExtensionMembers?]
 ```
 - 5 - Message Type, indicating this is a `CloseConnection` message.
 - ConnectionId - A `String` encoding unique Id of the connection.
 - ErrorMessage - Optional `String` encoding error message.
+- Headers (Optional) - A MessagePack Map containing all headers of this client.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### ConnectionData Message
 `ConnectionData` messages have the following structure.
 ```
-[6, ConnectionId, Payload]
+[6, ConnectionId, Payload, ExtensionMembers?]
 ```
 - 6 - Message Type, indicating this is a `ConnectionData` message.
 - ConnectionId - A `String` encoding unique Id for the connection.
 - Payload - `Binary` encoding of the raw bytes from/to the connection.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### MultiConnectionData Message
 `MultiConnectionData` messages have the following structure.
 ```
-[7, ConnectionList, Payloads]
+[7, ConnectionList, Payloads, ExtensionMembers?]
 ```
 - 7 - Message Type, indicating this is a `MultiConnectionData` message.
 - ConnectionList - An array containing `String` encoding Ids of the target connections.
 - Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### UserData Message
 `UserData` messages have the following structure.
 ```
-[8, UserId, Payloads]
+[8, UserId, Payloads, ExtensionMembers?]
 ```
 - 8 - Message Type, indicating this is a `UserData` message.
 - UserId - A `String` encoding unique Id for the user.
 - Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### MultiUserData Message
 `MultiUserData` messages have the following structure.
 ```
-[9, UserList, Payloads]
+[9, UserList, Payloads, ExtensionMembers?]
 ```
 - 9 - Message Type, indicating this is a `MultiUserData` message.
 - UserList - An array containing `String` encoding Ids of the target users.
 - Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### BroadcastData Message
 `BroadcastData` messages have the following structure.
 ```
-[10, ExcludedList, Payloads]
+[10, ExcludedList, Payloads, ExtensionMembers?]
 ```
 - 10 - Message Type, indicating this is a `BroadcastData` message.
 - ExcludedList - An array containing `String` encoding Ids of the connections, which will not receive payload in this message.
 - Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### JoinGroup Message
 `JoinGroup` messages have the following structure.
 ```
-[11, ConnectionId, GroupName]
+[11, ConnectionId, GroupName, ExtensionMembers?]
 ```
 - 11 - Message Type, indicating this is a `JoinGroup` message.
 - ConnectionId - A `String` encoding unique Id for the connection.
 - GroupName - A `String` encoding group name, which the connection will join.
+- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### LeaveGroup Message
 `LeaveGroup` messages have the following structure.
 ```
-[12, ConnectionId, GroupName]
+[12, ConnectionId, GroupName, ExtensionMembers?]
 ```
 - 12 - Message Type, indicating this is a `LeaveGroup` message.
 - ConnectionId - A `String` encoding unique Id for the connection.
 - GroupName - A `String` encoding group name, which the connection will leave.
+- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### GroupBroadcastData Message
 `GroupBroadcastData` messages have the following structure.
 ```
-[13, GroupName, ExcludedList, Payloads]
+[13, GroupName, ExcludedList, Payloads, ExtensionMembers?, ExcludedUserList?, CallerUserId?]
 ```
 - 13 - Message Type, indicating this is a `GroupBroadcastData` message.
 - GroupName - A `String` encoding target group name.
 - ExcludedList - An array containing `String` encoding Ids of the connections, which will not receive payload in this message.
 - Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
+- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+- ExcludedUserList (Optional) - An array containing `String` encoding Ids of the users, which will not receive payload in this message.
+- CallerUserId (Optional) - A `String ` encoding the caller user id.
 
 #### Example: TODO
 
 ### MultiGroupBroadcastData Message
 `MultiGroupBroadcastData` messages have the following structure.
 ```
-[14, GroupList, Payloads]
+[14, GroupList, Payloads, ExtensionMembers?]
 ```
 - 14 - Message Type, indicating this is a `MultiGroupBroadcastData` message.
 - GroupList - An array containing `String` encoding target group names.
 - Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
+- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### UserJoinGroup Message
 `UserJoinGroup` messages have the following structure.
 ```
-[16, UserId, GroupName]
+[16, UserId, GroupName, ExtensionMembers?]
 ```
 - 16 - Message Type, indicating this is a `UserJoinGroup` message.
 - UserId - A `String` encoding unique Id for the user.
 - GroupName - A `String` encoding group name, which the user will join.
+- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### UserLeaveGroup Message
 `UserLeaveGroup` messages have the following structure.
 ```
-[17, UserId, GroupName]
+[17, UserId, GroupName, ExtensionMembers?]
 ```
 - 17 - Message Type, indicating this is a `UserLeaveGroup` message.
 - UserId - A `String` encoding unique Id for the user.
 - GroupName - A `String` encoding group name, which the user will leave.
+- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### JoinGroupWithAck Message
 `JoinGroupWithAck` messages have the following structure.
 ```
-[18, ConnectionId, GroupName, AckId]
+[18, ConnectionId, GroupName, AckId, ExtensionMembers?]
 ```
 - 18 - Message Type, indicating this is a `JoinGroupWithAck` message.
 - ConnectionId - A `String` encoding unique Id for the connection.
 - GroupName - A `String` encoding group name, which the connection will join.
-- AckId - A `Int32` encoding Id number to identify the corresponding ack message.
+- AckId - An `Int32` encoding Id number to identify the corresponding ack message.
+- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### LeaveGroupWithAck Message
 `LeaveGroupWithAck` messages have the following structure.
 ```
-[19, ConnectionId, GroupName, AckId]
+[19, ConnectionId, GroupName, AckId, ExtensionMembers?]
 ```
 - 19 - Message Type, indicating this is a `LeaveGroupWithAck` message.
 - ConnectionId - A `String` encoding unique Id for the connection.
 - GroupName - A `String` encoding group name, which the connection will leave.
-- AckId - A `Int32` encoding Id number to identify the corresponding ack message.
+- AckId - An `Int32` encoding Id number to identify the corresponding ack message.
+- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
 
 #### Example: TODO
 
 ### Ack Message
 `Ack` messages have the following structure.
 ```
-[20, AckId, Status, Message]
+[20, AckId, Status, Message, ExtensionMembers?, Payload?]
 ```
-- 20 - Message Type, indicating this is a `Ack` message.
+- 20 - Message Type, indicating this is an `Ack` message.
 - AckId - A `Int32` encoding Id number to associate the corresponding message.
 - Status - A `Int32` encoding status code to indicate the operation result.
 - Message -  A `String` encoding ack message to explain status details.
+- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+- Payload (Optional) - An `Binary` encoding the payload to ack.
+
+#### Example: TODO
+
+### CheckUserInGroupWithAck Message
+`CheckUserInGroupWithAck` messages have the following structure.
+```
+[21, UserId, GroupName, AckId, ExtensionMembers?]
+```
+- 21 - Message Type, indicating this is a `CheckUserInGroupWithAck` message.
+- UserId - A `String` encoding unique Id for the user.
+- GroupName - A `String` encoding group name.
+- AckId - An `Int32` encoding Id number to associate the corresponding message.
+- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### ServiceEvent Message
+`ServiceEvent` messages have the following structure.
+```
+[22, Type, Id, Kind, Message, ExtensionMembers?]
+```
+- 22 - Message Type, indicating this is a `ServiceEvent` message.
+- Type - An `Int32` indicats the object of event.
+	- 0, ServiceInstance events
+	- 1, Connection events
+	- 2, User events
+	- 3, Group events
+	- 4, ServerConnection events
+- Id - A `String` encoding id for ServiceInstance/Connection/User/Group/ServerConnection.
+- Kind - An `Int32` indicats the kind of event.
+	- 0, Reloading events. For example, the service is about to reloading.
+	- 1, Invalid events. For example, the connection id is invalid.
+	- 2, Not existed events. For example, the group is empty.
+	- 3, Buffer full events. For example, the server connection is sending too many messages, service buffer is full.
+- Message - A `String` encoding the detail message for the event.
+- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
 
 #### Example: TODO
