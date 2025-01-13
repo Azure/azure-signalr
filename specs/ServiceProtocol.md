@@ -139,7 +139,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 	- 1, ShutdownOnly, a client connection can be migrated only if the matched server was shutdown gracefully.
 	- 2, Any, a client connection can be migrated even if the matched server connection was dropped accidentally. (may cause data loss)
 - ExtensibleMembers (Optional) - A MessagePack Map indicates the extensible members.
-- AllowStatefulReconnects (Optional) - A `bool` indicates the app server allows stateful reconnects or not. 
+- AllowStatefulReconnects (Optional) - A `Boolean` indicates the app server allows stateful reconnects or not. 
 
 #### Example: TODO
 
@@ -286,7 +286,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 - ExcludedUserList (Optional) - An array containing `String` encoding Ids of the users, which will not receive payload in this message.
-- CallerUserId (Optional) - A `String ` encoding the caller user id.
+- CallerUserId (Optional) - A `String` encoding the caller user id.
 
 #### Example: TODO
 
