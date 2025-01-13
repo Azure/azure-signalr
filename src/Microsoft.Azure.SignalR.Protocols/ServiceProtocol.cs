@@ -681,21 +681,20 @@ public class ServiceProtocol : IServiceProtocol
 
     private static void WriteAckMessage(ref MessagePackWriter writer, AckMessage message)
     {
-        writer.WriteArrayHeader(5);
+        writer.WriteArrayHeader(6);
         writer.Write(ServiceProtocolConstants.AckMessageType);
         writer.Write(message.AckId);
         writer.Write(message.Status);
+        writer.Write(message.Message);
+        message.WriteExtensionMembers(ref writer);
         if (message.Payload.HasValue)
         {
             writer.Write(message.Payload.Value);
         }
         else
         {
-#pragma warning disable CS0618 // Type or member is obsolete
-        writer.Write(message.Message);
-#pragma warning restore CS0618 // Type or member is obsolete
+            writer.WriteNil();
         }
-        message.WriteExtensionMembers(ref writer);
     }
 
     private static void WriteClientInvocationMessage(ref MessagePackWriter writer, ClientInvocationMessage message)
@@ -731,7 +730,7 @@ public class ServiceProtocol : IServiceProtocol
         writer.Write(message.Error);
         message.WriteExtensionMembers(ref writer);
     }
-    
+
     private static void WriteServiceMappingMessage(ref MessagePackWriter writer, ServiceMappingMessage message)
     {
         writer.WriteArrayHeader(5);
@@ -1277,26 +1276,15 @@ public class ServiceProtocol : IServiceProtocol
     {
         var ackId = ReadInt32(ref reader, "ackId");
         var status = ReadInt32(ref reader, "status");
-        ReadOnlySequence<byte>? payload = null;
-        string? message = null;
-        if (reader.NextMessagePackType == MessagePackType.Binary)
-        {
-            payload = reader.ReadBytes();
-        }
-        else
-        {
-            message = ReadString(ref reader, "message");
-        }
-
-#pragma warning disable CS0612 // Type or member is obsolete
-        var result = new AckMessage(ackId, status, message)
-        {
-            Payload = payload
-        };
-#pragma warning restore CS0612 // Type or member is obsolete
+        var message = ReadString(ref reader, "message");
+        var result = new AckMessage(ackId, status, message);
         if (arrayLength >= 5)
         {
             result.ReadExtensionMembers(ref reader);
+        }
+        if (arrayLength >= 6)
+        {
+            result.Payload = ReadByteSequence(ref reader, "payload");
         }
         return result;
     }

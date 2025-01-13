@@ -4,7 +4,6 @@
 
 using System;
 using System.Buffers;
-using System.ComponentModel;
 using MessagePack;
 
 namespace Microsoft.Azure.SignalR.Protocol
@@ -510,12 +509,10 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the ack message
         /// </summary>
-        [Obsolete($"Use \"{nameof(Payload)}\" instead.")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public string Message { get; set; }
 
         /// <summary>
-        /// Gets or sets the payload. If this property is set, <see cref="Message"/> will be ignored during serialization.
+        /// Gets or sets the payload.
         /// </summary>
         public ReadOnlySequence<byte>? Payload { get; set; }
 
@@ -524,9 +521,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <param name="ackId">The ack Id</param>
         /// <param name="status">The status code</param>
-#pragma warning disable CS0612 // Type or member is obsolete
         public AckMessage(int ackId, int status) : this(ackId, status, string.Empty)
-#pragma warning restore CS0612 // Type or member is obsolete
         {
         }
 
@@ -536,7 +531,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="ackId">The ack Id</param>
         /// <param name="status">The status code</param>
         /// <param name="message">The ack message</param>
-        [Obsolete]
         public AckMessage(int ackId, int status, string? message)
         {
             AckId = ackId;
