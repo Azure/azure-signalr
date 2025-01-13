@@ -361,7 +361,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - AckId - A `Int32` encoding Id number to associate the corresponding message.
 - Status - A `Int32` encoding status code to indicate the operation result.
 - Message -  A `String` encoding ack message to explain status details.
-- ExtensionMembers (Optional) - An MessagePack Map indicates the extensible members.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 - Payload (Optional) - A `Binary` encoding the payload to ack.
 
 #### Example: TODO
