@@ -401,3 +401,245 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
+
+### CheckGroupExistenceWithAck Message
+`CheckGroupExistenceWithAck` messages have the following structure:
+```
+[23, GroupName, AckId, ExtensionMembers]
+```
+- 23 - Message Type, indicating this is a `CheckGroupExistenceWithAck` message.
+- GroupName - A `String` indicating the name of the group.
+- AckId - An `Integer` indicating the acknowledgment ID.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### CheckConnectionExistenceWithAck Message
+`CheckConnectionExistenceWithAck` messages have the following structure:
+```
+[24, ConnectionId, AckId, ExtensionMembers]
+```
+- 24 - Message Type, indicating this is a `CheckConnectionExistenceWithAck` message.
+- ConnectionId - A `String` indicating the connection ID.
+- AckId - An `Integer` indicating the acknowledgment ID.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### CheckUserExistenceWithAck Message
+`CheckUserExistenceWithAck` messages have the following structure:
+```
+[25, UserId, AckId, ExtensionMembers]
+```
+- 25 - Message Type, indicating this is a `CheckUserExistenceWithAck` message.
+- UserId - A `String` indicating the user ID.
+- AckId - An `Integer` indicating the acknowledgment ID.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### UserJoinGroupWithAck Message
+`UserJoinGroupWithAck` messages have the following structure:
+```
+[26, UserId, GroupName, AckId, ExtensionMembers]
+```
+- 26 - Message Type, indicating this is a `UserJoinGroupWithAck` message.
+- UserId - A `String` indicating the user ID.
+- GroupName - A `String` indicating the name of the group.
+- AckId - An `Integer` indicating the acknowledgment ID.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### UserLeaveGroupWithAck Message
+`UserLeaveGroupWithAck` messages have the following structure:
+```
+[27, UserId, GroupName, AckId, ExtensionMembers]
+```
+- 27 - Message Type, indicating this is a `UserLeaveGroupWithAck` message.
+- UserId - A `String` indicating the user ID.
+- GroupName - A `String` indicating the name of the group.
+- AckId - An `Integer` indicating the acknowledgment ID.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### AccessKeyRequest Message
+`AccessKeyRequest` messages have the following structure:
+```
+[28, Token, Kid, ExtensionMembers]
+```
+- 28 - Message Type, indicating this is an `AccessKeyRequest` message.
+- Token - A `String` indicating the token.
+- Kid - A `String` indicating the kid.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### AccessKeyResponse Message
+`AccessKeyResponse` messages have the following structure:
+```
+[29, Kid, AccessKey, ErrorType, ErrorMessage, ExtensionMembers]
+```
+- 29 - Message Type, indicating this is an `AccessKeyResponse` message.
+- Kid - A `String` indicating the kid.
+- AccessKey - A `String` indicating the access key.
+- ErrorType - A `String` indicating the error type.
+- ErrorMessage - A `String` indicating the error message.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### CloseConnectionWithAck Message
+`CloseConnectionWithAck` messages have the following structure:
+```
+[30, ConnectionId, Reason, AckId, ExtensionMembers?]
+```
+- 30 - Message Type, indicating this is a `CloseConnectionWithAck` message.
+- ConnectionId - A `String` indicating the connection ID.
+- Reason - A `String` indicating the reason for closure.
+- AckId - An `Int32` indicating the acknowledgment ID.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### CloseConnectionsWithAck Message
+`CloseConnectionsWithAck` messages have the following structure:
+```
+[31, Reason, AckId, Excluded, ExtensionMembers?]
+```
+- 31 - Message Type, indicating this is a `CloseConnectionsWithAck` message.
+- Reason - A `String` indicating the reason for closure.
+- AckId - An `Int32` indicating the acknowledgment ID.
+- Excluded - An `Array` of `String` indicating the excluded connection IDs.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### CloseUserConnectionsWithAck Message
+`CloseUserConnectionsWithAck` messages have the following structure:
+```
+[32, UserId, Reason, AckId, Excluded, ExtensionMembers?]
+```
+- 32 - Message Type, indicating this is a `CloseUserConnectionsWithAck` message.
+- UserId - A `String` indicating the user ID.
+- Reason - A `String` indicating the reason for closure.
+- AckId - An `Int32` indicating the acknowledgment ID.
+- Excluded - An `Array` of `String` indicating the excluded connection IDs.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### CloseGroupConnectionsWithAck Message
+`CloseGroupConnectionsWithAck` messages have the following structure:
+```
+[33, GroupName, Reason, AckId, Excluded, ExtensionMembers?]
+```
+- 33 - Message Type, indicating this is a `CloseGroupConnectionsWithAck` message.
+- GroupName - A `String` indicating the name of the group.
+- Reason - A `String` indicating the reason for closure.
+- AckId - An `Int32` indicating the acknowledgment ID.
+- Excluded - An `Array` of `String` indicating the excluded connection IDs.
+- ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### ClientInvocation Message
+`ClientInvocation` messages have the following structure:
+```
+[34, InvocationId, ConnectionId, CallerServerId, Payloads, ExtensionMembers]
+```
+- 34 - Message Type, indicating this is a `ClientInvocation` message.
+- InvocationId - A `String` indicating the invocation ID.
+- ConnectionId - A `String` indicating the connection ID.
+- CallerServerId - A `String` indicating the caller server ID.
+- Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### ClientCompletion Message
+`ClientCompletion` messages have the following structure:
+```
+[35, InvocationId, ConnectionId, CallerServerId, Protocol, Payload, ExtensionMembers]
+```
+- 35 - Message Type, indicating this is a `ClientCompletion` message.
+- InvocationId - A `String` indicating the invocation ID.
+- ConnectionId - A `String` indicating the connection ID.
+- CallerServerId - A `String` indicating the caller server ID.
+- Protocol - A `String` indicating the client protocol.
+- Payload - A `Binary` containing the client result.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### ErrorCompletion Message
+`ErrorCompletion` messages have the following structure:
+```
+[36, InvocationId, ConnectionId, CallerServerId, Error, ExtensionMembers]
+```
+- 36 - Message Type, indicating this is an `ErrorCompletion` message.
+- InvocationId - A `String` indicating the invocation ID.
+- ConnectionId - A `String` indicating the connection ID.
+- CallerServerId - A `String` indicating the caller server ID.
+- Error - A `String` indicating the error message.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### ServiceMapping Message
+`ServiceMapping` messages have the following structure:
+```
+[37, InvocationId, ConnectionId, InstanceId, ExtensionMembers]
+```
+- 37 - Message Type, indicating this is a `ServiceMapping` message.
+- InvocationId - A `String` indicating the invocation ID.
+- ConnectionId - A `String` indicating the connection ID.
+- InstanceId - A `String` indicating the service instance ID.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### ConnectionReconnect Message
+`ConnectionReconnect` messages have the following structure:
+```
+[38, ConnectionId, ExtensionMembers]
+```
+- 38 - Message Type, indicating this is a `ConnectionReconnect` message.
+- ConnectionId - A `String` indicating the connection ID.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### ConnectionFlowControl Message
+`ConnectionFlowControl` messages have the following structure:
+```
+[39, ConnectionId, ConnectionType, Operation, ExtensionMembers]
+```
+- 39 - Message Type, indicating this is a `ConnectionFlowControl` message.
+- ConnectionId - A `String` indicating the connection ID.
+- ConnectionType - An `Int32` indicating the connection type.
+	- 0, Client connection.
+	- 1, Server connection.
+- Operation - An `Int32` indicating the operation for flow control.
+	- 1, Pause.
+	- 2, PauseAck.
+	- 3, Resume.
+	- 4, Offline.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO
+
+### GroupMemberQuery Message
+`GroupMemberQuery` messages have the following structure:
+```
+[40, ExtensionMembers, GroupName, AckId, Max, ContinuationToken]
+```
+- 40 - Message Type, indicating this is a `GroupMemberQuery` message.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+- GroupName - A `String` indicating the name of the group.
+- AckId - An `Int32` encoding Id number to identify the corresponding ack message.
+- Max - An `Int32` indicating the max count of results.
+- ContinuationToken - A `String` indicating the continuation token of query.
+
+#### Example: TODO
