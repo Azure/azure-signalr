@@ -576,7 +576,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A message to list connections in a group.
     /// </summary>
-    /// <remarks>The expected response of this message is an <see cref="AckMessage"/> whose <see cref="AckMessage.Payload"/> is a serialized <see cref="GroupMemberQueryResponsePayload"/>.</remarks>
+    /// <remarks>The expected response of this message is an <see cref="AckMessage"/> whose <see cref="AckMessage.Payload"/> is a serialized <see cref="GroupMemberQueryResponse"/>.</remarks>
     public class GroupMemberQueryMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
     {
         /// <summary>
@@ -592,7 +592,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// The max count of connections to return.
         /// </summary>
-        public int Max { get; set; }
+        public int Max { get; set; } = 200;
 
         /// <summary>
         /// A token to indiate the start point of results.

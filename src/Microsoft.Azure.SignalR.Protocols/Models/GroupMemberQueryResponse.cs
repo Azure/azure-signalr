@@ -6,7 +6,7 @@ using MessagePack;
 
 namespace Microsoft.Azure.SignalR.Protocol;
 
-public sealed class GroupMemberQueryResponsePayload : IMessagePackSerializable
+public sealed class GroupMemberQueryResponse : IMessagePackSerializable
 {
     /// <summary>
     /// The group members.

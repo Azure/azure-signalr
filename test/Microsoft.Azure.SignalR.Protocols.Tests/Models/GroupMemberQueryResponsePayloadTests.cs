@@ -18,7 +18,7 @@ public class GroupMemberQueryResponsePayloadTests
             new GroupMember { ConnectionId = "conn1", UserId = "user1" },
             new GroupMember { ConnectionId = "conn2", UserId = "user2" }
         };
-        var payload = new GroupMemberQueryResponsePayload
+        var payload = new GroupMemberQueryResponse
         {
             Members = groupMembers,
             ContinuationToken = "token"
@@ -26,7 +26,7 @@ public class GroupMemberQueryResponsePayloadTests
         var buffer = new ArrayBufferWriter<byte>();
         var protocol = new ServiceProtocol();
         protocol.WriteMessagePayload(payload, buffer);
-        var deserialized = protocol.ParseMessagePayload<GroupMemberQueryResponsePayload>(new
+        var deserialized = protocol.ParseMessagePayload<GroupMemberQueryResponse>(new
             ReadOnlySequence<byte>(buffer.WrittenMemory));
         Assert.Equal(payload.ContinuationToken, deserialized.ContinuationToken);
         Assert.True(payload.Members.SequenceEqual(deserialized.Members));
