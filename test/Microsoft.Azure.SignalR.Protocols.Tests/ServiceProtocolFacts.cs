@@ -704,7 +704,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "lSelY29ubjLSAAAAAtIAAAAEgA=="),
             new ProtocolTestData(
                 name: "GroupMemberQueryMessage",
-                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1, Max = 10, ContinuationToken = "token", TracingId = 1234UL },
+                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1 },
+                binary: "liiApWdyb3VwAcDA"),
+            new ProtocolTestData(
+                name: "GroupMemberQueryMessageWithOptionalFields",
+                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1, Top = 10, ContinuationToken = "token", TracingId = 1234UL },
                 binary: "liiBAc0E0qVncm91cAEKpXRva2Vu"),
         }.ToDictionary(t => t.Name);
 

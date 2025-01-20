@@ -590,9 +590,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string GroupName { get; set; } = string.Empty;
 
         /// <summary>
-        /// The max count of connections to return.
+        /// The max count of connections to return. 
         /// </summary>
-        public int Max { get; set; } = 200;
+        public int? Top { get; set; }
 
         /// <summary>
         /// A token to indiate the start point of results.
