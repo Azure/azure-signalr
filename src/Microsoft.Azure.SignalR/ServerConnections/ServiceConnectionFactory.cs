@@ -59,7 +59,10 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
         _hubProtocolResolver = hubProtocolResolver;
     }
 
-    public virtual IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, AckHandler ackHandler, ServiceConnectionType type)
+    public virtual IServiceConnection Create(HubServiceEndpoint endpoint,
+                                             IServiceMessageHandler serviceMessageHandler,
+                                             AckHandler ackHandler,
+                                             ServiceConnectionType type)
     {
         return new ServiceConnection(
             _serviceProtocol,

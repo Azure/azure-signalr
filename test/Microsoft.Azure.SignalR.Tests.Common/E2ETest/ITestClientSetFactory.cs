@@ -3,10 +3,9 @@
 
 using Xunit.Abstractions;
 
-namespace Microsoft.Azure.SignalR.Tests.Common
+namespace Microsoft.Azure.SignalR.Tests.Common;
+
+public interface ITestClientSetFactory
 {
-    public interface ITestClientSetFactory
-    {
-        ITestClientSet Create(string serverUrl, int count, ITestOutputHelper output);
-    }
+    ITestClientSet Create(string serverUrl, int count, ITestOutputHelper output);
 }

@@ -1,14 +1,17 @@
-using ClientResultSample;
+using ChatSample.Net70;
 using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-builder.Services.AddSignalR(o =>
-{
-    o.MaximumParallelInvocationsPerClient = 2;
-}).AddAzureSignalR("<connection-string>");
+builder.Services
+    .AddSignalR(o => o.MaximumParallelInvocationsPerClient = 2)
+    .AddAzureSignalR(o =>
+    {
+        o.InitialHubServerConnectionCount = 2;
+        o.ConnectionString = "Endpoint=http://localhost:8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;";
+    });
 
 var app = builder.Build();
 

@@ -881,7 +881,7 @@ public class ServiceProtocol : IServiceProtocol
         {
             var length = arrayLength - 1;
             var values = new string?[length];
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
                 values[i] = ReadString(ref reader, "messages[{0}]", i);
             }

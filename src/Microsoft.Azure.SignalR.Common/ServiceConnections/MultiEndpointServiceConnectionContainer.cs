@@ -35,45 +35,36 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
 
     public ServiceConnectionStatus Status => throw new NotSupportedException();
 
-    public Task ConnectionInitializedTask
-    {
-        get
-        {
-            return Task.WhenAll(from connection in _routerEndpoints.endpoints
-                                select connection.ConnectionContainer.ConnectionInitializedTask);
-        }
-    }
+    public Task ConnectionInitializedTask => Task.WhenAll(from connection in _routerEndpoints.endpoints
+                                                          select connection.ConnectionContainer.ConnectionInitializedTask);
 
     public string ServersTag => throw new NotSupportedException();
 
     public bool HasClients => throw new NotSupportedException();
 
-    public MultiEndpointServiceConnectionContainer(
-        IServiceConnectionFactory serviceConnectionFactory,
-        string hub,
-        int count,
-        int? maxCount,
-        IServiceEndpointManager endpointManager,
-        IMessageRouter router,
-        ILoggerFactory loggerFactory,
-        TimeSpan? scaleTimeout = null
-        ) : this(
-            hub,
-            endpoint => CreateContainer(serviceConnectionFactory, endpoint, count, maxCount, loggerFactory),
-            endpointManager,
-            router,
-            loggerFactory,
-            scaleTimeout)
+    public MultiEndpointServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
+                                                   string hub,
+                                                   int count,
+                                                   int? maxCount,
+                                                   IServiceEndpointManager endpointManager,
+                                                   IMessageRouter router,
+                                                   ILoggerFactory loggerFactory,
+                                                   TimeSpan? scaleTimeout = null) : 
+        this(hub,
+             endpoint => CreateContainer(serviceConnectionFactory, endpoint, count, maxCount, loggerFactory),
+             endpointManager,
+             router,
+             loggerFactory,
+             scaleTimeout)
     {
     }
 
-    internal MultiEndpointServiceConnectionContainer(
-                                                string hub,
-        Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
-        IServiceEndpointManager endpointManager,
-        IMessageRouter router,
-        ILoggerFactory loggerFactory,
-        TimeSpan? scaleTimeout = null)
+    internal MultiEndpointServiceConnectionContainer(string hub,
+                                                     Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
+                                                     IServiceEndpointManager endpointManager,
+                                                     IMessageRouter router,
+                                                     ILoggerFactory loggerFactory,
+                                                     TimeSpan? scaleTimeout = null)
     {
         if (generator == null)
         {
@@ -109,9 +100,14 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         return _routerEndpoints.endpoints.Where(s => s.Online);
     }
 
+    internal IServiceConnectionContainer FirstServiceConnectionContainer()
+    {
+        return _routerEndpoints.endpoints.Select(e => e.ConnectionContainer).FirstOrDefault();
+    }
+
     public Task StartAsync()
     {
-        //ensure started only once
+        // ensure started only once
         return _started == 1 || Interlocked.CompareExchange(ref _started, 1, 0) == 1
             ? Task.CompletedTask
             : Task.WhenAll(_routerEndpoints.endpoints.Select(s =>
@@ -380,7 +376,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
     private void UpdateRoutedEndpoints(IReadOnlyList<HubServiceEndpoint> currentEndpoints)
     {
         // router will be used when there's customized MessageRouter or multiple endpoints
-        var needRouter = currentEndpoints.Count > 1 || !(_router is DefaultMessageRouter);
+        var needRouter = currentEndpoints.Count > 1 || _router is not DefaultMessageRouter;
         _routerEndpoints = (needRouter, currentEndpoints);
     }
 
@@ -435,20 +431,6 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
             await Task.Delay(Constants.Periods.DefaultCloseDelayInterval);
         }
         Log.TimeoutWaitingClientsDisconnect(_logger, endpoint.ToString(), (int)_scaleTimeout.TotalSeconds);
-    }
-
-    private IEnumerable<ServiceEndpoint> SingleOrNotSupported(IEnumerable<ServiceEndpoint> endpoints, ServiceMessage message)
-    {
-        var endpointCnt = endpoints.ToList().Count;
-        if (endpointCnt == 1)
-        {
-            return endpoints;
-        }
-        if (endpointCnt == 0)
-        {
-            throw new ArgumentException("Client invocation is not sent because no endpoint is returned from the endpoint router.");
-        }
-        throw new NotSupportedException("Client invocation to wait for multiple endpoints' results is not supported yet.");
     }
 
     internal static class Log

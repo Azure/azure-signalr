@@ -12,51 +12,49 @@ namespace Microsoft.Azure.SignalR;
 
 internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionManager<THub> where THub : Hub
 {
-    private IServiceConnectionContainer _serviceConnection = null;
+    public IServiceConnectionContainer ServiceConnectionContainer { get; private set; }
 
     public void SetServiceConnection(IServiceConnectionContainer serviceConnection)
     {
-        _serviceConnection = serviceConnection;
+        ServiceConnectionContainer = serviceConnection;
     }
 
     public Task StartAsync()
     {
-        return _serviceConnection.StartAsync();
+        return ServiceConnectionContainer.StartAsync();
     }
 
     public Task StopAsync()
     {
-        return _serviceConnection.StopAsync();
+        return ServiceConnectionContainer.StopAsync();
     }
 
     public async Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
     {
-        await _serviceConnection.OfflineAsync(mode, token);
+        await ServiceConnectionContainer.OfflineAsync(mode, token);
     }
 
     public async Task CloseClientConnections(CancellationToken cancellationToken)
     {
-        await _serviceConnection.CloseClientConnections(cancellationToken);
+        await ServiceConnectionContainer.CloseClientConnections(cancellationToken);
     }
 
     public Task WriteAsync(ServiceMessage serviceMessage)
     {
-        if (_serviceConnection == null)
+        if (ServiceConnectionContainer == null)
         {
             throw new AzureSignalRNotConnectedException();
         }
-
-        return _serviceConnection.WriteAsync(serviceMessage);
+        return ServiceConnectionContainer.WriteAsync(serviceMessage);
     }
 
     public Task<bool> WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default)
     {
-        if (_serviceConnection == null)
+        if (ServiceConnectionContainer == null)
         {
             throw new AzureSignalRNotConnectedException();
         }
-
-        return _serviceConnection.WriteAckableMessageAsync(seviceMessage, cancellationToken);
+        return ServiceConnectionContainer.WriteAckableMessageAsync(seviceMessage, cancellationToken);
     }
 
     public void Dispose()

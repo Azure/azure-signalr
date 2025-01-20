@@ -11,12 +11,11 @@ internal class StrongServiceConnectionContainer : ServiceConnectionContainerBase
 {
     private readonly int? _maxConnectionCount;
 
-    public StrongServiceConnectionContainer(
-        IServiceConnectionFactory serviceConnectionFactory,
-        int fixedConnectionCount,
-        int? maxConnectionCount,
-        HubServiceEndpoint endpoint,
-        ILogger logger) : base(serviceConnectionFactory, fixedConnectionCount, endpoint, logger: logger)
+    public StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
+                                            int fixedConnectionCount,
+                                            int? maxConnectionCount,
+                                            HubServiceEndpoint endpoint,
+                                            ILogger logger) : base(serviceConnectionFactory, fixedConnectionCount, endpoint, logger: logger)
     {
         _maxConnectionCount = maxConnectionCount.HasValue ? (maxConnectionCount.Value > fixedConnectionCount ? maxConnectionCount.Value : fixedConnectionCount) : null;
     }

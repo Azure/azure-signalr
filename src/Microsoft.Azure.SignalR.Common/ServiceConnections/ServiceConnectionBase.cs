@@ -97,7 +97,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     public string ServerId { get; }
 
-    public string ConnectionId { get; }
+    public string ConnectionId { get; private set; }
 
     protected HubServiceEndpoint HubEndpoint { get; }
 
@@ -344,7 +344,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
         if (await ReceiveHandshakeResponseAsync(context.Transport.Input, cts.Token))
         {
-            Log.HandshakeComplete(Logger);
+            Log.HandshakeComplete(Logger, ConnectionId);
             return true;
         }
         return false;
@@ -569,6 +569,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
                         if (string.IsNullOrEmpty(handshakeResponse.ErrorMessage))
                         {
+                            ConnectionId = handshakeResponse.ConnectionId;
                             return true;
                         }
 

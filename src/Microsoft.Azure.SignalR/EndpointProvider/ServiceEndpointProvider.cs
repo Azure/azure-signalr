@@ -28,14 +28,15 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
 
     public IWebProxy Proxy { get; }
 
-    public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions serviceOptions)
+    public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions options)
     {
-        _accessTokenLifetime = serviceOptions.AccessTokenLifetime;
         _accessKey = endpoint.AccessKey;
-        _appName = serviceOptions.ApplicationName;
-        _algorithm = serviceOptions.AccessTokenAlgorithm;
 
-        Proxy = serviceOptions.Proxy;
+        _appName = options.ApplicationName;
+        _accessTokenLifetime = options.AccessTokenLifetime;
+        _algorithm = options.AccessTokenAlgorithm;
+
+        Proxy = options.Proxy;
 
         _generator = new DefaultServiceEndpointGenerator(endpoint);
     }

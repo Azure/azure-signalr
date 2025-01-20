@@ -8,57 +8,54 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Azure.SignalR.Tests.Common.E2ETest;
 using Microsoft.Extensions.Logging;
 using Microsoft.Owin.Hosting;
 using Owin;
 using Xunit.Abstractions;
 
-namespace Microsoft.Azure.SignalR.AspNet.Tests
+namespace Microsoft.Azure.SignalR.AspNet.Tests;
+
+internal sealed class UserIdProvider : IUserIdProvider
 {
-    internal sealed class UserIdProvider : IUserIdProvider
+    public string GetUserId(IRequest request)
     {
-        public string GetUserId(IRequest request)
-        {
-            return request.QueryString["user"];
-        }
+        return request.QueryString["user"];
+    }
+}
+
+internal class TestServer(ITestOutputHelper output) : TestServerBase(output)
+{
+    private IDisposable _webApp;
+
+    private ILoggerFactory _loggerFactory;
+
+    private IServiceConnectionManager _scm;
+
+    public override TestHubConnectionManager HubConnectionManager { get; } = new TestHubConnectionManager();
+
+    public override async Task StopAsync()
+    {
+        await _scm.StopAsync();
+        _webApp?.Dispose();
+        _loggerFactory?.Dispose();
     }
 
-    internal class TestServer : TestServerBase
+    protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output, Dictionary<string, string> configuration)
     {
-        private IDisposable _webApp;
-        private ILoggerFactory _loggerFactory;
-        private IServiceConnectionManager _scm;
+        var userIdProvider = new UserIdProvider();
+        _loggerFactory = new LoggerFactory().AddXunit(output);
 
-        public override TestHubConnectionManager HubConnectionManager { get; }
-
-        public TestServer(ITestOutputHelper output) : base(output)
+        _webApp = WebApp.Start(new StartOptions(serverUrl), app =>
         {
-            HubConnectionManager = new TestHubConnectionManager();
-        }
-
-        protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output, Dictionary<string, string> configuration)
-        {
-            var userIdProvider = new UserIdProvider();
-            _loggerFactory = new LoggerFactory().AddXunit(output);
-
-            _webApp = WebApp.Start(new StartOptions(serverUrl), app =>
-            {
-                var hubConfiguration = Utility.GetActualHubConfig(_loggerFactory);
-                hubConfiguration.Resolver.Register(typeof(TestHub), () => new TestHub(HubConnectionManager));
-                hubConfiguration.Resolver.Register(typeof(IUserIdProvider), () => userIdProvider);
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                app.MapAzureSignalR("/signalr", GetType().FullName, hubConfiguration, options => options.ConnectionString = TestConfiguration.Instance.ConnectionString);
-                _scm = hubConfiguration.Resolver.Resolve<IServiceConnectionManager>();
-                GlobalHost.TraceManager.Switch.Level = SourceLevels.Information;
-            });
-            return Task.CompletedTask;
-        }
-
-        public override async Task StopAsync()
-        {
-            await _scm.StopAsync();
-            _webApp?.Dispose();
-            _loggerFactory?.Dispose();
-        }
+            var hubConfiguration = Utility.GetActualHubConfig(_loggerFactory);
+            hubConfiguration.Resolver.Register(typeof(TestHub), () => new TestHub(HubConnectionManager));
+            hubConfiguration.Resolver.Register(typeof(IUserIdProvider), () => userIdProvider);
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            app.MapAzureSignalR("/signalr", GetType().FullName, hubConfiguration, options => options.ConnectionString = TestConfiguration.Instance.ConnectionString);
+            _scm = hubConfiguration.Resolver.Resolve<IServiceConnectionManager>();
+            GlobalHost.TraceManager.Switch.Level = SourceLevels.Information;
+        });
+        return Task.CompletedTask;
     }
 }

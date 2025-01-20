@@ -8,4 +8,6 @@ namespace Microsoft.Azure.SignalR;
 internal interface IServiceConnectionManager<THub> : IServiceConnectionManager where THub : Hub
 {
     void SetServiceConnection(IServiceConnectionContainer serviceConnection);
+
+    IServiceConnectionContainer ServiceConnectionContainer { get; }
 }

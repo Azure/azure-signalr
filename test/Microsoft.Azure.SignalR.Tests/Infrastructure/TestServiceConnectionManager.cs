@@ -18,6 +18,8 @@ internal class TestServiceConnectionManager<THub> : IServiceConnectionManager<TH
 
     public ServiceMessage ServiceMessage { get; private set; }
 
+    public IServiceConnectionContainer ServiceConnectionContainer => throw new NotImplementedException();
+
     public void SetServiceConnection(IServiceConnectionContainer serviceConnection)
     {
     }

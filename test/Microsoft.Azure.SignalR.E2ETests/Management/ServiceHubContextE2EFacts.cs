@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.Testing.xunit;
+using Microsoft.Azure.SignalR.E2ETests.SignalR;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,23 +25,349 @@ namespace Microsoft.Azure.SignalR.Management.Tests
     public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     {
         private const string HubName = "ManagemnetTestHub";
+
         private const string MethodName = "SendMessage";
+
         private const string Message = "Hello client, have a nice day!";
+
         private const int ClientConnectionCount = 4;
+
         private const int GroupCount = 2;
+
         private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(1);
+
         private static readonly ServiceTransportType[] _serviceTransportType = new ServiceTransportType[] { ServiceTransportType.Transient, ServiceTransportType.Persistent };
+
         private static readonly string[] _appNames = new string[] { "appName", "", null };
+
         private readonly ITestServerFactory _testServerFactory;
+
+        public static IEnumerable<object[]> TestData => from serviceTransportType in _serviceTransportType
+                                                        from appName in _appNames
+                                                        select new object[] { serviceTransportType, appName };
 
         public ServiceHubContextE2EFacts(ITestOutputHelper output) : base(output)
         {
             _testServerFactory = new TestServerFactory();
         }
 
-        public static IEnumerable<object[]> TestData => from serviceTransportType in _serviceTransportType
-                                                        from appName in _appNames
-                                                        select new object[] { serviceTransportType, appName };
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
+        public async Task CloseConnectionTest(ServiceTransportType serviceTransportType, string appName)
+        {
+            //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+            using (StartLog(out var loggerFactory))
+            {
+                ServiceHubContext serviceHubContext = null;
+                try
+                {
+                    const string reason = "This is a test reason.";
+                    var serviceManager = new ServiceManagerBuilder()
+                        .WithOptions(o =>
+                        {
+                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                            o.ServiceTransportType = serviceTransportType;
+                            o.ApplicationName = appName;
+                        })
+                        .WithLoggerFactory(loggerFactory)
+                        .Build();
+                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
+                    var negotiationRes = await serviceHubContext.NegotiateAsync(new NegotiationOptions { EnableDetailedErrors = true, IsDiagnosticClient = true });
+                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
+                    var tcs = new TaskCompletionSource<string>();
+                    conn.Closed += ex =>
+                    {
+                        if (ex is null)
+                        {
+                            tcs.SetException(new Exception("close exception is null"));
+                        }
+                        tcs.SetResult(ex.Message);
+                        return Task.CompletedTask;
+                    };
+                    await conn.StartAsync();
+                    await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId, reason);
+
+                    var actualReason = await tcs.Task.OrTimeout();
+                    Assert.Contains(reason, actualReason);
+                }
+                finally
+                {
+                    await serviceHubContext?.DisposeAsync();
+                }
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [InlineData(ServiceTransportType.Transient)]
+        [InlineData(ServiceTransportType.Persistent)]
+        public async Task CheckConnectionExistsTest(ServiceTransportType serviceTransportType)
+        {
+            //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+            ServiceHubContext serviceHubContext = null;
+            using (StartLog(out var loggerFactory))
+            {
+                try
+                {
+                    var serviceManager = new ServiceManagerBuilder()
+                        .WithOptions(o =>
+                        {
+                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                            o.ServiceTransportType = serviceTransportType;
+                        })
+                        .WithLoggerFactory(loggerFactory)
+                        .Build();
+                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
+                    var negotiationRes = await serviceHubContext.NegotiateAsync();
+                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
+                    var tcs = new TaskCompletionSource();
+                    conn.Closed += ex =>
+                    {
+                        tcs.SetResult();
+                        return Task.CompletedTask;
+                    };
+                    await conn.StartAsync();
+                    var connId = conn.ConnectionId;
+                    var exists = await serviceHubContext.ClientManager.ConnectionExistsAsync(connId);
+                    Assert.True(exists);
+
+                    await serviceHubContext.ClientManager.CloseConnectionAsync(connId);
+                    await tcs.Task;
+                    exists = await serviceHubContext.ClientManager.ConnectionExistsAsync(connId);
+                    Assert.False(exists);
+                }
+                finally
+                {
+                    await serviceHubContext?.DisposeAsync();
+                }
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [InlineData(ServiceTransportType.Transient)]
+        [InlineData(ServiceTransportType.Persistent)]
+        public async Task CheckUserExistsTest(ServiceTransportType serviceTransportType)
+        {
+            //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+            ServiceHubContext serviceHubContext = null;
+            using (StartLog(out var loggerFactory))
+            {
+                try
+                {
+                    var userId = "TestUser";
+                    var serviceManager = new ServiceManagerBuilder()
+                        .WithOptions(o =>
+                        {
+                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                            o.ServiceTransportType = serviceTransportType;
+                        })
+                        .WithLoggerFactory(loggerFactory)
+                        .Build();
+                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
+                    var negotiationRes = await serviceHubContext.NegotiateAsync(new() { UserId = userId });
+                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
+                    await conn.StartAsync();
+                    var tcs = new TaskCompletionSource();
+                    conn.Closed += ex =>
+                    {
+                        tcs.SetResult();
+                        return Task.CompletedTask;
+                    };
+                    var exists = await serviceHubContext.ClientManager.UserExistsAsync(userId);
+                    Assert.True(exists);
+
+                    await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
+                    await tcs.Task;
+                    exists = await serviceHubContext.ClientManager.UserExistsAsync(userId);
+                    Assert.False(exists);
+                }
+                finally
+                {
+                    await serviceHubContext?.DisposeAsync();
+                }
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [InlineData(ServiceTransportType.Transient)]
+        [InlineData(ServiceTransportType.Persistent)]
+        public async Task CheckGroupExistsTest(ServiceTransportType serviceTransportType)
+        {
+            //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+            ServiceHubContext serviceHubContext = null;
+            using (StartLog(out var loggerFactory))
+            {
+                try
+                {
+                    var groupName = "TestGroup";
+                    var serviceManager = new ServiceManagerBuilder()
+                        .WithOptions(o =>
+                        {
+                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                            o.ServiceTransportType = serviceTransportType;
+                        })
+                        .WithLoggerFactory(loggerFactory)
+                        .Build();
+                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
+                    var negotiationRes = await serviceHubContext.NegotiateAsync();
+                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
+                    await conn.StartAsync();
+                    var tcs = new TaskCompletionSource();
+                    conn.Closed += ex =>
+                    {
+                        tcs.SetResult();
+                        return Task.CompletedTask;
+                    };
+
+                    var exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
+                    Assert.False(exists);
+
+                    await serviceHubContext.Groups.AddToGroupAsync(conn.ConnectionId, groupName);
+                    exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
+                    Assert.True(exists);
+
+                    await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
+                    await tcs.Task;
+                    exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
+                    Assert.False(exists);
+                }
+                finally
+                {
+                    await serviceHubContext.DisposeAsync();
+                }
+            }
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task ServiceHubContextIndependencyTest()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: context => context.EventId == new EventId(2, "EndpointOffline")))
+            {
+                using var serviceManager = new ServiceManagerBuilder()
+                    .WithOptions(o =>
+                    {
+                        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                        o.ServiceTransportType = ServiceTransportType.Persistent;
+                    })
+                    .WithLoggerFactory(loggerFactory)
+                    .Build();
+                var hubContext_1 = await serviceManager.CreateHubContextAsync(HubName);
+                var hubContext_2 = await serviceManager.CreateHubContextAsync(HubName);
+                await hubContext_1.Clients.All.SendAsync(MethodName, Message);
+                await hubContext_1.DisposeAsync();
+                await hubContext_2.Clients.All.SendAsync(MethodName, Message);
+                await hubContext_2.DisposeAsync();
+            }
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task AddNonexistentConnectionToGroupRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.Groups.AddToGroupAsync(Guid.NewGuid().ToString(), "group");
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task CloseNonexistentConnectionToGroupRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.ClientManager.CloseConnectionAsync(Guid.NewGuid().ToString());
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task RemoveNonexistentConnectionFromGroupRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.Groups.RemoveFromGroupAsync(Guid.NewGuid().ToString(), "group");
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task RemoveNonexistentConnectionFromAllGroupsRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.Groups.RemoveFromAllGroupsAsync(Guid.NewGuid().ToString());
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task AddNonexistentUserToGroupRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.UserGroups.AddToGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task AddNonexistentUserToGroupWithTTLRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.UserGroups.AddToGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), TimeSpan.Zero);
+            await context.UserGroups.AddToGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), TimeSpan.FromSeconds(1));
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task RemoveNonexistentUserFromGroupRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.UserGroups.RemoveFromGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task RemoveNonexistentUserFromAllGroupsRestApiTest()
+        {
+            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceManager();
+            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
+            await context.UserGroups.RemoveFromAllGroupsAsync(Guid.NewGuid().ToString());
+        }
 
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
@@ -383,19 +710,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        private static Task ConnectionRemoveFromAllGroupsAsync(ServiceHubContext serviceHubContext, IDictionary<string, List<string>> connectionGroupDict)
-        {
-            return Task.WhenAll(from connection in connectionGroupDict.Keys
-                                select serviceHubContext.Groups.RemoveFromAllGroupsAsync(connection, default));
-        }
-
-        private static Task AddConnectionToGroupAsync(IServiceHubContext serviceHubContext, IDictionary<string, List<string>> connectionGroupDict)
-        {
-            return Task.WhenAll(from connectiongroup in connectionGroupDict
-                                select Task.WhenAll(from grp in connectiongroup.Value
-                                                    select serviceHubContext.Groups.AddToGroupAsync(connectiongroup.Key, grp)));
-        }
-
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
         [InlineData(ServiceTransportType.Persistent)]
@@ -436,7 +750,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var userNames = GenerateRandomNames(ClientConnectionCount);
             var testServer = _testServerFactory.Create(TestOutputHelper);
-            await testServer.StartAsync(new Dictionary<string, string> { [TestStartup.ApplicationName] = appName });
+            await testServer.StartAsync(new Dictionary<string, string> { [TestConstants.ApplicationName] = appName });
 
             var task = testServer.HubConnectionManager.WaitForConnectionCountAsync(1);
 
@@ -464,7 +778,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         internal async Task ConnectionJoinLeaveGroupTest(ServiceTransportType serviceTransportType, string appName)
         {
             var testServer = _testServerFactory.Create(TestOutputHelper);
-            await testServer.StartAsync(new Dictionary<string, string> { [TestStartup.ApplicationName] = appName });
+            await testServer.StartAsync(new Dictionary<string, string> { [TestConstants.ApplicationName] = appName });
 
             var task = testServer.HubConnectionManager.WaitForConnectionCountAsync(1);
 
@@ -490,196 +804,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             finally
             {
                 await serviceHubContext.DisposeAsync();
-            }
-        }
-
-        [ConditionalTheory]
-        [SkipIfConnectionStringNotPresent]
-        [MemberData(nameof(TestData))]
-        public async Task CloseConnectionTest(ServiceTransportType serviceTransportType, string appName)
-        {
-            //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
-            using (StartLog(out var loggerFactory))
-            {
-                ServiceHubContext serviceHubContext = null;
-                try
-                {
-                    const string reason = "This is a test reason.";
-                    var serviceManager = new ServiceManagerBuilder()
-                        .WithOptions(o =>
-                        {
-                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                            o.ServiceTransportType = serviceTransportType;
-                            o.ApplicationName = appName;
-                        })
-                        .WithLoggerFactory(loggerFactory)
-                        .Build();
-                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
-                    var negotiationRes = await serviceHubContext.NegotiateAsync(new NegotiationOptions { EnableDetailedErrors = true, IsDiagnosticClient = true });
-                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
-                    var tcs = new TaskCompletionSource<string>();
-                    conn.Closed += ex =>
-                    {
-                        if (ex is null)
-                        {
-                            tcs.SetException(new Exception("close exception is null"));
-                        }
-                        tcs.SetResult(ex.Message);
-                        return Task.CompletedTask;
-                    };
-                    await conn.StartAsync();
-                    await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId, reason);
-
-                    var actualReason = await tcs.Task.OrTimeout();
-                    Assert.Contains(reason, actualReason);
-                }
-                finally
-                {
-                    await serviceHubContext?.DisposeAsync();
-                }
-            }
-        }
-
-        [ConditionalTheory]
-        [SkipIfConnectionStringNotPresent]
-        [InlineData(ServiceTransportType.Transient)]
-        [InlineData(ServiceTransportType.Persistent)]
-        public async Task CheckConnectionExistsTest(ServiceTransportType serviceTransportType)
-        {
-            //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
-            ServiceHubContext serviceHubContext = null;
-            using (StartLog(out var loggerFactory))
-            {
-                try
-                {
-                    var serviceManager = new ServiceManagerBuilder()
-                        .WithOptions(o =>
-                        {
-                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                            o.ServiceTransportType = serviceTransportType;
-                        })
-                        .WithLoggerFactory(loggerFactory)
-                        .Build();
-                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
-                    var negotiationRes = await serviceHubContext.NegotiateAsync();
-                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
-                    var tcs = new TaskCompletionSource();
-                    conn.Closed += ex =>
-                    {
-                        tcs.SetResult();
-                        return Task.CompletedTask;
-                    };
-                    await conn.StartAsync();
-                    var connId = conn.ConnectionId;
-                    var exists = await serviceHubContext.ClientManager.ConnectionExistsAsync(connId);
-                    Assert.True(exists);
-
-                    await serviceHubContext.ClientManager.CloseConnectionAsync(connId);
-                    await tcs.Task;
-                    exists = await serviceHubContext.ClientManager.ConnectionExistsAsync(connId);
-                    Assert.False(exists);
-                }
-                finally
-                {
-                    await serviceHubContext?.DisposeAsync();
-                }
-            }
-        }
-
-        [ConditionalTheory]
-        [SkipIfConnectionStringNotPresent]
-        [InlineData(ServiceTransportType.Transient)]
-        [InlineData(ServiceTransportType.Persistent)]
-        public async Task CheckUserExistsTest(ServiceTransportType serviceTransportType)
-        {
-            //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
-            ServiceHubContext serviceHubContext = null;
-            using (StartLog(out var loggerFactory))
-            {
-                try
-                {
-                    var userId = "TestUser";
-                    var serviceManager = new ServiceManagerBuilder()
-                        .WithOptions(o =>
-                        {
-                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                            o.ServiceTransportType = serviceTransportType;
-                        })
-                        .WithLoggerFactory(loggerFactory)
-                        .Build();
-                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
-                    var negotiationRes = await serviceHubContext.NegotiateAsync(new() { UserId = userId });
-                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
-                    await conn.StartAsync();
-                    var tcs = new TaskCompletionSource();
-                    conn.Closed += ex =>
-                    {
-                        tcs.SetResult();
-                        return Task.CompletedTask;
-                    };
-                    var exists = await serviceHubContext.ClientManager.UserExistsAsync(userId);
-                    Assert.True(exists);
-
-                    await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
-                    await tcs.Task;
-                    exists = await serviceHubContext.ClientManager.UserExistsAsync(userId);
-                    Assert.False(exists);
-                }
-                finally
-                {
-                    await serviceHubContext?.DisposeAsync();
-                }
-            }
-        }
-
-        [ConditionalTheory]
-        [SkipIfConnectionStringNotPresent]
-        [InlineData(ServiceTransportType.Transient)]
-        [InlineData(ServiceTransportType.Persistent)]
-        public async Task CheckGroupExistsTest(ServiceTransportType serviceTransportType)
-        {
-            //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
-            ServiceHubContext serviceHubContext = null;
-            using (StartLog(out var loggerFactory))
-            {
-                try
-                {
-                    var groupName = "TestGroup";
-                    var serviceManager = new ServiceManagerBuilder()
-                        .WithOptions(o =>
-                        {
-                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                            o.ServiceTransportType = serviceTransportType;
-                        })
-                        .WithLoggerFactory(loggerFactory)
-                        .Build();
-                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
-                    var negotiationRes = await serviceHubContext.NegotiateAsync();
-                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
-                    await conn.StartAsync();
-                    var tcs = new TaskCompletionSource();
-                    conn.Closed += ex =>
-                    {
-                        tcs.SetResult();
-                        return Task.CompletedTask;
-                    };
-
-                    var exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
-                    Assert.False(exists);
-
-                    await serviceHubContext.Groups.AddToGroupAsync(conn.ConnectionId, groupName);
-                    exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
-                    Assert.True(exists);
-
-                    await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
-                    await tcs.Task;
-                    exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
-                    Assert.False(exists);
-                }
-                finally
-                {
-                    await serviceHubContext.DisposeAsync();
-                }
             }
         }
 
@@ -732,8 +856,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         [ConditionalFact(Skip = "TODO: move this test into ServiceConnectionContainerBase or WeakConnectionContainer")]
         [SkipIfConnectionStringNotPresent]
-        //TODO this test doesn't work anymore.
-        //https://github.com/Azure/azure-signalr/pull/707/files  ServiceConnectionContainerBase or WeakConnectionContainer should be tested separately.
         internal async Task StopServiceHubContextTest()
         {
             var serviceManager = new ServiceManagerBuilder()
@@ -749,29 +871,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             await serviceHubContext.DisposeAsync();
             await Task.Delay(500);
             Assert.Equal(ServiceConnectionStatus.Disconnected, connectionContainer.Status);
-        }
-
-        [ConditionalFact]
-        [SkipIfConnectionStringNotPresent]
-        public async Task ServiceHubContextIndependencyTest()
-        {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: context => context.EventId == new EventId(2, "EndpointOffline")))
-            {
-                using var serviceManager = new ServiceManagerBuilder()
-                    .WithOptions(o =>
-                    {
-                        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                        o.ServiceTransportType = ServiceTransportType.Persistent;
-                    })
-                    .WithLoggerFactory(loggerFactory)
-                    .Build();
-                var hubContext_1 = await serviceManager.CreateHubContextAsync(HubName);
-                var hubContext_2 = await serviceManager.CreateHubContextAsync(HubName);
-                await hubContext_1.Clients.All.SendAsync(MethodName, Message);
-                await hubContext_1.DisposeAsync();
-                await hubContext_2.Clients.All.SendAsync(MethodName, Message);
-                await hubContext_2.DisposeAsync();
-            }
         }
 
         [ConditionalTheory]
@@ -803,109 +902,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        [ConditionalFact]
-        [SkipIfConnectionStringNotPresent]
-        public async Task AddNonexistentConnectionToGroupRestApiTest()
+        private static Task ConnectionRemoveFromAllGroupsAsync(ServiceHubContext serviceHubContext, IDictionary<string, List<string>> connectionGroupDict)
         {
-            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-            {
-                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                o.ServiceTransportType = ServiceTransportType.Transient;
-            }).BuildServiceManager();
-            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
-            await context.Groups.AddToGroupAsync(Guid.NewGuid().ToString(), "group");
+            return Task.WhenAll(from connection in connectionGroupDict.Keys
+                                select serviceHubContext.Groups.RemoveFromAllGroupsAsync(connection, default));
         }
 
-        [ConditionalFact]
-        [SkipIfConnectionStringNotPresent]
-        public async Task CloseNonexistentConnectionToGroupRestApiTest()
+        private static Task AddConnectionToGroupAsync(IServiceHubContext serviceHubContext, IDictionary<string, List<string>> connectionGroupDict)
         {
-            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-            {
-                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                o.ServiceTransportType = ServiceTransportType.Transient;
-            }).BuildServiceManager();
-            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
-            await context.ClientManager.CloseConnectionAsync(Guid.NewGuid().ToString());
-        }
-
-        [ConditionalFact]
-        [SkipIfConnectionStringNotPresent]
-        public async Task RemoveNonexistentConnectionFromGroupRestApiTest()
-        {
-            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-            {
-                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                o.ServiceTransportType = ServiceTransportType.Transient;
-            }).BuildServiceManager();
-            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
-            await context.Groups.RemoveFromGroupAsync(Guid.NewGuid().ToString(), "group");
-        }
-
-        [ConditionalFact]
-        [SkipIfConnectionStringNotPresent]
-        public async Task RemoveNonexistentConnectionFromAllGroupsRestApiTest()
-        {
-            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-            {
-                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                o.ServiceTransportType = ServiceTransportType.Transient;
-            }).BuildServiceManager();
-            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
-            await context.Groups.RemoveFromAllGroupsAsync(Guid.NewGuid().ToString());
-        }
-
-        [ConditionalFact]
-        [SkipIfConnectionStringNotPresent]
-        public async Task AddNonexistentUserToGroupRestApiTest()
-        {
-            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-            {
-                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                o.ServiceTransportType = ServiceTransportType.Transient;
-            }).BuildServiceManager();
-            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
-            await context.UserGroups.AddToGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
-        }
-
-        [ConditionalFact]
-        [SkipIfConnectionStringNotPresent]
-        public async Task AddNonexistentUserToGroupWithTTLRestApiTest()
-        {
-            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-            {
-                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                o.ServiceTransportType = ServiceTransportType.Transient;
-            }).BuildServiceManager();
-            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
-            await context.UserGroups.AddToGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), TimeSpan.Zero);
-            await context.UserGroups.AddToGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), TimeSpan.FromSeconds(1));
-        }
-
-        [ConditionalFact]
-        [SkipIfConnectionStringNotPresent]
-        public async Task RemoveNonexistentUserFromGroupRestApiTest()
-        {
-            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-            {
-                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                o.ServiceTransportType = ServiceTransportType.Transient;
-            }).BuildServiceManager();
-            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
-            await context.UserGroups.RemoveFromGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
-        }
-
-        [ConditionalFact]
-        [SkipIfConnectionStringNotPresent]
-        public async Task RemoveNonexistentUserFromAllGroupsRestApiTest()
-        {
-            using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-            {
-                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                o.ServiceTransportType = ServiceTransportType.Transient;
-            }).BuildServiceManager();
-            using var context = await serviceManager.CreateHubContextAsync(HubName, default);
-            await context.UserGroups.RemoveFromAllGroupsAsync(Guid.NewGuid().ToString());
+            return Task.WhenAll(from connectiongroup in connectionGroupDict
+                                select Task.WhenAll(from grp in connectiongroup.Value
+                                                    select serviceHubContext.Groups.AddToGroupAsync(connectiongroup.Key, grp)));
         }
 
         private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)
@@ -997,17 +1004,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     select $"{prefix}{i}").ToArray();
         }
 
-        private async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType, string appName, IEnumerable<string> userNames)
-        {
-            var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType, appName);
-            var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, LoggerFactory);
-
-            var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
-            var tokens = from userName in userNames
-                         select serviceManager.GenerateClientAccessToken(HubName, userName);
-            return (clientEndpoint, tokens, serviceHubContext);
-        }
-
         private static string[] GenerateRandomNames(int count)
         {
             var names = new string[count];
@@ -1080,9 +1076,21 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
+        private async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType, string appName, IEnumerable<string> userNames)
+        {
+            var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType, appName);
+            var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, LoggerFactory);
+
+            var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
+            var tokens = from userName in userNames
+                         select serviceManager.GenerateClientAccessToken(HubName, userName);
+            return (clientEndpoint, tokens, serviceHubContext);
+        }
+
         private class TestLoggerFactory : ILoggerFactory
         {
             public TestLogger Logger { get; } = new TestLogger();
+
             public void AddProvider(ILoggerProvider provider)
             {
             }

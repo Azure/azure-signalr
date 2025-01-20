@@ -100,6 +100,8 @@ public class ServiceHubDispatcherTests
 
         private readonly StrongBox<int> _index;
 
+        public IServiceConnectionContainer ServiceConnectionContainer => throw new NotImplementedException();
+
         public TestServiceConnectionManager(StrongBox<int> index)
         {
             _index = index;

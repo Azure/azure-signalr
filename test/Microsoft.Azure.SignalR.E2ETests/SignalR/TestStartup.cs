@@ -5,48 +5,39 @@ using System;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Azure.SignalR.Tests
+namespace Microsoft.Azure.SignalR.E2ETests.SignalR;
+
+internal class TestStartup(IConfiguration configuration) : IStartup
 {
-    internal class TestStartup : IStartup
+    private readonly IConfiguration _configuration = configuration;
+
+    public void Configure(IApplicationBuilder app)
     {
-        public const string ApplicationName = "AppName";
+        app.UseRouting();
+        app.UseEndpoints(configure => configure.MapHub<TestHub>($"/{nameof(TestHub)}"));
+        app.UseMvc();
+    }
 
-        private readonly IConfiguration _configuration;
+    public IServiceProvider ConfigureServices(IServiceCollection services)
+    {
+        var applicationName = _configuration[TestConstants.ApplicationName];
+        var connectionString = _configuration[TestConstants.ConnectionString];
 
-        public TestStartup(IConfiguration configuration)
-        {
-            _configuration = configuration;
-        }
+        services.AddMvc(option => option.EnableEndpointRouting = false);
+        services
+            .AddSignalR()
+            .AddAzureSignalR(o =>
+            {
+                o.ConnectionString = connectionString;
+                o.ClaimsProvider = context => [new Claim(ClaimTypes.NameIdentifier, context.Request.Query["user"])];
+                o.ApplicationName = applicationName;
+                o.InitialHubServerConnectionCount = 2;
+            });
 
-        public void Configure(IApplicationBuilder app)
-        {
-            app.UseRouting();
-            app.UseEndpoints(configure => configure.MapHub<TestHub>($"/{nameof(TestHub)}"));
-            app.UseMvc();
-        }
-
-        public IServiceProvider ConfigureServices(IServiceCollection services)
-        {
-            var applicationName = _configuration[ApplicationName];
-
-            services.AddMvc(option => option.EnableEndpointRouting = false);
-            services
-                .AddSignalR(options =>
-                {
-                    options.EnableDetailedErrors = true;
-                })
-                .AddAzureSignalR(o =>
-                {
-                    o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                    o.ClaimsProvider = context => new[] { new Claim(ClaimTypes.NameIdentifier, context.Request.Query["user"]) };
-                    o.ApplicationName = applicationName;
-                });
-
-            return services.BuildServiceProvider();
-        }
+        return services.BuildServiceProvider();
     }
 }

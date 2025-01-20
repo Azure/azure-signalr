@@ -48,8 +48,8 @@ internal abstract partial class ServiceConnectionBase
         private static readonly Action<ILogger, Exception> _sendingHandshakeRequest =
             LoggerMessage.Define(LogLevel.Debug, new EventId(21, "SendingHandshakeRequest"), "Sending Handshake request to service.");
 
-        private static readonly Action<ILogger, Exception> _handshakeComplete =
-            LoggerMessage.Define(LogLevel.Debug, new EventId(22, "HandshakeComplete"), "Handshake with service completes.");
+        private static readonly Action<ILogger, string, Exception> _handshakeComplete =
+            LoggerMessage.Define<string>(LogLevel.Information, new EventId(22, "HandshakeComplete"), "Handshake with service is complete. Id: {ServiceConnectionId}");
 
         private static readonly Action<ILogger, string, string, string, Exception> _handshakeError =
             LoggerMessage.Define<string, string, string>(LogLevel.Information, new EventId(24, "HandshakeError"), "Connection to service '{Endpoint}' handshake failed, probably caused by network instability or service restart. Will retry after the back off period. Error detail: {Error}. Id: {ServiceConnectionId}");
@@ -146,9 +146,9 @@ internal abstract partial class ServiceConnectionBase
             _sendingHandshakeRequest(logger, null);
         }
 
-        public static void HandshakeComplete(ILogger logger)
+        public static void HandshakeComplete(ILogger logger, string serviceConnectionId)
         {
-            _handshakeComplete(logger, null);
+            _handshakeComplete(logger, serviceConnectionId, null);
         }
 
         public static void HandshakeError(ILogger logger, string endpoint, string error, string serviceConnectionId)

@@ -95,7 +95,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     protected ILogger Logger { get; }
 
-    protected List<IServiceConnection> ServiceConnections
+    internal List<IServiceConnection> ServiceConnections
     {
         get => _serviceConnections;
         set => _serviceConnections = value;
@@ -345,7 +345,6 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
     protected IServiceConnection CreateServiceConnectionCore(ServiceConnectionType type)
     {
         var connection = ServiceConnectionFactory.Create(Endpoint, this, _ackHandler, type);
-
         connection.ConnectionStatusChanged += OnConnectionStatusChanged;
         return connection;
     }
