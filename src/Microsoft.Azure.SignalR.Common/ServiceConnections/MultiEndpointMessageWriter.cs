@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR;
 /// <summary>
 /// A service connection container which sends message to multiple service endpoints.
 /// </summary>
-internal class MultiEndpointMessageWriter : IServiceMessageWriter
+internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceManager
 {
     private readonly ILogger _logger;
 
@@ -55,8 +55,8 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter
 
     public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
     {
-        if (serviceMessage is CheckConnectionExistenceWithAckMessage 
-            || serviceMessage is JoinGroupWithAckMessage 
+        if (serviceMessage is CheckConnectionExistenceWithAckMessage
+            || serviceMessage is JoinGroupWithAckMessage
             || serviceMessage is LeaveGroupWithAckMessage)
         {
             return WriteSingleResultAckableMessage(serviceMessage, cancellationToken);
@@ -169,6 +169,32 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter
             // log and don't stop other endpoints
             Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, (serviceMessage as IMessageWithTracingId)?.TracingId, endpoint.ToString());
             throw new FailedWritingMessageToServiceException(endpoint.ServerEndpoint.AbsoluteUri);
+        }
+    }
+
+    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top)
+    {
+        if (TargetEndpoints.Length == 0)
+        {
+            Log.NoEndpointRouted(_logger, nameof(GroupMemberQueryMessage));
+            yield break;
+        }
+        foreach (var endpoint in TargetEndpoints)
+        {
+            IAsyncEnumerable<GroupMember> enumerable;
+            try
+            {
+                enumerable = endpoint.ConnectionContainer.ListConnectionsInGroupAsync(groupName, top);
+            }
+            catch (ServiceConnectionNotActiveException)
+            {
+                Log.FailedWritingMessageToEndpoint(_logger, nameof(GroupMemberQueryMessage), null, endpoint.ToString());
+                continue;
+            }
+            await foreach (var member in enumerable)
+            {
+                yield return member;
+            }
         }
     }
 

@@ -221,7 +221,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     public void HandleAck(AckMessage ackMessage)
     {
-        _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status);
+        _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status, ackMessage.Payload);
     }
 
     public virtual Task WriteAsync(ServiceMessage serviceMessage)
@@ -247,6 +247,53 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
         var status = await task;
         return AckHandler.HandleAckStatus(ackableMessage, status);
+    }
+
+    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top)
+    {
+        var currentCount = 0;
+        do
+        {
+            if (top != null)
+            {
+                top -= currentCount;
+            }
+            var message = new GroupMemberQueryMessage() { GroupName = groupName, Top = top };
+            var response = await InvokeAsync<GroupMemberQueryResponse>(message);
+            foreach (var member in response.Members)
+            {
+                yield return member;
+                currentCount++;
+                if (top != null && currentCount >= top || response.ContinuationToken == null)
+                {
+                    yield break;
+                }
+            }
+            message.ContinuationToken = response.ContinuationToken;
+        } while (true);
+    }
+
+    /// <summary>
+    /// <see cref="WriteAckableMessageAsync(ServiceMessage, CancellationToken)"/> only checks <see cref="AckMessage.Status"/> as the response, 
+    /// while this method checks <see cref="AckMessage.Payload"/> and deserialize it to <typeparamref name="T"/>.
+    /// </summary>
+    private async Task<T> InvokeAsync<T>(ServiceMessage serviceMessage, CancellationToken cancellationToken = default) where T : notnull, new()
+    {
+        if (serviceMessage is not IAckableMessage ackableMessage)
+        {
+            throw new ArgumentException($"{nameof(serviceMessage)} is not {nameof(IAckableMessage)}");
+        }
+
+        var task = _ackHandler.CreateSingleAck<T>(out var id, null, cancellationToken);
+        ackableMessage.AckId = id;
+
+        // Sending regular messages completes as soon as the data leaves the outbound pipe,
+        // whereas ackable ones complete upon full roundtrip of the message and the ack (or timeout).
+        // Therefore sending them over different connections creates a possibility for processing them out of original order.
+        // By sending both message types over the same connection we ensure that they are sent (and processed) in their original order.
+        await WriteMessageAsync(serviceMessage);
+
+        return await task;
     }
 
     public virtual Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)

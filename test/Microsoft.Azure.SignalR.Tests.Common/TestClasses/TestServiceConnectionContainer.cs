@@ -109,4 +109,9 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
     {
         throw new NotImplementedException();
     }
+
+    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top)
+    {
+        throw new NotImplementedException();
+    }
 }

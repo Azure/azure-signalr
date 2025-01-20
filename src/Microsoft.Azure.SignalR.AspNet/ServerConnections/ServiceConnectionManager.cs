@@ -168,4 +168,9 @@ internal class ServiceConnectionManager : IServiceConnectionManager
             }
         }
     }
+
+    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top)
+    {
+        throw new NotSupportedException();
+    }
 }

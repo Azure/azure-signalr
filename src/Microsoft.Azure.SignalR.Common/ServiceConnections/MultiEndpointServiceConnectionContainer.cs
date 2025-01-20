@@ -150,6 +150,14 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         return CreateMessageWriter(serviceMessage).WriteAckableMessageAsync(serviceMessage, cancellationToken);
     }
 
+
+    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top)
+    {
+        var targetEndpoints = _routerEndpoints.needRouter ? _router.GetEndpointsForGroup(groupName, _routerEndpoints.endpoints) : _routerEndpoints.endpoints;
+        var messageWriter = new MultiEndpointMessageWriter(targetEndpoints?.ToList(), _loggerFactory);
+        return messageWriter.ListConnectionsInGroupAsync(groupName, top);
+    }
+
     public Task StartGetServersPing()
     {
         return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.StartGetServersPing()));
