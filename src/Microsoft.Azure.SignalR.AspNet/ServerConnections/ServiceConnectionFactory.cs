@@ -18,13 +18,12 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
 
     private readonly IServiceEventHandler _serviceEventHandler;
 
-    public ServiceConnectionFactory(
-        IServiceProtocol serviceProtocol,
-        IClientConnectionManagerAspNet clientConnectionManager,
-        IConnectionFactory connectionFactory,
-        ILoggerFactory logger,
-        IServerNameProvider nameProvider,
-        IServiceEventHandler serviceEventHandler)
+    public ServiceConnectionFactory(IServiceProtocol serviceProtocol,
+                                    IClientConnectionManagerAspNet clientConnectionManager,
+                                    IConnectionFactory connectionFactory,
+                                    ILoggerFactory logger,
+                                    IServerNameProvider nameProvider,
+                                    IServiceEventHandler serviceEventHandler)
     {
         _serviceProtocol = serviceProtocol;
         _clientConnectionManager = clientConnectionManager;
@@ -34,7 +33,10 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
         _serviceEventHandler = serviceEventHandler;
     }
 
-    public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, AckHandler ackHandler, ServiceConnectionType type)
+    public IServiceConnection Create(HubServiceEndpoint endpoint,
+                                     IServiceMessageHandler serviceMessageHandler,
+                                     AckHandler ackHandler,
+                                     ServiceConnectionType type)
     {
         return new ServiceConnection(
             _nameProvider.GetName(),

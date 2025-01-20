@@ -596,9 +596,9 @@ public class ServiceConnectionFacts
 
         protected override async Task DoHandshakeAsync(TestConnection connection)
         {
+            var handshakeResponse = new HandshakeResponseMessage("Handshake error.");
             await HandshakeUtils.ReceiveHandshakeRequestAsync(connection.Application.Input);
-            await HandshakeUtils.SendHandshakeResponseAsync(connection.Application.Output,
-                new HandshakeResponseMessage("Handshake error."));
+            await HandshakeUtils.SendHandshakeResponseAsync(connection.Application.Output, handshakeResponse);
         }
     }
 

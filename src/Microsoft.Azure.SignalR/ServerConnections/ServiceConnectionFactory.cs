@@ -35,17 +35,16 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
 
     public Action<HttpContext> ConfigureContext { get; set; }
 
-    public ServiceConnectionFactory(
-        IServiceProtocol serviceProtocol,
-        IClientConnectionManager clientConnectionManager,
-        IConnectionFactory connectionFactory,
-        ILoggerFactory loggerFactory,
-        ConnectionDelegate connectionDelegate,
-        IClientConnectionFactory clientConnectionFactory,
-        IServerNameProvider nameProvider,
-        IServiceEventHandler serviceEventHandler,
-        IClientInvocationManager clientInvocationManager,
-        IHubProtocolResolver hubProtocolResolver)
+    public ServiceConnectionFactory(IServiceProtocol serviceProtocol,
+                                    IClientConnectionManager clientConnectionManager,
+                                    IConnectionFactory connectionFactory,
+                                    ILoggerFactory loggerFactory,
+                                    ConnectionDelegate connectionDelegate,
+                                    IClientConnectionFactory clientConnectionFactory,
+                                    IServerNameProvider nameProvider,
+                                    IServiceEventHandler serviceEventHandler,
+                                    IClientInvocationManager clientInvocationManager,
+                                    IHubProtocolResolver hubProtocolResolver)
     {
         _serviceProtocol = serviceProtocol;
         _clientConnectionManager = clientConnectionManager;
@@ -59,26 +58,27 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
         _hubProtocolResolver = hubProtocolResolver;
     }
 
-    public virtual IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, AckHandler ackHandler, ServiceConnectionType type)
+    public virtual IServiceConnection Create(HubServiceEndpoint endpoint,
+                                             IServiceMessageHandler serviceMessageHandler,
+                                             AckHandler ackHandler,
+                                             ServiceConnectionType type)
     {
-        return new ServiceConnection(
-            _serviceProtocol,
-            _clientConnectionManager,
-            _connectionFactory,
-            _loggerFactory,
-            _connectionDelegate,
-            _clientConnectionFactory,
-            _nameProvider.GetName(),
-            Guid.NewGuid().ToString(),
-            endpoint,
-            serviceMessageHandler,
-            _serviceEventHandler,
-            _clientInvocationManager,
-            _hubProtocolResolver,
-            type,
-            ShutdownMode,
-            allowStatefulReconnects: AllowStatefulReconnects
-        )
+        return new ServiceConnection(_serviceProtocol,
+                                     _clientConnectionManager,
+                                     _connectionFactory,
+                                     _loggerFactory,
+                                     _connectionDelegate,
+                                     _clientConnectionFactory,
+                                     _nameProvider.GetName(),
+                                     Guid.NewGuid().ToString(),
+                                     endpoint,
+                                     serviceMessageHandler,
+                                     _serviceEventHandler,
+                                     _clientInvocationManager,
+                                     _hubProtocolResolver,
+                                     type,
+                                     ShutdownMode,
+                                     allowStatefulReconnects: AllowStatefulReconnects)
         {
             ConfigureContext = ConfigureContext
         };
