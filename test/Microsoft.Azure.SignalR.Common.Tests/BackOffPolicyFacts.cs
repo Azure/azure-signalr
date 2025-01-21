@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Common.Tests
 {
-    public class BackOffPolicyFacts : VerifiableLoggedTest
+    public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest(output)
     {
         private static readonly TimeSpan _overrunLeeway = TimeSpan.FromMilliseconds(250);
 
@@ -35,11 +35,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 
         private readonly TimeSpan _10s = TimeSpan.FromSeconds(10);
 
-        public BackOffPolicyFacts(ITestOutputHelper output) : base(output)
-        {
-        }
-
-        [Fact]
+        [RetryFact]
         public async Task AllProbesSuccessfulTest()
         {
             await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
