@@ -404,7 +404,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return x.AckId == y.AckId &&
                    StringEqual(x.GroupName, y.GroupName) &&
-                   x.Max == y.Max &&
+                   x.Top == y.Top &&
                    StringEqual(x.ContinuationToken, y.ContinuationToken) &&
                    x.TracingId == y.TracingId;
         }

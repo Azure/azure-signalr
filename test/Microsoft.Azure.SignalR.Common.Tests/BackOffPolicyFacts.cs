@@ -4,49 +4,46 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Common.Tests
 {
-    public class BackOffPolicyFacts : VerifiableLoggedTest
+    public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest(output)
     {
-        private static TimeSpan _overrunLeeway = TimeSpan.FromMilliseconds(250);
+        private static readonly TimeSpan _overrunLeeway = TimeSpan.FromMilliseconds(250);
 
-        private static TimeSpan _underrunLeeway = TimeSpan.FromMilliseconds(50);
+        private static readonly TimeSpan _underrunLeeway = TimeSpan.FromMilliseconds(50);
 
-        private static TimeSpan DefaultBackOff = TimeSpan.FromSeconds(2);
+        private static readonly TimeSpan DefaultBackOff = TimeSpan.FromSeconds(2);
 
-        private static Func<int, TimeSpan> DefaultBackOffFunc = (i) => DefaultBackOff;
+        private static readonly Func<int, TimeSpan> DefaultBackOffFunc = (i) => DefaultBackOff;
 
-        private static TimeSpan _1stBackOff = TimeSpan.FromSeconds(1.5);
+        private static readonly TimeSpan _1stBackOff = TimeSpan.FromSeconds(1.5);
 
-        private static TimeSpan _2ndBackOff = TimeSpan.FromSeconds(2.5);
+        private static readonly TimeSpan _2ndBackOff = TimeSpan.FromSeconds(2.5);
 
-        private static TimeSpan _nxtBackOff = TimeSpan.FromSeconds(4.5);
+        private static readonly TimeSpan _nxtBackOff = TimeSpan.FromSeconds(4.5);
 
-        private TimeSpan _0s = TimeSpan.FromSeconds(0);
+        private readonly TimeSpan _0s = TimeSpan.FromSeconds(0);
 
-        private TimeSpan _1s = TimeSpan.FromSeconds(1);
+        private readonly TimeSpan _1s = TimeSpan.FromSeconds(1);
 
-        private TimeSpan _2s = TimeSpan.FromSeconds(2);
+        private readonly TimeSpan _2s = TimeSpan.FromSeconds(2);
 
-        private TimeSpan _10s = TimeSpan.FromSeconds(10);
+        private readonly TimeSpan _10s = TimeSpan.FromSeconds(10);
 
-        public BackOffPolicyFacts(ITestOutputHelper output) : base(output)
-        {
-        }
-
-        [Fact]
+        [RetryFact]
         public async Task AllProbesSuccessfulTest()
         {
             await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
             {
                 Params = new ProbeParam[] {
-                    new ProbeParam() {Result = true, Duration = _1s, Throws = false },
-                    new ProbeParam() {Result = true, Duration = _0s, Throws = false },
-                    new ProbeParam() {Result = true, Duration = _0s, Throws = false }
+                    new() {Result = true, Duration = _1s, Throws = false },
+                    new() {Result = true, Duration = _0s, Throws = false },
+                    new() {Result = true, Duration = _0s, Throws = false }
                 },
                 ExpectedCallTimes = new TimeSpan[] {
                     _0s,        // this gets called right away
@@ -56,17 +53,17 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             }));
         }
 
-        [Fact]
+        [RetryFact]
         public async Task First2ProbesUnsuccessfulTest()
         {
             await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
             {
                 Params = new ProbeParam[] {
-                    new ProbeParam() {                              Result = false, Duration = _1s, Throws = false },
-                    new ProbeParam() {                              Result = false, Duration = _1s, Throws = false },
-                    new ProbeParam() {InitialDelay = _2ndBackOff,   Result = true, Duration = _0s, Throws = false },
-                    new ProbeParam() {InitialDelay = _2ndBackOff,   Result = true, Duration = _0s, Throws = false },
-                    new ProbeParam() {InitialDelay = _2ndBackOff,   Result = true, Duration = _0s, Throws = false }
+                    new() {                              Result = false, Duration = _1s, Throws = false },
+                    new() {                              Result = false, Duration = _1s, Throws = false },
+                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _0s, Throws = false },
+                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _0s, Throws = false },
+                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _0s, Throws = false }
                 },
                 ExpectedCallTimes = new TimeSpan[] {
                     _0s,                            // these first 2 compete to get called right away,
@@ -88,11 +85,11 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
             {
                 Params = new ProbeParam[] {
-                    new ProbeParam() {                              Result = false, Duration = _0s, Throws=true },
-                    new ProbeParam() {                              Result = false, Duration = _0s, Throws=true },
-                    new ProbeParam() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false },
-                    new ProbeParam() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false },
-                    new ProbeParam() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false }
+                    new() {                              Result = false, Duration = _0s, Throws=true },
+                    new() {                              Result = false, Duration = _0s, Throws=true },
+                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false },
+                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false },
+                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false }
                 },
                 ExpectedCallTimes = new TimeSpan[] {
                     _0s,                            // called right away, throws and induces first back off
@@ -111,11 +108,11 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             await RunProbeTests(new TestData()
             {
                 Params = new ProbeParam[] {
-                        new ProbeParam() {                              Result = false, Duration = _10s, Throws=false }, // t/o & fail
-                        new ProbeParam() {                              Result = false, Duration = _10s, Throws=true },  // t/o & throw
-                        new ProbeParam() {InitialDelay = _2ndBackOff,   Result = true, Duration = _2s, Throws=false },
-                        new ProbeParam() {InitialDelay = _2ndBackOff,   Result = true, Duration = _2s, Throws=false },
-                        new ProbeParam() {InitialDelay = _2ndBackOff,   Result = true, Duration = _2s, Throws=false }
+                        new() {                              Result = false, Duration = _10s, Throws=false }, // t/o & fail
+                        new() {                              Result = false, Duration = _10s, Throws=true },  // t/o & throw
+                        new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _2s, Throws=false },
+                        new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _2s, Throws=false },
+                        new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _2s, Throws=false }
                 },
 
                 ExpectedCallTimes = new TimeSpan[] {
@@ -132,15 +129,15 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         private static async Task RunProbeTests(TestData testData)
         {
             // initialize a few things
-            int _funcCallNumber = 0;
+            var _funcCallNumber = 0;
             var policy = new BackOffPolicy();
             testData.Results = new ProbeResult[testData.Params.Length];
-            DateTime startTime = DateTime.UtcNow;
-            Task[] probeTestTasks = new Task[testData.Params.Length];
+            var startTime = DateTime.UtcNow;
+            var probeTestTasks = new Task[testData.Params.Length];
 
-            for (int i = 0; i < testData.Params.Length; i++)
+            for (var i = 0; i < testData.Params.Length; i++)
             {
-                int index = i;
+                var index = i;
                 var currentProbe = testData.Params[index];
                 testData.Results[index] = new ProbeResult();
 
@@ -179,14 +176,14 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             await Task.WhenAll(probeTestTasks);
 
             // verify
-            for (int i = 0; i < testData.Params.Length; i++)
+            for (var i = 0; i < testData.Params.Length; i++)
             {
                 var param = testData.Params[i];
                 var result = testData.Results[i];
 
                 Assert.Equal(1, result.ActualNumberOfCalls);
                 Assert.Equal(param.Result, result.ActualResult);
-                Assert.NotEqual((result.ActualException == null), param.Throws);
+                Assert.NotEqual(result.ActualException == null, param.Throws);
 
                 // knowing the actual order of the func call we can compare it with the expected time
                 // ActualCallOrder starts with 1

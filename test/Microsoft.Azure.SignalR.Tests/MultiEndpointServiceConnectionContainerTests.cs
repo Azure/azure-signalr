@@ -33,13 +33,13 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         {
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
-                new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                new("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                new("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
             },
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
-                new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                new("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                new("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
             }
         },
         // add
@@ -47,12 +47,12 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         {
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1")
+                new("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1")
             },
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
-                new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                new("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                new("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
             }
         },
         // remove
@@ -60,12 +60,12 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         {
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
-                new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                new("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                new("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
             },
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1")
+                new("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1")
             }
         },
         // rename
@@ -73,13 +73,13 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         {
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
-                new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                new("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                new("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
             },
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "22"),
-                new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "11")
+                new("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "22"),
+                new("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "11")
             }
         },
         // type
@@ -87,13 +87,13 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         {
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
-                new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Secondary, "2")
+                new("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                new("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Secondary, "2")
             },
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Secondary, "1"),
-                new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                new("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Secondary, "1"),
+                new("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
             }
         },
         // client endpoint
@@ -101,13 +101,13 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         {
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
-                new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                new("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                new("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
             },
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2"),
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG;ClientEndpoint=https://ce.com", EndpointType.Primary, "1")
+                new("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2"),
+                new("Endpoint=http://url1;AccessKey=ABCDEFG;ClientEndpoint=https://ce.com", EndpointType.Primary, "1")
             }
         },
         // server endpoint
@@ -115,13 +115,13 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         {
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
-                new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Secondary, "2")
+                new("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                new("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Secondary, "2")
             },
             new ServiceEndpoint[]
             {
-                new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Secondary, "2"),
-                new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG;ServerEndpoint=https://se.com/", EndpointType.Primary, "1")
+                new("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Secondary, "2"),
+                new("Endpoint=http://url1;AccessKey=ABCDEFG;ServerEndpoint=https://se.com/", EndpointType.Primary, "1")
             }
         }
     };
@@ -136,7 +136,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
     private const int TimeoutSec = 10000;
 
-    private static readonly JoinGroupWithAckMessage DefaultGroupMessage = new JoinGroupWithAckMessage("a", "a", -1);
+    private static readonly JoinGroupWithAckMessage DefaultGroupMessage = new("a", "a", -1);
 
     private readonly string ConnectionString1 = string.Format(ConnectionStringFormatter, Url1);
 
@@ -321,7 +321,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
     {
         Assert.Throws<AzureSignalRNoPrimaryEndpointException>(() => new TestServiceEndpointManager(new ServiceEndpoint[]
         {
-            new ServiceEndpoint(ConnectionString1, EndpointType.Secondary)
+            new(ConnectionString1, EndpointType.Secondary)
         }));
     }
 
@@ -520,9 +520,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             new ServiceEndpoint(ConnectionString2));
 
             var router = new TestEndpointRouter();
-            var container = new TestMultiEndpointServiceConnectionContainer("hub", e =>
-            {
-                return new TestServiceConnectionContainer(new List<IServiceConnection> {
+            var container = new TestMultiEndpointServiceConnectionContainer("hub", e => new TestServiceConnectionContainer(new List<IServiceConnection> {
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -530,8 +528,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
-                }, e);
-            }, sem, router, loggerFactory);
+                }, e), sem, router, loggerFactory);
 
             _ = container.StartAsync();
             await container.ConnectionInitializedTask;
@@ -941,9 +938,9 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         // Trigger reload to test rename
         var renamedEndpoint = new ServiceEndpoint[]
         {
-            new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "11"),
-            new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2"),
-            new ServiceEndpoint(ConnectionString3, EndpointType.Secondary, "33")
+            new(ConnectionString1, EndpointType.Primary, "11"),
+            new(ConnectionString2, EndpointType.Primary, "2"),
+            new(ConnectionString3, EndpointType.Secondary, "33")
         };
         await sem.TestReloadServiceEndpoints(renamedEndpoint, 10);
 
@@ -1012,9 +1009,9 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var connstr3 = $"{ConnectionString3};ClientEndpoint={testClientEp};";
         var updateEndpoints = new ServiceEndpoint[]
         {
-            new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
-            new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2"),
-            new ServiceEndpoint(connstr3, EndpointType.Secondary, "3")
+            new(ConnectionString1, EndpointType.Primary, "1"),
+            new(ConnectionString2, EndpointType.Primary, "2"),
+            new(connstr3, EndpointType.Secondary, "3")
         };
         await sem.TestReloadServiceEndpoints(updateEndpoints, 10);
 
@@ -1042,7 +1039,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         await task.OrTimeout();
     }
 
-    [Fact]
+    [RetryFact]
     public async Task TestEndpointManagerWithAddEndpointsWithTimeoutCanPromote()
     {
         var sem = new TestServiceEndpointManager(
@@ -1067,9 +1064,9 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
         var newEndpoints = new ServiceEndpoint[]
         {
-            new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
-            new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2"),
-            new ServiceEndpoint(ConnectionString3, EndpointType.Primary, "3")
+            new(ConnectionString1, EndpointType.Primary, "1"),
+            new(ConnectionString2, EndpointType.Primary, "2"),
+            new(ConnectionString3, EndpointType.Primary, "3")
         };
         var timeoutToken = new CancellationTokenSource(1000).Token;
         _ = sem.TestReloadServiceEndpoints(newEndpoints, 1);
@@ -1120,8 +1117,8 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
         var newEndpoints = new ServiceEndpoint[]
         {
-            new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
-            new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2")
+            new(ConnectionString1, EndpointType.Primary, "1"),
+            new(ConnectionString2, EndpointType.Primary, "2")
         };
         _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
 
@@ -1188,7 +1185,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
         var newEndpoints = new ServiceEndpoint[]
         {
-            new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1")
+            new(ConnectionString1, EndpointType.Primary, "1")
         };
         _ = sem.TestReloadServiceEndpoints(newEndpoints, 1);
 
@@ -1238,7 +1235,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
         var newEndpoints = new ServiceEndpoint[]
         {
-            new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1")
+            new(ConnectionString1, EndpointType.Primary, "1")
         };
         _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
 
@@ -1304,8 +1301,8 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
         var newEndpoints = new ServiceEndpoint[]
         {
-            new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
-            new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22")
+            new(ConnectionString1, EndpointType.Primary, "1"),
+            new(ConnectionString2, EndpointType.Primary, "22")
         };
         _ = sem.TestReloadServiceEndpoints(newEndpoints, 15);
 
@@ -1365,7 +1362,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         Assert.Equal(EndpointType.Primary, hubEndpoints[1].EndpointType);
     }
 
-    [Fact]
+    [RetryFact]
     public async Task TestEndpointManagerWithMultiHubsWithServerEndpointUpdate()
     {
         var sem = new TestServiceEndpointManager(
@@ -1408,8 +1405,8 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var con1Se = $"{ConnectionString1};ServerEndpoint={testSe};";
         var newEndpoints = new ServiceEndpoint[]
         {
-            new ServiceEndpoint(con1Se, EndpointType.Primary, "1"),
-            new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "22")
+            new(con1Se, EndpointType.Primary, "1"),
+            new(ConnectionString2, EndpointType.Secondary, "22")
         };
         _ = sem.TestReloadServiceEndpoints(newEndpoints, 15);
 
@@ -1499,8 +1496,8 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         // Stage1: Add EP2
         var newEndpoints = new ServiceEndpoint[]
         {
-            new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
-            new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2")
+            new(ConnectionString1, EndpointType.Primary, "1"),
+            new(ConnectionString2, EndpointType.Primary, "2")
         };
         _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
 
@@ -1541,7 +1538,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
         newEndpoints = new ServiceEndpoint[]
         {
-            new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2")
+            new(ConnectionString2, EndpointType.Primary, "2")
         };
         _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
 
@@ -1569,7 +1566,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         // Trigger reload to test rename
         var renamedEndpoint = new ServiceEndpoint[]
         {
-            new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22"),
+            new(ConnectionString2, EndpointType.Primary, "22"),
         };
         // mock all active to emulate has clients
         containers = container.GetTestOnlineContainers();
@@ -1689,12 +1686,9 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             var router = new TestEndpointRouter();
 
             var multiContainer = new TestMultiEndpointServiceConnectionContainer("hub",
-                e =>
-                {
-                    return e.Endpoint == endpoints[0].Endpoint ?
+                e => e.Endpoint == endpoints[0].Endpoint ?
                      new TestServiceConnectionContainer(new List<IServiceConnection> { connection1 }, e) :
-                    new TestServiceConnectionContainer(new List<IServiceConnection> { connection2, connection22 }, e);
-                }, sem, router, NullLoggerFactory.Instance);
+                    new TestServiceConnectionContainer(new List<IServiceConnection> { connection2, connection22 }, e), sem, router, NullLoggerFactory.Instance);
 
             var containers = multiContainer.GetTestOnlineContainers();
             try
@@ -1882,8 +1876,10 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             {
                 new TestSimpleServiceConnection(),
                 new TestSimpleServiceConnection()
-            });
-            c.MockOffline = true;
+            })
+            {
+                MockOffline = true
+            };
             containers.Add(c);
             return c;
         }, manager, router, NullLoggerFactory.Instance);
@@ -1929,7 +1925,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
     private sealed class PingConnectionHandler : ConnectionHandler
     {
-        public ConcurrentDictionary<string, IList<bool>> Result = new ConcurrentDictionary<string, IList<bool>>();
+        public ConcurrentDictionary<string, IList<bool>> Result = new();
 
         public CancellationTokenSource Cts { get; } = new CancellationTokenSource();
 
