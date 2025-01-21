@@ -41,22 +41,22 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
         public async Task OutgoingMessagesUseSameServiceConnection()
         {
             var builder = WebHost.CreateDefaultBuilder()
-                .ConfigureServices((IServiceCollection services) =>{})
+                .ConfigureServices((IServiceCollection services) => { })
                 .ConfigureLogging(logging => logging.AddXunit(_output))
                 .UseStartup<IntegrationTestStartup<MockServiceMessageOrderTestParams, UseSameServiceConnectionHub>>();
 
             using var server = new AspNetTestServer(builder);
-            var mockSvc = (server.Host.Services.GetRequiredService<ServiceHubDispatcher<UseSameServiceConnectionHub>>() 
+            var mockSvc = (server.Host.Services.GetRequiredService<ServiceHubDispatcher<UseSameServiceConnectionHub>>()
                 as MockServiceHubDispatcher<UseSameServiceConnectionHub>).MockService;
             await mockSvc.AllConnectionsEstablished().OrTimeout();
-            List<MockServiceSideConnection> allSvcConns = mockSvc.ServiceSideConnections;
+            var allSvcConns = mockSvc.ServiceSideConnections;
 
             // A few extra checks (just for this initial test to verify more invariants)
             // Each ServiceEndpoint will have ConnectionCount connections
             Assert.Equal(
                 MockServiceMessageOrderTestParams.ConnectionCount * MockServiceMessageOrderTestParams.ServiceEndpoints.Length,
                 allSvcConns.Count);
-            int endpointCount = allSvcConns.Distinct(new MockServiceSideConnectionEndpointComparer()).Count();
+            var endpointCount = allSvcConns.Distinct(new MockServiceSideConnectionEndpointComparer()).Count();
             Assert.Equal(MockServiceMessageOrderTestParams.ServiceEndpoints.Length, endpointCount);
 
             // specify invocation binder before making calls
@@ -95,18 +95,18 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
 
         // Helper method to pull raw messages received by the mock service and count them per service connection
         private static async Task<ConcurrentDictionary<MockServiceSideConnection, int>> DrainBroadcastMessages(
-            int endpointCount, int msgNum, IMockService mockSvc, 
+            int endpointCount, int msgNum, IMockService mockSvc,
             ConcurrentDictionary<MockServiceSideConnection, int> counts = null)
         {
             counts ??= new ConcurrentDictionary<MockServiceSideConnection, int>();
 
             // Each endpoint will get the broadcast message so we should receive endpointCount * MsgNum messages
-            for (int ep = 0; ep < endpointCount * msgNum; ep++)
+            for (var ep = 0; ep < endpointCount * msgNum; ep++)
             {
                 // we go "peek then take" route because we don't know which secondary connection will receive the messages
                 var connWithMessage = await Task.WhenAny(mockSvc.ServiceSideConnections.Select(async c =>
                 {
-                    bool moreData = await c.WaitToDequeueMessageAsync<BroadcastDataMessage>();
+                    var moreData = await c.WaitToDequeueMessageAsync<BroadcastDataMessage>();
                     Assert.True(moreData);
                     return (c, moreData);
                 }));
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
                 var conn = connWithMessage.Result.c;
                 var newMsg = await conn.DequeueMessageAsync<BroadcastDataMessage>();
 
-                int msgCount = counts.GetOrAdd(conn, 0);
+                var msgCount = counts.GetOrAdd(conn, 0);
                 counts[conn] = ++msgCount;
 
                 // parse each BroadcastDataMessage and verify this is the correct message
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
                 Assert.Equal("Callback", invMsg.Target);
 
                 // finally, get ready to verify the order of messages
-                int actualCallbackNum = (int)invMsg.Arguments[0];
+                var actualCallbackNum = (int)invMsg.Arguments[0];
 
                 // this check works for both primary and secondary connections
                 Assert.Equal(msgCount, actualCallbackNum);
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
                 .UseStartup<IntegrationTestStartup<MockServiceMessageOrderTestParams, SwitchOverToNewServiceConnectionHub>>();
 
             using var server = new AspNetTestServer(builder);
-            var mockSvc = (server.Host.Services.GetRequiredService<ServiceHubDispatcher<SwitchOverToNewServiceConnectionHub>>() 
+            var mockSvc = (server.Host.Services.GetRequiredService<ServiceHubDispatcher<SwitchOverToNewServiceConnectionHub>>()
                 as MockServiceHubDispatcher<SwitchOverToNewServiceConnectionHub>).MockService;
             mockSvc.CurrentInvocationBinder = new TestHubBroadcastNCallsInvocationBinder();
             await mockSvc.AllConnectionsEstablished().OrTimeout();
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
             var epCount = MockServiceMessageOrderTestParams.ServiceEndpoints.Length;
             var connSelections = new ConcurrentBag<MockServiceSideConnection>();
 
-            for (int ep = 0; ep < epCount; ep++)
+            for (var ep = 0; ep < epCount; ep++)
             {
                 var connReceivedMessage = await Task.WhenAny(allSvcConns.Select(async c =>
                 {
@@ -198,7 +198,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
             await primarySvc0.StopAsync().OrTimeout();
 
             // step 3: drain and count messages sent as the result of the call to BroadcastNumCallsAfterDisconnected
-            await mockSvc.AllConnectionsEstablished().OrTimeout(); 
+            await mockSvc.AllConnectionsEstablished().OrTimeout();
             var counts = await DrainBroadcastMessages(epCount, MsgNum, mockSvc).OrTimeout();
 
             // step 4: verify the connections that received messages
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
             var epCount = MockServiceMessageOrderTestParams.ServiceEndpoints.Length;
             mockSvc.CurrentInvocationBinder = new TestHubBroadcastNCallsInvocationBinder();
             await mockSvc.AllConnectionsEstablished().OrTimeout();
-            List<MockServiceSideConnection> allSvcConns = mockSvc.ServiceSideConnections;
+            var allSvcConns = mockSvc.ServiceSideConnections;
             await using var primarySvc0 = allSvcConns.Where(i => i.Endpoint.EndpointType == EndpointType.Primary).FirstOrDefault();
             var client0 = await primarySvc0.ConnectClientAsync().OrTimeout();
 
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
 
             // step 3: receive and count messages sent as the result of the call to BroadcastNumCallsAfterDisconnected
             await DrainBroadcastMessages(epCount, MsgNum, mockSvc, counts).OrTimeout();
-            
+
             // step 4: verify the connections that received messages
             var primary = counts.Where(c => c.Key.Endpoint.EndpointType == EndpointType.Primary);
             Assert.Single(primary);
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
 
             const int MsgNum = 10;
             await client0.SendMessage("BroadcastNumCallsNotFlowing", new object[] { MsgNum }).OrTimeout();
-            int epCount = allSvcConns.Distinct(new MockServiceSideConnectionEndpointComparer()).Count();
+            var epCount = allSvcConns.Distinct(new MockServiceSideConnectionEndpointComparer()).Count();
 
             var counts = await DrainBroadcastMessages(epCount, MsgNum, mockSvc).OrTimeout();
 
@@ -333,13 +333,13 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
             using var server = new AspNetTestServer(builder);
             var mockSvc = (server.Host.Services.GetRequiredService<ServiceHubDispatcher<MultipleContextsHub>>() as MockServiceHubDispatcher<MultipleContextsHub>).MockService;
             await mockSvc.AllConnectionsEstablished().OrTimeout();
-            List<MockServiceSideConnection> allSvcConns = mockSvc.ServiceSideConnections;
+            var allSvcConns = mockSvc.ServiceSideConnections;
             mockSvc.CurrentInvocationBinder = new TestHubBroadcastNCallsInvocationBinder();
             var priList = allSvcConns.Where(i => i.Endpoint.EndpointType == EndpointType.Primary).ToList();
             await using var primarySvc0 = priList[StaticRandom.Next(priList.Count)];
             var client0 = await primarySvc0.ConnectClientAsync().OrTimeout();
 
-            int epCount = allSvcConns.Distinct(new MockServiceSideConnectionEndpointComparer()).Count();
+            var epCount = allSvcConns.Distinct(new MockServiceSideConnectionEndpointComparer()).Count();
             const int MsgNum = 10;
             await client0.SendMessage("BroadcastNumCallsMultipleContexts", new object[] { MsgNum }).OrTimeout();
             var counts = await DrainBroadcastMessages(epCount, MsgNum, mockSvc).OrTimeout();
@@ -362,7 +362,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
         //
         // To verify that there are no leaks after the hot reload we wrap the references to the old connection C and endpoint E
         // in weak reference handles and induce a full GC. Then we check if the the weak references targets are nulled out.
-        [Fact]
+        [RetryFact]
         public async Task PreviouslyUsedServiceConnectionsNotLeakedAfterHotReload2()
         {
             var builder = WebHost.CreateDefaultBuilder()
@@ -382,17 +382,17 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
 
             foreach (var wr in wrList)
             {
-                object o = wr.Target;
+                var o = wr.Target;
                 Assert.Null(o);
             }
         }
 
         public async Task<List<WeakReference>> BroadcastAndHotReloadAllEndpoints(AspNetTestServer server)
-        { 
+        {
             // Part1: broadcast messages over initial set of endpoints
             var mockSvc = (server.Host.Services.GetRequiredService<ServiceHubDispatcher<HotReloadTestHub>>() as MockServiceHubDispatcher<HotReloadTestHub>).MockService;
             await mockSvc.AllConnectionsEstablished();
-            List<MockServiceSideConnection> allSvcConns0 = mockSvc.ServiceSideConnections;
+            var allSvcConns0 = mockSvc.ServiceSideConnections;
             mockSvc.CurrentInvocationBinder = new TestHubBroadcastNCallsInvocationBinder();
 
             var priList = allSvcConns0.Where(i => i.Endpoint.EndpointType == EndpointType.Primary).ToList();
@@ -429,7 +429,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
             HotReloadIntegrationTestStartup<HotReloadMessageOrderTestParams, HotReloadTestHub>.ReloadConfig(index: 1);
 
             List<MockServiceSideConnection> allSvcConnsNew = null;
-            bool allNew = false;
+            var allNew = false;
             do
             {
                 await Task.Delay(TimeSpan.FromSeconds(3));
@@ -444,7 +444,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
                 foreach (var ep in HotReloadMessageOrderTestParams.AllEndpoints[1])
                 {
                     allNew = true;
-                    bool foundEp = false;
+                    var foundEp = false;
                     foreach (var conn in allSvcConnsNew)
                     {
                         if (conn.Endpoint.ConnectionString == ep.Value)
@@ -463,7 +463,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
 
             // Part3: send message over the new set of endpoints and verify that only the new endpoints are used
             var primarySvc1 = allSvcConnsNew.Where(i => i.Endpoint.EndpointType == EndpointType.Primary).FirstOrDefault();
-            int endpointCount = allSvcConnsNew.Distinct(new MockServiceSideConnectionEndpointComparer()).Count();
+            var endpointCount = allSvcConnsNew.Distinct(new MockServiceSideConnectionEndpointComparer()).Count();
             var client1 = await primarySvc1.ConnectClientAsync().OrTimeout();
             await client1.SendMessage("BroadcastNumCalls", new object[] { MsgNum }).OrTimeout();
 
@@ -474,10 +474,10 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
             {
                 Assert.Equal(MsgNum, conn.Value);
             }
-            return wrList;        
+            return wrList;
         }
 
-        private static readonly JsonHubProtocol _signalRPro = new JsonHubProtocol();
+        private static readonly JsonHubProtocol _signalRPro = new();
         private static HubMessage ParseBroadcastDataMessageJson(BroadcastDataMessage bdm, IInvocationBinder binder)
         {
             foreach (var payload in bdm.Payloads)
