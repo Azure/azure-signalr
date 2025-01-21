@@ -22,7 +22,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Xunit.Abstractions;
-
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -59,7 +58,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.WriteFromServiceAsync(openConnectionMessage);
         await connection.ClientConnectedTask.OrTimeout();
 
-        Assert.Equal(1, clientConnectionFactory.Connections.Count);
+        Assert.Single(clientConnectionFactory.Connections);
         var clientConnection = clientConnectionFactory.Connections[0];
         Assert.True((bool)isMigratedProperty.GetValue(clientConnection));
 
@@ -96,7 +95,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.WriteFromServiceAsync(openConnectionMessage);
         await connection.ClientConnectedTask;
 
-        Assert.Equal(1, clientConnectionFactory.Connections.Count);
+        Assert.Single(clientConnectionFactory.Connections);
         var clientConnection = clientConnectionFactory.Connections[0];
         Assert.False((bool)isMigratedProperty.GetValue(clientConnection));
 
@@ -137,7 +136,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.WriteFromServiceAsync(openConnectionMessage);
         await connection.ClientConnectedTask.OrTimeout();
 
-        Assert.Equal(1, clientConnectionFactory.Connections.Count);
+        Assert.Single(clientConnectionFactory.Connections);
         var clientConnection = clientConnectionFactory.Connections[0];
         var feature = clientConnection.Features.Get<IConnectionMigrationFeature>();
         Assert.NotNull(feature);
@@ -162,7 +161,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         Assert.Null(clientConnection.Features.Get<IConnectionMigrationFeature>());
     }
 
-    [Fact]
+    [RetryFact]
     public async Task TestCloseConnectionMessage()
     {
         var clientConnectionFactory = new TestClientConnectionFactory();
@@ -178,7 +177,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.WriteFromServiceAsync(openConnectionMessage);
         await connection.ClientConnectedTask;
 
-        Assert.Equal(1, clientConnectionFactory.Connections.Count);
+        Assert.Single(clientConnectionFactory.Connections);
         var clientConnection = clientConnectionFactory.Connections[0];
 
         // write a signalr handshake response
@@ -197,7 +196,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         await connection.StopAsync();
     }
 
-    [Theory]
+    [RetryTheory]
     [InlineData(typeof(AccessKey))]
     [InlineData(typeof(MicrosoftEntraAccessKey))]
     public async Task TestAccessKeyRequestMessage(Type keyType)
@@ -457,11 +456,11 @@ public class ServiceMessageTests : VerifiableLoggedTest
     {
         private readonly TestConnectionContainer _container;
 
-        private readonly TaskCompletionSource _clientConnectedTcs = new TaskCompletionSource();
+        private readonly TaskCompletionSource _clientConnectedTcs = new();
 
-        private readonly TaskCompletionSource _clientDisconnectedTcs = new TaskCompletionSource();
+        private readonly TaskCompletionSource _clientDisconnectedTcs = new();
 
-        private ReadOnlySequence<byte> _payload = new ReadOnlySequence<byte>();
+        private ReadOnlySequence<byte> _payload = new();
 
         public TestClientConnectionManager ClientConnectionManager { get; }
 

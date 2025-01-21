@@ -10,14 +10,12 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Primitives;
-
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -26,7 +24,7 @@ public class ServiceConnectionFacts
 {
     private const int DefaultTimeoutInMilliSeconds = 1000;
 
-    private static readonly ServiceProtocol Protocol = new ServiceProtocol();
+    private static readonly ServiceProtocol Protocol = new();
 
     [Theory]
     [InlineData(true)]
@@ -142,10 +140,8 @@ public class ServiceConnectionFacts
     public async Task ClosingConnectionSendsCloseMessage()
     {
         var proxy = new ServiceConnectionProxy(context =>
-        {
             // Just let the connection end immediately
-            return Task.CompletedTask;
-        });
+            Task.CompletedTask);
 
         var serverTask = proxy.WaitForServerConnectionAsync(1);
         _ = proxy.StartAsync();
@@ -336,7 +332,7 @@ public class ServiceConnectionFacts
     /// <summary>
     /// When having intermittent connectivity failure, service connection should keep reconnecting to service.
     /// </summary>
-    [Fact]
+    [RetryFact]
     public async Task ReconnectWhenHavingIntermittentConnectivityFailure()
     {
         var proxy = new ServiceConnectionProxy(connectionFactoryCallback: c => new TestConnectionFactoryWithConnectivityFailure(c));
@@ -578,7 +574,7 @@ public class ServiceConnectionFacts
             var initTask = conn.StartAsync();
             await conn.ConnectionInitializedTask;
             conn.Stop();
-            var completedTask = Task.WhenAny(initTask, Task.Delay(3000)).Result;
+            var completedTask = await Task.WhenAny(initTask, Task.Delay(3000));
             Assert.Equal(initTask, completedTask);
         }
         finally

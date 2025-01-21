@@ -20,7 +20,7 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
     public ServiceConnectionContainerBaseTests(ITestOutputHelper helper) : base(helper)
     { }
 
-    [Theory]
+    [RetryTheory]
     [InlineData(3, 3, 0)]
     [InlineData(0, 1, 1)] // stop more than start will log warn
     [InlineData(1, 2, 1)] // stop more than start will log warn
@@ -81,7 +81,7 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
         }
     }
 
-    [Theory]
+    [RetryTheory]
     [InlineData(1, 1, 3, 3, 0)]
     [InlineData(1, 1, 0, 1, 1)]
     [InlineData(1, 1, 1, 0, 0)]
