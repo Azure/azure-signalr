@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using Microsoft.AspNetCore.SignalR.Protocol;
@@ -17,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Common
             _hubProtocols = hubProtocols;
         }
 
-        public HttpContent? Build(HubMessage? payload)
+        public HttpContent? Build(HubMessage? payload, Type? typeHint)
         {
             return payload == null ? null : (HttpContent)new BinaryPayloadMessageContent(payload, _hubProtocols);
         }

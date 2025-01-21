@@ -54,7 +54,7 @@ internal class RestClient
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.UserDefault, api, httpMethod, null, handleExpectedResponseAsync, cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.UserDefault, api, httpMethod, null, null, handleExpectedResponseAsync, cancellationToken);
     }
 
     public Task SendWithRetryAsync(
@@ -63,7 +63,7 @@ internal class RestClient
         Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, AsAsync(handleExpectedResponse), cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, null, AsAsync(handleExpectedResponse), cancellationToken);
     }
 
     public Task SendMessageWithRetryAsync(
@@ -74,7 +74,7 @@ internal class RestClient
         Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), AsAsync(handleExpectedResponse), cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, AsAsync(handleExpectedResponse), cancellationToken);
     }
 
     public Task SendStreamMessageWithRetryAsync(
@@ -82,10 +82,11 @@ internal class RestClient
         HttpMethod httpMethod,
         string streamId,
         object? arg = null,
+        Type? typeHint = null,
         Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new StreamItemMessage(streamId, arg), AsAsync(handleExpectedResponse), cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new StreamItemMessage(streamId, arg), typeHint, AsAsync(handleExpectedResponse), cancellationToken);
     }
 
     private static Uri GetUri(string url, IDictionary<string, StringValues>? query)
@@ -151,11 +152,12 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
         RestApiEndpoint api,
         HttpMethod httpMethod,
         HubMessage? body,
+        Type? typeHint,
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
         CancellationToken cancellationToken = default)
     {
         using var httpClient = _httpClientFactory.CreateClient(httpClientName);
-        using var request = BuildRequest(api, httpMethod, body);
+        using var request = BuildRequest(api, httpMethod, body, typeHint);
 
         try
         {
@@ -178,17 +180,17 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
         }
     }
 
-    private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, HubMessage? body)
+    private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
     {
         var payload = httpMethod == HttpMethod.Post ? body : null;
-        return GenerateHttpRequest(api.Audience, api.Query, httpMethod, body, api.Token);
+        return GenerateHttpRequest(api.Audience, api.Query, httpMethod, body, typeHint, api.Token);
     }
 
-    private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, HubMessage? body, string tokenString)
+    private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, HubMessage? body, Type? typeHint, string tokenString)
     {
         var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
-        request.Content = _payloadContentBuilder.Build(body);
+        request.Content = _payloadContentBuilder.Build(body, typeHint);
         return request;
     }
 

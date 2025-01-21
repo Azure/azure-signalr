@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [MemberData(nameof(GetStreamItemData))]
         internal async Task TestSerialization(ObjectSerializer objectSerializer, HubMessage payloadMessage, string jsonString)
         {
-            var httpContent = new JsonPayloadMessageContent(payloadMessage, objectSerializer);
+            var httpContent = new JsonPayloadMessageContent(payloadMessage, objectSerializer, typeof(object));
             var outputStream = new MemoryStream();
             await httpContent.CopyToAsync(outputStream);
             outputStream.Seek(0, SeekOrigin.Begin);

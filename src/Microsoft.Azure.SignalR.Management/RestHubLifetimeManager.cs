@@ -321,7 +321,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(streamId));
             }
             var api = await _restApiProvider.SendStreamItemAsync(_appName, _hubName, connectionId, streamId);
-            await _restClient.SendStreamMessageWithRetryAsync(api, HttpMethod.Post, streamId, item, cancellationToken: cancellationToken);
+            await _restClient.SendStreamMessageWithRetryAsync(api, HttpMethod.Post, streamId, item, typeof(TItem), cancellationToken: cancellationToken);
         }
 
         public async Task SendStreamCompletionAsync(string connectionId, string streamId, string error, CancellationToken cancellationToken = default)

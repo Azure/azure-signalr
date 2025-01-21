@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Net.Http;
 using Azure.Core.Serialization;
 using Microsoft.AspNetCore.SignalR.Protocol;
@@ -17,9 +18,9 @@ namespace Microsoft.Azure.SignalR.Common
             _jsonObjectSerializer = jsonObjectSerializer;
         }
 
-        public HttpContent? Build(HubMessage? payload)
+        public HttpContent? Build(HubMessage? payload, Type? typeHint)
         {
-            return payload == null ? null : new JsonPayloadMessageContent(payload, _jsonObjectSerializer);
+            return payload == null ? null : new JsonPayloadMessageContent(payload, _jsonObjectSerializer, typeHint);
         }
     }
 }
