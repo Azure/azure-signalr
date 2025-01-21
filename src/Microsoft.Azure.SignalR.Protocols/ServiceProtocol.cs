@@ -763,7 +763,14 @@ public class ServiceProtocol : IServiceProtocol
         message.WriteExtensionMembers(ref writer);
         writer.Write(message.GroupName);
         writer.Write(message.AckId);
-        writer.Write(message.Max);
+        if (message.Top != null)
+        {
+            writer.Write(message.Top.Value);
+        }
+        else
+        {
+            writer.WriteNil();
+        }
         writer.Write(message.ContinuationToken);
     }
 
@@ -1394,7 +1401,7 @@ public class ServiceProtocol : IServiceProtocol
         result.ReadExtensionMembers(ref reader);
         result.GroupName = ReadStringNotNull(ref reader, nameof(GroupMemberQueryMessage.GroupName));
         result.AckId = ReadInt32(ref reader, nameof(GroupMemberQueryMessage.AckId));
-        result.Max = ReadInt32(ref reader, nameof(GroupMemberQueryMessage.Max));
+        result.Top = reader.TryReadNil() ? null : ReadInt32(ref reader, nameof(GroupMemberQueryMessage.Top));
         result.ContinuationToken = ReadString(ref reader, nameof(GroupMemberQueryMessage.ContinuationToken));
         return result;
     }
