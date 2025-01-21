@@ -7,21 +7,23 @@ using Azure.Core;
 
 namespace Microsoft.Azure.SignalR;
 
+#nullable enable
+
 public class ServiceEndpoint
 {
     private readonly Uri _serviceEndpoint;
 
-    private readonly Uri _serverEndpoint;
+    private readonly Uri? _serverEndpoint;
 
-    private readonly Uri _clientEndpoint;
+    private readonly Uri? _clientEndpoint;
 
-    private readonly TokenCredential _tokenCredential;
+    private readonly TokenCredential? _tokenCredential;
 
     private readonly object _lock = new object();
 
-    private volatile IAccessKey _accessKey;
+    private volatile IAccessKey? _accessKey;
 
-    public string ConnectionString { get; }
+    public string? ConnectionString { get; }
 
     public EndpointType EndpointType { get; } = EndpointType.Primary;
 
@@ -32,11 +34,7 @@ public class ServiceEndpoint
     /// </summary>
     public Uri ServerEndpoint
     {
-        get => _serverEndpoint ?? _serviceEndpoint; init
-        {
-            CheckScheme(value);
-            _serverEndpoint = value;
-        }
+        get => _serverEndpoint ?? _serviceEndpoint; init => _serverEndpoint = CheckScheme(value);
     }
 
     /// <summary>
@@ -44,11 +42,7 @@ public class ServiceEndpoint
     /// </summary>
     public Uri ClientEndpoint
     {
-        get => _clientEndpoint ?? _serviceEndpoint; init
-        {
-            CheckScheme(value);
-            _clientEndpoint = value;
-        }
+        get => _clientEndpoint ?? _serviceEndpoint; init => _clientEndpoint = CheckScheme(value);
     }
 
     /// <summary>
@@ -76,22 +70,23 @@ public class ServiceEndpoint
 
     internal string AudienceBaseUrl { get; }
 
-    internal string Version { get; }
-
     internal IAccessKey AccessKey
     {
         get
         {
             if (_accessKey is null)
             {
+                if (_tokenCredential is null)
+                {
+                    throw new ArgumentNullException(nameof(_tokenCredential));
+                }
                 lock (_lock)
                 {
-                    _accessKey ??= new MicrosoftEntraAccessKey(_serviceEndpoint, _tokenCredential, ServerEndpoint);
+                    _accessKey ??= new MicrosoftEntraAccessKey(ServerEndpoint, _tokenCredential);
                 }
             }
             return _accessKey;
         }
-        private init => _accessKey = value;
     }
 
     // Flag to indicate an updaing endpoint needs staging
@@ -108,6 +103,13 @@ public class ServiceEndpoint
         (Name, EndpointType) = Parse(nameWithEndpointType);
     }
 
+    private static IAccessKey BuildAccessKey(ParsedConnectionString parsed)
+    {
+        return string.IsNullOrEmpty(parsed.AccessKey)
+            ? new MicrosoftEntraAccessKey(parsed.ServerEndpoint ?? parsed.Endpoint, parsed.TokenCredential)
+            : new AccessKey(parsed.AccessKey);
+    }
+
     /// <summary>
     /// Connection string constructor
     /// </summary>
@@ -121,14 +123,15 @@ public class ServiceEndpoint
             throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or whitespace.", nameof(connectionString));
         }
         ConnectionString = connectionString;
-
-        var result = ConnectionStringParser.Parse(connectionString);
-        AccessKey = result.AccessKey;
-        _serviceEndpoint = result.Endpoint;
-        ClientEndpoint = result.ClientEndpoint;
-        ServerEndpoint = result.ServerEndpoint;
         EndpointType = type;
         Name = name;
+
+        var result = ConnectionStringParser.Parse(connectionString);
+
+        _accessKey = BuildAccessKey(result);
+        _serviceEndpoint = result.Endpoint;
+        _clientEndpoint = result.ClientEndpoint;
+        _serverEndpoint = result.ServerEndpoint;
 
         Endpoint = BuildEndpointString(_serviceEndpoint);
         AudienceBaseUrl = BuildAudienceBaseUrlEndWithSlash(_serviceEndpoint);
@@ -159,21 +162,20 @@ public class ServiceEndpoint
                            TokenCredential credential,
                            EndpointType endpointType = EndpointType.Primary,
                            string name = "",
-                           Uri serverEndpoint = null,
-                           Uri clientEndpoint = null)
+                           Uri? serverEndpoint = null,
+                           Uri? clientEndpoint = null)
     {
-        _serviceEndpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
-        CheckScheme(endpoint);
-
         _tokenCredential = credential ?? throw new ArgumentNullException(nameof(credential));
 
         EndpointType = endpointType;
         Name = name;
 
+        _serviceEndpoint = CheckScheme(endpoint);
+        _serverEndpoint = serverEndpoint == null ? serverEndpoint : CheckScheme(serverEndpoint);
+        _clientEndpoint = clientEndpoint == null ? clientEndpoint : CheckScheme(clientEndpoint);
+
         AudienceBaseUrl = BuildAudienceBaseUrlEndWithSlash(_serviceEndpoint);
         Endpoint = BuildEndpointString(_serviceEndpoint);
-        ServerEndpoint = serverEndpoint;
-        ClientEndpoint = clientEndpoint;
     }
 
     /// <summary>
@@ -182,19 +184,17 @@ public class ServiceEndpoint
     /// <param name="other"></param>
     public ServiceEndpoint(ServiceEndpoint other)
     {
-        if (other != null)
-        {
-            ConnectionString = other.ConnectionString;
-            EndpointType = other.EndpointType;
-            Name = other.Name;
-            Version = other.Version;
-            AccessKey = other.AccessKey;
-            Endpoint = other.Endpoint;
-            ClientEndpoint = other.ClientEndpoint;
-            ServerEndpoint = other.ServerEndpoint;
-            AudienceBaseUrl = other.AudienceBaseUrl;
-            _serviceEndpoint = other._serviceEndpoint;
-        }
+        ConnectionString = other.ConnectionString;
+        EndpointType = other.EndpointType;
+        Name = other.Name;
+        Endpoint = other.Endpoint;
+        AudienceBaseUrl = other.AudienceBaseUrl;
+
+        _accessKey = other._accessKey;
+        _tokenCredential = other._tokenCredential;
+        _serviceEndpoint = other._serviceEndpoint;
+        _clientEndpoint = other._clientEndpoint;
+        _serverEndpoint = other._serverEndpoint;
     }
 
     public override string ToString()
@@ -211,7 +211,7 @@ public class ServiceEndpoint
         return (Endpoint, EndpointType, Name, ClientEndpoint, ServerEndpoint).GetHashCode();
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj == null)
         {
@@ -231,14 +231,14 @@ public class ServiceEndpoint
         return (Name, Endpoint, EndpointType, ClientEndpoint, ServerEndpoint) == (that.Name, that.Endpoint, that.EndpointType, that.ClientEndpoint, that.ServerEndpoint);
     }
 
+    internal static string BuildEndpointString(Uri uri)
+    {
+        return new Uri($"{uri.Scheme}://{uri.Host}:{uri.Port}").AbsoluteUri.TrimEnd('/');
+    }
+
     private static string BuildAudienceBaseUrlEndWithSlash(Uri uri)
     {
         return $"{uri.Scheme}://{uri.Host}/";
-    }
-
-    private static string BuildEndpointString(Uri uri)
-    {
-        return new Uri($"{uri.Scheme}://{uri.Host}:{uri.Port}").AbsoluteUri.TrimEnd('/');
     }
 
     private static (string, EndpointType) Parse(string nameWithEndpointType)
@@ -263,11 +263,10 @@ public class ServiceEndpoint
         }
     }
 
-    private static void CheckScheme(Uri uri)
+    private static Uri CheckScheme(Uri uri)
     {
-        if (uri != null && uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
-        {
-            throw new ArgumentException("Endpoint scheme must be 'http://' or 'https://'");
-        }
+        return uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps
+            ? throw new ArgumentException("Endpoint scheme must be 'http://' or 'https://'")
+            : uri;
     }
 }

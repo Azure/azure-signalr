@@ -9,8 +9,6 @@ using System.Security.Claims;
 using System.Text;
 
 using Microsoft.Extensions.Primitives;
-using Moq;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Protocol.Tests
@@ -251,6 +249,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new AckMessage(1, 100),
                 binary: "lBQBZKA="),
             new ProtocolTestData(
+                name: "Ack",
+                message: new AckMessage(1, 100),
+                binary: "lRQBZKCA"),
+            new ProtocolTestData(
                 name: "AckWithMessage_NoOptionalField",
                 message: new AckMessage(2, 101, "Joined group successfully"),
                 binary: "lBQCZblKb2luZWQgZ3JvdXAgc3VjY2Vzc2Z1bGx5"),
@@ -284,7 +286,6 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         }.ToDictionary(t => t.Name);
 
 #pragma warning disable CS0618 // Type or member is obsolete
-
         public static IDictionary<string, ProtocolTestData> TestData => new[]
         {
             new ProtocolTestData(
@@ -523,14 +524,12 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new LeaveGroupWithAckMessage("conn15", "group2", 1),
                 binary: "lROmY29ubjE1pmdyb3VwMgGA"),
             new ProtocolTestData(
-                name: "Ack",
-                message: new AckMessage(1, 100),
-                binary: "lRQBZKCA"),
-            new ProtocolTestData(
-                name: "AckWithMessage",
-                message: new AckMessage(2, 101, "Joined group successfully"),
-                binary: "lRQCZblKb2luZWQgZ3JvdXAgc3VjY2Vzc2Z1bGx5gA=="),
-
+                name: "AckWithPayload",
+                message: new AckMessage(2, 0)
+                {
+                    Payload = new ReadOnlySequence<byte>([1,2,3]),
+                },
+                binary: "lhQCAKCAxAMBAgM="),
             // messages with tracing id
             new ProtocolTestData(
                 name: "ConnectionDataWithTracingId",
@@ -703,6 +702,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: nameof(ConnectionFlowControlMessage) + "-2",
                 message: new ConnectionFlowControlMessage("conn2", ConnectionFlowControlOperation.Offline, ConnectionType.Server),
                 binary: "lSelY29ubjLSAAAAAtIAAAAEgA=="),
+            new ProtocolTestData(
+                name: "GroupMemberQueryMessage",
+                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1 },
+                binary: "liiApWdyb3VwAcDA"),
+            new ProtocolTestData(
+                name: "GroupMemberQueryMessageWithOptionalFields",
+                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1, Top = 10, ContinuationToken = "token", TracingId = 1234UL },
+                binary: "liiBAc0E0qVncm91cAEKpXRva2Vu"),
         }.ToDictionary(t => t.Name);
 
 #pragma warning restore CS0618 // Type or member is obsolete

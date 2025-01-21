@@ -13,7 +13,7 @@ public class VerifiableLoggedTest(ITestOutputHelper output) : LoggedTest(output)
 {
     public static async Task RetryWhenExceptionThrows(Func<Task> asyncFunc, int maxCount = 3)
     {
-        AssertActualExpectedException last = null;
+        NotEqualException last = null;
         int i;
         for (i = 0; i < maxCount; i++)
         {
@@ -22,7 +22,7 @@ public class VerifiableLoggedTest(ITestOutputHelper output) : LoggedTest(output)
                 await asyncFunc();
                 break;
             }
-            catch (AssertActualExpectedException e)
+            catch (NotEqualException e)
             {
                 last = e;
                 continue;

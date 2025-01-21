@@ -37,7 +37,7 @@ namespace Microsoft.Azure.SignalR.Emulator
 
             return services;
         }
-
+#pragma warning disable SM04387
         public static IServiceCollection AddJwtBearerAuth(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.SignalR.Emulator
 
             return services;
         }
-
+#pragma warning restore SM04387
         public static IServiceCollection AddSignalREmulator(this IServiceCollection services)
         {
             services.AddSingleton(typeof(HubLifetimeManager<>), typeof(CachedHubLifetimeManager<>));

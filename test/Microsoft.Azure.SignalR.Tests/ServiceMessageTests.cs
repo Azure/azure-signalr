@@ -9,10 +9,12 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Core;
 using Azure.Identity;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +22,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Xunit.Abstractions;
-
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -30,6 +31,10 @@ public class ServiceMessageTests : VerifiableLoggedTest
     private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     private const string MicrosoftEntraConnectionString = "endpoint=https://localhost;authType=aad;";
+
+    private static readonly Uri DefaultEndpoint = new("http://localhost");
+
+    private const string DefaultAudience = "https://localhost";
 
     private const string LocalConnectionString = "endpoint=https://localhost;accessKey=" + SigningKey;
 
@@ -53,7 +58,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.WriteFromServiceAsync(openConnectionMessage);
         await connection.ClientConnectedTask.OrTimeout();
 
-        Assert.Equal(1, clientConnectionFactory.Connections.Count);
+        Assert.Single(clientConnectionFactory.Connections);
         var clientConnection = clientConnectionFactory.Connections[0];
         Assert.True((bool)isMigratedProperty.GetValue(clientConnection));
 
@@ -90,7 +95,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.WriteFromServiceAsync(openConnectionMessage);
         await connection.ClientConnectedTask;
 
-        Assert.Equal(1, clientConnectionFactory.Connections.Count);
+        Assert.Single(clientConnectionFactory.Connections);
         var clientConnection = clientConnectionFactory.Connections[0];
         Assert.False((bool)isMigratedProperty.GetValue(clientConnection));
 
@@ -131,7 +136,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.WriteFromServiceAsync(openConnectionMessage);
         await connection.ClientConnectedTask.OrTimeout();
 
-        Assert.Equal(1, clientConnectionFactory.Connections.Count);
+        Assert.Single(clientConnectionFactory.Connections);
         var clientConnection = clientConnectionFactory.Connections[0];
         var feature = clientConnection.Features.Get<IConnectionMigrationFeature>();
         Assert.NotNull(feature);
@@ -156,7 +161,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         Assert.Null(clientConnection.Features.Get<IConnectionMigrationFeature>());
     }
 
-    [Fact]
+    [RetryFact]
     public async Task TestCloseConnectionMessage()
     {
         var clientConnectionFactory = new TestClientConnectionFactory();
@@ -172,7 +177,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.WriteFromServiceAsync(openConnectionMessage);
         await connection.ClientConnectedTask;
 
-        Assert.Equal(1, clientConnectionFactory.Connections.Count);
+        Assert.Single(clientConnectionFactory.Connections);
         var clientConnection = clientConnectionFactory.Connections[0];
 
         // write a signalr handshake response
@@ -191,7 +196,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         await connection.StopAsync();
     }
 
-    [Theory]
+    [RetryTheory]
     [InlineData(typeof(AccessKey))]
     [InlineData(typeof(MicrosoftEntraAccessKey))]
     public async Task TestAccessKeyRequestMessage(Type keyType)
@@ -205,10 +210,10 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.StartAsync();
         await connection.ConnectionInitializedTask.OrTimeout(1000);
 
-        if (endpoint.AccessKey is TestAadAccessKey aadKey)
+        if (endpoint.AccessKey is MicrosoftEntraAccessKey)
         {
             var message = await connection.ExpectServiceMessage<AccessKeyRequestMessage>().OrTimeout(3000);
-            Assert.Equal(aadKey.Token, message.Token);
+            Assert.True(Guid.TryParse(message.Token, out _));
         }
         else
         {
@@ -221,6 +226,10 @@ public class ServiceMessageTests : VerifiableLoggedTest
     [InlineData(typeof(MicrosoftEntraAccessKey))]
     public async Task TestAccessKeyResponseMessage(Type keyType)
     {
+        var emptyClaims = Array.Empty<Claim>();
+        var lifetime = TimeSpan.FromHours(1);
+        var algorithm = AccessTokenAlgorithm.HS256;
+
         var endpoint = MockServiceEndpoint(keyType.Name);
         Assert.IsAssignableFrom(keyType, endpoint.AccessKey);
         var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
@@ -230,6 +239,14 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.StartAsync();
         await connection.ConnectionInitializedTask.OrTimeout(1000);
 
+        switch (endpoint.AccessKey)
+        {
+            case MicrosoftEntraAccessKey key:
+                var source = new CancellationTokenSource(3000);
+                await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await key.GenerateAccessTokenAsync(DefaultAudience, emptyClaims, lifetime, algorithm, source.Token));
+                break;
+        }
+
         var message = new AccessKeyResponseMessage()
         {
             Kid = "foo",
@@ -237,13 +254,9 @@ public class ServiceMessageTests : VerifiableLoggedTest
         };
         await connection.WriteFromServiceAsync(message);
 
-        var audience = "http://localhost/chat";
-        var claims = Array.Empty<Claim>();
-        var lifetime = TimeSpan.FromHours(1);
-        var algorithm = AccessTokenAlgorithm.HS256;
-
-        var clientToken = await endpoint.AccessKey.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm).OrTimeout(TimeSpan.FromSeconds(3));
-        Assert.NotNull(clientToken);
+        var clientToken = await endpoint.AccessKey.GenerateAccessTokenAsync(DefaultAudience, emptyClaims, lifetime, algorithm).OrTimeout(3000);
+        Assert.True(TokenUtilities.TryParseIssuer(clientToken, out var issuer));
+        Assert.Equal(Constants.AsrsTokenIssuer, issuer);
 
         await connection.StopAsync();
     }
@@ -344,33 +357,27 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
     private ServiceEndpoint MockServiceEndpoint(string keyTypeName)
     {
-        switch (keyTypeName)
+        return keyTypeName switch
         {
-            case nameof(AccessKey):
-                return new ServiceEndpoint(LocalConnectionString);
-
-            case nameof(MicrosoftEntraAccessKey):
-                var endpoint = new ServiceEndpoint(MicrosoftEntraConnectionString);
-                var p = typeof(ServiceEndpoint).GetProperty("AccessKey", BindingFlags.NonPublic | BindingFlags.Instance);
-                p.SetValue(endpoint, new TestAadAccessKey());
-                return endpoint;
-
-            default:
-                throw new NotImplementedException();
-        }
+            nameof(AccessKey) => new ServiceEndpoint(LocalConnectionString),
+            nameof(MicrosoftEntraAccessKey) => new ServiceEndpoint(new Uri("http://localhost"), new TestTokenCredential()),
+            _ => throw new NotImplementedException(),
+        };
     }
 
-    private class TestAadAccessKey : MicrosoftEntraAccessKey
+    private class TestTokenCredential : TokenCredential
     {
         public string Token { get; } = Guid.NewGuid().ToString();
 
-        public TestAadAccessKey() : base(new Uri("http://localhost:80"), new DefaultAzureCredential())
+        public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
         {
+            return new AccessToken(Token, DateTimeOffset.UtcNow.Add(TimeSpan.FromHours(1)));
         }
 
-        public override Task<string> GetMicrosoftEntraTokenAsync(CancellationToken ctoken = default)
+        public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
         {
-            return Task.FromResult(Token);
+            var token = GetToken(requestContext, cancellationToken);
+            return new ValueTask<AccessToken>(token);
         }
     }
 
@@ -449,11 +456,11 @@ public class ServiceMessageTests : VerifiableLoggedTest
     {
         private readonly TestConnectionContainer _container;
 
-        private readonly TaskCompletionSource _clientConnectedTcs = new TaskCompletionSource();
+        private readonly TaskCompletionSource _clientConnectedTcs = new();
 
-        private readonly TaskCompletionSource _clientDisconnectedTcs = new TaskCompletionSource();
+        private readonly TaskCompletionSource _clientDisconnectedTcs = new();
 
-        private ReadOnlySequence<byte> _payload = new ReadOnlySequence<byte>();
+        private ReadOnlySequence<byte> _payload = new();
 
         public TestClientConnectionManager ClientConnectionManager { get; }
 

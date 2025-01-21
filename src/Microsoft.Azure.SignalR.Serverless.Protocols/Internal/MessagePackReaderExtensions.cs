@@ -24,7 +24,7 @@ internal static class MessagePackReaderExtensions
         }
     }
 
-    public static string ReadString(ref this MessagePackReader reader, string field)
+    public static string? ReadString(ref this MessagePackReader reader, string field)
     {
         try
         {
@@ -87,7 +87,7 @@ internal static class MessagePackReaderExtensions
                 var map = new Dictionary<string, object?>();
                 for (var i = 0; i < propertyCount; i++)
                 {
-                    var key = reader.ReadString();
+                    var key = reader.ReadString().ThrowWhenNull();
                     var value = reader.ReadObject(field);
                     map[key] = value;
                 }
@@ -115,4 +115,8 @@ internal static class MessagePackReaderExtensions
         }
     }
 
+    public static string ThrowWhenNull(this string? input)
+    {
+        return input ?? throw new ArgumentNullException(nameof(input));
+    }
 }

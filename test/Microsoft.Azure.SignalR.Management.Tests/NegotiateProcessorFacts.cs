@@ -48,9 +48,9 @@ public class NegotiateProcessorFacts
         var now = DateTimeOffset.UtcNow;
         var negotiateResponse = await hubContext.NegotiateAsync(new NegotiationOptions { CloseOnAuthenticationExpiration = true, TokenLifetime = TimeSpan.FromSeconds(30) });
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(negotiateResponse.AccessToken);
-        var closeOnAuthExpiration = Assert.Single(token.Claims.Where(c => c.Type == Constants.ClaimType.CloseOnAuthExpiration));
+        var closeOnAuthExpiration = Assert.Single(token.Claims, c => c.Type == Constants.ClaimType.CloseOnAuthExpiration);
         Assert.Equal("true", closeOnAuthExpiration.Value);
-        var ttl = Assert.Single(token.Claims.Where(c => c.Type == Constants.ClaimType.AuthExpiresOn));
+        var ttl = Assert.Single(token.Claims, c => c.Type == Constants.ClaimType.AuthExpiresOn);
         Assert.True(long.TryParse(ttl.Value, out var expiresOn));
         Assert.InRange(DateTimeOffset.FromUnixTimeSeconds(expiresOn), now.AddSeconds(29), now.AddSeconds(32));
     }

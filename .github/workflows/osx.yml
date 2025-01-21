@@ -1,19 +1,20 @@
 name: Gated-OSX
-on: 
+on:
  push:
-   branches: 
+   branches:
     - 'releases/**'
     - dev
  pull_request:
-   branches: 
+   branches:
     - 'releases/**'
     - dev
 jobs:
   build_osx:
     runs-on: macOS-latest
     strategy:
+      fail-fast: false # Disable the auto cancelling of all in-progress and queued jobs in the matrix if any job in the matrix fails.
       matrix:
-        dotnet-version: [ '8.0.x', '7.0.x', '6.0.x' ]
+        dotnet-version: [ '9.0.x', '8.0.x', '6.0.x' ]
     steps:
     - uses: actions/checkout@v4
     - uses: dorny/paths-filter@v2
@@ -43,13 +44,11 @@ jobs:
       run: dotnet --version
     - name: Build with dotnet
       run: |
-        if [ "${{ matrix.dotnet-version }}" != "6.0.x" ]; then
-          dotnet sln AzureSignalR.sln remove test/Microsoft.Azure.SignalR.Protocols.Tests/Microsoft.Azure.SignalR.Protocols.Tests.csproj
-          dotnet sln AzureSignalR.sln remove test/Microsoft.Azure.SignalR.Emulator.Tests/Microsoft.Azure.SignalR.Emulator.Tests.csproj
-          dotnet sln AzureSignalR.sln remove test/Microsoft.Azure.SignalR.Management.Tests/Microsoft.Azure.SignalR.Management.Tests.csproj
-          dotnet sln AzureSignalR.sln remove test/Microsoft.Azure.SignalR.Serverless.Protocols.Tests/Microsoft.Azure.SignalR.Serverless.Protocols.Tests.csproj
-          dotnet sln AzureSignalR.sln remove test/Microsoft.Azure.SignalR.IntegrationTests/Microsoft.Azure.SignalR.IntegrationTests.csproj
-        fi
+        dotnet sln AzureSignalR.sln remove test/Microsoft.Azure.SignalR.Protocols.Tests/Microsoft.Azure.SignalR.Protocols.Tests.csproj
+        dotnet sln AzureSignalR.sln remove test/Microsoft.Azure.SignalR.Emulator.Tests/Microsoft.Azure.SignalR.Emulator.Tests.csproj
+        dotnet sln AzureSignalR.sln remove test/Microsoft.Azure.SignalR.Management.Tests/Microsoft.Azure.SignalR.Management.Tests.csproj
+        dotnet sln AzureSignalR.sln remove test/Microsoft.Azure.SignalR.Serverless.Protocols.Tests/Microsoft.Azure.SignalR.Serverless.Protocols.Tests.csproj
+        dotnet sln AzureSignalR.sln remove test/Microsoft.Azure.SignalR.IntegrationTests/Microsoft.Azure.SignalR.IntegrationTests.csproj
         dotnet build AzureSignalR.sln /p:DisableNet461Tests=true
       if: steps.filter.outputs.src == 'true'
     - name: Test

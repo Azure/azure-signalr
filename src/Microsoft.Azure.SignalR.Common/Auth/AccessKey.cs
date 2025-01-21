@@ -16,17 +16,10 @@ internal class AccessKey : IAccessKey
 
     public byte[] KeyBytes { get; }
 
-    public Uri Endpoint { get; }
-
-    public AccessKey(Uri uri, string key) : this(uri)
+    public AccessKey(string key)
     {
         Kid = key.GetHashCode().ToString();
         KeyBytes = Encoding.UTF8.GetBytes(key);
-    }
-
-    private AccessKey(Uri uri)
-    {
-        Endpoint = uri;
     }
 
     public virtual Task<string> GenerateAccessTokenAsync(string audience,

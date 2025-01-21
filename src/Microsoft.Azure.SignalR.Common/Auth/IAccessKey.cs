@@ -15,8 +15,6 @@ internal interface IAccessKey
 
     public byte[] KeyBytes { get; }
 
-    Uri Endpoint { get; }
-
     public Task<string> GenerateAccessTokenAsync(string audience,
                                                  IEnumerable<Claim> claims,
                                                  TimeSpan lifetime,

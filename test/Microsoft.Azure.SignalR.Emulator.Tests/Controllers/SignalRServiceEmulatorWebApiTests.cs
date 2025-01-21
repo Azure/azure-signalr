@@ -51,6 +51,15 @@ namespace Microsoft.Azure.SignalR.Emulator.Tests.Controllers
             _controller.ControllerContext = controllerContext;
         }
 
+        [Fact]
+        public void HealthCheckReturnsOK()
+        {
+            var result = _controller.GetHealthStatus();
+
+            // assert
+            Assert.IsType<OkResult>(result);
+        }
+
         // CheckConnectionExistence Tests
         [Fact]
         public void CheckConnectionExistenceValidConnectionReturnsOk()

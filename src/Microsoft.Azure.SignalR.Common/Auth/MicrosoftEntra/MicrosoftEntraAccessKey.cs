@@ -24,27 +24,23 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 {
     internal static readonly TimeSpan GetAccessKeyTimeout = TimeSpan.FromSeconds(100);
 
-    private const int UpdateTaskIdle = 0;
-
-    private const int UpdateTaskRunning = 1;
-
     private const int GetAccessKeyMaxRetryTimes = 3;
 
     private const int GetMicrosoftEntraTokenMaxRetryTimes = 3;
+
+    private readonly object _lock = new object();
+
+    private volatile TaskCompletionSource<bool> _updateTaskSource;
 
     private static readonly TokenRequestContext DefaultRequestContext = new TokenRequestContext(new string[] { Constants.AsrsDefaultScope });
 
     private static readonly TimeSpan GetAccessKeyInterval = TimeSpan.FromMinutes(55);
 
-    private static readonly TimeSpan GetAccessKeyIntervalWhenUnauthorized = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan GetAccessKeyIntervalUnavailable = TimeSpan.FromMinutes(5);
 
     private static readonly TimeSpan AccessKeyExpireTime = TimeSpan.FromMinutes(120);
 
-    private readonly TaskCompletionSource<object?> _initializedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
     private readonly IHttpClientFactory _httpClientFactory;
-
-    private volatile int _updateState = 0;
 
     private volatile bool _isAuthorized = false;
 
@@ -54,7 +50,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     private volatile byte[]? _keyBytes;
 
-    public bool Initialized => _initializedTcs.Task.IsCompleted;
+    public bool NeedRefresh => DateTime.UtcNow - _updateAt > (Available ? GetAccessKeyInterval : GetAccessKeyIntervalUnavailable);
 
     public bool Available
     {
@@ -68,7 +64,6 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             }
             _updateAt = DateTime.UtcNow;
             _isAuthorized = value;
-            _initializedTcs.TrySetResult(null);
         }
     }
 
@@ -78,26 +73,24 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     public byte[] KeyBytes => _keyBytes ?? throw new ArgumentNullException(nameof(KeyBytes));
 
-    public Uri Endpoint { get; }
-
     internal Exception? LastException { get; private set; }
 
     internal string GetAccessKeyUrl { get; }
 
     internal TimeSpan GetAccessKeyRetryInterval { get; set; } = TimeSpan.FromSeconds(3);
 
-    public MicrosoftEntraAccessKey(Uri endpoint,
+    public MicrosoftEntraAccessKey(Uri serverEndpoint,
                                    TokenCredential credential,
-                                   Uri? serverEndpoint = null,
                                    IHttpClientFactory? httpClientFactory = null)
     {
-        Endpoint = endpoint;
-
-        var authorizeUri = (serverEndpoint ?? endpoint).Append("/api/v1/auth/accessKey");
+        var authorizeUri = serverEndpoint.Append("/api/v1/auth/accessKey");
         GetAccessKeyUrl = authorizeUri.AbsoluteUri;
         TokenCredential = credential;
 
         _httpClientFactory = httpClientFactory ?? HttpClientFactory.Instance;
+
+        _updateTaskSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        _updateTaskSource.TrySetResult(false);
     }
 
     public virtual async Task<string> GetMicrosoftEntraTokenAsync(CancellationToken ctoken = default)
@@ -124,17 +117,25 @@ internal class MicrosoftEntraAccessKey : IAccessKey
                                                        AccessTokenAlgorithm algorithm,
                                                        CancellationToken ctoken = default)
     {
-        if (!_initializedTcs.Task.IsCompleted)
+        var updateTask = Task.CompletedTask;
+        if (NeedRefresh)
         {
-            var source = new CancellationTokenSource(Constants.Periods.DefaultUpdateAccessKeyTimeout);
-            _ = UpdateAccessKeyAsync(source.Token);
+            updateTask = UpdateAccessKeyAsync();
         }
 
-        await _initializedTcs.Task.OrCancelAsync(ctoken, "The access key initialization timed out.");
-
+        if (!Available)
+        {
+            try
+            {
+                await updateTask.OrCancelAsync(ctoken);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
         return Available
             ? AuthUtility.GenerateAccessToken(KeyBytes, Kid, audience, claims, lifetime, algorithm)
-            : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, GetExceptionMessage(LastException), LastException);
+            : throw new AzureSignalRAccessTokenNotAuthorizedException(TokenCredential, GetExceptionMessage(LastException, _keyBytes != null), LastException);
     }
 
     internal void UpdateAccessKey(string kid, string keyStr)
@@ -142,37 +143,41 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         _keyBytes = Encoding.UTF8.GetBytes(keyStr);
         _kid = kid;
         Available = true;
+
+        lock (_lock)
+        {
+            _updateTaskSource.TrySetResult(true);
+        }
     }
 
-    internal async Task UpdateAccessKeyAsync(CancellationToken ctoken = default)
+    internal async Task UpdateAccessKeyAsync()
     {
-        var delta = DateTime.UtcNow - _updateAt;
-        if (Available && delta < GetAccessKeyInterval)
+        TaskCompletionSource<bool> tcs;
+        lock (_lock)
         {
-            return;
+            if (!_updateTaskSource.Task.IsCompleted)
+            {
+                tcs = _updateTaskSource;
+            }
+            else
+            {
+                _updateTaskSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _ = UpdateAccessKeyInternalAsync(_updateTaskSource);
+                tcs = _updateTaskSource;
+            }
         }
-        else if (!Available && delta < GetAccessKeyIntervalWhenUnauthorized)
-        {
-            return;
-        }
+        await tcs.Task;
+    }
 
-        if (Interlocked.CompareExchange(ref _updateState, UpdateTaskRunning, UpdateTaskIdle) != UpdateTaskIdle)
-        {
-            return;
-        }
-
+    private async Task UpdateAccessKeyInternalAsync(TaskCompletionSource<bool> tcs)
+    {
         for (var i = 0; i < GetAccessKeyMaxRetryTimes; i++)
         {
-            if (ctoken.IsCancellationRequested)
-            {
-                break;
-            }
-
-            var source = new CancellationTokenSource(GetAccessKeyTimeout);
+            using var source = new CancellationTokenSource(GetAccessKeyTimeout);
             try
             {
-                await UpdateAccessKeyInternalAsync(source.Token).OrCancelAsync(ctoken);
-                Interlocked.Exchange(ref _updateState, UpdateTaskIdle);
+                await UpdateAccessKeyInternalAsync(source.Token);
+                tcs.TrySetResult(true);
                 return;
             }
             catch (OperationCanceledException e)
@@ -182,14 +187,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             catch (Exception e)
             {
                 LastException = e;
-                try
-                {
-                    await Task.Delay(GetAccessKeyRetryInterval, ctoken); // retry after interval.
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
+                await Task.Delay(GetAccessKeyRetryInterval); // retry after interval.
             }
         }
 
@@ -198,15 +196,15 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             // Update the status only when it becomes "not available" due to expiration to refresh updateAt.
             Available = false;
         }
-        Interlocked.Exchange(ref _updateState, UpdateTaskIdle);
+        tcs.TrySetResult(false);
     }
 
-    private static string GetExceptionMessage(Exception? exception)
+    private static string GetExceptionMessage(Exception? exception, bool initialized)
     {
         return exception switch
         {
             AzureSignalRUnauthorizedException => AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra,
-            _ => exception?.Message ?? "The access key has expired.",
+            _ => exception?.Message ?? (initialized ? "The access key has expired." : "The access key has not been initialized."),
         };
     }
 

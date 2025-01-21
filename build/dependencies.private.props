@@ -8,8 +8,8 @@
     <MicrosoftExtensionsLoggingPackageVersion>8.0.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftNETTestSdkPackageVersion>17.11.0</MicrosoftNETTestSdkPackageVersion>
     <MoqPackageVersion>4.20.70</MoqPackageVersion>
-    <XunitPackageVersion>2.4.2</XunitPackageVersion>
-    <XunitRunnerVisualStudioPackageVersion>2.4.2</XunitRunnerVisualStudioPackageVersion>
+    <XunitPackageVersion>2.8.1</XunitPackageVersion>
+    <XunitRunnerVisualStudioPackageVersion>2.8.2</XunitRunnerVisualStudioPackageVersion>
     <MicrosoftOwinTestingPackageVersion>4.2.2</MicrosoftOwinTestingPackageVersion>
     <MicrosoftAspNetCoreTestHostPackageVersion>8.0.8</MicrosoftAspNetCoreTestHostPackageVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>

@@ -1,19 +1,20 @@
 name: Gated-Windows
-on: 
+on:
  push:
-   branches: 
+   branches:
     - 'releases/**'
     - dev
  pull_request:
-   branches: 
+   branches:
     - 'releases/**'
     - dev
 jobs:
   build_windows:
     runs-on: [windows-latest]
     strategy:
+      fail-fast: false # Disable the auto cancelling of all in-progress and queued jobs in the matrix if any job in the matrix fails.
       matrix:
-        dotnet-version: [ '8.0.x', '7.0.x', '6.0.x' ]
+        dotnet-version: [ '9.0.x', '8.0.x', '6.0.x']
     steps:
     - uses: actions/checkout@v4
     - uses: dorny/paths-filter@v2
