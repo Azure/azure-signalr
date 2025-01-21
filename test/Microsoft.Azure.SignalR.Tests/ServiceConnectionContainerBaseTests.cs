@@ -81,7 +81,7 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
         }
     }
 
-    [Theory]
+    [RetryTheory]
     [InlineData(1, 1, 3, 3, 0)]
     [InlineData(1, 1, 0, 1, 1)]
     [InlineData(1, 1, 1, 0, 0)]

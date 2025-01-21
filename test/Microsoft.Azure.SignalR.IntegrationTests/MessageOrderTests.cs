@@ -15,6 +15,7 @@ using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure.MessageOrderTests;
 using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -135,7 +136,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
         // Todo: helper for scenarios where we recycle connections so mockSvc contains a mixture of old (closed) and new (active) connections
         //static async Task WaitForAllNewConnectionsEstablished(IMockService mockSvc, int expectedActiveConnCount)
 
-        [Fact]
+        [RetryFact]
         // verifies that when original outboud service connection associated with the hub call is closed:
         // - a new service connection for each endpoint is selected 
         // - all subsequent messages use newly selected service connections

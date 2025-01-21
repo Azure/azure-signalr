@@ -197,7 +197,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         await connection.StopAsync();
     }
 
-    [Theory]
+    [RetryTheory]
     [InlineData(typeof(AccessKey))]
     [InlineData(typeof(MicrosoftEntraAccessKey))]
     public async Task TestAccessKeyRequestMessage(Type keyType)

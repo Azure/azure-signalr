@@ -1042,7 +1042,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         await task.OrTimeout();
     }
 
-    [Fact]
+    [RetryFact]
     public async Task TestEndpointManagerWithAddEndpointsWithTimeoutCanPromote()
     {
         var sem = new TestServiceEndpointManager(

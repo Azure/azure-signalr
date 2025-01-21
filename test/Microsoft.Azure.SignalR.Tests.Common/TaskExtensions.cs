@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Xunit;
 
 namespace System.Threading.Tasks
 {
