@@ -69,6 +69,7 @@ internal class NegotiateHandler<THub> where THub : Hub
 #if NET6_0_OR_GREATER
         EndpointDataSource endpointDataSource,
 #endif
+        ICultureFeatureManager cultureFeatureManager,
         ILogger<NegotiateHandler<THub>> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -124,6 +125,14 @@ internal class NegotiateHandler<THub> where THub : Hub
             // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
             AvailableTransports = new List<AvailableTransport>()
         };
+    }
+
+    private static string GetOriginalPath(string path)
+    {
+        path = path.TrimEnd('/');
+        return path.EndsWith(Constants.Path.Negotiate)
+            ? path.Substring(0, path.Length - Constants.Path.Negotiate.Length)
+            : string.Empty;
     }
 
     private string GetQueryString(string originalQueryString, string clientRequestId)

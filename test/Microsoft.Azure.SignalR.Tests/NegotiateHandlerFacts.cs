@@ -14,6 +14,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -433,6 +434,59 @@ namespace Microsoft.Azure.SignalR.Tests
 
             handler = serviceProvider.GetRequiredService<NegotiateHandler<Chat>>();
             await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Process(httpContext));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TestNegotiateHandlerRespectClientRequestCulture(bool isBlazor)
+        {
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection()
+                .AddSignalR(o => o.EnableDetailedErrors = false)
+                .AddAzureSignalR(
+                o =>
+                {
+                    o.ConnectionString = DefaultConnectionString;
+                    o.AccessTokenLifetime = TimeSpan.FromDays(1);
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var features = new FeatureCollection();
+            var requestFeature = new HttpRequestFeature
+            {
+                Path = "/user/path/negotiate/",
+                QueryString = "?endpoint=chosen"
+            };
+            features.Set<IHttpRequestFeature>(requestFeature);
+            var httpCultureFeature = new RequestCultureFeature(
+                new RequestCulture("ar-SA", "en-US"),
+                new AcceptLanguageHeaderRequestCultureProvider()
+            );
+            features.Set<IRequestCultureFeature>(httpCultureFeature);
+
+            var httpContext = new DefaultHttpContext(features);
+
+            if (isBlazor)
+            {
+                var blazorDetector = serviceProvider.GetRequiredService<IBlazorDetector>();
+                blazorDetector.TrySetBlazor(nameof(Hub), true);
+            }
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler<Hub>>();        
+            var negotiateResponse = await handler.Process(httpContext);
+            var requestId = HttpUtility
+                                .ParseQueryString(negotiateResponse.Url)
+                                .Get(Constants.QueryParameter.ConnectionRequestId);
+
+            var cultureFeatureManager = serviceProvider.GetRequiredService<ICultureFeatureManager>();
+            cultureFeatureManager.TryRemoveCultureFeature(requestId, out var actualCultureFeature);
+
+            var expectedCultureFeature = isBlazor ? httpCultureFeature : null;
+            Assert.Equal(expectedCultureFeature, actualCultureFeature);
         }
 
         [Theory]
