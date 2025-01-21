@@ -3,6 +3,7 @@
 
 using System.Net.Http;
 using Azure.Core.Serialization;
+using Microsoft.AspNetCore.SignalR.Protocol;
 
 #nullable enable
 namespace Microsoft.Azure.SignalR.Common
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.SignalR.Common
             _jsonObjectSerializer = jsonObjectSerializer;
         }
 
-        public HttpContent? Build(PayloadMessage? payload)
+        public HttpContent? Build(HubMessage? payload)
         {
             return payload == null ? null : new JsonPayloadMessageContent(payload, _jsonObjectSerializer);
         }

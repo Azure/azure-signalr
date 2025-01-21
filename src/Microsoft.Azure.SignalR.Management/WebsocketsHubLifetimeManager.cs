@@ -5,6 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -202,6 +203,46 @@ namespace Microsoft.Azure.SignalR.Management
                 MessageLog.StartToCheckIfGroupExists(Logger, message);
             }
             return WriteAckableMessageAsync(message, cancellationToken);
+        }
+
+        public Task SendStreamItemAsync<TItem>(string connectionId, string streamId, TItem item, CancellationToken cancellationToken = default)
+        {
+            if (IsInvalidArgument(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            if (IsInvalidArgument(streamId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(streamId));
+            }
+
+            var message = AppendMessageTracingId(new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(new StreamItemMessage(streamId, item))));
+            if (message.TracingId != null)
+            {
+                MessageLog.StartToSendMessageToConnections(Logger, message);
+            }
+            return WriteAsync(message);
+        }
+
+        public Task SendStreamCompletionAsync(string connectionId, string streamId, string error, CancellationToken cancellationToken = default)
+        {
+            if (IsInvalidArgument(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            if (IsInvalidArgument(streamId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(streamId));
+            }
+
+            var message = AppendMessageTracingId(new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(new CompletionMessage(streamId, error, null, false))));
+            if (message.TracingId != null)
+            {
+                MessageLog.StartToSendMessageToConnections(Logger, message);
+            }
+            return WriteAsync(message);
         }
 
         protected override T AppendMessageTracingId<T>(T message)

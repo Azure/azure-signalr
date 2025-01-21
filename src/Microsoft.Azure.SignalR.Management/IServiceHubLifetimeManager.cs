@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal interface IServiceHubLifetimeManager : IHubLifetimeManager, IUserGroupHubLifetimeManager
+    internal interface IServiceHubLifetimeManager : IHubLifetimeManager, IUserGroupHubLifetimeManager, IStreamingHubLifetimeManager
     {
         Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken);
 

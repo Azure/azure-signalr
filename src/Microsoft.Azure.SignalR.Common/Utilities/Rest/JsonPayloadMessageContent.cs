@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
+using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -22,10 +23,10 @@ namespace Microsoft.Azure.SignalR
             // We must skip validation because what we break the writing midway and write JSON in other ways.
             SkipValidation = true
         };
-        private readonly PayloadMessage _payloadMessage;
+        private readonly HubMessage _payloadMessage;
         private readonly ObjectSerializer _jsonObjectSerializer;
 
-        public JsonPayloadMessageContent(PayloadMessage payloadMessage, ObjectSerializer jsonObjectSerializer)
+        public JsonPayloadMessageContent(HubMessage payloadMessage, ObjectSerializer jsonObjectSerializer)
         {
             _payloadMessage = payloadMessage ?? throw new System.ArgumentNullException(nameof(payloadMessage));
             _jsonObjectSerializer = jsonObjectSerializer;
@@ -34,14 +35,21 @@ namespace Microsoft.Azure.SignalR
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
-            using var jsonWriter = new Utf8JsonWriter(stream, JsonWriterOptions);
-            jsonWriter.WriteStartObject();
-            jsonWriter.WriteString(nameof(PayloadMessage.Target), _payloadMessage.Target);
-            jsonWriter.WritePropertyName(nameof(PayloadMessage.Arguments));
-            await jsonWriter.FlushAsync();
-            await _jsonObjectSerializer.SerializeAsync(stream, _payloadMessage.Arguments, typeof(object[]), default);
-            jsonWriter.WriteEndObject();
-            await jsonWriter.FlushAsync();
+            if (_payloadMessage is InvocationMessage invocationMessage)
+            {
+                using var jsonWriter = new Utf8JsonWriter(stream, JsonWriterOptions);
+                jsonWriter.WriteStartObject();
+                jsonWriter.WriteString(nameof(PayloadMessage.Target), invocationMessage.Target);
+                jsonWriter.WritePropertyName(nameof(PayloadMessage.Arguments));
+                await jsonWriter.FlushAsync();
+                await _jsonObjectSerializer.SerializeAsync(stream, invocationMessage.Arguments, typeof(object[]), default);
+                jsonWriter.WriteEndObject();
+                await jsonWriter.FlushAsync();
+            }
+            else if (_payloadMessage is StreamItemMessage streamItemMessage)
+            {
+                await _jsonObjectSerializer.SerializeAsync(stream, streamItemMessage.Item, streamItemMessage.Item?.GetType() ?? typeof(object), default);
+            }
         }
 
         protected override bool TryComputeLength(out long length)

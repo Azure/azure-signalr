@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
             var apiEndpoint = new RestApiEndpoint("https://localhost.test.com", "token");
             var exception = await Assert.ThrowsAsync<AzureSignalRRuntimeException>(() =>
             {
-                return client.SendAsync(apiEndpoint, HttpMethod.Get, "", handleExpectedResponse: null);
+                return client.SendAsync(apiEndpoint, HttpMethod.Get);
             });
             var httpRequestException = Assert.IsType<HttpRequestException>(exception.InnerException);
             Assert.Equal(HttpStatusCode.InsufficientStorage, httpRequestException.StatusCode);

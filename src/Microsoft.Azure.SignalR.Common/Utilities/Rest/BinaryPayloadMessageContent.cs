@@ -24,10 +24,10 @@ namespace Microsoft.Azure.SignalR.Common
         };
         private static readonly MediaTypeHeaderValue ContentType = new("application/octet-stream");
 
-        private readonly PayloadMessage _payloadMessage;
+        private readonly HubMessage _payloadMessage;
         private readonly IReadOnlyList<IHubProtocol> _hubProtocols;
 
-        public BinaryPayloadMessageContent(PayloadMessage payloadMessage, IReadOnlyList<IHubProtocol> hubProtocols)
+        public BinaryPayloadMessageContent(HubMessage payloadMessage, IReadOnlyList<IHubProtocol> hubProtocols)
         {
             _payloadMessage = payloadMessage ?? throw new ArgumentNullException(nameof(payloadMessage));
             _hubProtocols = hubProtocols ?? throw new ArgumentNullException(nameof(hubProtocols));
@@ -49,13 +49,12 @@ namespace Microsoft.Azure.SignalR.Common
 
         private void WriteMessageCore(IBufferWriter<byte> bufferWriter)
         {
-            var invocationMessage = new InvocationMessage(_payloadMessage.Target, _payloadMessage.Arguments);
             var messagePackWriter = new MessagePackWriter(bufferWriter);
             messagePackWriter.WriteMapHeader(_hubProtocols.Count);
             foreach (var hubProtocol in _hubProtocols)
             {
                 messagePackWriter.WriteString(ProtocolMap[hubProtocol.Name]);
-                messagePackWriter.Write(hubProtocol.GetMessageBytes(invocationMessage).Span);
+                messagePackWriter.Write(hubProtocol.GetMessageBytes(_payloadMessage).Span);
             }
             messagePackWriter.Flush();
         }

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.SignalR.Common
             _hubProtocols = hubProtocols;
         }
 
-        public HttpContent? Build(PayloadMessage? payload)
+        public HttpContent? Build(HubMessage? payload)
         {
             return payload == null ? null : (HttpContent)new BinaryPayloadMessageContent(payload, _hubProtocols);
         }

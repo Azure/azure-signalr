@@ -310,6 +310,41 @@ namespace Microsoft.Azure.SignalR.Management
             return exists;
         }
 
+        public async Task SendStreamItemAsync<TItem>(string connectionId, string streamId, TItem item, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+            if (string.IsNullOrEmpty(streamId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(streamId));
+            }
+            var api = await _restApiProvider.SendStreamItemAsync(_appName, _hubName, connectionId, streamId);
+            await _restClient.SendStreamMessageWithRetryAsync(api, HttpMethod.Post, streamId, item, cancellationToken: cancellationToken);
+        }
+
+        public async Task SendStreamCompletionAsync(string connectionId, string streamId, string error, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+            if (string.IsNullOrEmpty(streamId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(streamId));
+            }
+            var api = await _restApiProvider.SendStreamCompletionAsync(_appName, _hubName, connectionId, streamId);
+            if (!string.IsNullOrEmpty(error))
+            {
+                api.Query = new Dictionary<string, StringValues>
+                {
+                    ["error"] = error,
+                };
+            }
+            await _restClient.SendWithRetryAsync(api, HttpMethod.Post, cancellationToken: cancellationToken);
+        }
+
         public Task DisposeAsync() => Task.CompletedTask;
 
         private static bool FilterExpectedResponse(HttpResponseMessage response, string expectedErrorCode) =>

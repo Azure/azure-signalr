@@ -99,6 +99,16 @@ namespace Microsoft.Azure.SignalR.Management
             return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{Uri.EscapeDataString(group)}");
         }
 
+        public Task<RestApiEndpoint> SendStreamItemAsync(string appName, string hubName, string connectionId, string streamId)
+        {
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}/streams/{Uri.EscapeDataString(streamId)}/:send");
+        }
+
+        public Task<RestApiEndpoint> SendStreamCompletionAsync(string appName, string hubName, string connectionId, string streamId)
+        {
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}/streams/{Uri.EscapeDataString(streamId)}/:complete");
+        }
+
         private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
         {
             var requestPrefixWithHub = $"{_serverEndpoint}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";

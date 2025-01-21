@@ -304,6 +304,17 @@ namespace Microsoft.Azure.SignalR
             return payloads;
         }
 
+        protected IDictionary<string, ReadOnlyMemory<byte>> SerializeAllProtocols(HubMessage message)
+        {
+            var serializedHubMessages = _messageSerializer.SerializeMessage(message);
+            var payloads = new ArrayDictionary<string, ReadOnlyMemory<byte>>(serializedHubMessages.Count);
+            foreach (var serializedMessage in serializedHubMessages)
+            {
+                payloads.Add(serializedMessage.ProtocolName, serializedMessage.Serialized);
+            }
+            return payloads;
+        }
+
         protected ReadOnlyMemory<byte> SerializeProtocol(string protocol, string method, object[] args) =>
             _messageSerializer.SerializeMessage(protocol, new InvocationMessage(method, args));
 
