@@ -69,6 +69,8 @@ internal static class AuthUtility
     {
         // Before filled into query string, this id will be process by "WebUtility.UrlEncode(...)". So base64 encoding is not needed.
         // Use hex to shorten the length.
-        return $"{traceIdentifier}:{Stopwatch.GetTimestamp().ToString("X")}";
+        return string.IsNullOrEmpty(traceIdentifier) 
+            ? Stopwatch.GetTimestamp().ToString("X")
+            : $"{traceIdentifier}-{Stopwatch.GetTimestamp().ToString("X")}";
     }
 }

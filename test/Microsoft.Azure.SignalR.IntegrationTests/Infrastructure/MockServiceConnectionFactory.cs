@@ -7,7 +7,7 @@ using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
-namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
+namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 
 internal class MockServiceConnectionFactory : ServiceConnectionFactory
 {
@@ -24,18 +24,17 @@ internal class MockServiceConnectionFactory : ServiceConnectionFactory
         IServerNameProvider nameProvider,
         IHubProtocolResolver hubProtocolResolver)
         : base(
-                serviceProtocol,
-                clientConnectionManager,
-                connectionFactory,
-                loggerFactory,
-                connectionDelegate,
-                clientConnectionFactory,
-                nameProvider,
-                null,
-                clientInvocationManager,
-                hubProtocolResolver,
-                null,
-                null)
+            serviceProtocol,
+            clientConnectionManager,
+            connectionFactory,
+            loggerFactory,
+            connectionDelegate,
+            clientConnectionFactory,
+            nameProvider,
+            null,
+            clientInvocationManager,
+            hubProtocolResolver,
+            null)
     {
         _mockService = mockService;
     }
