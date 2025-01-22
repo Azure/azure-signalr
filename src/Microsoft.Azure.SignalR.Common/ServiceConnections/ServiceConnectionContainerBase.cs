@@ -249,25 +249,31 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         return AckHandler.HandleAckStatus(ackableMessage, status);
     }
 
-    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top)
+    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null)
     {
-        var currentCount = 0;
+        if (string.IsNullOrWhiteSpace(groupName))
+        {
+            throw new ArgumentException($"'{nameof(groupName)}' cannot be null or whitespace.", nameof(groupName));
+        }
+        if (top != null && top <= 0)
+        {
+            throw new ArgumentException($"'{nameof(top)}' must be greater than 0.", nameof(top));
+        }
+        var message = new GroupMemberQueryMessage() { GroupName = groupName, Top = top, TracingId = tracingId };
         do
         {
-            if (top != null)
-            {
-                top -= currentCount;
-            }
-            var message = new GroupMemberQueryMessage() { GroupName = groupName, Top = top };
             var response = await InvokeAsync<GroupMemberQueryResponse>(message);
             foreach (var member in response.Members)
             {
                 yield return member;
-                currentCount++;
-                if (top != null && currentCount >= top || response.ContinuationToken == null)
-                {
-                    yield break;
-                }
+            }
+            if (response.ContinuationToken == null)
+            {
+                yield break;
+            }
+            if (message.Top != null)
+            {
+                message.Top -= response.Members.Count;
             }
             message.ContinuationToken = response.ContinuationToken;
         } while (true);
@@ -277,7 +283,8 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
     /// <see cref="WriteAckableMessageAsync(ServiceMessage, CancellationToken)"/> only checks <see cref="AckMessage.Status"/> as the response, 
     /// while this method checks <see cref="AckMessage.Payload"/> and deserialize it to <typeparamref name="T"/>.
     /// </summary>
-    private async Task<T> InvokeAsync<T>(ServiceMessage serviceMessage, CancellationToken cancellationToken = default) where T : notnull, new()
+    /// Made "interval virtual" for testing
+    internal virtual async Task<T> InvokeAsync<T>(ServiceMessage serviceMessage, CancellationToken cancellationToken = default) where T : notnull, new()
     {
         if (serviceMessage is not IAckableMessage ackableMessage)
         {

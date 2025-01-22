@@ -172,19 +172,24 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceMana
         }
     }
 
-    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top)
+    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null)
     {
         if (TargetEndpoints.Length == 0)
         {
             Log.NoEndpointRouted(_logger, nameof(GroupMemberQueryMessage));
             yield break;
         }
+        if (top <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(top), "Top must be greater than 0.");
+        }
+        var memberCount = 0;
         foreach (var endpoint in TargetEndpoints)
         {
             IAsyncEnumerable<GroupMember> enumerable;
             try
             {
-                enumerable = endpoint.ConnectionContainer.ListConnectionsInGroupAsync(groupName, top);
+                enumerable = endpoint.ConnectionContainer.ListConnectionsInGroupAsync(groupName, top, tracingId);
             }
             catch (ServiceConnectionNotActiveException)
             {
@@ -194,6 +199,14 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceMana
             await foreach (var member in enumerable)
             {
                 yield return member;
+                if (top.HasValue)
+                {
+                    memberCount++;
+                    if (memberCount >= top)
+                    {
+                        yield break;
+                    }
+                }
             }
         }
     }

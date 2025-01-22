@@ -169,7 +169,7 @@ internal class ServiceConnectionManager : IServiceConnectionManager
         }
     }
 
-    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top)
+    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null)
     {
         throw new NotSupportedException();
     }

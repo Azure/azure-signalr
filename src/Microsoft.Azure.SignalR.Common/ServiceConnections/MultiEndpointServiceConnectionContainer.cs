@@ -151,7 +151,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
     }
 
 
-    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top)
+    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null)
     {
         var targetEndpoints = _routerEndpoints.needRouter ? _router.GetEndpointsForGroup(groupName, _routerEndpoints.endpoints) : _routerEndpoints.endpoints;
         var messageWriter = new MultiEndpointMessageWriter(targetEndpoints?.ToList(), _loggerFactory);

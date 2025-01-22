@@ -11,5 +11,5 @@ namespace Microsoft.Azure.SignalR;
 /// </summary>
 internal interface IPresenceManager
 {
-    IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top);
+    IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null);
 }
