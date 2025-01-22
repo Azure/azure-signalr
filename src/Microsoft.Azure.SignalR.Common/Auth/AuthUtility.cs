@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Claims;
+using System.Threading;
 using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR;
@@ -16,6 +17,10 @@ internal static class AuthUtility
     private const int MaxTokenLength = 4096;
 
     private static readonly SignalRJwtSecurityTokenHandler JwtTokenHandler = new();
+
+    private static int _nextId;
+
+    private static int NextId() => Interlocked.Increment(ref _nextId);
 
     public static string GenerateJwtToken(byte[] keyBytes,
                                           string? kid = null,
@@ -69,8 +74,9 @@ internal static class AuthUtility
     {
         // Before filled into query string, this id will be process by "WebUtility.UrlEncode(...)". So base64 encoding is not needed.
         // Use hex to shorten the length.
+        var suffix = $"{Stopwatch.GetTimestamp().ToString("X")}-{NextId()}";
         return string.IsNullOrEmpty(traceIdentifier) 
-            ? Stopwatch.GetTimestamp().ToString("X")
-            : $"{traceIdentifier}-{Stopwatch.GetTimestamp().ToString("X")}";
+            ? suffix
+            : $"{traceIdentifier.Replace(":", "-")}-{suffix}";
     }
 }
