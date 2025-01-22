@@ -143,7 +143,7 @@ public class MicrosoftEntraAccessKeyTests
     public async Task TestUpdateAccessKeySendRequest(string expectedKeyStr)
     {
         var expectedKid = "foo";
-        var text = "{" + string.Format("\"AccessKey\": \"{0}\", \"KeyId\": \"{1}\"", expectedKeyStr, expectedKid) + "}";
+        var text = $"{{\"AccessKey\": \"{expectedKeyStr}\", \"KeyId\": \"{expectedKid}\"}}";
         var httpClientFactory = new TestHttpClientFactory(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = TextHttpContent.From(text),

@@ -8,135 +8,134 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Client;
 using Microsoft.Azure.SignalR;
 
-namespace AspNet.ChatSample.CSharpClient
+namespace AspNet.ChatSample.CSharpClient;
+
+class Program
 {
-    class Program
+    private static readonly Func<Task> ReconnectDelayTask = () => DelayRandom(200, 1000);
+    private static readonly SemaphoreSlim ReconnectLock = new SemaphoreSlim(1);
+    static async Task Main(string[] args)
     {
-        private static readonly Func<Task> ReconnectDelayTask = () => DelayRandom(200, 1000);
-        private static readonly SemaphoreSlim ReconnectLock = new SemaphoreSlim(1);
-        static async Task Main(string[] args)
+        var url = "http://localhost:8009";
+        var proxy = await ConnectAsync(url, Console.Out);
+        var currentUser = Guid.NewGuid().ToString("N");
+
+        Mode mode = Mode.Broadcast;
+        if (args.Length > 0)
         {
-            var url = "http://localhost:8009";
-            var proxy = await ConnectAsync(url, Console.Out);
-            var currentUser = Guid.NewGuid().ToString("N");
-
-            Mode mode = Mode.Broadcast;
-            if (args.Length > 0)
-            {
-                Enum.TryParse(args[0], true, out mode);
-            }
-
-            Console.WriteLine($"Logged in as user {currentUser}");
-            var input = Console.ReadLine();
-            while (!string.IsNullOrEmpty(input))
-            {
-                switch (mode)
-                {
-                    case Mode.Broadcast:
-                        await proxy.Invoke("BroadcastMessage", currentUser, input);
-
-                        break;
-                    case Mode.Echo:
-                        await proxy.Invoke("echo", input);
-                        break;
-                    default:
-                        break;
-                }
-
-                input = Console.ReadLine();
-            }
+            Enum.TryParse(args[0], true, out mode);
         }
 
-        private static async Task<IHubProxy> ConnectAsync(string url, TextWriter output, CancellationToken cancellationToken = default)
+        Console.WriteLine($"Logged in as user {currentUser}");
+        var input = Console.ReadLine();
+        while (!string.IsNullOrEmpty(input))
         {
-            var connection = new HubConnection(url)
+            switch (mode)
             {
-                TraceWriter = output,
-                TraceLevel = TraceLevels.All
-            };
+                case Mode.Broadcast:
+                    await proxy.Invoke("BroadcastMessage", currentUser, input);
 
-            connection.Closed += () =>
-            {
-                output.WriteLine($"{connection.ConnectionId} is closed");
-            };
-
-            connection.Error += e =>
-            {
-                output.WriteLine(e);
-
-                _ = StartAsyncWithAlwaysRetry(connection, output, ReconnectDelayTask(), cancellationToken);
-            };
-
-            var hubProxy = connection.CreateHubProxy("ChatHub");
-            hubProxy.On<string, string>("BroadcastMessage", BroadcastMessage);
-            hubProxy.On<string>("Echo", Echo);
-
-            await StartAsyncWithAlwaysRetry(connection, output, cancellationToken: cancellationToken);
-
-            return hubProxy;
-        }
-
-        private static async Task StartAsyncWithAlwaysRetry(HubConnection connection, TextWriter output, Task startDelay = null, CancellationToken cancellationToken = default)
-        {
-            // When there is already a reconnect, directly return;
-            if (!ReconnectLock.Wait(0))
-            {
-                return;
+                    break;
+                case Mode.Echo:
+                    await proxy.Invoke("echo", input);
+                    break;
+                default:
+                    break;
             }
 
-            try
-            {
-                if (startDelay != null)
-                {
-                    await startDelay;
-                }
+            input = Console.ReadLine();
+        }
+    }
 
-                while (!cancellationToken.IsCancellationRequested)
+    private static async Task<IHubProxy> ConnectAsync(string url, TextWriter output, CancellationToken cancellationToken = default)
+    {
+        var connection = new HubConnection(url)
+        {
+            TraceWriter = output,
+            TraceLevel = TraceLevels.All
+        };
+
+        connection.Closed += () =>
+        {
+            output.WriteLine($"{connection.ConnectionId} is closed");
+        };
+
+        connection.Error += e =>
+        {
+            output.WriteLine(e);
+
+            _ = StartAsyncWithAlwaysRetry(connection, output, ReconnectDelayTask(), cancellationToken);
+        };
+
+        var hubProxy = connection.CreateHubProxy("ChatHub");
+        hubProxy.On<string, string>("BroadcastMessage", BroadcastMessage);
+        hubProxy.On<string>("Echo", Echo);
+
+        await StartAsyncWithAlwaysRetry(connection, output, cancellationToken: cancellationToken);
+
+        return hubProxy;
+    }
+
+    private static async Task StartAsyncWithAlwaysRetry(HubConnection connection, TextWriter output, Task startDelay = null, CancellationToken cancellationToken = default)
+    {
+        // When there is already a reconnect, directly return;
+        if (!ReconnectLock.Wait(0))
+        {
+            return;
+        }
+
+        try
+        {
+            if (startDelay != null)
+            {
+                await startDelay;
+            }
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
                 {
-                    try
-                    {
-                        // Sometimes Start throws and triggers Error event, however sometimes not.
-                        await connection.Start();
-                        return;
-                    }
-                    catch (Exception e)
-                    {
-                        output.WriteLine($"Error starting: {e.Message}, retry...");
-                        await ReconnectDelayTask();
-                    }
+                    // Sometimes Start throws and triggers Error event, however sometimes not.
+                    await connection.Start();
+                    return;
+                }
+                catch (Exception e)
+                {
+                    output.WriteLine($"Error starting: {e.Message}, retry...");
+                    await ReconnectDelayTask();
                 }
             }
-            finally
-            {
-                ReconnectLock.Release();
-            }
         }
-
-        /// <summary>
-        /// Delay random milliseconds
-        /// </summary>
-        /// <param name="min"></param>
-        /// <param name="max"></param>
-        /// <returns></returns>
-        private static Task DelayRandom(int min, int max)
+        finally
         {
-            return Task.Delay(StaticRandom.Next(min, max));
+            ReconnectLock.Release();
         }
+    }
 
-        private static void BroadcastMessage(string name, string message)
-        {
-            Console.WriteLine($"{name}: {message}");
-        }
+    /// <summary>
+    /// Delay random milliseconds
+    /// </summary>
+    /// <param name="min"></param>
+    /// <param name="max"></param>
+    /// <returns></returns>
+    private static Task DelayRandom(int min, int max)
+    {
+        return Task.Delay(StaticRandom.Next(min, max));
+    }
 
-        private static void Echo(string message)
-        {
-            Console.WriteLine(message);
-        }
+    private static void BroadcastMessage(string name, string message)
+    {
+        Console.WriteLine($"{name}: {message}");
+    }
 
-        private enum Mode
-        {
-            Broadcast,
-            Echo,
-        }
+    private static void Echo(string message)
+    {
+        Console.WriteLine(message);
+    }
+
+    private enum Mode
+    {
+        Broadcast,
+        Echo,
     }
 }

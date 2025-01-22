@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Security.Claims;
 using System.Text;
 using System.Threading;
@@ -18,7 +19,7 @@ internal class AccessKey : IAccessKey
 
     public AccessKey(string key)
     {
-        Kid = key.GetHashCode().ToString();
+        Kid = key.GetHashCode().ToString(CultureInfo.InvariantCulture);
         KeyBytes = Encoding.UTF8.GetBytes(key);
     }
 

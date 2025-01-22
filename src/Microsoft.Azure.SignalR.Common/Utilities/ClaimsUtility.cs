@@ -3,11 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Protocol;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.SignalR
 
             if (handshakeTimeout != Constants.Periods.DefaultHandshakeTimeout)
             {
-                yield return new Claim(Constants.ClaimType.CustomHandshakeTimeout, handshakeTimeout.ToString());
+                yield return new Claim(Constants.ClaimType.CustomHandshakeTimeout, handshakeTimeout.ToString(CultureInfo.InvariantCulture));
             }
 
             var authenticationType = user?.Identity?.AuthenticationType;
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.SignalR
             // Trace multiple instances
             if (endpointsCount > 1)
             {
-                yield return new Claim(Constants.ClaimType.ServiceEndpointsCount, endpointsCount.ToString());
+                yield return new Claim(Constants.ClaimType.ServiceEndpointsCount, endpointsCount.ToString(CultureInfo.InvariantCulture));
             }
 
             if (enableDetailedErrors)
@@ -108,18 +108,18 @@ namespace Microsoft.Azure.SignalR
             // add claim if exists, validation is in DI  
             if (maxPollInterval.HasValue)
             {
-                yield return new Claim(Constants.ClaimType.MaxPollInterval, maxPollInterval.Value.ToString());
+                yield return new Claim(Constants.ClaimType.MaxPollInterval, maxPollInterval.Value.ToString(CultureInfo.InvariantCulture));
             }
 
             if (httpTransportType.HasValue)
             {
-                yield return new Claim(Constants.ClaimType.HttpTransportType, ((int)httpTransportType).ToString());
+                yield return new Claim(Constants.ClaimType.HttpTransportType, ((int)httpTransportType).ToString(CultureInfo.InvariantCulture));
             }
 
             if (closeOnAuthenticationExpiration && authenticationExpiresOn != null && authenticationExpiresOn.HasValue)
             {
                 yield return new Claim(Constants.ClaimType.CloseOnAuthExpiration, "true");
-                yield return new Claim(Constants.ClaimType.AuthExpiresOn, authenticationExpiresOn.Value.ToUnixTimeSeconds().ToString());
+                yield return new Claim(Constants.ClaimType.AuthExpiresOn, authenticationExpiresOn.Value.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture));
             }
 
             // return customer's claims

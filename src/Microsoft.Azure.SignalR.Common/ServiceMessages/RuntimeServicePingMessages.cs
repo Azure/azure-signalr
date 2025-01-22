@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Globalization;
+
 using Microsoft.Azure.SignalR.Protocol;
 using ServicePingMessage = Microsoft.Azure.SignalR.Protocol.PingMessage;
 
@@ -92,8 +94,8 @@ internal static class RuntimeServicePingMessage
 
     public static ServicePingMessage GetStatusPingMessage(bool isActive, int clientCount) =>
         isActive
-        ? new ServicePingMessage { Messages = new[] { StatusKey, StatusActiveValue, ClientCountKey, clientCount.ToString() } }
-        : new ServicePingMessage { Messages = new[] { StatusKey, StatusInactiveValue, ClientCountKey, clientCount.ToString() } };
+        ? new ServicePingMessage { Messages = new[] { StatusKey, StatusActiveValue, ClientCountKey, clientCount.ToString(CultureInfo.InvariantCulture) } }
+        : new ServicePingMessage { Messages = new[] { StatusKey, StatusInactiveValue, ClientCountKey, clientCount.ToString(CultureInfo.InvariantCulture) } };
 
     public static bool TryGetStatus(this ServicePingMessage ping, out bool isActive)
     {

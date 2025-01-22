@@ -9,228 +9,227 @@ using Microsoft.Azure.SignalR.Tests.Common;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Microsoft.Azure.SignalR.Common.Tests
+namespace Microsoft.Azure.SignalR.Common.Tests;
+
+public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest(output)
 {
-    public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest(output)
+    private static readonly TimeSpan _overrunLeeway = TimeSpan.FromMilliseconds(250);
+
+    private static readonly TimeSpan _underrunLeeway = TimeSpan.FromMilliseconds(50);
+
+    private static readonly TimeSpan DefaultBackOff = TimeSpan.FromSeconds(2);
+
+    private static readonly Func<int, TimeSpan> DefaultBackOffFunc = (i) => DefaultBackOff;
+
+    private static readonly TimeSpan _1stBackOff = TimeSpan.FromSeconds(1.5);
+
+    private static readonly TimeSpan _2ndBackOff = TimeSpan.FromSeconds(2.5);
+
+    private static readonly TimeSpan _nxtBackOff = TimeSpan.FromSeconds(4.5);
+
+    private readonly TimeSpan _0s = TimeSpan.FromSeconds(0);
+
+    private readonly TimeSpan _1s = TimeSpan.FromSeconds(1);
+
+    private readonly TimeSpan _2s = TimeSpan.FromSeconds(2);
+
+    private readonly TimeSpan _10s = TimeSpan.FromSeconds(10);
+
+    [RetryFact]
+    public async Task AllProbesSuccessfulTest()
     {
-        private static readonly TimeSpan _overrunLeeway = TimeSpan.FromMilliseconds(250);
-
-        private static readonly TimeSpan _underrunLeeway = TimeSpan.FromMilliseconds(50);
-
-        private static readonly TimeSpan DefaultBackOff = TimeSpan.FromSeconds(2);
-
-        private static readonly Func<int, TimeSpan> DefaultBackOffFunc = (i) => DefaultBackOff;
-
-        private static readonly TimeSpan _1stBackOff = TimeSpan.FromSeconds(1.5);
-
-        private static readonly TimeSpan _2ndBackOff = TimeSpan.FromSeconds(2.5);
-
-        private static readonly TimeSpan _nxtBackOff = TimeSpan.FromSeconds(4.5);
-
-        private readonly TimeSpan _0s = TimeSpan.FromSeconds(0);
-
-        private readonly TimeSpan _1s = TimeSpan.FromSeconds(1);
-
-        private readonly TimeSpan _2s = TimeSpan.FromSeconds(2);
-
-        private readonly TimeSpan _10s = TimeSpan.FromSeconds(10);
-
-        [RetryFact]
-        public async Task AllProbesSuccessfulTest()
+        await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
         {
-            await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
-            {
-                Params = new ProbeParam[] {
-                    new() {Result = true, Duration = _1s, Throws = false },
-                    new() {Result = true, Duration = _0s, Throws = false },
-                    new() {Result = true, Duration = _0s, Throws = false }
-                },
-                ExpectedCallTimes = new TimeSpan[] {
-                    _0s,        // this gets called right away
-                    _1s, _1s    // the following 2 will be called right after the duration of the first one
-                },
-                BkOffFunc = (i) => DefaultBackOff
-            }));
-        }
+            Params = new ProbeParam[] {
+                new() {Result = true, Duration = _1s, Throws = false },
+                new() {Result = true, Duration = _0s, Throws = false },
+                new() {Result = true, Duration = _0s, Throws = false }
+            },
+            ExpectedCallTimes = new TimeSpan[] {
+                _0s,        // this gets called right away
+                _1s, _1s    // the following 2 will be called right after the duration of the first one
+            },
+            BkOffFunc = (i) => DefaultBackOff
+        }));
+    }
 
-        [RetryFact]
-        public async Task First2ProbesUnsuccessfulTest()
+    [RetryFact]
+    public async Task First2ProbesUnsuccessfulTest()
+    {
+        await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
         {
-            await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
-            {
-                Params = new ProbeParam[] {
-                    new() {                              Result = false, Duration = _1s, Throws = false },
-                    new() {                              Result = false, Duration = _1s, Throws = false },
-                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _0s, Throws = false },
-                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _0s, Throws = false },
-                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _0s, Throws = false }
-                },
-                ExpectedCallTimes = new TimeSpan[] {
-                    _0s,                            // these first 2 compete to get called right away,
-                                                    // whoever wins returns false and induces 1st back off
-                    _1stBackOff,                    // the 2nd one is called after the 1st failed back off,
-                                                    // return false, induces the 2nd back off
+            Params = new ProbeParam[] {
+                new() {                              Result = false, Duration = _1s, Throws = false },
+                new() {                              Result = false, Duration = _1s, Throws = false },
+                new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _0s, Throws = false },
+                new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _0s, Throws = false },
+                new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _0s, Throws = false }
+            },
+            ExpectedCallTimes = new TimeSpan[] {
+                _0s,                            // these first 2 compete to get called right away,
+                                                // whoever wins returns false and induces 1st back off
+                _1stBackOff,                    // the 2nd one is called after the 1st failed back off,
+                                                // return false, induces the 2nd back off
 
-                    _1stBackOff + _2ndBackOff,      // called after 1st + 2nd back offs, succeeds after 0 s
-                    _1stBackOff + _2ndBackOff + _0s,// 1st + 2nd back offs + duration of 1st successful one (0 s)
-                    _1stBackOff + _2ndBackOff + _0s // 1st + 2nd back offs + duration of 1st successful one (0 s)
-                },
-                BkOffFunc = (i) => i == 0 ? _1stBackOff : i == 1 ? _2ndBackOff : _nxtBackOff,
-            }));
-        }
+                _1stBackOff + _2ndBackOff,      // called after 1st + 2nd back offs, succeeds after 0 s
+                _1stBackOff + _2ndBackOff + _0s,// 1st + 2nd back offs + duration of 1st successful one (0 s)
+                _1stBackOff + _2ndBackOff + _0s // 1st + 2nd back offs + duration of 1st successful one (0 s)
+            },
+            BkOffFunc = (i) => i == 0 ? _1stBackOff : i == 1 ? _2ndBackOff : _nxtBackOff,
+        }));
+    }
 
-        [Fact(Skip = "Flacky in CI")]
-        public async Task FirstProbeThrowsTest()
+    [Fact(Skip = "Flacky in CI")]
+    public async Task FirstProbeThrowsTest()
+    {
+        await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
         {
-            await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
-            {
-                Params = new ProbeParam[] {
-                    new() {                              Result = false, Duration = _0s, Throws=true },
-                    new() {                              Result = false, Duration = _0s, Throws=true },
-                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false },
-                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false },
-                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false }
-                },
-                ExpectedCallTimes = new TimeSpan[] {
-                    _0s,                            // called right away, throws and induces first back off
-                    _1stBackOff,                    // called after the 1st failed back off, throws, induces the 2nd back off
-                    _1stBackOff + _2ndBackOff,      // called after 1st + 2nd back offs, succeeds after its duration (1s)
-                    _1stBackOff + _2ndBackOff + _1s,// 1st + 2nd back offs + duration of 1st successful one (1s)
-                    _1stBackOff + _2ndBackOff + _1s // 1st + 2nd back offs + duration of 1st successful one (1s)
-                },
-                BkOffFunc = (i) => i == 0 ? _1stBackOff : i == 1 ? _2ndBackOff : _nxtBackOff,
-            }));
-        }
+            Params = new ProbeParam[] {
+                new() {                              Result = false, Duration = _0s, Throws=true },
+                new() {                              Result = false, Duration = _0s, Throws=true },
+                new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false },
+                new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false },
+                new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _1s, Throws=false }
+            },
+            ExpectedCallTimes = new TimeSpan[] {
+                _0s,                            // called right away, throws and induces first back off
+                _1stBackOff,                    // called after the 1st failed back off, throws, induces the 2nd back off
+                _1stBackOff + _2ndBackOff,      // called after 1st + 2nd back offs, succeeds after its duration (1s)
+                _1stBackOff + _2ndBackOff + _1s,// 1st + 2nd back offs + duration of 1st successful one (1s)
+                _1stBackOff + _2ndBackOff + _1s // 1st + 2nd back offs + duration of 1st successful one (1s)
+            },
+            BkOffFunc = (i) => i == 0 ? _1stBackOff : i == 1 ? _2ndBackOff : _nxtBackOff,
+        }));
+    }
 
-        [Fact(Skip = "Flacky in CI")]
-        public async Task FirstProbeTimeoutTest()
+    [Fact(Skip = "Flacky in CI")]
+    public async Task FirstProbeTimeoutTest()
+    {
+        await RunProbeTests(new TestData()
         {
-            await RunProbeTests(new TestData()
-            {
-                Params = new ProbeParam[] {
-                        new() {                              Result = false, Duration = _10s, Throws=false }, // t/o & fail
-                        new() {                              Result = false, Duration = _10s, Throws=true },  // t/o & throw
-                        new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _2s, Throws=false },
-                        new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _2s, Throws=false },
-                        new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _2s, Throws=false }
-                },
+            Params = new ProbeParam[] {
+                    new() {                              Result = false, Duration = _10s, Throws=false }, // t/o & fail
+                    new() {                              Result = false, Duration = _10s, Throws=true },  // t/o & throw
+                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _2s, Throws=false },
+                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _2s, Throws=false },
+                    new() {InitialDelay = _2ndBackOff,   Result = true, Duration = _2s, Throws=false }
+            },
 
-                ExpectedCallTimes = new TimeSpan[] {
-                    _0s,                            // called right away, throws and induces first back off
-                    _1stBackOff,                    // called after the 1st failed back off, throws, induces the 2nd back off
-                    _1stBackOff + _2ndBackOff,      // called after 1st + 2nd back offs, succeeds after its duration (1s)
-                    _1stBackOff + _2ndBackOff + _2s,// 1st + 2nd back offs + duration of 1st successful one (2s)
-                    _1stBackOff + _2ndBackOff + _2s // 1st + 2nd back offs + duration of 1st successful one (2s)
-                },
-                BkOffFunc = (i) => i == 0 ? _1stBackOff : i == 1 ? _2ndBackOff : _nxtBackOff,
-            });
-        }
+            ExpectedCallTimes = new TimeSpan[] {
+                _0s,                            // called right away, throws and induces first back off
+                _1stBackOff,                    // called after the 1st failed back off, throws, induces the 2nd back off
+                _1stBackOff + _2ndBackOff,      // called after 1st + 2nd back offs, succeeds after its duration (1s)
+                _1stBackOff + _2ndBackOff + _2s,// 1st + 2nd back offs + duration of 1st successful one (2s)
+                _1stBackOff + _2ndBackOff + _2s // 1st + 2nd back offs + duration of 1st successful one (2s)
+            },
+            BkOffFunc = (i) => i == 0 ? _1stBackOff : i == 1 ? _2ndBackOff : _nxtBackOff,
+        });
+    }
 
-        private static async Task RunProbeTests(TestData testData)
+    private static async Task RunProbeTests(TestData testData)
+    {
+        // initialize a few things
+        var _funcCallNumber = 0;
+        var policy = new BackOffPolicy();
+        testData.Results = new ProbeResult[testData.Params.Length];
+        var startTime = DateTime.UtcNow;
+        var probeTestTasks = new Task[testData.Params.Length];
+
+        for (var i = 0; i < testData.Params.Length; i++)
         {
-            // initialize a few things
-            var _funcCallNumber = 0;
-            var policy = new BackOffPolicy();
-            testData.Results = new ProbeResult[testData.Params.Length];
-            var startTime = DateTime.UtcNow;
-            var probeTestTasks = new Task[testData.Params.Length];
+            var index = i;
+            var currentProbe = testData.Params[index];
+            testData.Results[index] = new ProbeResult();
 
-            for (var i = 0; i < testData.Params.Length; i++)
+            Func<Task<bool>> probeFunc = async () =>
             {
-                var index = i;
-                var currentProbe = testData.Params[index];
-                testData.Results[index] = new ProbeResult();
+                var result = testData.Results[index];
+                result.ActualCallTime = DateTime.UtcNow - startTime;
+                result.ActualCallOrder = Interlocked.Increment(ref _funcCallNumber);
+                Interlocked.Increment(ref result.ActualNumberOfCalls);
 
-                Func<Task<bool>> probeFunc = async () =>
+                await Task.Delay(currentProbe.Duration);
+                if (currentProbe.Throws)
                 {
-                    var result = testData.Results[index];
-                    result.ActualCallTime = DateTime.UtcNow - startTime;
-                    result.ActualCallOrder = Interlocked.Increment(ref _funcCallNumber);
-                    Interlocked.Increment(ref result.ActualNumberOfCalls);
+                    throw new InvalidOperationException("exception from probe func");
+                }
+                return currentProbe.Result;
+            };
 
-                    await Task.Delay(currentProbe.Duration);
-                    if (currentProbe.Throws)
-                    {
-                        throw new InvalidOperationException("exception from probe func");
-                    }
-                    return currentProbe.Result;
-                };
-
-                Func<Task> testFunc = async () =>
-                {
-                    try
-                    {
-                        // This delay effectively defines the order of the calls
-                        await Task.Delay(currentProbe.InitialDelay);
-                        testData.Results[index].ActualResult = await policy.CallProbeWithBackOffAsync(probeFunc, testData.BkOffFunc);
-                    }
-                    catch (Exception ex)
-                    {
-                        testData.Results[index].ActualException = ex;
-                    }
-                };
-
-                probeTestTasks[index] = testFunc();
-            }
-
-            await Task.WhenAll(probeTestTasks);
-
-            // verify
-            for (var i = 0; i < testData.Params.Length; i++)
+            Func<Task> testFunc = async () =>
             {
-                var param = testData.Params[i];
-                var result = testData.Results[i];
+                try
+                {
+                    // This delay effectively defines the order of the calls
+                    await Task.Delay(currentProbe.InitialDelay);
+                    testData.Results[index].ActualResult = await policy.CallProbeWithBackOffAsync(probeFunc, testData.BkOffFunc);
+                }
+                catch (Exception ex)
+                {
+                    testData.Results[index].ActualException = ex;
+                }
+            };
 
-                Assert.Equal(1, result.ActualNumberOfCalls);
-                Assert.Equal(param.Result, result.ActualResult);
-                Assert.NotEqual(result.ActualException == null, param.Throws);
-
-                // knowing the actual order of the func call we can compare it with the expected time
-                // ActualCallOrder starts with 1
-                var expectedTime = testData.ExpectedCallTimes[result.ActualCallOrder - 1];
-
-                Assert.False(
-                    result.ActualCallTime < expectedTime - _underrunLeeway ||        // too early
-                    result.ActualCallTime > expectedTime + _overrunLeeway);          // too late
-            }
+            probeTestTasks[index] = testFunc();
         }
 
-        // To avoid very repetitive code we parametrize a generic test
-        // with different inputs and different expNextIntected results
-        public class ProbeParam
+        await Task.WhenAll(probeTestTasks);
+
+        // verify
+        for (var i = 0; i < testData.Params.Length; i++)
         {
-            // delay before calling the probe (to control the order of calls)
-            public TimeSpan InitialDelay = TimeSpan.Zero;
+            var param = testData.Params[i];
+            var result = testData.Results[i];
 
-            public bool Result;
+            Assert.Equal(1, result.ActualNumberOfCalls);
+            Assert.Equal(param.Result, result.ActualResult);
+            Assert.NotEqual(result.ActualException == null, param.Throws);
 
-            public TimeSpan Duration;
+            // knowing the actual order of the func call we can compare it with the expected time
+            // ActualCallOrder starts with 1
+            var expectedTime = testData.ExpectedCallTimes[result.ActualCallOrder - 1];
 
-            public bool Throws;
+            Assert.False(
+                result.ActualCallTime < expectedTime - _underrunLeeway ||        // too early
+                result.ActualCallTime > expectedTime + _overrunLeeway);          // too late
         }
+    }
 
-        public class ProbeResult
-        {
-            public bool ActualResult;
+    // To avoid very repetitive code we parametrize a generic test
+    // with different inputs and different expNextIntected results
+    public class ProbeParam
+    {
+        // delay before calling the probe (to control the order of calls)
+        public TimeSpan InitialDelay = TimeSpan.Zero;
 
-            public Exception ActualException;
+        public bool Result;
 
-            public int ActualCallOrder;
+        public TimeSpan Duration;
 
-            public int ActualNumberOfCalls;
+        public bool Throws;
+    }
 
-            public TimeSpan ActualCallTime;
-        }
+    public class ProbeResult
+    {
+        public bool ActualResult;
 
-        public class TestData
-        {
-            public ProbeParam[] Params;
+        public Exception ActualException;
 
-            public Func<int, TimeSpan> BkOffFunc;
+        public int ActualCallOrder;
 
-            public TimeSpan[] ExpectedCallTimes;
+        public int ActualNumberOfCalls;
 
-            public ProbeResult[] Results;
-        }
+        public TimeSpan ActualCallTime;
+    }
+
+    public class TestData
+    {
+        public ProbeParam[] Params;
+
+        public Func<int, TimeSpan> BkOffFunc;
+
+        public TimeSpan[] ExpectedCallTimes;
+
+        public ProbeResult[] Results;
     }
 }

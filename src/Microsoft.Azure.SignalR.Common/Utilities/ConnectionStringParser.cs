@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Azure.Core;
 using Azure.Identity;
@@ -38,8 +39,6 @@ internal static class ConnectionStringParser
 
     private const string TenantIdProperty = "tenantId";
 
-    private const string TypeAzure = "azure";
-
     [Obsolete]
     private const string TypeAzureAD = "aad";
 
@@ -60,9 +59,6 @@ internal static class ConnectionStringParser
     private static readonly string InvalidPortValue = $"Invalid value for {PortProperty} property, it must be an positive integer between (0, 65536).";
 
     private static readonly char[] KeyValueSeparator = { '=' };
-
-    private static readonly string MissingAccessKeyProperty =
-        $"{AccessKeyProperty} is required.";
 
     private static readonly string MissingClientIdProperty =
         $"Connection string missing required properties {ClientIdProperty}.";
@@ -96,14 +92,12 @@ internal static class ConnectionStringParser
         var builder = new UriBuilder(endpointUri!);
 
         // parse and validate version.
-        string? version = null;
-        if (dict.TryGetValue(VersionProperty, out var v))
+        if (dict.TryGetValue(VersionProperty, out var version))
         {
-            if (!Regex.IsMatch(v, ValidVersionRegex))
+            if (!Regex.IsMatch(version, ValidVersionRegex))
             {
-                throw new ArgumentException(string.Format(InvalidVersionValueFormat, v), nameof(version));
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, InvalidVersionValueFormat, version), nameof(version));
             }
-            version = v;
         }
 
         // parse and validate port.

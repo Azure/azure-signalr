@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -159,8 +160,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     protected override ReadOnlyMemory<byte> GetPingMessage()
     {
-        _pingMessages[1] = _clientConnectionManager.Count.ToString();
-        _pingMessages[3] = _connectionIds.Count.ToString();
+        _pingMessages[1] = _clientConnectionManager.Count.ToString(CultureInfo.InvariantCulture);
+        _pingMessages[3] = _connectionIds.Count.ToString(CultureInfo.InvariantCulture);
 
         return ServiceProtocol.GetMessageBytes(
             new PingMessage
@@ -186,7 +187,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
         message.Headers.TryGetValue(Constants.AsrsIsDiagnosticClient, out var isDiagnosticClientValue);
         if (!StringValues.IsNullOrEmpty(isDiagnosticClientValue))
         {
-            isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
+            isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault(), CultureInfo.InvariantCulture);
         }
 
         using (new ClientConnectionScope(endpoint: HubEndpoint, outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
