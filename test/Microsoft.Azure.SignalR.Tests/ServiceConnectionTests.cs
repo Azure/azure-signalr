@@ -26,7 +26,7 @@ using Xunit.Abstractions;
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests;
-
+#nullable disable
 public class ServiceConnectionTests : VerifiableLoggedTest
 {
     public ServiceConnectionTests(ITestOutputHelper output) : base(output)
