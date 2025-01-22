@@ -183,7 +183,6 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceMana
         {
             throw new ArgumentOutOfRangeException(nameof(top), "Top must be greater than 0.");
         }
-        var memberCount = 0;
         foreach (var endpoint in TargetEndpoints)
         {
             IAsyncEnumerable<GroupMember> enumerable;
@@ -201,8 +200,8 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceMana
                 yield return member;
                 if (top.HasValue)
                 {
-                    memberCount++;
-                    if (memberCount >= top)
+                    top--;
+                    if (top == 0)
                     {
                         yield break;
                     }

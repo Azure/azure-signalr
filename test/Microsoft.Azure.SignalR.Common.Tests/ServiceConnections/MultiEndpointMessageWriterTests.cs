@@ -13,13 +13,14 @@ namespace Microsoft.Azure.SignalR.Common.Tests.ServiceConnections;
 public class MultiEndpointMessageWriterTests
 {
     [Theory]
-    [InlineData(null, 6)]
-    [InlineData(5, 5)]
-    [InlineData(1, 1)]
-    [InlineData(7, 6)]
-    public async Task ListConnectionsInGroup(int? top, int resultCount)
+    [InlineData(null, 6, null, null)]
+    [InlineData(5, 5, 5, 2)]
+    [InlineData(1, 1, 1)]
+    [InlineData(7, 6, 7, 4)]
+    public async Task ListConnectionsInGroup(int? top, int resultCount, params int?[] expectedTopsInInvocations)
     {
         var targetEndpoints = new List<HubServiceEndpoint>();
+        var containerMocks = new List<Mock<IServiceConnectionContainer>>();
         for (var i = 0; i < 2; i++)
         {
             var endpoint = new TestHubServiceEndpoint();
@@ -28,9 +29,11 @@ public class MultiEndpointMessageWriterTests
                 new GroupMember { ConnectionId = "2" },
                 new GroupMember { ConnectionId = "3" }
             );
-            var connectionContainer = Mock.Of<IServiceConnectionContainer>(
-                c => c.ListConnectionsInGroupAsync(It.IsAny<string>(), It.IsAny<int?>(), null) == resultFromConnectioContainer);
-            endpoint.ConnectionContainer = connectionContainer;
+            var containerMock = new Mock<IServiceConnectionContainer>();
+            containerMocks.Add(containerMock);
+            containerMock.Setup(c => c.ListConnectionsInGroupAsync(It.IsAny<string>(), It.IsAny<int?>(), null))
+                .Returns(resultFromConnectioContainer);
+            endpoint.ConnectionContainer = containerMock.Object;
             targetEndpoints.Add(endpoint);
         }
         var multiEndpointWriter = new MultiEndpointMessageWriter(targetEndpoints, Mock.Of<ILoggerFactory>());
@@ -40,5 +43,9 @@ public class MultiEndpointMessageWriterTests
             resultMembers.Add(member);
         }
         Assert.Equal(resultCount, resultMembers.Count);
+        for (var i = 0; i < expectedTopsInInvocations.Length; i++)
+        {
+            containerMocks[i].Verify(c => c.ListConnectionsInGroupAsync("group", expectedTopsInInvocations[i], null), Times.Once());
+        }
     }
 }
