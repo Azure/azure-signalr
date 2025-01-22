@@ -1,5 +1,5 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Buffers;
@@ -11,7 +11,7 @@ namespace Microsoft.AspNetCore.Internal
     {
         // This record separator is supposed to be used only for JSON payloads where 0x1e character
         // will not occur (is not a valid character) and therefore it is safe to not escape it
-        public static readonly byte RecordSeparator = 0x1e;
+        public const byte RecordSeparator = 0x1e;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryParseMessage(ref ReadOnlySequence<byte> buffer, out ReadOnlySequence<byte> payload)

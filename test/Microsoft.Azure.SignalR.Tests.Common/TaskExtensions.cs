@@ -70,7 +70,7 @@ namespace System.Threading.Tasks
             {
                 // Manifest the exception
                 otherTask.GetAwaiter().GetResult();
-                throw new Exception("Unreachable code");
+                throw new InvalidOperationException("Unreachable code");
             }
             else
             {

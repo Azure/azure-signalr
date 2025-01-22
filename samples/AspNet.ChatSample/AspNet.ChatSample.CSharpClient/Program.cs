@@ -6,7 +6,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Client;
-using Microsoft.AspNet.SignalR.Client.Transports;
 using Microsoft.Azure.SignalR;
 
 namespace AspNet.ChatSample.CSharpClient

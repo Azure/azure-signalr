@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <Import
     Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), AspNetCoreSettings.props))\AspNetCoreSettings.props"
     Condition=" '$(CI)' != 'true' AND '$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), AspNetCoreSettings.props))' != '' " />
@@ -28,6 +28,8 @@
     <AssemblySigningCertName>Microsoft400</AssemblySigningCertName>
     <ThirdPartyAssemblySigningCertName>3PartySHA2</ThirdPartyAssemblySigningCertName>
     <PackageSigningCertName>NuGet</PackageSigningCertName>
+    <!-- Disable the warnings for now, enable batch by batch later-->
+    <NoWarn>$(NoWarn);IDE0161;CA1305;CA1510;CA1512;CA1513;CA1802;CA1805;CA1823;CA1822;CA1845;CA1846;CA1852;CA2007;CA2008;CA2012;CA2016;CA1835;CA2208;IDE0290;IDE1006;IDE0090</NoWarn>
   </PropertyGroup>
   
   <ItemGroup>

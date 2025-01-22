@@ -522,7 +522,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     {
                         if (ex is null)
                         {
-                            tcs.SetException(new Exception("close exception is null"));
+                            tcs.SetException(new InvalidOperationException("close exception is null"));
                         }
                         tcs.SetResult(ex.Message);
                         return Task.CompletedTask;
@@ -1031,7 +1031,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private static void ListenOnMessage(IList<HubConnection> connections, ConcurrentDictionary<int, int> receivedMessageDict)
         {
-            for (var i = 0; i < connections.Count(); i++)
+            for (var i = 0; i < connections.Count; i++)
             {
                 var ind = i;
                 connections[i].On(MethodName, (string message) =>

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                     await Task.Delay(currentProbe.Duration);
                     if (currentProbe.Throws)
                     {
-                        throw new Exception("exception from probe func");
+                        throw new InvalidOperationException("exception from probe func");
                     }
                     return currentProbe.Result;
                 };

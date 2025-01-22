@@ -463,7 +463,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     private IServiceConnection SelectConnection(ServiceMessage message)
     {
-        IServiceConnection connection = null;
+        IServiceConnection connection;
         if (ClientConnectionScope.IsScopeEstablished)
         {
             // see if the execution context already has the connection stored for this container

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -19,8 +19,8 @@ namespace Microsoft.Azure.SignalR.Serverless.Protocols.Tests
             var protocols = new string[] { "json", "messagepack" };
             foreach (var protocol in protocols)
             {
-                yield return new object[] { protocol, null, Guid.NewGuid().ToString(), new object[0] };
-                yield return new object[] { protocol, Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), new object[0] };
+                yield return new object[] { protocol, null, Guid.NewGuid().ToString(), Array.Empty<object>() };
+                yield return new object[] { protocol, Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Array.Empty<object>() };
                 yield return new object[]
                 {
                     protocol,
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.SignalR.Serverless.Protocols.Tests
                 {
                     protocol,
                     Guid.NewGuid().ToString(), Guid.NewGuid().ToString(),
-                    new object[] {new byte[] {}, new byte[] { 1, 2, 3 } }
+                    new object[] { Array.Empty<byte>(), new byte[] { 1, 2, 3 } }
                 };
             }
         }

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -362,7 +362,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                                 }
                                 else
                                 {
-                                    throw new Exception("Product info header is missing");
+                                    throw new InvalidOperationException("Product info header is missing");
                                 }
                             })))
                 .BuildServiceManager()
@@ -395,7 +395,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                                 }
                                 else
                                 {
-                                    throw new Exception("Message tracing Id header is missing");
+                                    throw new InvalidOperationException("Message tracing Id header is missing");
                                 }
                             })))
                 .BuildServiceManager()
@@ -405,7 +405,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             using var httpClient = httpClientFactory.CreateClient(httpClientName);
             await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://abc"));
         }
-
 
         [Theory]
         [InlineData(Constants.HttpClientNames.Resilient)]
@@ -424,7 +423,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                             {
                                 if (message.Headers.TryGetValues(Constants.Headers.AsrsMessageTracingId, out var values))
                                 {
-                                    throw new Exception("Message tracing Id header is not expected");
+                                    throw new InvalidOperationException("Message tracing Id header is not expected");
                                 }
                             })))
                 .BuildServiceManager()

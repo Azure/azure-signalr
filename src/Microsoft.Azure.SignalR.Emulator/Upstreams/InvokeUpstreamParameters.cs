@@ -23,10 +23,10 @@ namespace Microsoft.Azure.SignalR.Emulator
             var sb = new StringBuilder();
             sb.Append("{hub}=");
             sb.Append(Hub);
-            sb.Append(",");
+            sb.Append(',');
             sb.Append("{event}=");
             sb.Append(Event);
-            sb.Append(",");
+            sb.Append(',');
             sb.Append("{category}=");
             sb.Append(Category);
             return sb.ToString();

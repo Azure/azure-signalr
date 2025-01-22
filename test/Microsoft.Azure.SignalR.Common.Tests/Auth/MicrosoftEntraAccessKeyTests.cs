@@ -1,11 +1,13 @@
-﻿using System;
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -111,7 +113,6 @@ public class MicrosoftEntraAccessKeyTests
         Assert.Contains("is not available for signing client tokens", exception.Message);
         Assert.Contains("has expired.", exception.Message);
     }
-
 
     [Theory]
     [ClassData(typeof(NotAuthorizedTestData))]
@@ -380,12 +381,12 @@ public class MicrosoftEntraAccessKeyTests
             var token1 = AuthUtility.GenerateJwtToken(accessKey.KeyBytes, issuer: Constants.AsrsTokenIssuer);
             var token2 = AuthUtility.GenerateJwtToken(accessKey.KeyBytes, issuer: "microsoft.com");
 
-            yield return [new AzureSignalRUnauthorizedException(null, new Exception(), token1), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
-            yield return [new AzureSignalRUnauthorizedException(null, new Exception(), token2), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
-            yield return [new AzureSignalRUnauthorizedException("https://request.uri", new Exception(), token2), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
-            yield return [new AzureSignalRRuntimeException(DefaultUri, new Exception(), HttpStatusCode.Forbidden, "nginx"), AzureSignalRRuntimeException.NetworkErrorMessage];
-            yield return [new AzureSignalRRuntimeException(DefaultUri, new Exception(), HttpStatusCode.Forbidden, "http-content"), "http-content"];
-            yield return [new AzureSignalRRuntimeException(DefaultUri, new Exception("inner-exception-message"), HttpStatusCode.NotFound, "http"), AzureSignalRRuntimeException.ErrorMessage];
+            yield return [new AzureSignalRUnauthorizedException(null, new InvalidOperationException(), token1), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
+            yield return [new AzureSignalRUnauthorizedException(null, new InvalidOperationException(), token2), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
+            yield return [new AzureSignalRUnauthorizedException("https://request.uri", new InvalidOperationException(), token2), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
+            yield return [new AzureSignalRRuntimeException(DefaultUri, new InvalidOperationException(), HttpStatusCode.Forbidden, "nginx"), AzureSignalRRuntimeException.NetworkErrorMessage];
+            yield return [new AzureSignalRRuntimeException(DefaultUri, new InvalidOperationException(), HttpStatusCode.Forbidden, "http-content"), "http-content"];
+            yield return [new AzureSignalRRuntimeException(DefaultUri, new InvalidOperationException("inner-exception-message"), HttpStatusCode.NotFound, "http"), AzureSignalRRuntimeException.ErrorMessage];
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

@@ -22,8 +22,6 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
     [ApiController]
     internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
     {
-        private const string HubPattern = "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$";
-        private const string GroupPattern = "^\\S{1,1024}$";
         private readonly IDynamicHubContextStore _store;
         private readonly ILogger<SignalRServiceEmulatorWebApi> _logger;
 

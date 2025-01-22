@@ -46,7 +46,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new InvalidOperationException();
             }
-            cancellationToken.Register(() => info.Cancel());
+            cancellationToken.Register(info.Cancel);
             return info.Task;
         }
 

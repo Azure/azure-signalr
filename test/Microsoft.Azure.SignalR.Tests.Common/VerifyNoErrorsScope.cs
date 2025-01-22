@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
@@ -33,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             var logs = _sink.GetLogs();
             if (_logChecker?.Invoke(logs) == false)
             {
-                throw new Exception("Failed checking log");
+                throw new InvalidOperationException("Failed checking log");
             }
 
             var results = _sink.GetLogs().Where(w => w.Write.LogLevel >= LogLevel.Error).ToList();
@@ -42,7 +45,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             {
                 if (results.Any(w => !_expectedErrors(w.Write)))
                 {
-                    throw new Exception("Fail to match expected error(s).");
+                    throw new InvalidOperationException("Fail to match expected error(s).");
                 }
                 results = results.Where(w => !_expectedErrors(w.Write)).ToList();
             }
@@ -68,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
                     return lineMessage;
                 }));
 
-                throw new Exception(errorMessage);
+                throw new InvalidOperationException(errorMessage);
             }
         }
     }
