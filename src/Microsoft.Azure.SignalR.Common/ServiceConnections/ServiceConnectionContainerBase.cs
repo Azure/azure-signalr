@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -249,7 +250,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         return AckHandler.HandleAckStatus(ackableMessage, status);
     }
 
-    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null)
+    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(groupName))
         {
@@ -262,7 +263,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         var message = new GroupMemberQueryMessage() { GroupName = groupName, Top = top, TracingId = tracingId };
         do
         {
-            var response = await InvokeAsync<GroupMemberQueryResponse>(message);
+            var response = await InvokeAsync<GroupMemberQueryResponse>(message, token);
             foreach (var member in response.Members)
             {
                 yield return member;

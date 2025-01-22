@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -31,7 +31,7 @@ public class MultiEndpointMessageWriterTests
             );
             var containerMock = new Mock<IServiceConnectionContainer>();
             containerMocks.Add(containerMock);
-            containerMock.Setup(c => c.ListConnectionsInGroupAsync(It.IsAny<string>(), It.IsAny<int?>(), null))
+            containerMock.Setup(c => c.ListConnectionsInGroupAsync(It.IsAny<string>(), It.IsAny<int?>(), null, default))
                 .Returns(resultFromConnectioContainer);
             endpoint.ConnectionContainer = containerMock.Object;
             targetEndpoints.Add(endpoint);
@@ -45,7 +45,7 @@ public class MultiEndpointMessageWriterTests
         Assert.Equal(resultCount, resultMembers.Count);
         for (var i = 0; i < expectedTopsInInvocations.Length; i++)
         {
-            containerMocks[i].Verify(c => c.ListConnectionsInGroupAsync("group", expectedTopsInInvocations[i], null), Times.Once());
+            containerMocks[i].Verify(c => c.ListConnectionsInGroupAsync("group", expectedTopsInInvocations[i], null, default), Times.Once());
         }
     }
 }

@@ -1,12 +1,14 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -172,7 +174,7 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceMana
         }
     }
 
-    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null)
+    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
     {
         if (TargetEndpoints.Length == 0)
         {
@@ -188,7 +190,7 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceMana
             IAsyncEnumerable<GroupMember> enumerable;
             try
             {
-                enumerable = endpoint.ConnectionContainer.ListConnectionsInGroupAsync(groupName, top, tracingId);
+                enumerable = endpoint.ConnectionContainer.ListConnectionsInGroupAsync(groupName, top, tracingId, token);
             }
             catch (ServiceConnectionNotActiveException)
             {
