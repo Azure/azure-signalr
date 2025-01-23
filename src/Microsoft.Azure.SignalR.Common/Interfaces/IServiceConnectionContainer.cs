@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR;
 
-internal interface IServiceConnectionContainer : IServiceConnectionManager, IDisposable
+internal interface IServiceConnectionContainer : IServiceConnectionManager, IPresenceManager, IDisposable
 {
     ServiceConnectionStatus Status { get; }
 

@@ -50,17 +50,17 @@ internal sealed class AckHandler : IDisposable
         return info.Task;
     }
 
-    public Task<T> CreateSingleAck<T>(out int id, TimeSpan? ackTimeout = default, CancellationToken cancellationToken = default) where T : IMessagePackSerializable, new()
-    {
-        id = NextId();
-        if (_disposed)
+        public Task<T> CreateSingleAck<T>(out int id, TimeSpan? ackTimeout = default, CancellationToken cancellationToken = default) where T : notnull, new()
         {
-            return Task.FromResult(new T());
+            id = NextId();
+            if (_disposed)
+            {
+                return Task.FromResult(new T());
+            }
+            var info = (SinglePayloadAck<T>)_acks.GetOrAdd(id, _ => new SinglePayloadAck<T>(ackTimeout ?? _defaultAckTimeout));
+            cancellationToken.Register(info.Cancel);
+            return info.Task.ContinueWith(task => task.Result);
         }
-        var info = (IAckInfo<IMessagePackSerializable>)_acks.GetOrAdd(id, _ => new SinglePayloadAck<T>(ackTimeout ?? _defaultAckTimeout));
-        cancellationToken.Register(info.Cancel);
-        return info.Task.ContinueWith(task => (T)task.Result);
-    }
 
     public static bool HandleAckStatus(IAckableMessage message, AckStatus status)
     {
@@ -210,19 +210,19 @@ internal sealed class AckHandler : IDisposable
             _tcs.TrySetResult(status);
     }
 
-    private sealed class SinglePayloadAck<T> : SingleAckInfo<IMessagePackSerializable> where T : IMessagePackSerializable, new()
-    {
-        public SinglePayloadAck(TimeSpan timeout) : base(timeout) { }
-        public override bool Ack(AckStatus status, ReadOnlySequence<byte>? payload = null)
+        private sealed class SinglePayloadAck<T> : SingleAckInfo<T> where T : notnull, new()
         {
-            if (status == AckStatus.Timeout)
+            public SinglePayloadAck(TimeSpan timeout) : base(timeout) { }
+            public override bool Ack(AckStatus status, ReadOnlySequence<byte>? payload = null)
             {
-                return _tcs.TrySetException(new TimeoutException($"Waiting for a {typeof(T).Name} response timed out."));
-            }
-            if (payload == null)
-            {
-                return _tcs.TrySetException(new InvalidDataException($"The expected payload is null."));
-            }
+                if (status == AckStatus.Timeout)
+                {
+                    return _tcs.TrySetException(new TimeoutException($"Waiting for a {typeof(T).Name} response timed out."));
+                }
+                if (payload == null)
+                {
+                    return _tcs.TrySetException(new InvalidDataException($"The expected payload is null."));
+                }
 
             try
             {

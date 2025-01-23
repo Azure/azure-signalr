@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -152,6 +153,14 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
     public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
     {
         return CreateMessageWriter(serviceMessage).WriteAckableMessageAsync(serviceMessage, cancellationToken);
+    }
+
+
+    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, CancellationToken token = default)
+    {
+        var targetEndpoints = _routerEndpoints.needRouter ? _router.GetEndpointsForGroup(groupName, _routerEndpoints.endpoints) : _routerEndpoints.endpoints;
+        var messageWriter = new MultiEndpointMessageWriter(targetEndpoints?.ToList(), _loggerFactory);
+        return messageWriter.ListConnectionsInGroupAsync(groupName, top, tracingId, token);
     }
 
     public Task StartGetServersPing()

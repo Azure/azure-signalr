@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -221,7 +222,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     public void HandleAck(AckMessage ackMessage)
     {
-        _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status);
+        _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status, ackMessage.Payload);
     }
 
     public virtual Task WriteAsync(ServiceMessage serviceMessage)
@@ -247,6 +248,60 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
         var status = await task;
         return AckHandler.HandleAckStatus(ackableMessage, status);
+    }
+
+    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
+    {
+        if (string.IsNullOrWhiteSpace(groupName))
+        {
+            throw new ArgumentException($"'{nameof(groupName)}' cannot be null or whitespace.", nameof(groupName));
+        }
+        if (top != null && top <= 0)
+        {
+            throw new ArgumentException($"'{nameof(top)}' must be greater than 0.", nameof(top));
+        }
+        var message = new GroupMemberQueryMessage() { GroupName = groupName, Top = top, TracingId = tracingId };
+        do
+        {
+            var response = await InvokeAsync<GroupMemberQueryResponse>(message, token);
+            foreach (var member in response.Members)
+            {
+                yield return member;
+            }
+            if (response.ContinuationToken == null)
+            {
+                yield break;
+            }
+            if (message.Top != null)
+            {
+                message.Top -= response.Members.Count;
+            }
+            message.ContinuationToken = response.ContinuationToken;
+        } while (true);
+    }
+
+    /// <summary>
+    /// <see cref="WriteAckableMessageAsync(ServiceMessage, CancellationToken)"/> only checks <see cref="AckMessage.Status"/> as the response, 
+    /// while this method checks <see cref="AckMessage.Payload"/> and deserialize it to <typeparamref name="T"/>.
+    /// </summary>
+    /// Made "interval virtual" for testing
+    internal virtual async Task<T> InvokeAsync<T>(ServiceMessage serviceMessage, CancellationToken cancellationToken = default) where T : notnull, new()
+    {
+        if (serviceMessage is not IAckableMessage ackableMessage)
+        {
+            throw new ArgumentException($"{nameof(serviceMessage)} is not {nameof(IAckableMessage)}");
+        }
+
+        var task = _ackHandler.CreateSingleAck<T>(out var id, null, cancellationToken);
+        ackableMessage.AckId = id;
+
+        // Sending regular messages completes as soon as the data leaves the outbound pipe,
+        // whereas ackable ones complete upon full roundtrip of the message and the ack (or timeout).
+        // Therefore sending them over different connections creates a possibility for processing them out of original order.
+        // By sending both message types over the same connection we ensure that they are sent (and processed) in their original order.
+        await WriteMessageAsync(serviceMessage);
+
+        return await task;
     }
 
     public virtual Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
