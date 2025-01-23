@@ -73,7 +73,6 @@ namespace Microsoft.Azure.SignalR.Management
 #if NET6_0_OR_GREATER
             ArgumentNullException.ThrowIfNull(configure);
 #else
-
             if (configure is null)
             {
                 throw new ArgumentNullException(nameof(configure));
@@ -104,7 +103,6 @@ namespace Microsoft.Azure.SignalR.Management
 #if NET6_0_OR_GREATER
             ArgumentNullException.ThrowIfNull(hubProtocols);
 #else
-
             if (hubProtocols == null)
             {
                 throw new ArgumentNullException(nameof(hubProtocols));
@@ -129,7 +127,6 @@ namespace Microsoft.Azure.SignalR.Management
 #if NET6_0_OR_GREATER
             ArgumentNullException.ThrowIfNull(hubProtocol);
 #else
-
             if (hubProtocol == null)
             {
                 throw new ArgumentNullException(nameof(hubProtocol));

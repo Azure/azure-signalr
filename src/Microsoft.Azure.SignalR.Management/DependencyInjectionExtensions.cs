@@ -140,7 +140,6 @@ namespace Microsoft.Azure.SignalR.Management
 #if NET6_0_OR_GREATER
             ArgumentNullException.ThrowIfNull(userAgent);
 #else
-
             if (userAgent is null)
             {
                 throw new ArgumentNullException(nameof(userAgent));

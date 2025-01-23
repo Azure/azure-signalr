@@ -68,9 +68,8 @@ namespace Microsoft.Azure.SignalR.Management
         public override ServiceHubContext WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
 #if NET6_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(endpoints);
+            ArgumentNullException.ThrowIfNull(endpoints);
 #else
-
             if (endpoints is null)
             {
                 throw new ArgumentNullException(nameof(endpoints));

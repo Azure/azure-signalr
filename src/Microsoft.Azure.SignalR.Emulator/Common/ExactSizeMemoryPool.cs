@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR.Common
         public override IMemoryOwner<byte> Rent(int size)
         {
 #if NET8_0_OR_GREATER
-            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(0, size);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(size, 0);
 #else
             if (size <= 0)
             {

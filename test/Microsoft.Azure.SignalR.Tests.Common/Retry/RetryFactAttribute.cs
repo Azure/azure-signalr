@@ -52,8 +52,8 @@ public class RetryFactAttribute : FactAttribute
                               params Type[] skipOnExceptions) : this(skipOnExceptions)
     {
 #if NET8_0_OR_GREATER
-        ArgumentOutOfRangeException.ThrowIfLessThan(1, maxRetries);
-        ArgumentOutOfRangeException.ThrowIfLessThan(0, delayBetweenRetriesMs);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxRetries, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(delayBetweenRetriesMs, 0);
 #else
 
         if (maxRetries < 1)
