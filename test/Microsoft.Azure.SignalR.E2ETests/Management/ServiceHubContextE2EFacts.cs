@@ -1080,7 +1080,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
-    private class TestLoggerFactory : ILoggerFactory
+    private sealed class TestLoggerFactory : ILoggerFactory
     {
         public TestLogger Logger { get; } = new TestLogger();
         public void AddProvider(ILoggerProvider provider)
@@ -1096,7 +1096,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         {
         }
 
-        public class TestLogger : ILogger
+        public sealed class TestLogger : ILogger
         {
             public List<EventId> EventIds = new List<EventId>();
 

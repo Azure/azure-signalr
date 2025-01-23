@@ -89,12 +89,12 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         protected static int GetGroupSize(int ind) => (from entry in ConnectionGroupMap where GetGroupName(ind) == entry.Value select entry).Count();
 
-        private void Shuffle<T>(T[] array)
+        private static void Shuffle<T>(T[] array)
         {
             for (var i = array.Length - 1; i > 0; i--)
             {
-                int k = StaticRandom.Next(i + 1);
-                T value = array[k];
+                var k = StaticRandom.Next(i + 1);
+                var value = array[k];
                 array[k] = array[i];
                 array[i] = value;
             }

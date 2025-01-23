@@ -513,7 +513,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         return connection;
     }
 
-    private bool IsActiveConnection(IServiceConnection connection)
+    private static bool IsActiveConnection(IServiceConnection connection)
     {
         return connection != null && connection.Status == ServiceConnectionStatus.Connected;
     }

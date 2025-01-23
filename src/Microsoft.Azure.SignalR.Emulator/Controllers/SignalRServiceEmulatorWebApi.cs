@@ -514,7 +514,7 @@ internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
         return Ok();
     }
 
-    private Task SendAsync(IClientProxy client, string method, object[] arguments, CancellationToken cancellationToken = default)
+    private static Task SendAsync(IClientProxy client, string method, object[] arguments, CancellationToken cancellationToken = default)
     {
         var argsLen = arguments?.Length ?? 0;
 
@@ -650,7 +650,7 @@ internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
         return _hubs.GetOrAdd((hub, application), application.ToLower() + "_" + hub.ToLower());
     }
 
-    private ValueTask SendCloseAsync(HubConnectionContext connection, string message)
+    private static ValueTask SendCloseAsync(HubConnectionContext connection, string message)
     {
         return connection.WriteAsync(new CloseMessage(message, true));
     }

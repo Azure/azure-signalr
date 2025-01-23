@@ -156,32 +156,32 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             return task;
         }
 
-        private bool GetAllowReconnect(HubConnectionContext connection)
+        private static bool GetAllowReconnect(HubConnectionContext connection)
         {
             return (bool)_hubConnectionContext_AllowReconnect.GetValue(connection);
         }
 
-        private Task InvokeAbortAsync(HubConnectionContext connection)
+        private static Task InvokeAbortAsync(HubConnectionContext connection)
         {
             return (Task)_hubConnectionContext_AbortAsync.Invoke(connection, Array.Empty<object>());
         }
 
-        private PipeReader GetInput(HubConnectionContext connection)
+        private static PipeReader GetInput(HubConnectionContext connection)
         {
             return (PipeReader)_hubConnectionContext_Input.GetValue(connection);
         }
 
-        private void InvokeStopClientTimeout(HubConnectionContext connection)
+        private static void InvokeStopClientTimeout(HubConnectionContext connection)
         {
             _hubConnectionContext_StopClientTimeout.Invoke(connection, Array.Empty<object>());
         }
 
-        private void InvokeBeginClientTimeout(HubConnectionContext connection)
+        private static void InvokeBeginClientTimeout(HubConnectionContext connection)
         {
             _hubConnectionContext_BeginClientTimeout.Invoke(connection, Array.Empty<object>());
         }
 
-        private void InvokeCleanup(HubConnectionContext connection)
+        private static void InvokeCleanup(HubConnectionContext connection)
         {
             _hubConnectionContext_Cleanup.Invoke(connection, Array.Empty<object>());
         }

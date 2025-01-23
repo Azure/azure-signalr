@@ -72,7 +72,7 @@ internal class ConnectionFactory : IConnectionFactory
         return ((WebSocketConnectionContext)connection).StopAsync();
     }
 
-    private Uri GetServiceUrl(IServiceEndpointProvider provider, string hubName, string connectionId, string target)
+    private static Uri GetServiceUrl(IServiceEndpointProvider provider, string hubName, string connectionId, string target)
     {
         var baseUri = new UriBuilder(provider.GetServerEndpoint(hubName));
         var query = "cid=" + connectionId;
@@ -82,7 +82,12 @@ internal class ConnectionFactory : IConnectionFactory
         }
         if (baseUri.Query != null && baseUri.Query.Length > 1)
         {
+#if NET6_0_OR_GREATER
+            baseUri.Query = string.Concat(baseUri.Query.AsSpan(1), "&", query);
+#else
+
             baseUri.Query = baseUri.Query.Substring(1) + "&" + query;
+#endif
         }
         else
         {

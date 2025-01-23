@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    internal class TestClientSet : ITestClientSet
+    internal sealed class TestClientSet : ITestClientSet
     {
         private readonly IList<HubConnection> _connections;
 

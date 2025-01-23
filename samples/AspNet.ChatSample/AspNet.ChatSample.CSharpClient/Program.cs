@@ -10,7 +10,7 @@ using Microsoft.Azure.SignalR;
 
 namespace AspNet.ChatSample.CSharpClient;
 
-class Program
+sealed class Program
 {
     private static readonly Func<Task> ReconnectDelayTask = () => DelayRandom(200, 1000);
     private static readonly SemaphoreSlim ReconnectLock = new SemaphoreSlim(1);

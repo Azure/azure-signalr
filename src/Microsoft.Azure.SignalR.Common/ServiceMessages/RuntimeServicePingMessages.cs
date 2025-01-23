@@ -147,7 +147,12 @@ internal static class RuntimeServicePingMessage
         if (TryGetValue(ping, ServersKey, out var value) && !string.IsNullOrEmpty(value))
         {
             var indexPos = value.IndexOf(":");
+#if NET6_0_OR_GREATER
+            if (long.TryParse(value.AsSpan(0, indexPos), out updatedTime))
+#else
+
             if (long.TryParse(value.Substring(0, indexPos), out updatedTime))
+#endif
             {
                 serversTag = value.Substring(indexPos + 1);
                 return true;

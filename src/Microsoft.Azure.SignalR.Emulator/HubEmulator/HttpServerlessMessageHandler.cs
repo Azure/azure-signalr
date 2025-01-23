@@ -157,7 +157,7 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             }
         }
 
-        private IMemoryOwner<byte> BuildCloseConnectionPayload(string error)
+        private static IMemoryOwner<byte> BuildCloseConnectionPayload(string error)
         {
             var writer = MemoryBufferWriter.Get();
             try

@@ -435,7 +435,7 @@ public class DependencyInjectionExtensionFacts
         await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://abc"));
     }
 
-    private class WaitInfinitelyHandler : DelegatingHandler
+    private sealed class WaitInfinitelyHandler : DelegatingHandler
     {
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {

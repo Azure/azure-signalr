@@ -81,7 +81,7 @@ internal class UpstreamTemplateItem : IEquatable<UpstreamTemplateItem>
         return $"{UrlTemplate}(event:'{EventPattern}',hub:'{HubPattern}',category:'{CategoryPattern}')";
     }
 
-    private void SetPattern(string pattern, ref string field, ref HashSet<string> store)
+    private static void SetPattern(string pattern, ref string field, ref HashSet<string> store)
     {
         if (field != pattern)
         {

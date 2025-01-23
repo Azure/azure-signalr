@@ -311,8 +311,6 @@ namespace Microsoft.Azure.SignalR.Management
             return exists;
         }
 
-        public Task DisposeAsync() => Task.CompletedTask;
-
         private static bool FilterExpectedResponse(HttpResponseMessage response, string expectedErrorCode) =>
             response.IsSuccessStatusCode
             || (response.StatusCode == HttpStatusCode.NotFound && response.Headers.TryGetValues(Headers.MicrosoftErrorCode, out var errorCodes) && errorCodes.First().Equals(expectedErrorCode, StringComparison.OrdinalIgnoreCase));

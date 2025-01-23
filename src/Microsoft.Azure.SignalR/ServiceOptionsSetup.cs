@@ -61,12 +61,12 @@ namespace Microsoft.Azure.SignalR
             return _configuration.GetReloadToken();
         }
 
-        private TimeSpan GetConfiguredTimeSpanFromSeconds(int? seconds, TimeSpan defaultValue)
+        private static TimeSpan GetConfiguredTimeSpanFromSeconds(int? seconds, TimeSpan defaultValue)
         {
             return seconds == null ? defaultValue : TimeSpan.FromSeconds(seconds.Value);
         }
 
-        private T GetConfiguredEnum<T>(string value, T defaultValue) where T : struct
+        private static T GetConfiguredEnum<T>(string value, T defaultValue) where T : struct
         {
             if (Enum.TryParse<T>(value, true, out var result))
             {

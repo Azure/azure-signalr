@@ -428,7 +428,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     public abstract Task CloseClientConnections(CancellationToken token);
 
-    private async Task PauseClientConnectionAsync(IClientConnection clientConnection)
+    private static async Task PauseClientConnectionAsync(IClientConnection clientConnection)
     {
         await clientConnection.PauseAsync();
         await clientConnection.PauseAckAsync();

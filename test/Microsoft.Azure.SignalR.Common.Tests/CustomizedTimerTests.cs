@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -157,9 +157,9 @@ public class CustomizedTimerTests(ITestOutputHelper output) : VerifiableLoggedTe
             },
             BaseTs, BaseTs);
 
-    private class CustomizedPingTimerFactory : ServiceConnectionContainerBase
+    private sealed class CustomizedPingTimerFactory : ServiceConnectionContainerBase
     {
-        private CustomizedPingTimerFactory(IServiceConnectionFactory serviceConnectionFactory, int minConnectionCount, HubServiceEndpoint endpoint, IReadOnlyList<IServiceConnection> initialConnections = null, ILogger logger = null, AckHandler ackHandler = null) : base(serviceConnectionFactory, minConnectionCount, endpoint, initialConnections, logger, ackHandler)
+        public CustomizedPingTimerFactory(IServiceConnectionFactory serviceConnectionFactory, int minConnectionCount, HubServiceEndpoint endpoint, IReadOnlyList<IServiceConnection> initialConnections = null, ILogger logger = null, AckHandler ackHandler = null) : base(serviceConnectionFactory, minConnectionCount, endpoint, initialConnections, logger, ackHandler)
         {
         }
 
