@@ -30,42 +30,42 @@ public class ServiceManagerFacts
 
     private const string UserId = "UserA";
 
-    private const string _testConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0;";
+    private const string TestConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0;";
 
-    private static readonly TimeSpan _tokenLifeTime = TimeSpan.FromSeconds(99);
+    private static readonly TimeSpan TokenLifeTime = TimeSpan.FromSeconds(99);
 
-    private static readonly Claim[] _defaultClaims = [new("type1", "val1")];
+    private static readonly Claim[] DefaultClaims = [new("type1", "val1")];
 
-    private static readonly ServiceTransportType[] _serviceTransportTypes = [ServiceTransportType.Transient, ServiceTransportType.Persistent];
+    private static readonly ServiceTransportType[] ServiceTransportTypes = [ServiceTransportType.Transient, ServiceTransportType.Persistent];
 
-    private static readonly bool[] _useLoggerFatories = [false, true];
+    private static readonly bool[] UseLoggerFatories = [false, true];
 
-    private static readonly string[] _appNames = ["appName", "", null];
+    private static readonly string[] AppNames = ["appName", "", null];
 
-    private static readonly string[] _userIds = [UserId, null];
+    private static readonly string[] UserIds = [UserId, null];
 
-    private static readonly IEnumerable<Claim[]> _claimLists = [_defaultClaims, null];
+    private static readonly IEnumerable<Claim[]> ClaimLists = [DefaultClaims, null];
 
-    private static readonly int[] _connectionCounts = [1, 2];
+    private static readonly int[] ConnectionCounts = [1, 2];
 
-    public static IEnumerable<object[]> TestServiceManagerOptionData => from transport in _serviceTransportTypes
-                                                                        from useLoggerFactory in _useLoggerFatories
-                                                                        from appName in _appNames
-                                                                        from connectionCount in _connectionCounts
+    public static IEnumerable<object[]> TestServiceManagerOptionData => from transport in ServiceTransportTypes
+                                                                        from useLoggerFactory in UseLoggerFatories
+                                                                        from appName in AppNames
+                                                                        from connectionCount in ConnectionCounts
                                                                         select new object[] { transport, useLoggerFactory, appName, connectionCount };
 
-    public static IEnumerable<object[]> TestGenerateClientEndpointData => from appName in _appNames
+    public static IEnumerable<object[]> TestGenerateClientEndpointData => from appName in AppNames
                                                                           select new object[] { appName, ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName) };
 
-    public static IEnumerable<object[]> TestGenerateAccessTokenData => from userId in _userIds
-                                                                       from claims in _claimLists
-                                                                       from appName in _appNames
+    public static IEnumerable<object[]> TestGenerateAccessTokenData => from userId in UserIds
+                                                                       from claims in ClaimLists
+                                                                       from appName in AppNames
                                                                        select new object[] { userId, claims, appName };
 
     [Fact]
     public void DisposeTest()
     {
-        var serviceManager = new ServiceManagerBuilder().WithOptions(o => o.ConnectionString = _testConnectionString).Build();
+        var serviceManager = new ServiceManagerBuilder().WithOptions(o => o.ConnectionString = TestConnectionString).Build();
         serviceManager.Dispose();
     }
 
@@ -79,7 +79,7 @@ public class ServiceManagerFacts
     public async Task TestCreateServiceHubContext()
     {
         using var serviceHubContext = await new ServiceManagerBuilder()
-            .WithOptions(o => o.ConnectionString = _testConnectionString)
+            .WithOptions(o => o.ConnectionString = TestConnectionString)
             // avoid waiting for health check result for long time
             .ConfigureServices(ConfigureTestHttpClient(HttpStatusCode.OK))
             .BuildServiceManager()
@@ -93,7 +93,7 @@ public class ServiceManagerFacts
         using var serviceHubContext = await new ServiceManagerBuilder()
             .WithOptions(o =>
             {
-                o.ConnectionString = _testConnectionString;
+                o.ConnectionString = TestConnectionString;
                 o.ConnectionCount = 5;
             })
             // avoid waiting for health check result for long time
@@ -111,10 +111,10 @@ public class ServiceManagerFacts
             .WithOptions(o =>
             {
                 o.ApplicationName = appName;
-                o.ConnectionString = _testConnectionString;
+                o.ConnectionString = TestConnectionString;
             });
         var manager = builder.Build();
-        var tokenString = manager.GenerateClientAccessToken(HubName, userId, claims, _tokenLifeTime);
+        var tokenString = manager.GenerateClientAccessToken(HubName, userId, claims, TokenLifeTime);
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
         var expectedToken = JwtTokenHelper.GenerateExpectedAccessToken(token, ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName), AccessKey, claims);
@@ -130,7 +130,7 @@ public class ServiceManagerFacts
             .WithOptions(o =>
             {
                 o.ApplicationName = appName;
-                o.ConnectionString = _testConnectionString;
+                o.ConnectionString = TestConnectionString;
             });
         var manager = builder.Build();
         var clientEndpoint = manager.GetClientEndpoint(HubName);
@@ -157,7 +157,7 @@ public class ServiceManagerFacts
                 o.ServiceTransportType = serviceTransportType;
                 o.ApplicationName = appName;
                 o.ConnectionCount = connectionCount;
-                o.ConnectionString = _testConnectionString;
+                o.ConnectionString = TestConnectionString;
             });
         var serviceManager = builder.Build();
 
@@ -170,7 +170,7 @@ public class ServiceManagerFacts
     {
         var services = new ServiceCollection()
             .AddSignalRServiceManager()
-            .Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
+            .Configure<ServiceManagerOptions>(o => o.ConnectionString = TestConnectionString);
         ConfigureTestHttpClient(HttpStatusCode.OK)(services);
         var serviceManager = services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>)
             .BuildServiceProvider()
@@ -188,7 +188,7 @@ public class ServiceManagerFacts
     internal async Task IsServiceHealthy_ReturnFalse_Test(HttpStatusCode statusCode)
     {
         var services = new ServiceCollection();
-        services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
+        services.Configure<ServiceManagerOptions>(o => o.ConnectionString = TestConnectionString);
         services.AddSignalRServiceManager();
         ConfigureTestHttpClient(statusCode)(services);
         services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
@@ -208,7 +208,7 @@ public class ServiceManagerFacts
     {
         var services = new ServiceCollection();
         services.AddSignalRServiceManager();
-        services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
+        services.Configure<ServiceManagerOptions>(o => o.ConnectionString = TestConnectionString);
         ConfigureTestHttpClient(statusCode)(services);
         services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
         using var serviceManager = services.BuildServiceProvider().GetRequiredService<IServiceManager>();

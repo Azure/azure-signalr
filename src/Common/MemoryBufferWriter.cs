@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR
     internal sealed class MemoryBufferWriter : Stream, IBufferWriter<byte>
     {
         [ThreadStatic]
-        private static MemoryBufferWriter? _cachedInstance;
+        private static MemoryBufferWriter? CachedInstance;
 
 #if DEBUG
         private bool _inUse;
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR
 
         public static MemoryBufferWriter Get()
         {
-            var writer = _cachedInstance;
+            var writer = CachedInstance;
             if (writer == null)
             {
                 writer = new MemoryBufferWriter();
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 // Taken off the thread static
-                _cachedInstance = null;
+                CachedInstance = null;
             }
 #if DEBUG
             if (writer._inUse)
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR
 
         public static void Return(MemoryBufferWriter writer)
         {
-            _cachedInstance = writer;
+            CachedInstance = writer;
 #if DEBUG
             writer._inUse = false;
 #endif

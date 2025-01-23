@@ -12,13 +12,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests;
 
 public class RestApiProviderFacts
 {
-    private const string _endpoint = "https://abc";
+    private const string Endpoint = "https://abc";
 
-    private const string _accessKey = "fake_key";
+    private const string AccessKey = "fake_key";
 
-    private const string _connectionString = $"Endpoint={_endpoint};AccessKey={_accessKey};Version=1.0;";
+    private const string ConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0;";
 
-    private static readonly RestApiProvider _restApiProvider = new RestApiProvider(new ServiceEndpoint(_connectionString));
+    private static readonly RestApiProvider RestApiProvider = new RestApiProvider(new ServiceEndpoint(ConnectionString));
 
     public static IEnumerable<object[]> GetTestData() =>
         from context in GetContext()
@@ -31,7 +31,7 @@ public class RestApiProviderFacts
     {
         var api = await task;
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(api.Token);
-        var expectedTokenString = JwtTokenHelper.GenerateExpectedAccessToken(token, expectedAudience, _accessKey);
+        var expectedTokenString = JwtTokenHelper.GenerateExpectedAccessToken(token, expectedAudience, AccessKey);
 
         Assert.Equal(expectedAudience, api.Audience);
         Assert.Equal(expectedTokenString, api.Token);
@@ -46,13 +46,13 @@ public class RestApiProviderFacts
 
     private static IEnumerable<object[]> GetTestDataByContext((string appName, string hubName, string userId, string groupName, string connectionId) context)
     {
-        var commonEndpoint = $"{_endpoint}/api/hubs/{Uri.EscapeDataString(context.hubName.ToLowerInvariant())}";
+        var commonEndpoint = $"{Endpoint}/api/hubs/{Uri.EscapeDataString(context.hubName.ToLowerInvariant())}";
         var commonQueryString = $"application={Uri.EscapeDataString(context.appName.ToLowerInvariant())}&api-version=2022-06-01";
-        yield return new object[] { _restApiProvider.GetBroadcastEndpointAsync(context.appName, context.hubName), $"{commonEndpoint}/:send?{commonQueryString}" };
-        yield return new object[] { _restApiProvider.GetSendToUserEndpointAsync(context.appName, context.hubName, context.userId), $"{commonEndpoint}/users/{Uri.EscapeDataString(context.userId)}/:send?{commonQueryString}" };
-        yield return new object[] { _restApiProvider.GetSendToGroupEndpointAsync(context.appName, context.hubName, context.groupName), $"{commonEndpoint}/groups/{Uri.EscapeDataString(context.groupName)}/:send?{commonQueryString}" };
-        yield return new object[] { _restApiProvider.GetUserGroupManagementEndpointAsync(context.appName, context.hubName, context.userId, context.groupName), $"{commonEndpoint}/users/{Uri.EscapeDataString(context.userId)}/groups/{Uri.EscapeDataString(context.groupName)}?{commonQueryString}" };
-        yield return new object[] { _restApiProvider.GetSendToConnectionEndpointAsync(context.appName, context.hubName, context.connectionId), $"{commonEndpoint}/connections/{Uri.EscapeDataString(context.connectionId)}/:send?{commonQueryString}" };
-        yield return new object[] { _restApiProvider.GetConnectionGroupManagementEndpointAsync(context.appName, context.hubName, context.connectionId, context.groupName), $"{commonEndpoint}/groups/{Uri.EscapeDataString(context.groupName)}/connections/{Uri.EscapeDataString(context.connectionId)}?{commonQueryString}" };
+        yield return new object[] { RestApiProvider.GetBroadcastEndpointAsync(context.appName, context.hubName), $"{commonEndpoint}/:send?{commonQueryString}" };
+        yield return new object[] { RestApiProvider.GetSendToUserEndpointAsync(context.appName, context.hubName, context.userId), $"{commonEndpoint}/users/{Uri.EscapeDataString(context.userId)}/:send?{commonQueryString}" };
+        yield return new object[] { RestApiProvider.GetSendToGroupEndpointAsync(context.appName, context.hubName, context.groupName), $"{commonEndpoint}/groups/{Uri.EscapeDataString(context.groupName)}/:send?{commonQueryString}" };
+        yield return new object[] { RestApiProvider.GetUserGroupManagementEndpointAsync(context.appName, context.hubName, context.userId, context.groupName), $"{commonEndpoint}/users/{Uri.EscapeDataString(context.userId)}/groups/{Uri.EscapeDataString(context.groupName)}?{commonQueryString}" };
+        yield return new object[] { RestApiProvider.GetSendToConnectionEndpointAsync(context.appName, context.hubName, context.connectionId), $"{commonEndpoint}/connections/{Uri.EscapeDataString(context.connectionId)}/:send?{commonQueryString}" };
+        yield return new object[] { RestApiProvider.GetConnectionGroupManagementEndpointAsync(context.appName, context.hubName, context.connectionId, context.groupName), $"{commonEndpoint}/groups/{Uri.EscapeDataString(context.groupName)}/connections/{Uri.EscapeDataString(context.connectionId)}?{commonQueryString}" };
     }
 }
