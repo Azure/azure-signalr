@@ -75,10 +75,14 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         ILoggerFactory loggerFactory,
         TimeSpan? scaleTimeout = null)
     {
+#if NET6_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(generator);
+#else
         if (generator == null)
         {
             throw new ArgumentNullException(nameof(generator));
         }
+#endif
 
         _hubName = hub;
         _router = router ?? throw new ArgumentNullException(nameof(router));
@@ -435,20 +439,6 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
             await Task.Delay(Constants.Periods.DefaultCloseDelayInterval);
         }
         Log.TimeoutWaitingClientsDisconnect(_logger, endpoint.ToString(), (int)_scaleTimeout.TotalSeconds);
-    }
-
-    private IEnumerable<ServiceEndpoint> SingleOrNotSupported(IEnumerable<ServiceEndpoint> endpoints, ServiceMessage message)
-    {
-        var endpointCnt = endpoints.ToList().Count;
-        if (endpointCnt == 1)
-        {
-            return endpoints;
-        }
-        if (endpointCnt == 0)
-        {
-            throw new ArgumentException("Client invocation is not sent because no endpoint is returned from the endpoint router.");
-        }
-        throw new NotSupportedException("Client invocation to wait for multiple endpoints' results is not supported yet.");
     }
 
     internal static class Log

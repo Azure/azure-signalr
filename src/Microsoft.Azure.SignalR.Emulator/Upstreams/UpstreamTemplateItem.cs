@@ -47,10 +47,7 @@ internal class UpstreamTemplateItem : IEquatable<UpstreamTemplateItem>
 
     public bool IsMatch(InvokeUpstreamParameters parameters)
     {
-        if (parameters == null)
-        {
-            throw new ArgumentNullException(nameof(parameters));
-        }
+        ArgumentNullException.ThrowIfNull(parameters);
 
         return IsMatch(parameters.Hub, _validHubs)
                && IsMatch(parameters.Event, _validEvents)

@@ -352,10 +352,14 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     protected virtual async Task OnConnectionComplete(IServiceConnection serviceConnection)
     {
+#if NET6_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(serviceConnection);
+#else
         if (serviceConnection == null)
         {
             throw new ArgumentNullException(nameof(serviceConnection));
         }
+#endif
 
         serviceConnection.ConnectionStatusChanged -= OnConnectionStatusChanged;
 
