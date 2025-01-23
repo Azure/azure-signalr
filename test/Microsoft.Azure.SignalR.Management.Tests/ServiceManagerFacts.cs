@@ -30,7 +30,7 @@ public class ServiceManagerFacts
 
     private const string UserId = "UserA";
 
-    private static readonly string _testConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0;";
+    private const string _testConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0;";
 
     private static readonly TimeSpan _tokenLifeTime = TimeSpan.FromSeconds(99);
 

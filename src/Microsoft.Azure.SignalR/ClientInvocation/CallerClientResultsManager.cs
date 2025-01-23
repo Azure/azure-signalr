@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly ConcurrentDictionary<string, PendingInvocation> _pendingInvocations = new();
         private readonly string _clientResultManagerId = Guid.NewGuid().ToString("N");
-        private long _lastInvocationId = 0;
+        private long _lastInvocationId;
 
         private readonly IHubProtocolResolver _hubProtocolResolver;
         private IEndpointRouter _endpointRouter { get; }

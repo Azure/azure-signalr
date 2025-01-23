@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Management;
 
 internal class TimeoutHttpMessageHandler : DelegatingHandler
 {
-    private readonly bool _enableTimeout = false;
+    private readonly bool _enableTimeout;
     private readonly TimeSpan _timeout;
     public TimeoutHttpMessageHandler(IOptions<ServiceManagerOptions> serviceManagerOptions)
     {

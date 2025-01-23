@@ -25,8 +25,6 @@ public class MicrosoftEntraAccessKeyTests
 {
     private const string DefaultSigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-    private const string DefaultToken = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
     private const string DefaultAudience = "https://localhost";
 
     private static readonly Uri DefaultEndpoint = new("http://localhost");

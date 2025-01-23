@@ -50,26 +50,26 @@ internal static class ConnectionStringParser
 
     private const string VersionProperty = "version";
 
-    private static readonly string InvalidEndpointProperty = $"Invalid value for {EndpointProperty} property, it must be a valid URI.";
+    private const string InvalidEndpointProperty = $"Invalid value for {EndpointProperty} property, it must be a valid URI.";
 
-    private static readonly string InvalidClientEndpointProperty = $"Invalid value for {ClientEndpointProperty} property, it must be a valid URI.";
+    private const string InvalidClientEndpointProperty = $"Invalid value for {ClientEndpointProperty} property, it must be a valid URI.";
 
-    private static readonly string InvalidServerEndpointProperty = $"Invalid value for {ServerEndpointProperty} property, it must be a valid URI.";
+    private const string InvalidServerEndpointProperty = $"Invalid value for {ServerEndpointProperty} property, it must be a valid URI.";
 
-    private static readonly string InvalidPortValue = $"Invalid value for {PortProperty} property, it must be an positive integer between (0, 65536).";
+    private const string InvalidPortValue = $"Invalid value for {PortProperty} property, it must be an positive integer between (0, 65536).";
 
     private static readonly char[] KeyValueSeparator = { '=' };
 
-    private static readonly string MissingClientIdProperty =
+    private const string MissingClientIdProperty =
         $"Connection string missing required properties {ClientIdProperty}.";
 
-    private static readonly string MissingClientSecretProperty =
+    private const string MissingClientSecretProperty =
         $"Connection string missing required properties {ClientSecretProperty} or {ClientCertProperty}.";
 
-    private static readonly string MissingEndpointProperty =
+    private const string MissingEndpointProperty =
         $"Connection string missing required properties {EndpointProperty}.";
 
-    private static readonly string MissingTenantIdProperty =
+    private const string MissingTenantIdProperty =
         $"Connection string missing required properties {TenantIdProperty}.";
 
     private static readonly char[] PropertySeparator = { ';' };

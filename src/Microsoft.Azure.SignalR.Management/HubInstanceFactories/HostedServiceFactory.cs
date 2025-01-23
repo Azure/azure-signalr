@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ServiceManagerOptions _options;
-        private bool _used = false;
+        private bool _used;
 
         public HostedServiceFactory(IServiceProvider serviceProvider, IOptions<ServiceManagerOptions> options)
         {

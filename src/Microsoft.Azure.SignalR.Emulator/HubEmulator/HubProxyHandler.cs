@@ -46,8 +46,6 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 
         private readonly string _hubName = typeof(THub).Name;
 
-        private readonly List<string> _defaultProtocols = new List<string>();
-
         public HubProxyHandler(
             IOptionsMonitor<UpstreamOptions> upstreamSettings,
             HubLifetimeManager<THub> lifetimeManager,

@@ -19,8 +19,6 @@ public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest
 
     private static readonly TimeSpan DefaultBackOff = TimeSpan.FromSeconds(2);
 
-    private static readonly Func<int, TimeSpan> DefaultBackOffFunc = (i) => DefaultBackOff;
-
     private static readonly TimeSpan _1stBackOff = TimeSpan.FromSeconds(1.5);
 
     private static readonly TimeSpan _2ndBackOff = TimeSpan.FromSeconds(2.5);

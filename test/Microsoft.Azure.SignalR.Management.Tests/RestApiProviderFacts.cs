@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -16,7 +16,7 @@ public class RestApiProviderFacts
 
     private const string _accessKey = "fake_key";
 
-    private static readonly string _connectionString = $"Endpoint={_endpoint};AccessKey={_accessKey};Version=1.0;";
+    private const string _connectionString = $"Endpoint={_endpoint};AccessKey={_accessKey};Version=1.0;";
 
     private static readonly RestApiProvider _restApiProvider = new RestApiProvider(new ServiceEndpoint(_connectionString));
 

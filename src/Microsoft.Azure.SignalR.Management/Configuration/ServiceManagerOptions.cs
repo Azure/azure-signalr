@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Gets or sets a service endpoint of Azure SignalR Service instance by connection string.
         /// </summary>
-        public string? ConnectionString { get; set; } = null;
+        public string? ConnectionString { get; set; }
 
         /// <summary>
         /// Gets or sets multiple service endpoints of Azure SignalR Service instances.
@@ -72,10 +72,10 @@ namespace Microsoft.Azure.SignalR.Management
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether message tracing ID is append to messages.
+        /// Gets or sets a value indicating whether message tracing ID is append to messages. By default it is false.
         /// </summary>
         // not ready
-        internal bool EnableMessageTracing { get; set; } = false;
+        internal bool EnableMessageTracing { get; set; }
 
         internal string? ProductInfo { get; set; }
 

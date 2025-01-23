@@ -10,7 +10,7 @@ internal class PauseHandler
 {
     private readonly SemaphoreSlim _pauseSemaphore = new(1, 1);
 
-    private volatile int _paused = 0;
+    private volatile int _paused;
 
     private volatile int _pauseAcked = 1;
 

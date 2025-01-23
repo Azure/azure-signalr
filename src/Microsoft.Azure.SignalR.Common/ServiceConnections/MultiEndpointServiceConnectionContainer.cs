@@ -31,7 +31,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
 
     private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
 
-    private int _started = 0;
+    private int _started;
 
     public ServiceConnectionStatus Status => throw new NotSupportedException();
 

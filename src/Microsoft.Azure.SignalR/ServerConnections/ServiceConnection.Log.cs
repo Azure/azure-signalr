@@ -33,9 +33,6 @@ internal partial class ServiceConnection
         private static readonly Action<ILogger, Exception> _applicationTaskFailed =
             LoggerMessage.Define(LogLevel.Error, new EventId(8, "ApplicationTaskFailed"), "Application task failed.");
 
-        private static readonly Action<ILogger, ulong?, string, Exception> _failToWriteMessageToApplication =
-            LoggerMessage.Define<ulong?, string>(LogLevel.Error, new EventId(9, "FailToWriteMessageToApplication"), "Failed to write message {tracingId} to {TransportConnectionId}.");
-
         private static readonly Action<ILogger, ulong?, string, Exception> _receivedMessageForNonExistentConnection =
             LoggerMessage.Define<ulong?, string>(LogLevel.Warning, new EventId(10, "ReceivedMessageForNonExistentConnection"), "Received message {tracingId} for connection {TransportConnectionId} which does not exist.");
 
@@ -44,12 +41,6 @@ internal partial class ServiceConnection
 
         private static readonly Action<ILogger, string, Exception> _closeConnection =
             LoggerMessage.Define<string>(LogLevel.Debug, new EventId(13, "CloseConnection"), "Sending close connection message to the service for {TransportConnectionId}.");
-
-        private static readonly Action<ILogger, long, string, Exception> _writeMessageToApplication =
-            LoggerMessage.Define<long, string>(LogLevel.Trace, new EventId(19, "WriteMessageToApplication"), "Writing {ReceivedBytes} to connection {TransportConnectionId}.");
-
-        private static readonly Action<ILogger, string, Exception> _serviceConnectionConnected =
-            LoggerMessage.Define<string>(LogLevel.Debug, new EventId(20, "ServiceConnectionConnected"), "Service connection {ServiceConnectionId} connected.");
 
         private static readonly Action<ILogger, Exception> _applicationTaskCancelled =
             LoggerMessage.Define(LogLevel.Error, new EventId(21, "ApplicationTaskCancelled"), "Cancelled running application code, probably caused by time out.");
