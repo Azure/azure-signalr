@@ -16,7 +16,7 @@ internal class FixedBackOffPolicy : IBackOffPolicy
         var retryOptions = options.Value.RetryOptions ?? throw new ArgumentException("Retry options expected");
         if (retryOptions.Mode != ServiceManagerRetryMode.Fixed)
         {
-            throw new ArgumentException("Only Fiexed mode is supported");
+            throw new ArgumentException("Only Fixed mode is supported");
         }
         _maxRetries = retryOptions.MaxRetries;
         _delay = retryOptions.Delay;

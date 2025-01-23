@@ -68,7 +68,7 @@ public class ConnectionStringParserTests
     public void InvalidClientEndpoint(string connectionString)
     {
         var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-        Assert.Contains("Invalid value for clientEndpoint property, it must be a valid URI. (Parameter 'clientEndpoint')", exception.Message);
+        Assert.Contains("Invalid value for clientEndpoint property, it must be a valid URI. (Parameter 'connectionString')", exception.Message);
     }
 
     [Theory]
@@ -77,7 +77,7 @@ public class ConnectionStringParserTests
     public void InvalidServerEndpoint(string connectionString)
     {
         var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-        Assert.Contains("Invalid value for serverEndpoint property, it must be a valid URI. (Parameter 'serverEndpoint')", exception.Message);
+        Assert.Contains("Invalid value for serverEndpoint property, it must be a valid URI. (Parameter 'connectionString')", exception.Message);
     }
 
     [Theory]
@@ -97,7 +97,7 @@ public class ConnectionStringParserTests
     public void InvalidEndpoint(string connectionString)
     {
         var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-        Assert.Contains("Invalid value for endpoint property, it must be a valid URI. (Parameter 'endpoint')", exception.Message);
+        Assert.Contains("Invalid value for endpoint property, it must be a valid URI. (Parameter 'connectionString')", exception.Message);
     }
 
     [Theory]
@@ -107,7 +107,7 @@ public class ConnectionStringParserTests
     public void InvalidPort(string connectionString)
     {
         var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-        Assert.Contains("Invalid value for port property, it must be an positive integer between (0, 65536). (Parameter 'port')", exception.Message);
+        Assert.Contains("Invalid value for port property, it must be an positive integer between (0, 65536). (Parameter 'connectionString')", exception.Message);
     }
 
     [Theory]
