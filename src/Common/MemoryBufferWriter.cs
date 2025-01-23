@@ -138,10 +138,10 @@ namespace Microsoft.Azure.SignalR
             if (_completedSegments == null)
             {
                 // There is only one segment so write without awaiting.
-                return destination.WriteAsync(_currentSegment!, 0, _position);
+                return destination.WriteAsync(_currentSegment!, 0, _position, cancellationToken);
             }
 
-            return CopyToSlowAsync(destination);
+            return CopyToSlowAsync(destination, cancellationToken);
         }
 
         private void EnsureCapacity(int sizeHint)
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.SignalR
             _position = 0;
         }
 
-        private async Task CopyToSlowAsync(Stream destination)
+        private async Task CopyToSlowAsync(Stream destination, CancellationToken cancellationToken)
         {
             if (_completedSegments != null)
             {
@@ -191,11 +191,20 @@ namespace Microsoft.Azure.SignalR
                 for (var i = 0; i < count; i++)
                 {
                     var segment = _completedSegments[i];
-                    await destination.WriteAsync(segment.Buffer, 0, segment.Length);
+#if NET6_0_OR_GREATER
+                    await destination.WriteAsync(segment.Buffer.AsMemory(0, segment.Length), cancellationToken);
+#else
+
+                    await destination.WriteAsync(segment.Buffer, 0, segment.Length, cancellationToken);
+#endif
                 }
             }
+#if NET6_0_OR_GREATER
+            await destination.WriteAsync(_currentSegment!.AsMemory(0, _position), cancellationToken);
+#else
 
-            await destination.WriteAsync(_currentSegment!, 0, _position);
+            await destination.WriteAsync(_currentSegment!, 0, _position, cancellationToken);
+#endif
         }
 
         public byte[] ToArray()

@@ -44,19 +44,24 @@ namespace Microsoft.Azure.SignalR.Management
         {
             // check _disposed to avoid being dispose twice.
             // when _baseHubContext dispose, it will dispose all the disposable services including this class.
-            if (!_disposing)
-            {
-                _disposing = true;
-                using var host = ServiceProvider.GetRequiredService<IHost>();
-                await host.StopAsync();
-            }
+            await DisposeAsyncCore();
         }
 
         public override void Dispose()
         {
             if (!_disposing)
             {
-                DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                DisposeAsyncCore().GetAwaiter().GetResult();
+            }
+        }
+
+        private async Task DisposeAsyncCore()
+        {
+            if (!_disposing)
+            {
+                _disposing = true;
+                using var host = ServiceProvider.GetRequiredService<IHost>();
+                await host.StopAsync();
             }
         }
     }

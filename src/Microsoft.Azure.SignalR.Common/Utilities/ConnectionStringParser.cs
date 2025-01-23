@@ -81,13 +81,13 @@ internal static class ConnectionStringParser
         // parse and validate endpoint.
         if (!dict.TryGetValue(EndpointProperty, out var endpoint))
         {
-            throw new ArgumentException(MissingEndpointProperty, nameof(endpoint));
+            throw new ArgumentException(MissingEndpointProperty, nameof(connectionString));
         }
         endpoint = endpoint.TrimEnd('/');
 
         if (!TryCreateEndpointUri(endpoint, out var endpointUri))
         {
-            throw new ArgumentException(InvalidEndpointProperty, nameof(endpoint));
+            throw new ArgumentException(InvalidEndpointProperty, nameof(connectionString));
         }
         var builder = new UriBuilder(endpointUri!);
 
@@ -96,7 +96,7 @@ internal static class ConnectionStringParser
         {
             if (!Regex.IsMatch(version, ValidVersionRegex))
             {
-                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, InvalidVersionValueFormat, version), nameof(version));
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, InvalidVersionValueFormat, version), nameof(connectionString));
             }
         }
 
@@ -105,7 +105,7 @@ internal static class ConnectionStringParser
         {
             builder.Port = int.TryParse(s, out var port) && port > 0 && port <= 0xFFFF
                 ? port
-                : throw new ArgumentException(InvalidPortValue, nameof(port));
+                : throw new ArgumentException(InvalidPortValue, nameof(connectionString));
         }
 
         Uri? clientEndpointUri = null;
@@ -116,7 +116,7 @@ internal static class ConnectionStringParser
         {
             if (!TryCreateEndpointUri(clientEndpoint, out clientEndpointUri))
             {
-                throw new ArgumentException(InvalidClientEndpointProperty, nameof(clientEndpoint));
+                throw new ArgumentException(InvalidClientEndpointProperty, nameof(connectionString));
             }
         }
 
@@ -125,7 +125,7 @@ internal static class ConnectionStringParser
         {
             if (!TryCreateEndpointUri(serverEndpoint, out serverEndpointUri))
             {
-                throw new ArgumentException(InvalidServerEndpointProperty, nameof(serverEndpoint));
+                throw new ArgumentException(InvalidServerEndpointProperty, nameof(connectionString));
             }
         }
 
@@ -158,23 +158,23 @@ internal static class ConnectionStringParser
     }
 
     [Obsolete]
-    private static TokenCredential BuildAzureTokenCredential(Dictionary<string, string> dict)
+    private static TokenCredential BuildAzureTokenCredential(Dictionary<string, string> keyValuePairs)
     {
-        if (dict.TryGetValue(ClientIdProperty, out var clientId))
+        if (keyValuePairs.TryGetValue(ClientIdProperty, out var clientId))
         {
-            if (dict.TryGetValue(TenantIdProperty, out var tenantId))
+            if (keyValuePairs.TryGetValue(TenantIdProperty, out var tenantId))
             {
-                if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
+                if (keyValuePairs.TryGetValue(ClientSecretProperty, out var clientSecret))
                 {
                     return new ClientSecretCredential(tenantId, clientId, clientSecret);
                 }
-                else if (dict.TryGetValue(ClientCertProperty, out var clientCertPath))
+                else if (keyValuePairs.TryGetValue(ClientCertProperty, out var clientCertPath))
                 {
                     return new ClientCertificateCredential(tenantId, clientId, clientCertPath);
                 }
                 else
                 {
-                    throw new ArgumentException(MissingClientSecretProperty, ClientSecretProperty);
+                    throw new ArgumentException(MissingClientSecretProperty, nameof(keyValuePairs));
                 }
             }
             else
@@ -188,27 +188,27 @@ internal static class ConnectionStringParser
         }
     }
 
-    private static TokenCredential BuildApplicationCredential(Dictionary<string, string> dict)
+    private static TokenCredential BuildApplicationCredential(Dictionary<string, string> keyValuePairs)
     {
-        if (!dict.TryGetValue(ClientIdProperty, out var clientId))
+        if (!keyValuePairs.TryGetValue(ClientIdProperty, out var clientId))
         {
-            throw new ArgumentException(MissingClientIdProperty, ClientIdProperty);
+            throw new ArgumentException(MissingClientIdProperty, nameof(keyValuePairs));
         }
 
-        if (!dict.TryGetValue(TenantIdProperty, out var tenantId))
+        if (!keyValuePairs.TryGetValue(TenantIdProperty, out var tenantId))
         {
-            throw new ArgumentException(MissingTenantIdProperty, TenantIdProperty);
+            throw new ArgumentException(MissingTenantIdProperty, nameof(keyValuePairs));
         }
 
-        if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
+        if (keyValuePairs.TryGetValue(ClientSecretProperty, out var clientSecret))
         {
             return new ClientSecretCredential(tenantId, clientId, clientSecret);
         }
-        else if (dict.TryGetValue(ClientCertProperty, out var clientCertPath))
+        else if (keyValuePairs.TryGetValue(ClientCertProperty, out var clientCertPath))
         {
             return new ClientCertificateCredential(tenantId, clientId, clientCertPath);
         }
-        throw new ArgumentException(MissingClientSecretProperty, ClientSecretProperty);
+        throw new ArgumentException(MissingClientSecretProperty, nameof(keyValuePairs));
     }
 
     private static TokenCredential BuildManagedIdentityCredential(Dictionary<string, string> dict)

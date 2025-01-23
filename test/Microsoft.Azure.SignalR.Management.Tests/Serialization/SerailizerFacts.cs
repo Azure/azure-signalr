@@ -117,7 +117,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 {
                     services.AddHttpClient(Constants.HttpClientNames.MessageResilient).AddHttpMessageHandler(() => new TestRootHandler((message, cancellationToken) =>
                     {
-                        var actualBody = message.Content.ReadAsStringAsync().Result;
+                        var actualBody = message.Content.ReadAsStringAsync(cancellationToken).Result;
 
                         _logger.LogDebug($"Expected: {expectedHttpBody}");
                         _logger.LogDebug($"Actual: {actualBody}");

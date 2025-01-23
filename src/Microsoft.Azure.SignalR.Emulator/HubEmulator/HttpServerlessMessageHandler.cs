@@ -67,42 +67,42 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
                         if (contentLength == 0)
                         {
                             // same as no content.
-                            await connectionContext.WriteAsync(CompletionMessage.Empty(message.InvocationId));
+                            await connectionContext.WriteAsync(CompletionMessage.Empty(message.InvocationId), token);
                         }
                         else if (contentLength > MaxAllowedResponseLength)
                         {
                             // We don't support response large than 16M, fast fail.
-                            await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, response too large."));
+                            await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, response too large."), token);
                         }
                         else
                         {
                             var ls = new LimitedStream(MaxAllowedResponseLength);
                             try
                             {
-                                await response.Content.CopyToAsync(ls);
+                                await response.Content.CopyToAsync(ls, token);
                                 return new ReadOnlySequence<byte>(ls.ToMemory());
                             }
                             catch (InvalidDataException)
                             {
-                                await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, response too large."));
+                                await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, response too large."), token);
                             }
                             catch (OperationCanceledException)
                             {
-                                await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, response cancelled."));
+                                await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, response cancelled."), token);
                             }
                             catch (Exception ex)
                             {
-                                await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, error: {ex.Message}."));
+                                await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, error: {ex.Message}."), token);
                             }
                         }
                     }
                     else if (response.StatusCode == HttpStatusCode.NoContent)
                     {
-                        await connectionContext.WriteAsync(CompletionMessage.Empty(message.InvocationId));
+                        await connectionContext.WriteAsync(CompletionMessage.Empty(message.InvocationId), token);
                     }
                     else
                     {
-                        await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, status code {(int)response.StatusCode}"));
+                        await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, status code {(int)response.StatusCode}"), token);
                     }
                 }
             }

@@ -51,7 +51,7 @@ internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
             var clients = c.ClientManager;
             var arguments = SafeConvertToObjectArray(message);
 
-            await SendAsync(clients.AllExcept(excluded), message.Target, arguments);
+            await SendAsync(clients.AllExcept(excluded), message.Target, arguments).ConfigureAwait(false);
         }
 
         return Accepted();
@@ -76,7 +76,7 @@ internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
             var clients = c.ClientManager;
             var arguments = SafeConvertToObjectArray(message);
 
-            await SendAsync(clients.User(user), message.Target, arguments);
+            await SendAsync(clients.User(user), message.Target, arguments).ConfigureAwait(false);
         }
 
         return Accepted();
@@ -179,7 +179,7 @@ internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
             var connection = lifetime.Connections[connectionId];
             if (connection != null)
             {
-                await SendCloseAsync(connection, reason);
+                await SendCloseAsync(connection, reason).ConfigureAwait(false);
             }
         }
 
@@ -288,7 +288,7 @@ internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
             {
                 if (lease.Value.Count > 0)
                 {
-                    await SendAsync(clients.Clients(lease.Value.Except(excluded).ToArray()), message.Target, arguments);
+                    await SendAsync(clients.Clients(lease.Value.Except(excluded).ToArray()), message.Target, arguments).ConfigureAwait(false);
                 }
             }
         }
@@ -315,7 +315,7 @@ internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
             var clients = c.ClientManager;
             var arguments = SafeConvertToObjectArray(message);
 
-            await SendAsync(clients.Client(connectionId), message.Target, arguments);
+            await SendAsync(clients.Client(connectionId), message.Target, arguments).ConfigureAwait(false);
         }
 
         return Accepted();
@@ -434,7 +434,7 @@ internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
             {
                 if (cc != null)
                 {
-                    await SendCloseAsync(cc, reason);
+                    await SendCloseAsync(cc, reason).ConfigureAwait(false);
                 }
             }
         }
@@ -470,7 +470,7 @@ internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
 
                 if (connection != null)
                 {
-                    await SendCloseAsync(connection, reason);
+                    await SendCloseAsync(connection, reason).ConfigureAwait(false);
                 }
             }
         }
@@ -501,7 +501,7 @@ internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
             {
                 if (cc != null)
                 {
-                    await SendCloseAsync(cc, reason);
+                    await SendCloseAsync(cc, reason).ConfigureAwait(false);
                 }
             }
         }

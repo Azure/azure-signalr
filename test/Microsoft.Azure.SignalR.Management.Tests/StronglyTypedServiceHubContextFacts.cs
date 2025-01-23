@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             void assertion(HttpRequestMessage request, CancellationToken t)
             {
                 var payload = new PayloadMessage { Target = nameof(IChat.NewMessage), Arguments = new[] { messageContext } };
-                var actual = request.Content.ReadAsStringAsync().Result;
+                var actual = request.Content.ReadAsStringAsync(t).Result;
                 var expected = JsonConvert.SerializeObject(payload);
                 Assert.Equal(expected, actual);
             }

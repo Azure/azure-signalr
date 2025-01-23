@@ -122,7 +122,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
                 // batch remove 100 connections once
                 if (tasks.Count % 100 == 0)
                 {
-                    await Task.Delay(1);
+                    await Task.Delay(1, token);
                     await Task.WhenAll(tasks);
                     tasks.Clear();
                 }

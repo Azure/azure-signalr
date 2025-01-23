@@ -30,7 +30,7 @@ namespace ManagementPublisher
         {
             if (_hubContext == null)
             {
-                throw new ArgumentNullException(nameof(_hubContext));
+                throw new ArgumentException("Call InitAsync to create HubContext first.");
             }
             switch (command)
             {
@@ -52,7 +52,7 @@ namespace ManagementPublisher
         {
             if (_hubContext == null)
             {
-                throw new ArgumentNullException(nameof(_hubContext));
+                throw new ArgumentException("Call InitAsync to create HubContext first.");
             }
             return _hubContext.ClientManager.CloseConnectionAsync(connectionId, reason);
         }
@@ -61,7 +61,7 @@ namespace ManagementPublisher
         {
             if (_hubContext == null)
             {
-                throw new ArgumentNullException(nameof(_hubContext));
+                throw new ArgumentException("Call InitAsync to create HubContext first.");
             }
             return type switch
             {

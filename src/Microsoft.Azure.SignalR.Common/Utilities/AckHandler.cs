@@ -50,17 +50,17 @@ internal sealed class AckHandler : IDisposable
         return info.Task;
     }
 
-        public Task<T> CreateSingleAck<T>(out int id, TimeSpan? ackTimeout = default, CancellationToken cancellationToken = default) where T : notnull, new()
+    public Task<T> CreateSingleAck<T>(out int id, TimeSpan? ackTimeout = default, CancellationToken cancellationToken = default) where T : notnull, new()
+    {
+        id = NextId();
+        if (_disposed)
         {
-            id = NextId();
-            if (_disposed)
-            {
-                return Task.FromResult(new T());
-            }
-            var info = (SinglePayloadAck<T>)_acks.GetOrAdd(id, _ => new SinglePayloadAck<T>(ackTimeout ?? _defaultAckTimeout));
-            cancellationToken.Register(info.Cancel);
-            return info.Task.ContinueWith(task => task.Result);
+            return Task.FromResult(new T());
         }
+        var info = (SinglePayloadAck<T>)_acks.GetOrAdd(id, _ => new SinglePayloadAck<T>(ackTimeout ?? _defaultAckTimeout));
+        cancellationToken.Register(info.Cancel);
+        return info.Task.ContinueWith(task => task.Result, TaskScheduler.Default);
+    }
 
     public static bool HandleAckStatus(IAckableMessage message, AckStatus status)
     {

@@ -97,7 +97,7 @@ internal class ServiceManagerImpl : ServiceManager, IServiceManager
                 return true;
             }
             return false;
-        });
+        }, cancellationToken: cancellationToken);
         return isHealthy;
     }
 }

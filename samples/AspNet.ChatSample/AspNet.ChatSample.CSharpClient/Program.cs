@@ -17,7 +17,7 @@ sealed class Program
     static async Task Main(string[] args)
     {
         var url = "http://localhost:8009";
-        var proxy = await ConnectAsync(url, Console.Out);
+        var proxy = await ConnectAsync(url, Console.Out).ConfigureAwait(false);
         var currentUser = Guid.NewGuid().ToString("N");
 
         Mode mode = Mode.Broadcast;
@@ -33,11 +33,11 @@ sealed class Program
             switch (mode)
             {
                 case Mode.Broadcast:
-                    await proxy.Invoke("BroadcastMessage", currentUser, input);
+                    await proxy.Invoke("BroadcastMessage", currentUser, input).ConfigureAwait(false);
 
                     break;
                 case Mode.Echo:
-                    await proxy.Invoke("echo", input);
+                    await proxy.Invoke("echo", input).ConfigureAwait(false);
                     break;
                 default:
                     break;
@@ -71,7 +71,7 @@ sealed class Program
         hubProxy.On<string, string>("BroadcastMessage", BroadcastMessage);
         hubProxy.On<string>("Echo", Echo);
 
-        await StartAsyncWithAlwaysRetry(connection, output, cancellationToken: cancellationToken);
+        await StartAsyncWithAlwaysRetry(connection, output, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         return hubProxy;
     }
@@ -79,7 +79,7 @@ sealed class Program
     private static async Task StartAsyncWithAlwaysRetry(HubConnection connection, TextWriter output, Task startDelay = null, CancellationToken cancellationToken = default)
     {
         // When there is already a reconnect, directly return;
-        if (!ReconnectLock.Wait(0))
+        if (!ReconnectLock.Wait(0, CancellationToken.None))
         {
             return;
         }
@@ -88,7 +88,7 @@ sealed class Program
         {
             if (startDelay != null)
             {
-                await startDelay;
+                await startDelay.ConfigureAwait(false);
             }
 
             while (!cancellationToken.IsCancellationRequested)
@@ -96,13 +96,13 @@ sealed class Program
                 try
                 {
                     // Sometimes Start throws and triggers Error event, however sometimes not.
-                    await connection.Start();
+                    await connection.Start().ConfigureAwait(false);
                     return;
                 }
                 catch (Exception e)
                 {
                     output.WriteLine($"Error starting: {e.Message}, retry...");
-                    await ReconnectDelayTask();
+                    await ReconnectDelayTask().ConfigureAwait(false);
                 }
             }
         }
