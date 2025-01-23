@@ -137,10 +137,14 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public static IServiceCollection AddUserAgent(this IServiceCollection services, string userAgent)
         {
+#if NET6_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(userAgent);
+#else
             if (userAgent is null)
             {
                 throw new ArgumentNullException(nameof(userAgent));
             }
+#endif
 
             return services.PostConfigure<ServiceManagerOptions>(o =>
             {

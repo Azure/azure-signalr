@@ -163,10 +163,14 @@ namespace Microsoft.Azure.SignalR
 
         public static ClaimsPrincipal GetUserPrincipal(this OpenConnectionMessage message)
         {
+#if NET6_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(message);
+#else
             if (message == null)
             {
                 throw new ArgumentNullException(nameof(message));
             }
+#endif
 
             return GetUserPrincipal(message.Claims);
         }

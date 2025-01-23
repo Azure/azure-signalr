@@ -14,10 +14,14 @@ namespace Microsoft.Azure.SignalR.Common
 
         public override IMemoryOwner<byte> Rent(int size)
         {
+#if NET8_0_OR_GREATER
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(size, 0);
+#else
             if (size <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(size));
             }
+#endif
             return new ExactSizeMemoryOwner(size);
         }
 
@@ -41,10 +45,14 @@ namespace Microsoft.Azure.SignalR.Common
                 get
                 {
                     var array = _array;
+#if NET8_0_OR_GREATER
+                    ObjectDisposedException.ThrowIf(array == null, typeof(IMemoryOwner<byte>));
+#else
                     if (array == null)
                     {
                         throw new ObjectDisposedException(nameof(IMemoryOwner<byte>));
                     }
+#endif
                     return new Memory<byte>(array, 0, _size);
                 }
             }

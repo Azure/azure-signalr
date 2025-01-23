@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -51,6 +51,11 @@ public class RetryFactAttribute : FactAttribute
                               int delayBetweenRetriesMs = DEFAULT_DELAY_BETWEEN_RETRIES_MS,
                               params Type[] skipOnExceptions) : this(skipOnExceptions)
     {
+#if NET8_0_OR_GREATER
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxRetries, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(delayBetweenRetriesMs, 0);
+#else
+
         if (maxRetries < 1)
         {
             throw new ArgumentOutOfRangeException(nameof(maxRetries));
@@ -60,6 +65,7 @@ public class RetryFactAttribute : FactAttribute
         {
             throw new ArgumentOutOfRangeException(nameof(delayBetweenRetriesMs));
         }
+#endif
 
         MaxRetries = maxRetries;
         DelayBetweenRetriesMs = delayBetweenRetriesMs;
