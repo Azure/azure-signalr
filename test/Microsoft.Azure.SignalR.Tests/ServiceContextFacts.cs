@@ -24,7 +24,7 @@ public class ServiceContextFacts
     [Fact]
     public void ServiceConnectionContextWithEmptyClaimsIsUnauthenticated()
     {
-        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0]));
+        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", Array.Empty<Claim>()));
         Assert.NotNull(serviceConnectionContext.User.Identity);
         Assert.False(serviceConnectionContext.User.Identity.IsAuthenticated);
     }
@@ -96,7 +96,7 @@ public class ServiceContextFacts
     [Fact]
     public void ServiceConnectionContextWithEmptyHttpContextByDefault()
     {
-        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0]));
+        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", Array.Empty<Claim>()));
         Assert.NotNull(serviceConnectionContext.User.Identity);
         Assert.NotNull(serviceConnectionContext.HttpContext);
         Assert.Equal(serviceConnectionContext.User, serviceConnectionContext.HttpContext.User);
@@ -111,7 +111,7 @@ public class ServiceContextFacts
         const string key2 = "header-key-2";
         const string value1 = "header-value-1";
         var value2 = new[] { "header-value-2a", "header-value-2b" };
-        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0],
+        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", Array.Empty<Claim>(),
             new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
             {
                 {key1, value1},
@@ -133,7 +133,7 @@ public class ServiceContextFacts
     public void ServiceConnectionContextWithNonEmptyQueries()
     {
         const string queryString = "?query1=value1&query2=value2&query3=value3";
-        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
+        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", Array.Empty<Claim>(), EmptyHeaders, queryString));
 
         Assert.NotNull(serviceConnectionContext.User.Identity);
         Assert.NotNull(serviceConnectionContext.HttpContext);
@@ -230,7 +230,7 @@ public class ServiceContextFacts
         var originalCulture = CultureInfo.CurrentCulture.Name;
         var originalUiCulture = CultureInfo.CurrentUICulture.Name;
 
-        _ = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
+        _ = new ClientConnectionContext(new OpenConnectionMessage("1", Array.Empty<Claim>(), EmptyHeaders, queryString));
 
         var expectedCulture = isCultureValid ? parsedCulture : originalCulture;
         var expectedUiCulture = isUiCultureValid ? parsedUiCulture : originalUiCulture;

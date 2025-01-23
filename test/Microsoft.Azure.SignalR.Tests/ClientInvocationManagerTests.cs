@@ -1,10 +1,13 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 #if NET7_0_OR_GREATER
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
@@ -30,8 +33,8 @@ public class ClientInvocationManagerTests
     private static readonly List<string> TestConnectionIds = new() { "conn0", "conn1" };
     private static readonly List<string> TestInstanceIds = new() { "instance0", "instance1" };
     private static readonly List<string> TestServerIds = new() { "server1", "server2" };
-    private static readonly string SuccessCompleteResult = "success-result";
-    private static readonly string ErrorCompleteResult = "error-result";
+    private const string SuccessCompleteResult = "success-result";
+    private const string ErrorCompleteResult = "error-result";
 
     private static ClientInvocationManager GetTestClientInvocationManager(int endpointCount = 1)
     {
@@ -65,7 +68,7 @@ public class ClientInvocationManagerTests
      * 
      * Note: Client 1 and Client 2 are both managed by Server A
      */
-    public async void TestCompleteWithoutRouterServer(bool isCompletionWithResult)
+    public async Task TestCompleteWithoutRouterServer(bool isCompletionWithResult)
     {
         var clientInvocationManager = GetTestClientInvocationManager();
         var connectionId = TestConnectionIds[0];
@@ -89,9 +92,9 @@ public class ClientInvocationManagerTests
 
         try
         {
-            await task;
+            var result = await task;
             Assert.True(isCompletionWithResult);
-            Assert.Equal(SuccessCompleteResult, task.Result);
+            Assert.Equal(SuccessCompleteResult, result);
         }
         catch (Exception e)
         {
@@ -111,7 +114,7 @@ public class ClientInvocationManagerTests
      * 
      * Note: Server 2 manages Client 2.
      */
-    public async void TestCompleteWithRouterServer(string protocol, bool isCompletionWithResult)
+    public async Task TestCompleteWithRouterServer(string protocol, bool isCompletionWithResult)
     {
         var serverIds = new string[] { TestServerIds[0], TestServerIds[1] };
         var ciManagers = new ClientInvocationManager[] {
@@ -141,9 +144,9 @@ public class ClientInvocationManagerTests
 
         try
         {
-            await task;
+            var result = await task;
             Assert.True(isCompletionWithResult);
-            Assert.Equal(SuccessCompleteResult, task.Result);
+            Assert.Equal(SuccessCompleteResult, result);
         }
         catch (Exception e)
         {
@@ -171,14 +174,13 @@ public class ClientInvocationManagerTests
         Assert.False(clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out _));
     }
 
-
     [Theory]
     [InlineData(true, 2)]
     [InlineData(false, 2)]
     [InlineData(true, 3)]
     [InlineData(false, 3)]
     // isCompletionWithResult: the invocation is completed with result or error 
-    public async void TestCompleteWithMultiEndpointAtLast(bool isCompletionWithResult, int endpointsCount)
+    public async Task TestCompleteWithMultiEndpointAtLast(bool isCompletionWithResult, int endpointsCount)
     {
         Assert.True(endpointsCount > 1);
         var clientInvocationManager = GetTestClientInvocationManager(endpointsCount);
@@ -212,9 +214,9 @@ public class ClientInvocationManagerTests
 
         try
         {
-            await task;
+            var result = await task;
             Assert.True(isCompletionWithResult);
-            Assert.Equal(SuccessCompleteResult, task.Result);
+            Assert.Equal(SuccessCompleteResult, result);
         }
         catch (Exception e)
         {
@@ -226,7 +228,7 @@ public class ClientInvocationManagerTests
     [Theory]
     [InlineData(2)]
     [InlineData(3)]
-    public async void TestCompleteWithMultiEndpointAtMiddle(int endpointsCount)
+    public async Task TestCompleteWithMultiEndpointAtMiddle(int endpointsCount)
     {
         Assert.True(endpointsCount > 1);
         var clientInvocationManager = GetTestClientInvocationManager(endpointsCount);
@@ -262,8 +264,8 @@ public class ClientInvocationManagerTests
 
         try
         {
-            await task;
-            Assert.Equal(SuccessCompleteResult, task.Result);
+            var result = await task;
+            Assert.Equal(SuccessCompleteResult, result);
         }
         catch (Exception)
         {

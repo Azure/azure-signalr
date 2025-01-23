@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -16,15 +16,15 @@ public class ServiceEndpointProviderFacts
     private const string Endpoint = "https://myendpoint";
     private const string AccessKey = "fake_key";
     private static readonly string HubName = nameof(TestHub).ToLower();
-    private static readonly string AppName = "testapp";
+    private const string AppName = "testapp";
 
-    private static readonly string ConnectionStringWithoutVersion =
+    private const string ConnectionStringWithoutVersion =
         $"Endpoint={Endpoint};AccessKey={AccessKey};";
 
-    private static readonly string ConnectionStringWithPreviewVersion =
+    private const string ConnectionStringWithPreviewVersion =
         $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0-preview";
 
-    private static readonly string ConnectionStringWithV1Version = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0";
+    private const string ConnectionStringWithV1Version = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0";
 
     private static readonly ServiceOptions _optionsWithoutAppName = Options.Create(new ServiceOptions()).Value;
     private static readonly ServiceOptions _optionsWithAppName = Options.Create(new ServiceOptions { ApplicationName = AppName }).Value;

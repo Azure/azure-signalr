@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Tests.TestHubs;
 
-internal class ConnectedHub : Hub
+internal sealed class ConnectedHub : Hub
 {
     private readonly ILogger<ConnectedHub> _logger;
 

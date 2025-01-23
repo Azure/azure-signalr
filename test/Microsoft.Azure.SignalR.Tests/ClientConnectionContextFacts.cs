@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -47,7 +47,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestForwardCloseMessage()
+    public async Task TestForwardCloseMessage()
     {
         using var serviceConnection = new TestServiceConnection();
 
@@ -88,7 +88,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestForwardInvocationMessage()
+    public async Task TestForwardInvocationMessage()
     {
         using var serviceConnection = new TestServiceConnection();
 
@@ -129,7 +129,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestForwardHandshakeResponse()
+    public async Task TestForwardHandshakeResponse()
     {
         using var serviceConnection = new TestServiceConnection();
 
@@ -167,7 +167,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestSkipHandshakeResponse()
+    public async Task TestSkipHandshakeResponse()
     {
         using var serviceConnection = new TestServiceConnection();
 
@@ -204,7 +204,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestPauseResume()
+    public async Task TestPauseResume()
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Information, logChecker: records =>
         {
@@ -262,7 +262,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestPauseAck()
+    public async Task TestPauseAck()
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Information, logChecker: records =>
         {

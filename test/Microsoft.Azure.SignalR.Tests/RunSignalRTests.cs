@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -191,7 +191,6 @@ public class RunSignalRTests : VerifiableLoggedTest
     private sealed class ControlledServiceConnectionContext : ConnectionContext
     {
         private static readonly ServiceProtocol _serviceProtocol = new ServiceProtocol();
-        private static readonly JsonHubProtocol _signalRPro = new JsonHubProtocol();
         public ControlledServiceConnectionContext()
         {
             var pipe = DuplexPipe.CreateConnectionPair(new PipeOptions(pauseWriterThreshold: 0), new PipeOptions(pauseWriterThreshold: 0));
@@ -201,10 +200,10 @@ public class RunSignalRTests : VerifiableLoggedTest
             _ = WriteHandshakeResponseAsync(Application.Output);
         }
 
-        private async Task WriteHandshakeResponseAsync(PipeWriter output)
+        private static async Task WriteHandshakeResponseAsync(PipeWriter output)
         {
             _serviceProtocol.WriteMessage(new Protocol.HandshakeResponseMessage(), output);
-            var sendHandshakeResult = await output.FlushAsync();
+            _ = await output.FlushAsync();
         }
 
         public override IDuplexPipe Transport { get; set; }
@@ -216,7 +215,7 @@ public class RunSignalRTests : VerifiableLoggedTest
 
         public async Task OpenClientConnectionAsync(string connectionId)
         {
-            var openClientConnMsg = new OpenConnectionMessage(connectionId, new System.Security.Claims.Claim[] { }) { Protocol = "json" };
+            var openClientConnMsg = new OpenConnectionMessage(connectionId, Array.Empty<System.Security.Claims.Claim>()) { Protocol = "json" };
             _serviceProtocol.WriteMessage(openClientConnMsg, Application.Output);
             await Application.Output.FlushAsync();
 
@@ -249,7 +248,7 @@ public class RunSignalRTests : VerifiableLoggedTest
 
     private sealed class CaptureDataConnectionFactory : IConnectionFactory
     {
-        private TaskCompletionSource<ControlledServiceConnectionContext> _taskCompletionSource = new TaskCompletionSource<ControlledServiceConnectionContext>();
+        private readonly TaskCompletionSource<ControlledServiceConnectionContext> _taskCompletionSource = new TaskCompletionSource<ControlledServiceConnectionContext>();
         public Task<ControlledServiceConnectionContext> FirstConnectionTask => _taskCompletionSource.Task;
         public Task DisposeAsync(ConnectionContext connection)
         {

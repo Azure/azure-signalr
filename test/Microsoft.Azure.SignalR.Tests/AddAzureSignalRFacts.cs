@@ -224,7 +224,6 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
         }
     }
 
-
     [Theory]
     [InlineData(null, ServerStickyMode.Disabled)]
     [InlineData("invalid", ServerStickyMode.Disabled)]
@@ -403,8 +402,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
             }
 
             // Endpoints from Endpoints and ConnectionString config are merged inside the EndpointManager
-            Assert.Throws<AzureSignalRNoPrimaryEndpointException>(() =>
-                serviceProvider.GetRequiredService<IServiceEndpointManager>());
+            Assert.Throws<AzureSignalRNoPrimaryEndpointException>(serviceProvider.GetRequiredService<IServiceEndpointManager>);
         }
     }
 
@@ -528,7 +526,6 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
             Assert.Equal($"Property '{propertyName}' value should be {validScope}.", e.Message);
         }
     }
-
 
     [Fact(Skip = "Manual run for CI stable")]
     public async Task AddAzureSignalRHotReloadConfigValue()

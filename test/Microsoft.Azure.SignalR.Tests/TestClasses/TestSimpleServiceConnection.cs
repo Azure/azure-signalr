@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -13,7 +13,7 @@ internal sealed class TestSimpleServiceConnection : IServiceConnection
 {
     private readonly bool _throws;
 
-    private readonly TaskCompletionSource<object> _writeAsyncTcs = null;
+    private readonly TaskCompletionSource<object> _writeAsyncTcs;
 
     public ServiceConnectionStatus Status { get; }
 

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    internal class TestOptionsMonitor : IOptionsMonitor<ServiceOptions>
+    internal sealed class TestOptionsMonitor : IOptionsMonitor<ServiceOptions>
     {
         private readonly IOptionsMonitor<ServiceOptions> _monitor;
 

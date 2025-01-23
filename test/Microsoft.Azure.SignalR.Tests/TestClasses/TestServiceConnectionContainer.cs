@@ -1,8 +1,9 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,9 +15,9 @@ namespace Microsoft.Azure.SignalR.Tests;
 
 internal sealed class TestServiceConnectionContainer : ServiceConnectionContainerBase
 {
-    public bool IsOffline { get; set; } = false;
+    public bool IsOffline { get; set; }
 
-    public bool MockOffline { get; set; } = false;
+    public bool MockOffline { get; set; }
 
     public List<IServiceConnection> Connections => ServiceConnections;
 
@@ -39,7 +40,7 @@ internal sealed class TestServiceConnectionContainer : ServiceConnectionContaine
     {
         if (MockOffline)
         {
-            await Task.Delay(100);
+            await Task.Delay(100, token);
             IsOffline = true;
         }
         else
@@ -77,7 +78,7 @@ internal sealed class TestServiceConnectionContainer : ServiceConnectionContaine
 
     public Task MockReceivedStatusPing(bool isActive, int clientCount)
     {
-        var ping = new PingMessage { Messages = new[] { "status", isActive ? "1" : "0", "clientcount", clientCount.ToString() } };
+        var ping = new PingMessage { Messages = new[] { "status", isActive ? "1" : "0", "clientcount", clientCount.ToString(CultureInfo.InvariantCulture) } };
         return base.HandlePingAsync(ping);
     }
 

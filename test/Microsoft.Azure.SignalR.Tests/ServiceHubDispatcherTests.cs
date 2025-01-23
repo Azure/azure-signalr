@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -18,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Tests;
 public class ServiceHubDispatcherTests
 {
     [Fact]
-    public async void TestShutdown()
+    public async Task TestShutdown()
     {
         var index = new StrongBox<int>();
         var clientManager = new TestClientConnectionManager(index);

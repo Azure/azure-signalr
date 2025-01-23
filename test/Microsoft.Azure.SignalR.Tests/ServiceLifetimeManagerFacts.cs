@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -62,7 +62,7 @@ public class ServiceLifetimeManagerFacts
     [InlineData("SendGroupsAsync", typeof(MultiGroupBroadcastDataMessage))]
     [InlineData("SendUserAsync", typeof(UserDataMessage))]
     [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
-    public async void ServiceLifetimeManagerTest(string functionName, Type type)
+    public async Task ServiceLifetimeManagerTest(string functionName, Type type)
     {
         var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
         var blazorDetector = new DefaultBlazorDetector();
@@ -83,7 +83,7 @@ public class ServiceLifetimeManagerFacts
     [InlineData("SendGroupExceptAsync", typeof(GroupBroadcastDataMessage))]
     [InlineData("AddToGroupAsync", typeof(JoinGroupWithAckMessage))]
     [InlineData("RemoveFromGroupAsync", typeof(LeaveGroupWithAckMessage))]
-    public async void ServiceLifetimeManagerGroupTest(string functionName, Type type)
+    public async Task ServiceLifetimeManagerGroupTest(string functionName, Type type)
     {
         var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
         var blazorDetector = new DefaultBlazorDetector();
@@ -120,7 +120,7 @@ public class ServiceLifetimeManagerFacts
     [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
     [InlineData("AddToGroupAsync", typeof(JoinGroupWithAckMessage))]
     [InlineData("RemoveFromGroupAsync", typeof(LeaveGroupWithAckMessage))]
-    public async void ServiceLifetimeManagerIntegrationTest(string methodName, Type messageType)
+    public async Task ServiceLifetimeManagerIntegrationTest(string methodName, Type messageType)
     {
         var proxy = new ServiceConnectionProxy();
         var blazorDetector = new DefaultBlazorDetector();
@@ -163,7 +163,7 @@ public class ServiceLifetimeManagerFacts
     [InlineData("SendGroupsAsync", typeof(MultiGroupBroadcastDataMessage))]
     [InlineData("SendUserAsync", typeof(UserDataMessage))]
     [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
-    public async void ServiceLifetimeManagerIgnoreBlazorHubProtocolTest(string functionName, Type type)
+    public async Task ServiceLifetimeManagerIgnoreBlazorHubProtocolTest(string functionName, Type type)
     {
         var blazorDetector = new DefaultBlazorDetector();
         var protocolResolver = new DefaultHubProtocolResolver(new SignalRProtocol.IHubProtocol[]
@@ -195,7 +195,7 @@ public class ServiceLifetimeManagerFacts
     [InlineData("SendGroupsAsync", typeof(MultiGroupBroadcastDataMessage))]
     [InlineData("SendUserAsync", typeof(UserDataMessage))]
     [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
-    public async void ServiceLifetimeManagerOnlyBlazorHubProtocolTest(string functionName, Type type)
+    public async Task ServiceLifetimeManagerOnlyBlazorHubProtocolTest(string functionName, Type type)
     {
         var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
         var blazorDetector = new DefaultBlazorDetector();
@@ -205,12 +205,12 @@ public class ServiceLifetimeManagerFacts
 
         Assert.Equal(1, serviceConnectionManager.GetCallCount(type));
         VerifyServiceMessage(functionName, serviceConnectionManager.ServiceMessage);
-        Assert.Equal(1, (serviceConnectionManager.ServiceMessage as MulticastDataMessage).Payloads.Count);
+        Assert.Single((serviceConnectionManager.ServiceMessage as MulticastDataMessage).Payloads);
         Assert.True(blazorDetector.IsBlazor(nameof(TestHub)));
     }
 
     [Fact]
-    public async void TestSendConnectionAsyncisOverwrittenWhenClientConnectionExisted()
+    public async Task TestSendConnectionAsyncisOverwrittenWhenClientConnectionExisted()
     {
         var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
         var clientConnectionManager = new ClientConnectionManager();
@@ -228,7 +228,7 @@ public class ServiceLifetimeManagerFacts
         if (serviceConnection.LastMessage is MultiConnectionDataMessage m)
         {
             Assert.Equal("conn1", m.ConnectionList[0]);
-            Assert.Equal(1, m.Payloads.Count);
+            Assert.Single(m.Payloads);
             Assert.True(m.Payloads.ContainsKey(MockProtocol));
             return;
         }
@@ -236,7 +236,7 @@ public class ServiceLifetimeManagerFacts
     }
 
     [Fact]
-    public async void SetUserIdTest()
+    public async Task SetUserIdTest()
     {
         var connectionContext = new TestConnectionContext();
         connectionContext.Features.Set(new ServiceUserIdFeature("testUser"));
@@ -249,7 +249,7 @@ public class ServiceLifetimeManagerFacts
     }
 
     [Fact]
-    public async void DoNotSetUserIdWithoutFeatureTest()
+    public async Task DoNotSetUserIdWithoutFeatureTest()
     {
         var connectionContext = new TestConnectionContext();
 

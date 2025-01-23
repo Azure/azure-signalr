@@ -1,5 +1,5 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Microsoft.AspNetCore.SignalR.Internal
 {
     // copied from https://github.com/aspnet/AspNetCore/blob/release/3.0-preview7/src/SignalR/server/Core/src/Internal/DefaultHubProtocolResolver.cs
-    internal class DefaultHubProtocolResolver : IHubProtocolResolver
+    internal sealed class DefaultHubProtocolResolver : IHubProtocolResolver
     {
         private readonly ILogger<DefaultHubProtocolResolver> _logger;
         private readonly List<IHubProtocol> _hubProtocols;
@@ -33,7 +33,7 @@ namespace Microsoft.AspNetCore.SignalR.Internal
             }
         }
 
-        public virtual IHubProtocol GetProtocol(string protocolName, IReadOnlyList<string> supportedProtocols)
+        public IHubProtocol GetProtocol(string protocolName, IReadOnlyList<string> supportedProtocols)
         {
             protocolName = protocolName ?? throw new ArgumentNullException(nameof(protocolName));
 

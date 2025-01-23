@@ -30,10 +30,6 @@ public class ServiceMessageTests : VerifiableLoggedTest
 {
     private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-    private const string MicrosoftEntraConnectionString = "endpoint=https://localhost;authType=aad;";
-
-    private static readonly Uri DefaultEndpoint = new("http://localhost");
-
     private const string DefaultAudience = "https://localhost";
 
     private const string LocalConnectionString = "endpoint=https://localhost;accessKey=" + SigningKey;
@@ -365,7 +361,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         };
     }
 
-    private class TestTokenCredential : TokenCredential
+    private sealed class TestTokenCredential : TokenCredential
     {
         public string Token { get; } = Guid.NewGuid().ToString();
 
@@ -388,7 +384,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
     private sealed class TestConnectionHandler : ConnectionHandler
     {
-        private readonly int _shutdownAfter = 0;
+        private readonly int _shutdownAfter;
 
         private readonly string _lastWords;
 
@@ -460,7 +456,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
         private readonly TaskCompletionSource _clientDisconnectedTcs = new();
 
-        private ReadOnlySequence<byte> _payload = new();
+        private ReadOnlySequence<byte> _payload;
 
         public TestClientConnectionManager ClientConnectionManager { get; }
 
@@ -476,7 +472,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
         public SignalRProtocol.IHubProtocol DefaultHubProtocol { get; } = new SignalRProtocol.JsonHubProtocol();
 
-        private TestConnection Connection => _container.Instance ?? throw new Exception("connection needs to be started");
+        private TestConnection Connection => _container.Instance ?? throw new InvalidOperationException("connection needs to be started");
 
         public TestServiceConnection(TestConnectionContainer container,
                                      IServiceProtocol serviceProtocol,
