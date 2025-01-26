@@ -813,84 +813,84 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     private static class Log
     {
-        private static readonly Action<ILogger, string, string, Exception> _endpointOnline =
+        private static readonly Action<ILogger, string, string, Exception> EndpointOnlineAction =
             LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(1, "EndpointOnline"), "Hub '{hub}' is now connected to '{endpoint}'.");
 
-        private static readonly Action<ILogger, string, string, Exception> _endpointOffline =
+        private static readonly Action<ILogger, string, string, Exception> EndpointOfflineAction =
             LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(2, "EndpointOffline"), "Hub '{hub}' is now disconnected from '{endpoint}'. Please check log for detailed info.");
 
-        private static readonly Action<ILogger, Exception> _receivedFinAckPing =
+        private static readonly Action<ILogger, Exception> ReceivedFinAckPingAction =
             LoggerMessage.Define(LogLevel.Information, new EventId(3, "ReceivedFinAckPing"), "Received FinAck ping.");
 
-        private static readonly Action<ILogger, int, Exception> _timeoutWaitingForFinAck =
+        private static readonly Action<ILogger, int, Exception> TimeoutWaitingForFinAckAction =
             LoggerMessage.Define<int>(LogLevel.Error, new EventId(4, "TimeoutWaitingForFinAck"), "Fail to receive FinAckPing after retry {retryCount} times.");
 
-        private static readonly Action<ILogger, string, double, Exception> _startingPingTimer =
+        private static readonly Action<ILogger, string, double, Exception> StartingPingTimerAction =
             LoggerMessage.Define<string, double>(LogLevel.Debug, new EventId(5, "StartingPingTimer"), "Starting { pingName } ping timer. Duration: {KeepAliveInterval:0.00}ms");
 
-        private static readonly Action<ILogger, string, Exception> _sentPing =
+        private static readonly Action<ILogger, string, Exception> SentPingAction =
             LoggerMessage.Define<string>(LogLevel.Debug, new EventId(6, "SentPing"), "Sent a { pingName } ping message to service.");
 
-        private static readonly Action<ILogger, string, Exception> _failedSendingPing =
+        private static readonly Action<ILogger, string, Exception> FailedSendingPingAction =
             LoggerMessage.Define<string>(LogLevel.Warning, new EventId(7, "FailedSendingPing"), "Failed sending a { pingName } ping message to service.");
 
-        private static readonly Action<ILogger, bool, ServiceEndpoint, string, Exception> _receivedServiceStatusPing =
+        private static readonly Action<ILogger, bool, ServiceEndpoint, string, Exception> ReceivedServiceStatusPingAction =
             LoggerMessage.Define<bool, ServiceEndpoint, string>(LogLevel.Debug, new EventId(8, "ReceivedServiceStatusPing"), "Received a service status active={isActive} from {endpoint} for hub {hub}.");
 
-        private static readonly Action<ILogger, ServiceEndpoint, string, Exception> _receivedServersTagPing =
+        private static readonly Action<ILogger, ServiceEndpoint, string, Exception> ReceivedServersTagPingAction =
             LoggerMessage.Define<ServiceEndpoint, string>(LogLevel.Debug, new EventId(9, "ReceivedServersTagPing"), "Received a servers tag ping from {endpoint} for hub {hub}.");
 
-        private static readonly Action<ILogger, string, Exception> _timerAlreadyStopped =
+        private static readonly Action<ILogger, string, Exception> TimerAlreadyStoppedAction =
             LoggerMessage.Define<string>(LogLevel.Debug, new EventId(10, "TimerAlreadyStopped"), "Failed to stop {pingName} timer as it's not started");
 
         public static void EndpointOnline(ILogger logger, HubServiceEndpoint endpoint)
         {
-            _endpointOnline(logger, endpoint.Hub, endpoint.ToString(), null);
+            EndpointOnlineAction(logger, endpoint.Hub, endpoint.ToString(), null);
         }
 
         public static void EndpointOffline(ILogger logger, HubServiceEndpoint endpoint)
         {
-            _endpointOffline(logger, endpoint.Hub, endpoint.ToString(), null);
+            EndpointOfflineAction(logger, endpoint.Hub, endpoint.ToString(), null);
         }
 
         public static void ReceivedFinAckPing(ILogger logger)
         {
-            _receivedFinAckPing(logger, null);
+            ReceivedFinAckPingAction(logger, null);
         }
 
         public static void TimeoutWaitingForFinAck(ILogger logger, int retryCount)
         {
-            _timeoutWaitingForFinAck(logger, retryCount, null);
+            TimeoutWaitingForFinAckAction(logger, retryCount, null);
         }
 
         public static void StartingPingTimer(ILogger logger, string pingName, TimeSpan keepAliveInterval)
         {
-            _startingPingTimer(logger, pingName, keepAliveInterval.TotalMilliseconds, null);
+            StartingPingTimerAction(logger, pingName, keepAliveInterval.TotalMilliseconds, null);
         }
 
         public static void SentPing(ILogger logger, string pingName)
         {
-            _sentPing(logger, pingName, null);
+            SentPingAction(logger, pingName, null);
         }
 
         public static void FailedSendingPing(ILogger logger, string pingName, Exception exception)
         {
-            _failedSendingPing(logger, pingName, exception);
+            FailedSendingPingAction(logger, pingName, exception);
         }
 
         public static void ReceivedServiceStatusPing(ILogger logger, bool isActive, HubServiceEndpoint endpoint)
         {
-            _receivedServiceStatusPing(logger, isActive, endpoint, endpoint.Hub, null);
+            ReceivedServiceStatusPingAction(logger, isActive, endpoint, endpoint.Hub, null);
         }
 
         public static void ReceivedServersTagPing(ILogger logger, HubServiceEndpoint endpoint)
         {
-            _receivedServersTagPing(logger, endpoint, endpoint.Hub, null);
+            ReceivedServersTagPingAction(logger, endpoint, endpoint.Hub, null);
         }
 
         public static void TimerAlreadyStopped(ILogger logger, string pingName)
         {
-            _timerAlreadyStopped(logger, pingName, null);
+            TimerAlreadyStoppedAction(logger, pingName, null);
         }
     }
 }

@@ -29,7 +29,7 @@
     <ThirdPartyAssemblySigningCertName>3PartySHA2</ThirdPartyAssemblySigningCertName>
     <PackageSigningCertName>NuGet</PackageSigningCertName>
     <!-- Disable the warnings for now, enable batch by batch later-->
-    <NoWarn>$(NoWarn);CA2007;IDE0161;IDE0130;IDE0290;IDE1006;IDE0090</NoWarn>
+    <NoWarn>$(NoWarn);CA2007;IDE0161;</NoWarn>
   </PropertyGroup>
   
   <ItemGroup>

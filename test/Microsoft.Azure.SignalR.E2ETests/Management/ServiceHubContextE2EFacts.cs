@@ -28,9 +28,9 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     private const string Message = "Hello client, have a nice day!";
     private const int ClientConnectionCount = 4;
     private const int GroupCount = 2;
-    private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(1);
-    private static readonly ServiceTransportType[] _serviceTransportType = new ServiceTransportType[] { ServiceTransportType.Transient, ServiceTransportType.Persistent };
-    private static readonly string[] _appNames = new string[] { "appName", "", null };
+    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(1);
+    private static readonly ServiceTransportType[] ServiceTransportType = [Management.ServiceTransportType.Transient, Management.ServiceTransportType.Persistent];
+    private static readonly string[] AppNames = ["appName", "", null];
     private readonly ITestServerFactory _testServerFactory;
 
     public ServiceHubContextE2EFacts(ITestOutputHelper output) : base(output)
@@ -38,8 +38,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         _testServerFactory = new TestServerFactory();
     }
 
-    public static IEnumerable<object[]> TestData => from serviceTransportType in _serviceTransportType
-                                                    from appName in _appNames
+    public static IEnumerable<object[]> TestData => from serviceTransportType in ServiceTransportType
+                                                    from appName in AppNames
                                                     select new object[] { serviceTransportType, appName };
 
     [ConditionalTheory]
@@ -351,15 +351,15 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
                 Assert.False(cancellationTokenSource.Token.IsCancellationRequested);
 
                 await AddConnectionToGroupAsync(serviceHubContext, connectionGroupDict);
-                await Task.Delay(_timeout);
+                await Task.Delay(Timeout);
                 await sendTaskFunc();
-                await Task.Delay(_timeout);
+                await Task.Delay(Timeout);
                 await ConnectionRemoveFromAllGroupsAsync((ServiceHubContext)serviceHubContext, connectionGroupDict);
-                await Task.Delay(_timeout);
+                await Task.Delay(Timeout);
                 await sendTaskFunc();
-                await Task.Delay(_timeout);
+                await Task.Delay(Timeout);
 
-                await Task.Delay(_timeout);
+                await Task.Delay(Timeout);
 
                 Assert.False(cancellationTokenSource.Token.IsCancellationRequested);
 
@@ -398,8 +398,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
-    [InlineData(ServiceTransportType.Persistent)]
-    [InlineData(ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    [InlineData(Management.ServiceTransportType.Transient)]
     internal async Task CheckUserExistenceInGroupTest(ServiceTransportType transportType)
     {
         var serviceManager = new ServiceManagerBuilder()
@@ -419,12 +419,12 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
             var serviceHubContext = await serviceManager.CreateHubContextAsync(hubName, loggerFactory);
             var conn = CreateHubConnection(endpoint, token);
             await conn.StartAsync().OrTimeout();
-            await Task.Delay(_timeout);
+            await Task.Delay(Timeout);
             await serviceHubContext.UserGroups.AddToGroupAsync(user, group).OrTimeout();
-            await Task.Delay(_timeout);
+            await Task.Delay(Timeout);
             Assert.True(await serviceHubContext.UserGroups.IsUserInGroup(user, group).OrTimeout());
             await serviceHubContext.UserGroups.RemoveFromGroupAsync(user, group).OrTimeout();
-            await Task.Delay(_timeout);
+            await Task.Delay(Timeout);
             Assert.False(await serviceHubContext.UserGroups.IsUserInGroup(user, group).OrTimeout());
             await conn.StopAsync().OrTimeout();
         }
@@ -481,7 +481,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
                     await serviceHubContext.Groups.AddToGroupAsync(connectionId, groupNames[0]);
                     await serviceHubContext.Clients.Group(groupNames[0]).SendAsync(MethodName, Message);
                     // We can't guarantee the order between the send group and the following leave group
-                    await Task.Delay(_timeout);
+                    await Task.Delay(Timeout);
                     await serviceHubContext.Groups.RemoveFromGroupAsync(connectionId, groupNames[0]);
                     await serviceHubContext.Clients.Group(groupNames[0]).SendAsync(MethodName, Message);
                 },
@@ -542,8 +542,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
-    [InlineData(ServiceTransportType.Transient)]
-    [InlineData(ServiceTransportType.Persistent)]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
     public async Task CheckConnectionExistsTest(ServiceTransportType serviceTransportType)
     {
         //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
@@ -588,8 +588,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
-    [InlineData(ServiceTransportType.Transient)]
-    [InlineData(ServiceTransportType.Persistent)]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
     public async Task CheckUserExistsTest(ServiceTransportType serviceTransportType)
     {
         //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
@@ -634,8 +634,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
-    [InlineData(ServiceTransportType.Transient)]
-    [InlineData(ServiceTransportType.Persistent)]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
     public async Task CheckGroupExistsTest(ServiceTransportType serviceTransportType)
     {
         //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
@@ -688,9 +688,9 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
-            var services = new ServiceCollection().AddSignalRServiceManager().AddSingleton(loggerFactory).Configure<ServiceManagerOptions>(o =>
+            var services = new ServiceCollection().AddSignalRServiceManager().AddSingleton(loggerFactory).Configure((ServiceManagerOptions o) =>
             {
-                o.ServiceTransportType = ServiceTransportType.Persistent;
+                o.ServiceTransportType = Management.ServiceTransportType.Persistent;
                 o.ServiceEndpoints = TestConfiguration.Instance.Configuration.GetEndpoints(Constants.Keys.AzureSignalREndpointsKey).ToArray();
             });
             var serviceProvider = services.AddSingleton<IReadOnlyCollection<ServiceDescriptor>>(services.ToList()).BuildServiceProvider();
@@ -741,7 +741,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
             {
                 o.ConnectionString = TestConfiguration.Instance.ConnectionString;
                 o.ConnectionCount = 1;
-                o.ServiceTransportType = ServiceTransportType.Persistent;
+                o.ServiceTransportType = Management.ServiceTransportType.Persistent;
             })
             .Build();
         var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", LoggerFactory);
@@ -761,7 +761,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
                 .WithOptions(o =>
                 {
                     o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                    o.ServiceTransportType = ServiceTransportType.Persistent;
+                    o.ServiceTransportType = Management.ServiceTransportType.Persistent;
                 })
                 .WithLoggerFactory(loggerFactory)
                 .Build();
@@ -783,7 +783,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
         {
             o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-            o.ServiceTransportType = ServiceTransportType.Persistent;
+            o.ServiceTransportType = Management.ServiceTransportType.Persistent;
             o.EnableMessageTracing = enableMessageTracing;
         }).Build();
         var loggerFactory = new TestLoggerFactory();
@@ -810,7 +810,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
         {
             o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.ServiceTransportType = Management.ServiceTransportType.Transient;
         }).BuildServiceManager();
         using var context = await serviceManager.CreateHubContextAsync(HubName, default);
         await context.Groups.AddToGroupAsync(Guid.NewGuid().ToString(), "group");
@@ -823,7 +823,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
         {
             o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.ServiceTransportType = Management.ServiceTransportType.Transient;
         }).BuildServiceManager();
         using var context = await serviceManager.CreateHubContextAsync(HubName, default);
         await context.ClientManager.CloseConnectionAsync(Guid.NewGuid().ToString());
@@ -836,7 +836,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
         {
             o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.ServiceTransportType = Management.ServiceTransportType.Transient;
         }).BuildServiceManager();
         using var context = await serviceManager.CreateHubContextAsync(HubName, default);
         await context.Groups.RemoveFromGroupAsync(Guid.NewGuid().ToString(), "group");
@@ -849,7 +849,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
         {
             o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.ServiceTransportType = Management.ServiceTransportType.Transient;
         }).BuildServiceManager();
         using var context = await serviceManager.CreateHubContextAsync(HubName, default);
         await context.Groups.RemoveFromAllGroupsAsync(Guid.NewGuid().ToString());
@@ -862,7 +862,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
         {
             o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.ServiceTransportType = Management.ServiceTransportType.Transient;
         }).BuildServiceManager();
         using var context = await serviceManager.CreateHubContextAsync(HubName, default);
         await context.UserGroups.AddToGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
@@ -875,7 +875,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
         {
             o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.ServiceTransportType = Management.ServiceTransportType.Transient;
         }).BuildServiceManager();
         using var context = await serviceManager.CreateHubContextAsync(HubName, default);
         await context.UserGroups.AddToGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), TimeSpan.Zero);
@@ -889,7 +889,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
         {
             o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.ServiceTransportType = Management.ServiceTransportType.Transient;
         }).BuildServiceManager();
         using var context = await serviceManager.CreateHubContextAsync(HubName, default);
         await context.UserGroups.RemoveFromGroupAsync(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
@@ -902,7 +902,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
         {
             o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.ServiceTransportType = Management.ServiceTransportType.Transient;
         }).BuildServiceManager();
         using var context = await serviceManager.CreateHubContextAsync(HubName, default);
         await context.UserGroups.RemoveFromAllGroupsAsync(Guid.NewGuid().ToString());
@@ -949,13 +949,13 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         Func<IServiceHubContext, IDictionary<string, List<string>>, Task> userRemoveFromGroupTask)
     {
         await userAddToGroupTask(serviceHubContext, userGroupDict);
-        await Task.Delay(_timeout);
+        await Task.Delay(Timeout);
         await sendTask();
-        await Task.Delay(_timeout);
+        await Task.Delay(Timeout);
         await userRemoveFromGroupTask(serviceHubContext, userGroupDict);
-        await Task.Delay(_timeout);
+        await Task.Delay(Timeout);
         await sendTask();
-        await Task.Delay(_timeout);
+        await Task.Delay(Timeout);
     }
 
     private static async Task RunTestCore(string clientEndpoint, IEnumerable<string> clientAccessTokens, Func<Task> coreTask, int expectedReceivedMessageCount, ConcurrentDictionary<int, int> receivedMessageDict)
@@ -972,7 +972,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
             Assert.False(cancellationTokenSource.Token.IsCancellationRequested);
 
             await coreTask();
-            await Task.Delay(_timeout);
+            await Task.Delay(Timeout);
 
             Assert.False(cancellationTokenSource.Token.IsCancellationRequested);
 
@@ -1044,7 +1044,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
-    private static IServiceManager GenerateServiceManager(string connectionString, ServiceTransportType serviceTransportType = ServiceTransportType.Transient, string appName = null)
+    private static IServiceManager GenerateServiceManager(string connectionString, ServiceTransportType serviceTransportType = Management.ServiceTransportType.Transient, string appName = null)
     {
         var serviceManager = new ServiceManagerBuilder()
             .WithOptions(opt =>

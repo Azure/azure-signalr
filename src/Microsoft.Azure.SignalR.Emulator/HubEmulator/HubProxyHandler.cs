@@ -120,70 +120,70 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 
         #region Reflection
 
-        private static readonly MethodInfo _hubConnectionContext_HandshakeAsync =
+        private static readonly MethodInfo HubConnectionContext_HandshakeAsync =
             typeof(HubConnectionContext).GetMethod("HandshakeAsync", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private static readonly MethodInfo _base_SendCloseAsync =
+        private static readonly MethodInfo Base_SendCloseAsync =
             typeof(HubConnectionHandler<THub>).GetMethod("SendCloseAsync", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private static readonly PropertyInfo _hubConnectionContext_AllowReconnect =
+        private static readonly PropertyInfo HubConnectionContext_AllowReconnect =
             typeof(HubConnectionContext).GetProperty("AllowReconnect", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private static readonly MethodInfo _hubConnectionContext_AbortAsync =
+        private static readonly MethodInfo HubConnectionContext_AbortAsync =
             typeof(HubConnectionContext).GetMethod("AbortAsync", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private static readonly PropertyInfo _hubConnectionContext_Input =
+        private static readonly PropertyInfo HubConnectionContext_Input =
             typeof(HubConnectionContext).GetProperty("Input", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private static readonly MethodInfo _hubConnectionContext_BeginClientTimeout =
+        private static readonly MethodInfo HubConnectionContext_BeginClientTimeout =
             typeof(HubConnectionContext).GetMethod("BeginClientTimeout", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private static readonly MethodInfo _hubConnectionContext_StopClientTimeout =
+        private static readonly MethodInfo HubConnectionContext_StopClientTimeout =
             typeof(HubConnectionContext).GetMethod("StopClientTimeout", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private static readonly MethodInfo _hubConnectionContext_Cleanup =
+        private static readonly MethodInfo HubConnectionContext_Cleanup =
             typeof(HubConnectionContext).GetMethod("Cleanup", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private Task<bool> InvokeHandshakeAsync(TimeSpan handshakeTimeout, HubConnectionContext connectionContext, IReadOnlyList<string> resolvedSupportedProtocols)
         {
-            var task = (Task<bool>)_hubConnectionContext_HandshakeAsync.Invoke(connectionContext, new object[] { handshakeTimeout, resolvedSupportedProtocols, _protocolResolver, _userIdProvider, _enableDetailedErrors });
+            var task = (Task<bool>)HubConnectionContext_HandshakeAsync.Invoke(connectionContext, new object[] { handshakeTimeout, resolvedSupportedProtocols, _protocolResolver, _userIdProvider, _enableDetailedErrors });
             return task;
         }
 
         private Task InvokeSendCloseAsync(HubConnectionContext connection, Exception exception, bool allowReconnect)
         {
-            var task = (Task)_base_SendCloseAsync.Invoke(this, new object[] { connection, exception, allowReconnect });
+            var task = (Task)Base_SendCloseAsync.Invoke(this, new object[] { connection, exception, allowReconnect });
             return task;
         }
 
         private static bool GetAllowReconnect(HubConnectionContext connection)
         {
-            return (bool)_hubConnectionContext_AllowReconnect.GetValue(connection);
+            return (bool)HubConnectionContext_AllowReconnect.GetValue(connection);
         }
 
         private static Task InvokeAbortAsync(HubConnectionContext connection)
         {
-            return (Task)_hubConnectionContext_AbortAsync.Invoke(connection, Array.Empty<object>());
+            return (Task)HubConnectionContext_AbortAsync.Invoke(connection, Array.Empty<object>());
         }
 
         private static PipeReader GetInput(HubConnectionContext connection)
         {
-            return (PipeReader)_hubConnectionContext_Input.GetValue(connection);
+            return (PipeReader)HubConnectionContext_Input.GetValue(connection);
         }
 
         private static void InvokeStopClientTimeout(HubConnectionContext connection)
         {
-            _hubConnectionContext_StopClientTimeout.Invoke(connection, Array.Empty<object>());
+            HubConnectionContext_StopClientTimeout.Invoke(connection, Array.Empty<object>());
         }
 
         private static void InvokeBeginClientTimeout(HubConnectionContext connection)
         {
-            _hubConnectionContext_BeginClientTimeout.Invoke(connection, Array.Empty<object>());
+            HubConnectionContext_BeginClientTimeout.Invoke(connection, Array.Empty<object>());
         }
 
         private static void InvokeCleanup(HubConnectionContext connection)
         {
-            _hubConnectionContext_Cleanup.Invoke(connection, Array.Empty<object>());
+            HubConnectionContext_Cleanup.Invoke(connection, Array.Empty<object>());
         }
 
         #endregion
@@ -349,52 +349,52 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 
         private static class Log
         {
-            private static readonly Action<ILogger, string, Exception> _errorDispatchingHubEvent =
+            private static readonly Action<ILogger, string, Exception> ErrorDispatchingHubEventAction =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(1, "ErrorDispatchingHubEvent"), "Error when dispatching '{HubMethod}' on hub.");
 
-            private static readonly Action<ILogger, Exception> _errorProcessingRequest =
+            private static readonly Action<ILogger, Exception> ErrorProcessingRequestAction =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(2, "ErrorProcessingRequest"), "Error when processing requests.");
 
-            private static readonly Action<ILogger, Exception> _abortFailed =
+            private static readonly Action<ILogger, Exception> AbortFailedAction =
                 LoggerMessage.Define(LogLevel.Trace, new EventId(3, "AbortFailed"), "Abort callback failed.");
 
-            private static readonly Action<ILogger, Exception> _errorSendingClose =
+            private static readonly Action<ILogger, Exception> ErrorSendingCloseAction =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(4, "ErrorSendingClose"), "Error when sending Close message.");
 
-            private static readonly Action<ILogger, Exception> _connectedStarting =
+            private static readonly Action<ILogger, Exception> ConnectedStartingAction =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(5, "ConnectedStarting"), "OnConnectedAsync started.");
 
-            private static readonly Action<ILogger, Exception> _connectedEnding =
+            private static readonly Action<ILogger, Exception> ConnectedEndingAction =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(6, "ConnectedEnding"), "OnConnectedAsync ending.");
 
             public static void ErrorDispatchingHubEvent(ILogger logger, string hubMethod, Exception exception)
             {
-                _errorDispatchingHubEvent(logger, hubMethod, exception);
+                ErrorDispatchingHubEventAction(logger, hubMethod, exception);
             }
 
             public static void ErrorProcessingRequest(ILogger logger, Exception exception)
             {
-                _errorProcessingRequest(logger, exception);
+                ErrorProcessingRequestAction(logger, exception);
             }
 
             public static void AbortFailed(ILogger logger, Exception exception)
             {
-                _abortFailed(logger, exception);
+                AbortFailedAction(logger, exception);
             }
 
             public static void ErrorSendingClose(ILogger logger, Exception exception)
             {
-                _errorSendingClose(logger, exception);
+                ErrorSendingCloseAction(logger, exception);
             }
 
             public static void ConnectedStarting(ILogger logger)
             {
-                _connectedStarting(logger, null);
+                ConnectedStartingAction(logger, null);
             }
 
             public static void ConnectedEnding(ILogger logger)
             {
-                _connectedEnding(logger, null);
+                ConnectedEndingAction(logger, null);
             }
         }
 
