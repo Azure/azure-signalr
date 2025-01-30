@@ -21,13 +21,15 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly AckHandler _ackHandler;
         private readonly IServiceEndpointManager _endpointManager;
         private readonly IEndpointRouter _endpointRouter;
+        private readonly IHubProtocolResolver _hubProtocolResolver;
 
 
-        public WeakCallerClientResultsManager(IServiceEndpointManager serviceEndpointManager, IEndpointRouter endpointRouter, AckHandler ackHandler)
+        public WeakCallerClientResultsManager(IServiceEndpointManager serviceEndpointManager, IEndpointRouter endpointRouter, AckHandler ackHandler, IHubProtocolResolver hubProtocolResolver)
         {
             _endpointManager = serviceEndpointManager;
             _endpointRouter = endpointRouter;
             _ackHandler = ackHandler;
+            _hubProtocolResolver = hubProtocolResolver;
         }
 
         public string GenerateInvocationId(string connectionId)
@@ -71,10 +73,7 @@ namespace Microsoft.Azure.SignalR.Management
             return tcs.Task;
         }
 
-        public void CleanupInvocationsByInstance(string instanceId)
-        {
-            throw new NotImplementedException();
-        }
+        public void CleanupInvocationsByInstance(string instanceId) { }
 
         public void CleanupInvocationsByConnection(string connectionId)
         {
@@ -124,9 +123,35 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-        public bool TryCompleteResult(string connectionId, ClientCompletionMessage message) => throw new NotImplementedException();
+        public bool TryCompleteResult(string connectionId, ClientCompletionMessage message)
+        {
+            var protocol = _hubProtocolResolver.GetProtocol(message.Protocol, null);
+            if (protocol == null)
+            {
+                var errorMessage = $"Not supported protocol {message.Protocol} by server.";
+                return TryCompleteResult(connectionId, CompletionMessage.WithError(message.InvocationId, errorMessage));
+            }
 
-        public bool TryCompleteResult(string connectionId, ErrorCompletionMessage message) => throw new NotImplementedException();
+            var payload = message.Payload;
+            if (protocol.TryParseMessage(ref payload, this, out var hubMessage))
+            {
+                if (hubMessage is CompletionMessage completionMessage)
+                {
+                    return TryCompleteResult(connectionId, completionMessage);
+                }
+                else
+                {
+                    throw new InvalidOperationException($"The payload of ClientCompletionMessage whose type is {hubMessage.GetType().Name} cannot be parsed into CompletionMessage correctly.");
+                }
+            }
+            return false;
+        }
+
+        public bool TryCompleteResult(string connectionId, ErrorCompletionMessage message)
+        {
+            var errorMessage = CompletionMessage.WithError(message.InvocationId, message.Error);
+            return TryCompleteResult(connectionId, errorMessage);
+        }
 
         // Implemented for interface IInvocationBinder
         public Type GetReturnType(string invocationId)

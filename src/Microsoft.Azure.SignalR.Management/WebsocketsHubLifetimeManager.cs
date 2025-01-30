@@ -228,6 +228,12 @@ namespace Microsoft.Azure.SignalR.Management
 #if NET7_0_OR_GREATER
         public override async Task<T> InvokeConnectionAsync<T>(string connectionId, string methodName, object?[] args, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken == default)
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                cancellationToken = cts.Token;
+            }
+
             if (IsInvalidArgument(connectionId))
             {
                 throw new ArgumentNullException(nameof(connectionId));
