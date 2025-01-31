@@ -132,8 +132,6 @@ namespace Microsoft.Azure.SignalR.Management
             return WriteAckableMessageAsync(message, cancellationToken);
         }
 
-
-
         public Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(userId))

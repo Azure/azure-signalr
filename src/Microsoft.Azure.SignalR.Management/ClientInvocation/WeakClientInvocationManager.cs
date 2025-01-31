@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #if NET7_0_OR_GREATER
 using System;
@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Management
             var ackHandler = new AckHandler();
             Caller = new WeakCallerClientResultsManager(
                 serviceEndpointManager ?? throw new ArgumentNullException(nameof(serviceEndpointManager)),
-                endpointRouter ?? throw new ArgumentException(nameof(endpointRouter)),
+                endpointRouter ?? throw new ArgumentNullException(nameof(endpointRouter)),
                 ackHandler, 
                 hubProtocolResolver ?? throw new ArgumentNullException(nameof(hubProtocolResolver))
             );

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -67,14 +67,12 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override ServiceHubContext WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
-#if NET6_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(endpoints);
-#else
+#pragma warning disable CA1510 // Use ArgumentNullException throw helper
             if (endpoints is null)
             {
                 throw new ArgumentNullException(nameof(endpoints));
             }
-#endif
+#pragma warning restore CA1510 // Use ArgumentNullException throw helper
 
             var targetEndpoints = _endpointManager.GetEndpoints(_hubName).Intersect(endpoints, EqualityComparer<ServiceEndpoint>.Default).ToList();
             var container = new MessageWriterServiceContainerWrapper(targetEndpoints, ServiceProvider.GetRequiredService<ILoggerFactory>());

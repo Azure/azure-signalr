@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #if NET7_0_OR_GREATER
 using System;
@@ -17,12 +17,11 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private readonly ConcurrentDictionary<string, PendingInvocation> _pendingInvocations = new();
         private readonly string _clientResultManagerId = Guid.NewGuid().ToString("N");
-        private long _lastInvocationId = 0;
+        private long _lastInvocationId;
         private readonly AckHandler _ackHandler;
         private readonly IServiceEndpointManager _endpointManager;
         private readonly IEndpointRouter _endpointRouter;
         private readonly IHubProtocolResolver _hubProtocolResolver;
-
 
         public WeakCallerClientResultsManager(IServiceEndpointManager serviceEndpointManager, IEndpointRouter endpointRouter, AckHandler ackHandler, IHubProtocolResolver hubProtocolResolver)
         {
