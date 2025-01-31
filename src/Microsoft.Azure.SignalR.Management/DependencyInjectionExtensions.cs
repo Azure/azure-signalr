@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -145,10 +146,14 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public static IServiceCollection AddUserAgent(this IServiceCollection services, string userAgent)
         {
+#if NET6_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(userAgent);
+#else
             if (userAgent is null)
             {
                 throw new ArgumentNullException(nameof(userAgent));
             }
+#endif
 
             return services.PostConfigure<ServiceManagerOptions>(o =>
             {
@@ -251,7 +256,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 if (sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.EnableMessageTracing)
                 {
-                    client.DefaultRequestHeaders.Add(Constants.Headers.AsrsMessageTracingId, MessageWithTracingIdHelper.Generate().ToString());
+                    client.DefaultRequestHeaders.Add(Constants.Headers.AsrsMessageTracingId, MessageWithTracingIdHelper.Generate().ToString(CultureInfo.InvariantCulture));
                 }
             }
         }

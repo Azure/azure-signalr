@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,12 +11,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ChatSample.CSharpClient
 {
-    class Program
+    sealed class Program
     {
         static async Task Main(string[] args)
         {
             var url = "http://localhost:5050";
-            var proxy = await ConnectAsync(url + "/chat", Console.Out);
+            var proxy = await ConnectAsync(url + "/chat", Console.Out).ConfigureAwait(false);
             var currentUser = Guid.NewGuid().ToString("N");
 
             Mode mode = Mode.Broadcast;
@@ -29,10 +32,10 @@ namespace ChatSample.CSharpClient
                 switch (mode)
                 {
                     case Mode.Broadcast:
-                        await proxy.InvokeAsync("BroadcastMessage", currentUser, input);
+                        await proxy.InvokeAsync("BroadcastMessage", currentUser, input).ConfigureAwait(false);
                         break;
                     case Mode.Echo:
-                        await proxy.InvokeAsync("echo", input);
+                        await proxy.InvokeAsync("echo", input).ConfigureAwait(false);
                         break;
                     default:
                         break;
@@ -52,7 +55,7 @@ namespace ChatSample.CSharpClient
             connection.On<string, string>("BroadcastMessage", BroadcastMessage);
             connection.On<string>("Echo", Echo);
 
-            await StartAsyncWithRetry(connection, output, cancellationToken);
+            await StartAsyncWithRetry(connection, output, cancellationToken).ConfigureAwait(false);
 
             return connection;
         }
@@ -63,13 +66,13 @@ namespace ChatSample.CSharpClient
             {
                 try
                 {
-                    await connection.StartAsync(cancellationToken);
+                    await connection.StartAsync(cancellationToken).ConfigureAwait(false);
                     return;
                 }
                 catch (Exception e)
                 {
                     output.WriteLine($"Error starting: {e.Message}, retry...");
-                    await Task.Delay(GetRandomDelayMilliseconds());
+                    await Task.Delay(GetRandomDelayMilliseconds(), cancellationToken).ConfigureAwait(false);
                 }
             }
         }

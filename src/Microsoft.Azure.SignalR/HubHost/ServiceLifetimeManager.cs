@@ -3,12 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -18,8 +16,10 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceLifetimeManager<THub> : ServiceLifetimeManagerBase<THub> where THub : Hub
     {
+#if NETSTANDARD2_0
         private const string MarkerNotConfiguredError =
             "'AddAzureSignalR(...)' was called without a matching call to 'IApplicationBuilder.UseAzureSignalR(...)'.";
+#endif
         private readonly IClientInvocationManager _clientInvocationManager;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly string _callerId;
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public override async Task SetConnectionResultAsync(string connectionId, CompletionMessage result)
+        public override async Task SetConnectionResultAsync(string connectionId, AspNetCore.SignalR.Protocol.CompletionMessage result)
         {
             if (IsInvalidArgument(connectionId))
             {
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public override bool TryGetReturnType(string invocationId, [NotNullWhen(true)] out Type type)
+        public override bool TryGetReturnType(string invocationId, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Type type)
         {
             return _clientInvocationManager.TryGetInvocationReturnType(invocationId, out type);
         }

@@ -8,7 +8,7 @@ using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
-
+#nullable enable
 namespace Microsoft.Azure.SignalR
 {
     /// <summary>
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Gets or sets the connection string of Azure SignalR Service instance.
         /// </summary>
-        public string ConnectionString { get; set; }
+        public string? ConnectionString { get; set; }
 
         /// <summary>
         /// Gets or sets the initial number of connections per hub from SDK to Azure SignalR Service. Default value is 5. 
@@ -54,19 +54,19 @@ namespace Microsoft.Azure.SignalR
         /// Gets applicationName, which will be used as a prefix to apply to each hub name. 
         /// Should be prefixed with alphabetic characters and only contain alpha-numeric characters or underscore.
         /// </summary>
-        public string ApplicationName { get; set; }
+        public string? ApplicationName { get; set; }
 
         /// <summary>
         /// Gets or sets the func to generate claims from <see cref="HttpContext" />.
         /// The claims will be included in the auto-generated token for clients.
         /// </summary>
-        public Func<HttpContext, IEnumerable<Claim>> ClaimsProvider { get; set; } = null;
+        public Func<HttpContext, IEnumerable<Claim>>? ClaimsProvider { get; set; }
 
         /// <summary>
         /// Gets or sets the func to set diagnostic client filter from <see cref="HttpContext" />.
         /// The clients will be regarded as diagnostic client only if the function returns true.
         /// </summary>
-        public Func<HttpContext, bool> DiagnosticClientFilter { get; set; } = null;
+        public Func<HttpContext, bool>? DiagnosticClientFilter { get; set; }
 
         /// <summary>
         /// Gets or sets the lifetime of auto-generated access token, which will be used to authenticate with Azure SignalR Service.
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Gets or sets list of endpoints
         /// </summary>
-        public ServiceEndpoint[] Endpoints { get; set; }
+        public ServiceEndpoint[]? Endpoints { get; set; }
 
         /// <summary>
         /// Specifies the mode for server sticky, when client is always routed to the server which it first /negotiate with, we call it "server sticky mode".
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
         /// </summary>
-        public IWebProxy Proxy { get; set; }
+        public IWebProxy? Proxy { get; set; }
 
         /// <summary>
         /// Gets or sets timeout waiting when scale multiple Azure SignalR Service endpoints.
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Gets or sets a function which accepts <see cref="HttpContext"/> and returns a bitmask combining one or more <see cref="HttpTransportType"/> values that specify what transports the service should use to receive HTTP requests.
         /// </summary>
-        public Func<HttpContext, HttpTransportType> TransportTypeDetector { get; set; } = null;
+        public Func<HttpContext, HttpTransportType>? TransportTypeDetector { get; set; }
 
         /// <summary>
         /// Allow clients enable stateful reconnects for all hubs.

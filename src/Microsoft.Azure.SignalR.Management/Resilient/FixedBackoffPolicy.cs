@@ -13,10 +13,10 @@ internal class FixedBackOffPolicy : IBackOffPolicy
     private readonly TimeSpan _delay;
     public FixedBackOffPolicy(IOptions<ServiceManagerOptions> options)
     {
-        var retryOptions = options.Value.RetryOptions ?? throw new ArgumentException();
+        var retryOptions = options.Value.RetryOptions ?? throw new ArgumentException("Retry options expected");
         if (retryOptions.Mode != ServiceManagerRetryMode.Fixed)
         {
-            throw new ArgumentException();
+            throw new ArgumentException("Only Fixed mode is supported");
         }
         _maxRetries = retryOptions.MaxRetries;
         _delay = retryOptions.Delay;

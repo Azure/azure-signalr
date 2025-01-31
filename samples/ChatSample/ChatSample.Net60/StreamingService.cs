@@ -1,10 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-
 using ChatSample.Net60.Hubs;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Logging;
 
 namespace ChatSample.Net60
 {
@@ -17,9 +15,10 @@ namespace ChatSample.Net60
             _hubContext = hubContext;
             _logger = logger;
         }
+
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            return Task.Factory.StartNew(() => StreamingTask(cancellationToken), TaskCreationOptions.LongRunning);
+            return Task.Factory.StartNew(() => StreamingTask(cancellationToken), cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
@@ -33,7 +32,7 @@ namespace ChatSample.Net60
 
             _logger.LogInformation("Waiting");
 
-            await Task.Delay(5000);
+            await Task.Delay(5000, cancellationToken);
 
             _logger.LogInformation("Spamming");
 
@@ -41,9 +40,9 @@ namespace ChatSample.Net60
             {
                 counter++;
 
-                await _hubContext.Clients.All.SendAsync("ReceiveMessage", counter, counter);
+                await _hubContext.Clients.All.SendAsync("ReceiveMessage", counter, counter, cancellationToken);
                 
-                await Task.Delay(1);
+                await Task.Delay(1, cancellationToken);
             }
         }
     }

@@ -28,15 +28,15 @@ internal class SignalRJwtSecurityTokenHandler
     // Simplified from following codes:
     //      method `CreateJwtSecurityToken` in [JwtSecruityTokenHandler.cs](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtSecurityTokenHandler.cs#L487)
     //      method `CreateJwtSecurityTokenPrivate` in [JwtSecurityTokenHandler.cs](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtSecurityTokenHandler.cs#L616)
-    public string CreateJwtSecurityToken(DateTime? notBefore = null,
-                                         DateTime? expires = null,
-                                         DateTime? issuedAt = null,
-                                         string issuer = null,
-                                         string audience = null,
-                                         ClaimsIdentity subject = null,
-                                         byte[] key = null,
-                                         string kid = null,
-                                         AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
+    public static string CreateJwtSecurityToken(DateTime? notBefore = null,
+                                                 DateTime? expires = null,
+                                                 DateTime? issuedAt = null,
+                                                 string issuer = null,
+                                                 string audience = null,
+                                                 ClaimsIdentity subject = null,
+                                                 byte[] key = null,
+                                                 string kid = null,
+                                                 AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
     {
         if (!expires.HasValue || !issuedAt.HasValue || !notBefore.HasValue)
         {

@@ -1,12 +1,14 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -16,7 +18,7 @@ namespace Microsoft.Azure.SignalR;
 /// <summary>
 /// A service connection container which sends message to multiple service endpoints.
 /// </summary>
-internal class MultiEndpointMessageWriter : IServiceMessageWriter
+internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceManager
 {
     private readonly ILogger _logger;
 
@@ -55,8 +57,8 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter
 
     public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
     {
-        if (serviceMessage is CheckConnectionExistenceWithAckMessage 
-            || serviceMessage is JoinGroupWithAckMessage 
+        if (serviceMessage is CheckConnectionExistenceWithAckMessage
+            || serviceMessage is JoinGroupWithAckMessage
             || serviceMessage is LeaveGroupWithAckMessage)
         {
             return WriteSingleResultAckableMessage(serviceMessage, cancellationToken);
@@ -169,6 +171,44 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter
             // log and don't stop other endpoints
             Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, (serviceMessage as IMessageWithTracingId)?.TracingId, endpoint.ToString());
             throw new FailedWritingMessageToServiceException(endpoint.ServerEndpoint.AbsoluteUri);
+        }
+    }
+
+    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
+    {
+        if (TargetEndpoints.Length == 0)
+        {
+            Log.NoEndpointRouted(_logger, nameof(GroupMemberQueryMessage));
+            yield break;
+        }
+        if (top <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(top), "Top must be greater than 0.");
+        }
+        foreach (var endpoint in TargetEndpoints)
+        {
+            IAsyncEnumerable<GroupMember> enumerable;
+            try
+            {
+                enumerable = endpoint.ConnectionContainer.ListConnectionsInGroupAsync(groupName, top, tracingId, token);
+            }
+            catch (ServiceConnectionNotActiveException)
+            {
+                Log.FailedWritingMessageToEndpoint(_logger, nameof(GroupMemberQueryMessage), null, endpoint.ToString());
+                continue;
+            }
+            await foreach (var member in enumerable)
+            {
+                yield return member;
+                if (top.HasValue)
+                {
+                    top--;
+                    if (top == 0)
+                    {
+                        yield break;
+                    }
+                }
+            }
         }
     }
 

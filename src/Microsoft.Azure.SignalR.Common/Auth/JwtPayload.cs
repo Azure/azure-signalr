@@ -74,7 +74,7 @@ internal class JwtPayload : Dictionary<string, object>
     {
         if (claim == null)
         {
-            throw LogHelper.LogExceptionMessage(new ArgumentNullException("claim"));
+            throw LogHelper.LogExceptionMessage(new ArgumentNullException(nameof(claim)));
         }
 
         AddClaims(new Claim[1] { claim });

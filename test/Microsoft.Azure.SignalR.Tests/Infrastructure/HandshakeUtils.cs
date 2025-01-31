@@ -7,7 +7,7 @@ using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
-
+#nullable enable
 namespace Microsoft.Azure.SignalR.Tests
 {
     public static class HandshakeUtils
@@ -36,18 +36,15 @@ namespace Microsoft.Azure.SignalR.Tests
                                 consumed = buffer.Start;
                                 examined = consumed;
 
-                                if (!(message is HandshakeRequestMessage handshakeRequest))
+                                if (message is not HandshakeRequestMessage handshakeRequest)
                                 {
                                     throw new InvalidDataException(
-                                        $"{message.GetType().Name} received when waiting for handshake request.");
+                                        $"{message!.GetType().Name} received when waiting for handshake request.");
                                 }
 
-                                if (handshakeRequest.Version != ServiceProtocol.Version)
-                                {
-                                    throw new InvalidDataException("Protocol version not supported.");
-                                }
-
-                                return handshakeRequest;
+                                return handshakeRequest.Version != ServiceProtocol.Version
+                                    ? throw new InvalidDataException("Protocol version not supported.")
+                                    : handshakeRequest;
                             }
                         }
 
@@ -66,7 +63,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        public static Task SendHandshakeResponseAsync(PipeWriter output, HandshakeResponseMessage response = null)
+        public static Task SendHandshakeResponseAsync(PipeWriter output, HandshakeResponseMessage? response = null)
         {
             ServiceProtocol.WriteMessage(response ?? new HandshakeResponseMessage(), output);
             return output.FlushAsync().AsTask();

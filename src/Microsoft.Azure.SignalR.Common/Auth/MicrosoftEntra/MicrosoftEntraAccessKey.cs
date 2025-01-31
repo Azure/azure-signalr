@@ -42,7 +42,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     private readonly IHttpClientFactory _httpClientFactory;
 
-    private volatile bool _isAuthorized = false;
+    private volatile bool _isAuthorized;
 
     private DateTime _updateAt = DateTime.MinValue;
 

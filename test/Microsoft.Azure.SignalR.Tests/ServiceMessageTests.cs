@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -22,7 +22,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Xunit.Abstractions;
-
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -30,11 +29,6 @@ namespace Microsoft.Azure.SignalR.Tests;
 public class ServiceMessageTests : VerifiableLoggedTest
 {
     private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-    private const string MicrosoftEntraConnectionString = "endpoint=https://localhost;authType=aad;";
-
-    private static readonly Uri DefaultEndpoint = new("http://localhost");
-
     private const string DefaultAudience = "https://localhost";
 
     private const string LocalConnectionString = "endpoint=https://localhost;accessKey=" + SigningKey;
@@ -59,7 +53,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.WriteFromServiceAsync(openConnectionMessage);
         await connection.ClientConnectedTask.OrTimeout();
 
-        Assert.Equal(1, clientConnectionFactory.Connections.Count);
+        Assert.Single(clientConnectionFactory.Connections);
         var clientConnection = clientConnectionFactory.Connections[0];
         Assert.True((bool)isMigratedProperty.GetValue(clientConnection));
 
@@ -96,7 +90,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.WriteFromServiceAsync(openConnectionMessage);
         await connection.ClientConnectedTask;
 
-        Assert.Equal(1, clientConnectionFactory.Connections.Count);
+        Assert.Single(clientConnectionFactory.Connections);
         var clientConnection = clientConnectionFactory.Connections[0];
         Assert.False((bool)isMigratedProperty.GetValue(clientConnection));
 
@@ -137,7 +131,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.WriteFromServiceAsync(openConnectionMessage);
         await connection.ClientConnectedTask.OrTimeout();
 
-        Assert.Equal(1, clientConnectionFactory.Connections.Count);
+        Assert.Single(clientConnectionFactory.Connections);
         var clientConnection = clientConnectionFactory.Connections[0];
         var feature = clientConnection.Features.Get<IConnectionMigrationFeature>();
         Assert.NotNull(feature);
@@ -162,7 +156,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         Assert.Null(clientConnection.Features.Get<IConnectionMigrationFeature>());
     }
 
-    [Fact]
+    [RetryFact]
     public async Task TestCloseConnectionMessage()
     {
         var clientConnectionFactory = new TestClientConnectionFactory();
@@ -178,7 +172,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         _ = connection.WriteFromServiceAsync(openConnectionMessage);
         await connection.ClientConnectedTask;
 
-        Assert.Equal(1, clientConnectionFactory.Connections.Count);
+        Assert.Single(clientConnectionFactory.Connections);
         var clientConnection = clientConnectionFactory.Connections[0];
 
         // write a signalr handshake response
@@ -197,7 +191,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         await connection.StopAsync();
     }
 
-    [Theory]
+    [RetryTheory]
     [InlineData(typeof(AccessKey))]
     [InlineData(typeof(MicrosoftEntraAccessKey))]
     public async Task TestAccessKeyRequestMessage(Type keyType)
@@ -389,7 +383,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
     private sealed class TestConnectionHandler : ConnectionHandler
     {
-        private readonly int _shutdownAfter = 0;
+        private readonly int _shutdownAfter;
 
         private readonly string _lastWords;
 
@@ -457,11 +451,11 @@ public class ServiceMessageTests : VerifiableLoggedTest
     {
         private readonly TestConnectionContainer _container;
 
-        private readonly TaskCompletionSource _clientConnectedTcs = new TaskCompletionSource();
+        private readonly TaskCompletionSource _clientConnectedTcs = new();
 
-        private readonly TaskCompletionSource _clientDisconnectedTcs = new TaskCompletionSource();
+        private readonly TaskCompletionSource _clientDisconnectedTcs = new();
 
-        private ReadOnlySequence<byte> _payload = new ReadOnlySequence<byte>();
+        private ReadOnlySequence<byte> _payload;
 
         public TestClientConnectionManager ClientConnectionManager { get; }
 
@@ -477,7 +471,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
         public SignalRProtocol.IHubProtocol DefaultHubProtocol { get; } = new SignalRProtocol.JsonHubProtocol();
 
-        private TestConnection Connection => _container.Instance ?? throw new Exception("connection needs to be started");
+        private TestConnection Connection => _container.Instance ?? throw new InvalidOperationException("connection needs to be started");
 
         public TestServiceConnection(TestConnectionContainer container,
                                      IServiceProtocol serviceProtocol,

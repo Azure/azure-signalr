@@ -28,7 +28,7 @@ internal class DefaultEndpointRouter : DefaultMessageRouter, IEndpointRouter
     /// If no primary endpoint is available, promote one secondary endpoint
     /// </summary>
     /// <returns>The available endpoints</returns>
-    private ServiceEndpoint[] GetNegotiateEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+    private static ServiceEndpoint[] GetNegotiateEndpoints(IEnumerable<ServiceEndpoint> endpoints)
     {
         var primary = endpoints.Where(s => s.Online && s.EndpointType == EndpointType.Primary).ToArray();
         if (primary.Length > 0)
@@ -50,7 +50,7 @@ internal class DefaultEndpointRouter : DefaultMessageRouter, IEndpointRouter
     ///  Choose endpoint randomly by weight. 
     ///  The weight is defined as (the remaining connection quota / the connection capacity).
     /// </summary>
-    private ServiceEndpoint GetEndpointAccordingToWeight(ServiceEndpoint[] availableEndpoints)
+    private static ServiceEndpoint GetEndpointAccordingToWeight(ServiceEndpoint[] availableEndpoints)
     {
         //first check if weight is available or necessary
         if (availableEndpoints.Any(endpoint => endpoint.EndpointMetrics.ConnectionCapacity == 0) ||
