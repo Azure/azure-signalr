@@ -108,7 +108,7 @@ internal class NegotiateHandler<THub> where THub : Hub
         }
 
         var clientRequestId = _connectionRequestIdProvider.GetRequestId(context.TraceIdentifier);
-        var queryString = GetQueryString(
+        var queryString = NegotiateHandler<THub>.GetQueryString(
             request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null,
             clientRequestId
         );
@@ -135,7 +135,7 @@ internal class NegotiateHandler<THub> where THub : Hub
             : string.Empty;
     }
 
-    private string GetQueryString(string originalQueryString, string clientRequestId)
+    private static string GetQueryString(string originalQueryString, string clientRequestId)
     {
         if (clientRequestId != null)
         {
