@@ -144,6 +144,8 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
 
+    public string RequestId { get; set; }
+
     public ClientConnectionContext(OpenConnectionMessage serviceMessage,
                                    Action<HttpContext> configureContext = null,
                                    PipeOptions transportPipeOptions = null,
@@ -502,7 +504,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
         _bufferedMessages.Clear();
     }
 
-    private static void ProcessQuery(string queryString, out string originalPath)
+    private void ProcessQuery(string queryString, out string originalPath)
     {
         originalPath = string.Empty;
         var query = QueryHelpers.ParseNullableQuery(queryString);
@@ -510,14 +512,9 @@ internal partial class ClientConnectionContext : ConnectionContext,
         {
             return;
         }
-
-        if (query.TryGetValue(Constants.QueryParameter.RequestCulture, out var culture))
+        if (query.TryGetValue(Constants.QueryParameter.ConnectionRequestId, out var connectionRequestId))
         {
-            SetCurrentThreadCulture(culture.FirstOrDefault());
-        }
-        if (query.TryGetValue(Constants.QueryParameter.RequestUICulture, out var uiCulture))
-        {
-            SetCurrentThreadUiCulture(uiCulture.FirstOrDefault());
+            RequestId = connectionRequestId;
         }
         if (query.TryGetValue(Constants.QueryParameter.OriginalPath, out var path))
         {

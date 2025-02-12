@@ -99,7 +99,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     public string ConnectionId { get; }
 
-    protected HubServiceEndpoint HubEndpoint { get; }
+    public HubServiceEndpoint HubEndpoint { get; }
 
     protected ILogger Logger { get; }
 

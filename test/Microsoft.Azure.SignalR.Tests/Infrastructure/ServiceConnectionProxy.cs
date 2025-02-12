@@ -120,6 +120,7 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
             null,
             ClientInvocationManager,
             new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
+            null,
             type,
             allowStatefulReconnects: AllowStatefulReconnects);
         ServiceConnections.TryAdd(connectionId, connection);

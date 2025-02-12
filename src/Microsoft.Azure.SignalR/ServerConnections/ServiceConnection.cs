@@ -10,6 +10,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -47,6 +49,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     private readonly IHubProtocolResolver _hubProtocolResolver;
 
+    private readonly ICultureFeatureManager _cultureFeatureManager;
+
     public Action<HttpContext> ConfigureContext { get; set; }
 
     public ServiceConnection(IServiceProtocol serviceProtocol,
@@ -62,6 +66,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
                              IServiceEventHandler serviceEventHandler,
                              IClientInvocationManager clientInvocationManager,
                              IHubProtocolResolver hubProtocolResolver,
+                             ICultureFeatureManager cultureFeatureManager,
                              ServiceConnectionType connectionType = ServiceConnectionType.Default,
                              GracefulShutdownMode mode = GracefulShutdownMode.Off,
                              bool allowStatefulReconnects = false)
@@ -83,6 +88,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
         _clientConnectionFactory = clientConnectionFactory;
         _clientInvocationManager = clientInvocationManager;
         _hubProtocolResolver = hubProtocolResolver;
+        _cultureFeatureManager = cultureFeatureManager;
     }
 
     public override bool TryAddClientConnection(IClientConnection connection)
@@ -176,6 +182,14 @@ internal partial class ServiceConnection : ServiceConnectionBase
         connection.ServiceConnection = this;
 
         connection.Features.Set<IConnectionMigrationFeature>(null);
+
+        if (_cultureFeatureManager != null && connection.RequestId != null && _cultureFeatureManager.TryRemoveCultureFeature(connection.RequestId, out var cultureFeature))
+        {
+            CultureInfo.CurrentCulture = cultureFeature.RequestCulture.Culture;
+            CultureInfo.CurrentUICulture = cultureFeature.RequestCulture.UICulture;
+            connection.GetHttpContext().Features.Set<IRequestCultureFeature>(cultureFeature);
+        }
+
         if (message.Headers.TryGetValue(Constants.AsrsMigrateFrom, out var from))
         {
             connection.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(from, ServerId));
