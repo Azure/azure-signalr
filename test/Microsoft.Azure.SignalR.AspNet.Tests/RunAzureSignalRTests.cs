@@ -826,6 +826,37 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
         }
     }
 
+    [Fact]
+    public async Task TestRunAzureSignalStartsServerConnection()
+    {
+        // Prepare the configuration
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, logChecker: i =>
+        {
+            // the logs should contain start and stop
+            var names = i.Select(s => s.Write.EventId.Name).ToArray();
+            return names.Contains("StartingConnection")
+            && names.Contains("StartTransport")
+            && names.Contains("TransportStopping")
+            && names.Contains("FailedToConnect");
+        }))
+        using (new AppSettingsConfigScope(ConnectionString))
+        {
+            var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+            var hubName = "hub";
+            var testHub = new TestHubManager(hubName);
+            hubConfig.Resolver.Register(typeof(IHubManager), () => testHub);
+            using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig,
+                o => o.InitialHubServerConnectionCount = 1
+            )))
+            {
+                var options = hubConfig.Resolver.Resolve<IServiceConnectionManager>();
+
+                // 5 seconds for one websocket failure round
+                await options.ConnectionInitializedTask.OrTimeout(20000);
+            }
+        }
+    }
+
     private sealed class TestLoggerProvider : ILoggerProvider
     {
         public List<string> Loggers { get; } = new List<string>();

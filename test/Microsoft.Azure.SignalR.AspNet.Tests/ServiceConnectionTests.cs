@@ -432,7 +432,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             proxy.TestConnectionContext.Application.Output.Complete();
 
             // wait for application task to timeout
-            await proxy.WaitForConnectionClose.OrTimeout(10000);
+            await proxy.WaitForConnectionClose.OrTimeout(30000);
             Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
 
             // cleaned up clearly

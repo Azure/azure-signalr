@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -56,8 +56,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
                connectionType,
                loggerFactory?.CreateLogger<ServiceConnection>())
     {
-        _connectionFactory = connectionFactory;
-        _clientConnectionManager = clientConnectionManager;
+        _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+        _clientConnectionManager = clientConnectionManager ?? throw new ArgumentNullException(nameof(clientConnectionManager));
         _ackHandler = ackHandler;
     }
 
