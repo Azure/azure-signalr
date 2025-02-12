@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -640,7 +640,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
             {
                 var result = await connection.Transport.Input.ReadAsync();
                 var buffer = result.Buffer;
-
+                Logger.LogInformation($"Input.ReadAsync result.IsCanceled={result.IsCanceled}, result.IsCompleted={result.IsCompleted}, buffer.IsEmpty={buffer.IsEmpty}, buffer.Start={buffer.Start.GetInteger()}, buffer.End={buffer.End.GetInteger()}");
                 try
                 {
                     if (result.IsCanceled)

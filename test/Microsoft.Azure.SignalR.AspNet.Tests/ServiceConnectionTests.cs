@@ -394,6 +394,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
                 return true;
             }))
         {
+            var logger = loggerFactory.CreateLogger(nameof(ServiceConnectionTests));
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
             var hub = "EndlessConnect";
@@ -428,9 +429,12 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             Assert.Equal("Connected", message.A[0]);
 
+            Assert.Single(ccm.ClientConnections);
+
             // close transport layer
             proxy.TestConnectionContext.Application.Output.Complete();
 
+            logger.LogInformation("Application output completed");
             // wait for application task to timeout
             await proxy.WaitForConnectionClose.OrTimeout(30000);
             Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
