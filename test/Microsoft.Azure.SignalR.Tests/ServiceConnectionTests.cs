@@ -198,7 +198,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                 "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
-                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance));
+                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance), null);
 
             var connectionTask = connection.StartAsync();
 
@@ -258,7 +258,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                 "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
-                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance));
+                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance), null);
 
             var connectionTask = connection.StartAsync();
 
@@ -317,7 +317,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var connection = new ServiceConnection(
                 protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                 "serverId", Guid.NewGuid().ToString("N"), null, null, null, new DefaultClientInvocationManager(),
-                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance));
+                new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance), null);
 
             var connectionTask = connection.StartAsync();
 
@@ -392,7 +392,8 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    null,
                                                    new DefaultClientInvocationManager(),
-                                                   hubProtocolResolver);
+                                                   hubProtocolResolver,
+                                                   null);
 
             var connectionTask = connection.StartAsync();
 
@@ -460,7 +461,8 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    null,
                                                    new DefaultClientInvocationManager(),
-                                                   hubProtocolResolver);
+                                                   hubProtocolResolver,
+                                                   null);
 
             var connectionTask = connection.StartAsync();
 
@@ -527,7 +529,8 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    null,
                                                    new DefaultClientInvocationManager(),
-                                                   hubProtocolResolver);
+                                                   hubProtocolResolver,
+                                                   null);
 
             var connectionTask = connection.StartAsync();
 
@@ -609,7 +612,8 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    null,
                                                    new DefaultClientInvocationManager(),
-                                                   defaultHubProtocolResolver);
+                                                   defaultHubProtocolResolver,
+                                                   null);
 
             var connectionTask = connection.StartAsync();
 
@@ -685,7 +689,8 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    null,
                                                    new DefaultClientInvocationManager(),
-                                                   defaultHubProtocolResolver);
+                                                   defaultHubProtocolResolver,
+                                                   null);
 
             var connectionTask = connection.StartAsync();
             await connection.ConnectionInitializedTask.OrTimeout();
@@ -773,7 +778,8 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    null,
                                                    new DefaultClientInvocationManager(),
-                                                   hubProtocolResolver);
+                                                   hubProtocolResolver,
+                                                   null);
 
             var connectionTask = connection.StartAsync();
 
@@ -840,7 +846,8 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    null,
                                                    new DefaultClientInvocationManager(),
-                                                   hubProcotolResolver);
+                                                   hubProcotolResolver,
+                                                   null);
 
             var connectionTask = connection.StartAsync().OrTimeout();
 
@@ -938,7 +945,8 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    null,
                                                    new DefaultClientInvocationManager(),
-                                                   hubProtocolResolver);
+                                                   hubProtocolResolver,
+                                                   null);
 
             var connectionTask = connection.StartAsync();
 
@@ -1018,7 +1026,8 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                      null,
                                      null,
                                      new DefaultClientInvocationManager(),
-                                     new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance));
+                                     new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance),
+                                     null);
     }
 
     private sealed class TestConnectionHandler : ConnectionHandler

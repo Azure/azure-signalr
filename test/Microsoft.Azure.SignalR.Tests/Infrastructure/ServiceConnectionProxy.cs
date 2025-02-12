@@ -120,6 +120,7 @@ internal sealed class ServiceConnectionProxy : IClientConnectionManager, IClient
             null,
             ClientInvocationManager,
             new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
+            null,
             type,
             allowStatefulReconnects: AllowStatefulReconnects);
         ServiceConnections.TryAdd(connectionId, connection);

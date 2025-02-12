@@ -12,7 +12,7 @@ public class TestRequestIdProvider : IConnectionRequestIdProvider
         _id = id;
     }
 
-    public string GetRequestId()
+    public string GetRequestId(string clientRequestId)
     {
         return _id;
     }

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Security.Claims;
 using Microsoft.Azure.SignalR.Common;
 
@@ -61,10 +60,5 @@ internal static class AuthUtility
         );
 
         return jwtToken.Length > MaxTokenLength ? throw new AzureSignalRAccessTokenTooLongException() : jwtToken;
-    }
-
-    public static string GenerateRequestId()
-    {
-        return Convert.ToBase64String(BitConverter.GetBytes(Stopwatch.GetTimestamp()));
     }
 }

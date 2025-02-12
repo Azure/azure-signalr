@@ -29,6 +29,8 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
 
     private readonly IHubProtocolResolver _hubProtocolResolver;
 
+    private readonly ICultureFeatureManager _cultureFeatureManager;
+
     public GracefulShutdownMode ShutdownMode { get; set; } = GracefulShutdownMode.Off;
 
     public bool AllowStatefulReconnects { get; set; }
@@ -45,7 +47,8 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
         IServerNameProvider nameProvider,
         IServiceEventHandler serviceEventHandler,
         IClientInvocationManager clientInvocationManager,
-        IHubProtocolResolver hubProtocolResolver)
+        IHubProtocolResolver hubProtocolResolver,
+        ICultureFeatureManager cultureFeatureManager)
     {
         _serviceProtocol = serviceProtocol;
         _clientConnectionManager = clientConnectionManager;
@@ -57,6 +60,7 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
         _serviceEventHandler = serviceEventHandler;
         _clientInvocationManager = clientInvocationManager;
         _hubProtocolResolver = hubProtocolResolver;
+        _cultureFeatureManager = cultureFeatureManager;
     }
 
     public virtual IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, AckHandler ackHandler, ServiceConnectionType type)
@@ -75,6 +79,7 @@ internal class ServiceConnectionFactory : IServiceConnectionFactory
             _serviceEventHandler,
             _clientInvocationManager,
             _hubProtocolResolver,
+            _cultureFeatureManager,
             type,
             ShutdownMode,
             allowStatefulReconnects: AllowStatefulReconnects

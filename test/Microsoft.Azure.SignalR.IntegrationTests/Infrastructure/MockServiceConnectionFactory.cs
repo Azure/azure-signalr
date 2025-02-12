@@ -12,7 +12,6 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 internal class MockServiceConnectionFactory : ServiceConnectionFactory
 {
     private IMockService _mockService;
-
     public MockServiceConnectionFactory(
         IMockService mockService,
         IServiceProtocol serviceProtocol,
@@ -25,16 +24,17 @@ internal class MockServiceConnectionFactory : ServiceConnectionFactory
         IServerNameProvider nameProvider,
         IHubProtocolResolver hubProtocolResolver)
         : base(
-              serviceProtocol,
-              clientConnectionManager,
-              connectionFactory,
-              loggerFactory,
-              connectionDelegate,
-              clientConnectionFactory,
-              nameProvider,
-              null,
-              clientInvocationManager,
-              hubProtocolResolver)
+            serviceProtocol,
+            clientConnectionManager,
+            connectionFactory,
+            loggerFactory,
+            connectionDelegate,
+            clientConnectionFactory,
+            nameProvider,
+            null,
+            clientInvocationManager,
+            hubProtocolResolver,
+            null)
     {
         _mockService = mockService;
     }
