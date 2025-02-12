@@ -48,7 +48,7 @@ jobs:
     - name: Test
       run: dotnet test --no-build --logger trx --results-directory "TestResults-ubuntu-${{ matrix.dotnet-version }}"
     - name: Upload dotnet test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dotnet-results-${{ matrix.dotnet-version }}
         path: TestResults-ubuntu-${{ matrix.dotnet-version }}

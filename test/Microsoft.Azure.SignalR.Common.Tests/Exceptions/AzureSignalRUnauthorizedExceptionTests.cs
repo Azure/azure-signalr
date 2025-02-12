@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -30,7 +30,7 @@ public class AzureSignalRUnauthorizedExceptionTests
         var jwtToken = AuthUtility.GenerateJwtToken(Encoding.UTF8.GetBytes(DefaultSigningKey),
                                                     issuer: tokenType == TokenType.Local ? Constants.AsrsTokenIssuer : "microsoft.com");
 
-        var inner = new Exception();
+        var inner = new InvalidOperationException();
         var exception = new AzureSignalRUnauthorizedException(requestUri, inner, jwtToken);
         Assert.Same(inner, exception.InnerException);
         Assert.StartsWith("401 Unauthorized,", exception.Message);

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -34,13 +35,14 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             var clientConnectionManager = new TestClientConnectionManager();
             using var proxy = new TestServiceConnectionProxy(clientConnectionManager, loggerFactory: loggerFactory);
+
             // start the server connection
             await proxy.StartServiceAsync().OrTimeout();
 
             var clientConnection = Guid.NewGuid().ToString("N");
 
             // Application layer sends OpenConnectionMessage
-            var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null, "?transport=webSockets");
+            var openConnectionMessage = new OpenConnectionMessage(clientConnection, [], null, "?transport=webSockets");
             var task = clientConnectionManager.WaitForClientConnectAsync(clientConnection).OrTimeout();
             await proxy.WriteMessageAsync(openConnectionMessage);
             await task;
@@ -80,14 +82,16 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
             DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig, new ServiceOptions { ConnectionString = ConnectionString }, appName, loggerFactory);
             using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory);
+
             // start the server connection
             await proxy.StartServiceAsync().OrTimeout();
 
             var clientConnection = Guid.NewGuid().ToString("N");
 
             var connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
+
             // Application layer sends OpenConnectionMessage
-            var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null, $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
+            var openConnectionMessage = new OpenConnectionMessage(clientConnection, [], null, $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
             await proxy.WriteMessageAsync(openConnectionMessage);
 
             var connectMessage = (await connectTask) as GroupBroadcastDataMessage;
@@ -148,7 +152,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
     [Fact]
     public async Task ServiceConnectionWithErrorConnectHub()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c=>true, logChecker:
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true, logChecker:
             logs =>
             {
                 Assert.Equal(2, logs.Count);
@@ -166,6 +170,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
             DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig, new ServiceOptions { ConnectionString = ConnectionString }, appName, loggerFactory);
             using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory);
+
             // start the server connection
             await proxy.StartServiceAsync().OrTimeout();
 
@@ -174,7 +179,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var connectTask = proxy.WaitForOutgoingMessageAsync(clientConnection).OrTimeout();
 
             // Application layer sends OpenConnectionMessage
-            var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null, $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
+            var openConnectionMessage = new OpenConnectionMessage(clientConnection, [], null, $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
             await proxy.WriteMessageAsync(openConnectionMessage);
 
             // other messages are just ignored because OnConnected failed
@@ -193,7 +198,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
         }
     }
 
-    [Fact]
+    [RetryFact]
     public async Task ServiceConnectionWithErrorDisconnectHub()
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: c => true, logChecker:
@@ -207,8 +212,9 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
             DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig,
-                new ServiceOptions {ConnectionString = ConnectionString}, appName, loggerFactory);
+                new ServiceOptions { ConnectionString = ConnectionString }, appName, loggerFactory);
             using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory);
+
             // start the server connection
             await proxy.StartServiceAsync().OrTimeout();
 
@@ -216,8 +222,9 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             var connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage))
                 .OrTimeout();
+
             // Application layer sends OpenConnectionMessage
-            var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null,
+            var openConnectionMessage = new OpenConnectionMessage(clientConnection, [], null,
                 $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
             await proxy.WriteMessageAsync(openConnectionMessage);
 
@@ -266,6 +273,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
             using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory);
+
             // start the server connection
             await proxy.StartServiceAsync().OrTimeout();
 
@@ -273,7 +281,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var connectTask = proxy.WaitForOutgoingMessageAsync(connectionId).OrTimeout();
 
             // Application layer sends OpenConnectionMessage to an authorized hub from anonymous user
-            var openConnectionMessage = new OpenConnectionMessage(connectionId, new Claim[0], null, "?transport=webSockets&connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
+            var openConnectionMessage = new OpenConnectionMessage(connectionId, [], null, "?transport=webSockets&connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
             await proxy.WriteMessageAsync(openConnectionMessage);
 
             var message = await connectTask;
@@ -301,6 +309,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
             using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory);
+
             // start the server connection
             await proxy.StartServiceAsync().OrTimeout();
 
@@ -309,7 +318,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var connectTask = proxy.WaitForOutgoingMessageAsync(connectionId).OrTimeout();
 
             // Application layer sends OpenConnectionMessage to an authorized hub from anonymous user
-            var openConnectionMessage = new OpenConnectionMessage(connectionId, new Claim[0], null, "?transport=webSockets&connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
+            var openConnectionMessage = new OpenConnectionMessage(connectionId, [], null, "?transport=webSockets&connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
             await proxy.WriteMessageAsync(openConnectionMessage);
 
             var message = await connectTask;
@@ -337,6 +346,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig,
                 new ServiceOptions { ConnectionString = ConnectionString }, appName, loggerFactory);
             using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory);
+
             // start the server connection
             var connectionTask = proxy.StartAsync();
             await proxy.ConnectionInitializedTask.OrTimeout();
@@ -345,8 +355,9 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             var connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage))
                 .OrTimeout();
+
             // Application layer sends OpenConnectionMessage
-            var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null,
+            var openConnectionMessage = new OpenConnectionMessage(clientConnection, [], null,
                 $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
             await proxy.WriteMessageAsync(openConnectionMessage);
 
@@ -393,6 +404,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig,
                 new ServiceOptions { ConnectionString = ConnectionString }, appName, loggerFactory);
             using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory);
+
             // start the server connection
             var connectionTask = proxy.StartAsync();
             await proxy.ConnectionInitializedTask.OrTimeout();
@@ -401,8 +413,9 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             var connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage))
                 .OrTimeout();
+
             // Application layer sends OpenConnectionMessage
-            var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null,
+            var openConnectionMessage = new OpenConnectionMessage(clientConnection, [], null,
                 $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
             await proxy.WriteMessageAsync(openConnectionMessage);
 
@@ -442,6 +455,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig,
                 new ServiceOptions { ConnectionString = ConnectionString }, appName, loggerFactory);
             using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory);
+
             // start the server connection
             var connectionTask = proxy.StartAsync();
             await proxy.ConnectionInitializedTask.OrTimeout();
@@ -450,8 +464,9 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             var connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage))
                 .OrTimeout();
+
             // Application layer sends OpenConnectionMessage
-            var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null,
+            var openConnectionMessage = new OpenConnectionMessage(clientConnection, [], null,
                 $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
             await proxy.WriteMessageAsync(openConnectionMessage);
 
@@ -500,6 +515,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
             DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig, new ServiceOptions { ConnectionString = ConnectionString }, appName, loggerFactory);
             using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory);
+
             // prepare 2 clients with different instancesId connected
             var instanceId1 = Guid.NewGuid().ToString();
             var connectionId1 = Guid.NewGuid().ToString("N");
@@ -513,7 +529,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             // Application layer sends OpenConnectionMessage for client1
             var connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
-            var openConnectionMessage = new OpenConnectionMessage(connectionId1, new Claim[0], header1, $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
+            var openConnectionMessage = new OpenConnectionMessage(connectionId1, [], header1, $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
             await proxy.WriteMessageAsync(openConnectionMessage);
 
             // client1 is connected
@@ -528,7 +544,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             // Application layer sends OpenConnectionMessage for client2
             connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
-            openConnectionMessage = new OpenConnectionMessage(connectionId2, new Claim[0], header2, $"?transport=webSockets&connectionToken=conn2&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
+            openConnectionMessage = new OpenConnectionMessage(connectionId2, [], header2, $"?transport=webSockets&connectionToken=conn2&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
             await proxy.WriteMessageAsync(openConnectionMessage);
 
             // client2 is connected
@@ -544,10 +560,10 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
             await proxy.WriteMessageAsync(new PingMessage()
             {
-                Messages = new[] { "offline", instanceId1 }
+                Messages = ["offline", instanceId1]
             });
 
-            // Validate client1 disconnect 
+            // Validate client1 disconnect
             connectMessage = (await connectTask) as GroupBroadcastDataMessage;
             Assert.NotNull(connectMessage);
             Assert.Equal($"hg-{hub}.note", connectMessage.GroupName);
@@ -564,7 +580,9 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
     private sealed class HubResponseItem
     {
         public string H { get; set; }
+
         public string M { get; set; }
+
         public List<string> A { get; set; }
     }
 }

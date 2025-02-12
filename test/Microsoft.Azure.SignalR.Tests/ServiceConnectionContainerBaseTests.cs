@@ -204,14 +204,14 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
         };
         using var container = new TestServiceConnectionContainer(connections, factory: new SimpleTestServiceConnectionFactory());
 
-        foreach (SimpleTestServiceConnection c in connections)
+        foreach (var c in connections.Cast<SimpleTestServiceConnection>())
         {
             Assert.False(c.ConnectionOfflineTask.IsCompleted);
         }
 
         await container.OfflineAsync(mode, default);
 
-        foreach (SimpleTestServiceConnection c in connections)
+        foreach (var c in connections.Cast<SimpleTestServiceConnection>())
         {
             Assert.True(c.ConnectionOfflineTask.IsCompleted);
         }

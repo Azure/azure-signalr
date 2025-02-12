@@ -1,35 +1,37 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace ClientResultSample
+using Microsoft.AspNetCore.SignalR;
+
+namespace ClientResultSample;
+
+public class ClientResultHub : Hub
 {
-    public class ClientResultHub : Hub
+    public override Task OnConnectedAsync()
     {
-        public override Task OnConnectedAsync()
-        {
-            return Clients.All.SendAsync("Connect", $"Connection '{Context.ConnectionId}' is connected.");
-        }
+        return Clients.All.SendAsync("Connect", $"Connection '{Context.ConnectionId}' is connected.");
+    }
 
-        public async Task<string> GetMessage(string ID)
+    public async Task<string> GetMessage(string ID)
+    {
+        try
         {
-            try
-            {
-                var res = await Clients.Client(ID).InvokeAsync<string>("GetMessage", default);
-                return $"From {ID}: {res}";
-            }
-            catch (Exception ex)
-            {
-                return $"[Error] Failed invoke connection {ID}]: {ex.Message}";
-            }
+            var res = await Clients.Client(ID).InvokeAsync<string>("GetMessage", default);
+            return $"From {ID}: {res}";
         }
+        catch (Exception ex)
+        {
+            return $"[Error] Failed invoke connection {ID}]: {ex.Message}";
+        }
+    }
 
-        public async Task Broadcast(string message)
-        {
-            await Clients.All.SendAsync("Broadcast", $"Broadcast from '{Context.ConnectionId}': {message}");
-        }
+    public async Task Broadcast(string message)
+    {
+        await Clients.All.SendAsync("Broadcast", $"Broadcast from '{Context.ConnectionId}': {message}");
+    }
 
-        public override Task OnDisconnectedAsync(Exception? exception)
-        {
-            return Clients.All.SendAsync("Connect", $"Connection '{Context.ConnectionId}' is disconnected.");
-        }
+    public override Task OnDisconnectedAsync(Exception? exception)
+    {
+        return Clients.All.SendAsync("Connect", $"Connection '{Context.ConnectionId}' is disconnected.");
     }
 }

@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 using (host)
                 {
-                    await host.StopAsync();
+                    await host.StopAsync(CancellationToken.None);
                 }
                 throw;
             }

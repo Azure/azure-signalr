@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -167,5 +167,10 @@ internal class ServiceConnectionManager : IServiceConnectionManager
                 yield return conn.Value;
             }
         }
+    }
+
+    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
     }
 }

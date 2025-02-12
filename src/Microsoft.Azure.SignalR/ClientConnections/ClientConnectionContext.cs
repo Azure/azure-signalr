@@ -85,7 +85,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private readonly int _closeTimeOutMilliseconds;
 
-    private readonly bool _isMigrated = false;
+    private readonly bool _isMigrated;
 
     private readonly PauseHandler _pauseHandler = new PauseHandler();
 
@@ -694,7 +694,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
         public Type GetReturnType(string invocationId) => typeof(object);
 
-        public Type GetStreamItemType(string streamId) => typeof(object);
+        public Type GetStreamItemType(string _) => typeof(object);
     }
 
     private sealed class ForwardMessageException : Exception

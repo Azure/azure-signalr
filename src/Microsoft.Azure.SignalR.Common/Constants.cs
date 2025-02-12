@@ -33,7 +33,7 @@ internal static class Constants
 
         public const string AzureSignalREndpointsKey = $"{AzureSignalRSectionKey}:Endpoints";
 
-        public static readonly string ConnectionStringSecondaryKey =
+        public const string ConnectionStringSecondaryKey =
             $"ConnectionStrings:{ConnectionStringDefaultKey}";
     }
 

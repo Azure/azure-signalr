@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR;
 
 internal class ServiceEndpointProvider : IServiceEndpointProvider
 {
-    public static readonly string ConnectionStringNotFound =
+    public const string ConnectionStringNotFound =
         "No connection string was specified. " +
         $"Please specify a configuration entry for {Constants.Keys.ConnectionStringDefaultKey}, " +
         "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";

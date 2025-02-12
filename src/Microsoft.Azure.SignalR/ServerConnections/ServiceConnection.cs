@@ -128,7 +128,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
                 // batch remove 100 connections once
                 if (tasks.Count % 100 == 0)
                 {
-                    await Task.Delay(1);
+                    await Task.Delay(1, token);
                     await Task.WhenAll(tasks);
                     tasks.Clear();
                 }
@@ -166,8 +166,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     protected override ReadOnlyMemory<byte> GetPingMessage()
     {
-        _pingMessages[1] = _clientConnectionManager.Count.ToString();
-        _pingMessages[3] = _connectionIds.Count.ToString();
+        _pingMessages[1] = _clientConnectionManager.Count.ToString(CultureInfo.InvariantCulture);
+        _pingMessages[3] = _connectionIds.Count.ToString(CultureInfo.InvariantCulture);
 
         return ServiceProtocol.GetMessageBytes(
             new PingMessage
@@ -201,7 +201,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
         message.Headers.TryGetValue(Constants.AsrsIsDiagnosticClient, out var isDiagnosticClientValue);
         if (!StringValues.IsNullOrEmpty(isDiagnosticClientValue))
         {
-            isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
+            isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault(), CultureInfo.InvariantCulture);
         }
 
         using (new ClientConnectionScope(endpoint: HubEndpoint, outboundConnection: this, isDiagnosticClient: isDiagnosticClient))

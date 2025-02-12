@@ -367,6 +367,10 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
         };
     }
 
+    /// <summary>
+    /// Looks like it is virtual for ut, pretty tricky, TODO: improve, could use configurable keepaliveticks options to disable the ping
+    /// </summary>
+    /// <returns></returns>
     protected virtual async ValueTask TrySendPingAsync()
     {
         if (!_writeLock.Wait(0))
@@ -428,7 +432,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     public abstract Task CloseClientConnections(CancellationToken token);
 
-    private async Task PauseClientConnectionAsync(IClientConnection clientConnection)
+    private static async Task PauseClientConnectionAsync(IClientConnection clientConnection)
     {
         await clientConnection.PauseAsync();
         await clientConnection.PauseAckAsync();
@@ -652,7 +656,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
                         UpdateReceiveTimestamp();
 
                         // No matter what kind of message come in, trigger send ping check
-                        _ = TrySendPingAsync();
+                        await TrySendPingAsync();
 
                         while (ServiceProtocol.TryParseMessage(ref buffer, out var message))
                         {

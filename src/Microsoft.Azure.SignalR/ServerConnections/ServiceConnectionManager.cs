@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR;
 
 internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionManager<THub> where THub : Hub
 {
-    private IServiceConnectionContainer _serviceConnection = null;
+    private IServiceConnectionContainer _serviceConnection;
 
     public void SetServiceConnection(IServiceConnectionContainer serviceConnection)
     {

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -20,13 +20,13 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public IList<string> Users => _connectedUsers.Keys.ToList();
 
-        private ConcurrentDictionary<string, bool> _connectedConnections = new ConcurrentDictionary<string, bool>();
-        private ConcurrentDictionary<string, bool> _connectedUsers = new ConcurrentDictionary<string, bool>();
+        private readonly ConcurrentDictionary<string, bool> _connectedConnections = new ConcurrentDictionary<string, bool>();
+        private readonly ConcurrentDictionary<string, bool> _connectedUsers = new ConcurrentDictionary<string, bool>();
 
-        private ConcurrentDictionary<int, TaskCompletionSource<string>> _connectionCountTcs =
+        private readonly ConcurrentDictionary<int, TaskCompletionSource<string>> _connectionCountTcs =
             new ConcurrentDictionary<int, TaskCompletionSource<string>>();
 
-        private int _count = 0;
+        private int _count;
 
         public void ClearAll()
         {

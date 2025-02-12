@@ -14,8 +14,6 @@ internal static class AuthUtility
 {
     private const int MaxTokenLength = 4096;
 
-    private static readonly SignalRJwtSecurityTokenHandler JwtTokenHandler = new();
-
     public static string GenerateJwtToken(byte[] keyBytes,
                                           string? kid = null,
                                           string? issuer = null,
@@ -28,7 +26,7 @@ internal static class AuthUtility
     {
         var subject = claims == null ? null : new ClaimsIdentity(claims);
 
-        var token = JwtTokenHandler.CreateJwtSecurityToken(
+        var token = SignalRJwtSecurityTokenHandler.CreateJwtSecurityToken(
             expires: expires,
             issuedAt: issuedAt,
             issuer: issuer,

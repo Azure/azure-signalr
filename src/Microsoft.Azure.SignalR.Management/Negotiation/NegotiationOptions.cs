@@ -34,17 +34,17 @@ public class NegotiationOptions
     public TimeSpan TokenLifetime { get; set; } = TimeSpan.FromHours(1);
 
     /// <summary>
-    /// Gets or sets the flag indicates whether the client is a diagnostic client.
+    /// Gets or sets the flag indicates whether the client is a diagnostic client. By default it is false.
     /// </summary>
-    public bool IsDiagnosticClient { get; set; } = false;
+    public bool IsDiagnosticClient { get; set; }
 
     /// <summary>
-    /// Gets or sets the flag indicates whether detailed errors are logged in the client side.
+    /// Gets or sets the flag indicates whether detailed errors are logged in the client side. By default it is false.
     /// </summary>
-    public bool EnableDetailedErrors { get; set; } = false;
+    public bool EnableDetailedErrors { get; set; }
 
     /// <summary>
-    /// Gets or sets the flag indicates that whether the connection should be closed when the authentication token expires. The lifetime of the token is determined by <see cref="TokenLifetime"/>.
+    /// Gets or sets the flag indicates that whether the connection should be closed when the authentication token expires. The lifetime of the token is determined by <see cref="TokenLifetime"/>. By default it is false.
     /// </summary>
-    public bool CloseOnAuthenticationExpiration { get; set; } = false;
+    public bool CloseOnAuthenticationExpiration { get; set; }
 }

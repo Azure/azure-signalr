@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -13,10 +13,14 @@ public static class EnumerableExtensions
 {
     public static bool ContainsAny<T>(this IEnumerable<T> values, T[] searchFor, IEqualityComparer<T>? comparer = null)
     {
+#if NET6_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(searchFor);
+#else
         if (searchFor == null)
         {
             throw new ArgumentNullException(nameof(searchFor));
         }
+#endif
 
         comparer ??= EqualityComparer<T>.Default;
 

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -23,11 +24,11 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     private static readonly TimeSpan CheckTimeSpan = TimeSpan.FromMinutes(10);
 
-    private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
+    private const int MaxReconnectBackOffInternalInMilliseconds = 1000;
 
     private static readonly TimeSpan MessageWriteRetryDelay = TimeSpan.FromMilliseconds(200);
 
-    private static readonly int MessageWriteMaxRetry = 3;
+    private const int MessageWriteMaxRetry = 3;
 
     // Give (interval * 3 + 1) delay when check value expire.
     private static readonly long DefaultServersPingTimeoutTicks = Stopwatch.Frequency * ((long)Constants.Periods.DefaultServersPingInterval.TotalSeconds * 3 + 1);
@@ -61,7 +62,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     private volatile bool _hasClients;
 
-    private volatile bool _terminated = false;
+    private volatile bool _terminated;
 
     public HubServiceEndpoint Endpoint { get; }
 
@@ -221,7 +222,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     public void HandleAck(AckMessage ackMessage)
     {
-        _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status);
+        _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status, ackMessage.Payload);
     }
 
     public virtual Task WriteAsync(ServiceMessage serviceMessage)
@@ -247,6 +248,60 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
         var status = await task;
         return AckHandler.HandleAckStatus(ackableMessage, status);
+    }
+
+    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
+    {
+        if (string.IsNullOrWhiteSpace(groupName))
+        {
+            throw new ArgumentException($"'{nameof(groupName)}' cannot be null or whitespace.", nameof(groupName));
+        }
+        if (top != null && top <= 0)
+        {
+            throw new ArgumentException($"'{nameof(top)}' must be greater than 0.", nameof(top));
+        }
+        var message = new GroupMemberQueryMessage() { GroupName = groupName, Top = top, TracingId = tracingId };
+        do
+        {
+            var response = await InvokeAsync<GroupMemberQueryResponse>(message, token);
+            foreach (var member in response.Members)
+            {
+                yield return member;
+            }
+            if (response.ContinuationToken == null)
+            {
+                yield break;
+            }
+            if (message.Top != null)
+            {
+                message.Top -= response.Members.Count;
+            }
+            message.ContinuationToken = response.ContinuationToken;
+        } while (true);
+    }
+
+    /// <summary>
+    /// <see cref="WriteAckableMessageAsync(ServiceMessage, CancellationToken)"/> only checks <see cref="AckMessage.Status"/> as the response, 
+    /// while this method checks <see cref="AckMessage.Payload"/> and deserialize it to <typeparamref name="T"/>.
+    /// </summary>
+    /// Made "interval virtual" for testing
+    internal virtual async Task<T> InvokeAsync<T>(ServiceMessage serviceMessage, CancellationToken cancellationToken = default) where T : notnull, new()
+    {
+        if (serviceMessage is not IAckableMessage ackableMessage)
+        {
+            throw new ArgumentException($"{nameof(serviceMessage)} is not {nameof(IAckableMessage)}");
+        }
+
+        var task = _ackHandler.CreateSingleAck<T>(out var id, null, cancellationToken);
+        ackableMessage.AckId = id;
+
+        // Sending regular messages completes as soon as the data leaves the outbound pipe,
+        // whereas ackable ones complete upon full roundtrip of the message and the ack (or timeout).
+        // Therefore sending them over different connections creates a possibility for processing them out of original order.
+        // By sending both message types over the same connection we ensure that they are sent (and processed) in their original order.
+        await WriteMessageAsync(serviceMessage);
+
+        return await task;
     }
 
     public virtual Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
@@ -352,10 +407,14 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     protected virtual async Task OnConnectionComplete(IServiceConnection serviceConnection)
     {
+#if NET6_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(serviceConnection);
+#else
         if (serviceConnection == null)
         {
             throw new ArgumentNullException(nameof(serviceConnection));
         }
+#endif
 
         serviceConnection.ConnectionStatusChanged -= OnConnectionStatusChanged;
 
@@ -463,7 +522,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     private IServiceConnection SelectConnection(ServiceMessage message)
     {
-        IServiceConnection connection = null;
+        IServiceConnection connection;
         if (ClientConnectionScope.IsScopeEstablished)
         {
             // see if the execution context already has the connection stored for this container
@@ -509,7 +568,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         return connection;
     }
 
-    private bool IsActiveConnection(IServiceConnection connection)
+    private static bool IsActiveConnection(IServiceConnection connection)
     {
         return connection != null && connection.Status == ServiceConnectionStatus.Connected;
     }
@@ -661,9 +720,9 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
         // Considering parallel add endpoints to save time,
         // Add a counter control multiple time call Start() and Stop() correctly.
-        private long _counter = 0;
+        private long _counter;
 
-        private long _lastSendTimestamp = 0;
+        private long _lastSendTimestamp;
 
         private TimerAwaitable _timer;
 
@@ -754,84 +813,84 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     private static class Log
     {
-        private static readonly Action<ILogger, string, string, Exception> _endpointOnline =
+        private static readonly Action<ILogger, string, string, Exception> EndpointOnlineAction =
             LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(1, "EndpointOnline"), "Hub '{hub}' is now connected to '{endpoint}'.");
 
-        private static readonly Action<ILogger, string, string, Exception> _endpointOffline =
+        private static readonly Action<ILogger, string, string, Exception> EndpointOfflineAction =
             LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(2, "EndpointOffline"), "Hub '{hub}' is now disconnected from '{endpoint}'. Please check log for detailed info.");
 
-        private static readonly Action<ILogger, Exception> _receivedFinAckPing =
+        private static readonly Action<ILogger, Exception> ReceivedFinAckPingAction =
             LoggerMessage.Define(LogLevel.Information, new EventId(3, "ReceivedFinAckPing"), "Received FinAck ping.");
 
-        private static readonly Action<ILogger, int, Exception> _timeoutWaitingForFinAck =
+        private static readonly Action<ILogger, int, Exception> TimeoutWaitingForFinAckAction =
             LoggerMessage.Define<int>(LogLevel.Error, new EventId(4, "TimeoutWaitingForFinAck"), "Fail to receive FinAckPing after retry {retryCount} times.");
 
-        private static readonly Action<ILogger, string, double, Exception> _startingPingTimer =
+        private static readonly Action<ILogger, string, double, Exception> StartingPingTimerAction =
             LoggerMessage.Define<string, double>(LogLevel.Debug, new EventId(5, "StartingPingTimer"), "Starting { pingName } ping timer. Duration: {KeepAliveInterval:0.00}ms");
 
-        private static readonly Action<ILogger, string, Exception> _sentPing =
+        private static readonly Action<ILogger, string, Exception> SentPingAction =
             LoggerMessage.Define<string>(LogLevel.Debug, new EventId(6, "SentPing"), "Sent a { pingName } ping message to service.");
 
-        private static readonly Action<ILogger, string, Exception> _failedSendingPing =
+        private static readonly Action<ILogger, string, Exception> FailedSendingPingAction =
             LoggerMessage.Define<string>(LogLevel.Warning, new EventId(7, "FailedSendingPing"), "Failed sending a { pingName } ping message to service.");
 
-        private static readonly Action<ILogger, bool, ServiceEndpoint, string, Exception> _receivedServiceStatusPing =
+        private static readonly Action<ILogger, bool, ServiceEndpoint, string, Exception> ReceivedServiceStatusPingAction =
             LoggerMessage.Define<bool, ServiceEndpoint, string>(LogLevel.Debug, new EventId(8, "ReceivedServiceStatusPing"), "Received a service status active={isActive} from {endpoint} for hub {hub}.");
 
-        private static readonly Action<ILogger, ServiceEndpoint, string, Exception> _receivedServersTagPing =
+        private static readonly Action<ILogger, ServiceEndpoint, string, Exception> ReceivedServersTagPingAction =
             LoggerMessage.Define<ServiceEndpoint, string>(LogLevel.Debug, new EventId(9, "ReceivedServersTagPing"), "Received a servers tag ping from {endpoint} for hub {hub}.");
 
-        private static readonly Action<ILogger, string, Exception> _timerAlreadyStopped =
+        private static readonly Action<ILogger, string, Exception> TimerAlreadyStoppedAction =
             LoggerMessage.Define<string>(LogLevel.Debug, new EventId(10, "TimerAlreadyStopped"), "Failed to stop {pingName} timer as it's not started");
 
         public static void EndpointOnline(ILogger logger, HubServiceEndpoint endpoint)
         {
-            _endpointOnline(logger, endpoint.Hub, endpoint.ToString(), null);
+            EndpointOnlineAction(logger, endpoint.Hub, endpoint.ToString(), null);
         }
 
         public static void EndpointOffline(ILogger logger, HubServiceEndpoint endpoint)
         {
-            _endpointOffline(logger, endpoint.Hub, endpoint.ToString(), null);
+            EndpointOfflineAction(logger, endpoint.Hub, endpoint.ToString(), null);
         }
 
         public static void ReceivedFinAckPing(ILogger logger)
         {
-            _receivedFinAckPing(logger, null);
+            ReceivedFinAckPingAction(logger, null);
         }
 
         public static void TimeoutWaitingForFinAck(ILogger logger, int retryCount)
         {
-            _timeoutWaitingForFinAck(logger, retryCount, null);
+            TimeoutWaitingForFinAckAction(logger, retryCount, null);
         }
 
         public static void StartingPingTimer(ILogger logger, string pingName, TimeSpan keepAliveInterval)
         {
-            _startingPingTimer(logger, pingName, keepAliveInterval.TotalMilliseconds, null);
+            StartingPingTimerAction(logger, pingName, keepAliveInterval.TotalMilliseconds, null);
         }
 
         public static void SentPing(ILogger logger, string pingName)
         {
-            _sentPing(logger, pingName, null);
+            SentPingAction(logger, pingName, null);
         }
 
         public static void FailedSendingPing(ILogger logger, string pingName, Exception exception)
         {
-            _failedSendingPing(logger, pingName, exception);
+            FailedSendingPingAction(logger, pingName, exception);
         }
 
         public static void ReceivedServiceStatusPing(ILogger logger, bool isActive, HubServiceEndpoint endpoint)
         {
-            _receivedServiceStatusPing(logger, isActive, endpoint, endpoint.Hub, null);
+            ReceivedServiceStatusPingAction(logger, isActive, endpoint, endpoint.Hub, null);
         }
 
         public static void ReceivedServersTagPing(ILogger logger, HubServiceEndpoint endpoint)
         {
-            _receivedServersTagPing(logger, endpoint, endpoint.Hub, null);
+            ReceivedServersTagPingAction(logger, endpoint, endpoint.Hub, null);
         }
 
         public static void TimerAlreadyStopped(ILogger logger, string pingName)
         {
-            _timerAlreadyStopped(logger, pingName, null);
+            TimerAlreadyStoppedAction(logger, pingName, null);
         }
     }
 }

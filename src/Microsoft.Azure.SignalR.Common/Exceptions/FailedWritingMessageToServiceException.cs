@@ -22,10 +22,14 @@ namespace Microsoft.Azure.SignalR.Common
         protected FailedWritingMessageToServiceException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+#if NET6_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(info);
+#else
             if (info == null)
             {
                 throw new ArgumentNullException(nameof(info));
             }
+#endif
 
             info.AddValue("EndpointUri", EndpointUri);
             base.GetObjectData(info, context);

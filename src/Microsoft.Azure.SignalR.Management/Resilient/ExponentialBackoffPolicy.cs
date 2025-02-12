@@ -15,15 +15,16 @@ internal class ExponentialBackOffPolicy : IBackOffPolicy
 
     public ExponentialBackOffPolicy(IOptions<ServiceManagerOptions> options)
     {
-        var retryOptions = options.Value.RetryOptions ?? throw new ArgumentException();
+        var retryOptions = options.Value.RetryOptions ?? throw new ArgumentException("Retry options expected");
         if (retryOptions.Mode != ServiceManagerRetryMode.Exponential)
         {
-            throw new ArgumentException();
+            throw new ArgumentException("Only Exponential mode is supported");
         }
         _maxRetries = retryOptions.MaxRetries;
         _minDelay = retryOptions.Delay;
         _maxDelay = retryOptions.MaxDelay;
     }
+
     public IEnumerable<TimeSpan> GetDelays()
     {
         var lastDelay = TimeSpan.MinValue;
