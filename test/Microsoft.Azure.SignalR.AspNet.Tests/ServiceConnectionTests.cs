@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
@@ -394,7 +393,6 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
                 return true;
             }))
         {
-            var logger = loggerFactory.CreateLogger(nameof(ServiceConnectionTests));
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
             var hub = "EndlessConnect";
@@ -434,7 +432,6 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             // close transport layer
             proxy.TestConnectionContext.Application.Output.Complete();
 
-            logger.LogInformation("Application output completed");
             // wait for application task to timeout
             await proxy.WaitForConnectionClose.OrTimeout(30000);
             Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
