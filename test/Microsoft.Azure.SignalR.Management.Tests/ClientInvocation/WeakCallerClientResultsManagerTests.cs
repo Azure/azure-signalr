@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
     public class WeakCallerClientResultsManagerTests
     {
 
-        private WeakCallerClientResultsManager CreateManager(
+        private static WeakCallerClientResultsManager CreateManager(
             IServiceEndpointManager endpointManager = null,
             IEndpointRouter endpointRouter = null,
             IHubProtocolResolver protocolResolver = null)
@@ -28,7 +28,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             return new WeakCallerClientResultsManager(mockEndpointManager, mockEndpointRouter, ackHandler, mockHubProtocolResolver);
         }
-
 
         [Fact]
         public async Task AddInvocation_ShouldAddAndCompleteSuccessfully()
@@ -46,26 +45,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             var result = await task;
             Assert.Equal("TestResult", result);
-        }
-
-        [Fact]
-        public void CleanupInvocationsByConnection_ShouldRemoveAllMatchingInvocations()
-        {
-            var manager = CreateManager();
-            var cancellationToken = new CancellationToken();
-
-            var connectionId = "connection1";
-            var hub = "testHub";
-            var invocationId1 = manager.GenerateInvocationId(connectionId);
-            var invocationId2 = manager.GenerateInvocationId(connectionId);
-
-            manager.AddInvocation<string>(hub, connectionId, invocationId1, cancellationToken);
-            manager.AddInvocation<string>(hub, connectionId, invocationId2, cancellationToken);
-
-            manager.CleanupInvocationsByConnection(connectionId);
-
-            Assert.Throws<InvalidOperationException>(() => manager.GetReturnType(invocationId1));
-            Assert.Throws<InvalidOperationException>(() => manager.GetReturnType(invocationId2));
         }
 
         [Fact]
@@ -132,15 +111,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var cancellationToken = new CancellationToken();
             var invocationId = manager.GenerateInvocationId(connectionId);
 
-
-
             // Act
             var task = manager.AddInvocation<string>(hub, connectionId, invocationId, cancellationToken);
 
             var completionMessage1 = CompletionMessage.Empty(invocationId);
             manager.TryCompleteResult(connectionId, completionMessage1);
             Assert.False(task.IsCompleted, "The task should not be completed after the first message.");
-
 
             var completionMessage2 = CompletionMessage.WithResult(invocationId, "FinalResult");
             manager.TryCompleteResult(connectionId, completionMessage2);
@@ -171,8 +147,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var manager = CreateManager(mockEndpointManager.Object, mockEndpointRouter.Object);
             var cancellationToken = new CancellationToken();
             var invocationId = manager.GenerateInvocationId(connectionId);
-
-
 
             // Act
             var task = manager.AddInvocation<string>(hub, connectionId, invocationId, cancellationToken);

@@ -73,19 +73,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public void CleanupInvocationsByInstance(string instanceId) { }
 
-        public void CleanupInvocationsByConnection(string connectionId)
-        {
-            foreach (var (invocationId, invocation) in _pendingInvocations)
-            {
-                if (invocation.ConnectionId == connectionId)
-                {
-                    var message = CompletionMessage.WithError(invocationId, $"Connection '{invocation.ConnectionId}' is disconnected.");
-
-                    invocation.Complete(invocation.Tcs, message);
-                    _pendingInvocations.TryRemove(invocationId, out _);
-                }
-            }
-        }
+        public void CleanupInvocationsByConnection(string connectionId) { }
 
         public bool TryCompleteResult(string connectionId, CompletionMessage message)
         {

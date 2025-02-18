@@ -5,7 +5,9 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+#if NET7_0_OR_GREATER
 using Microsoft.AspNetCore.SignalR.Protocol;
+#endif
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -14,6 +16,9 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IServiceHubLifetimeManager<THub> where THub : Hub
     {
+#if NET7_0_OR_GREATER
+        private const int DefaultInvocationTimeoutSeconds = 3;
+#endif
         private readonly IOptions<ServiceManagerOptions> _serviceManagerOptions;
         private readonly IClientInvocationManager _clientInvocationManager;
         private readonly IServerNameProvider _serverNameProvider;
@@ -226,9 +231,10 @@ namespace Microsoft.Azure.SignalR.Management
 #if NET7_0_OR_GREATER
         public override async Task<T> InvokeConnectionAsync<T>(string connectionId, string methodName, object?[] args, CancellationToken cancellationToken = default)
         {
-            if (cancellationToken == default)
+            // cancellationToken is required to be cancellable.
+            if (!cancellationToken.CanBeCanceled)
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(DefaultInvocationTimeoutSeconds));
                 cancellationToken = cts.Token;
             }
 

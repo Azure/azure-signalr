@@ -121,8 +121,6 @@ namespace Microsoft.Azure.SignalR.Management
 
             services.AddRestClient();
             services.AddSingleton<NegotiateProcessor>();
-            services.AddSingleton<IServerNameProvider, DefaultServerNameProvider>();
-
 #if NET7_0_OR_GREATER
             services.AddSingleton<IClientInvocationManager, WeakClientInvocationManager>();
 #else

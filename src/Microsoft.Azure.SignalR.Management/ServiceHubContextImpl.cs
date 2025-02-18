@@ -67,12 +67,14 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override ServiceHubContext WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
-#pragma warning disable CA1510 // Use ArgumentNullException throw helper
+#if NET6_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(endpoints);
+#else
             if (endpoints is null)
             {
                 throw new ArgumentNullException(nameof(endpoints));
             }
-#pragma warning restore CA1510 // Use ArgumentNullException throw helper
+#endif
 
             var targetEndpoints = _endpointManager.GetEndpoints(_hubName).Intersect(endpoints, EqualityComparer<ServiceEndpoint>.Default).ToList();
             var container = new MessageWriterServiceContainerWrapper(targetEndpoints, ServiceProvider.GetRequiredService<ILoggerFactory>());
