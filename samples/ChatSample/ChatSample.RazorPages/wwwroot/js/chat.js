@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 function getRandomDelay() {
     function getRandom(min, max) {
@@ -42,7 +42,7 @@ connection.on("GetMessage", async function () {
     document.getElementById("sendButton").disabled = false;
     var res = await new Promise(function (resolve, reject) {
         document.getElementById("sendButton").addEventListener("click", (event) => {
-            var message = document.getElementById("messageInput").value;
+            var message = document.getElementById("messageReply").value;
             resolve(message);
         });
     });
@@ -58,6 +58,7 @@ async function startConnection() {
             console.log(`Attempt ${count}`);
             await connection.start();
             document.getElementById("getButton").disabled = false;
+            document.getElementById("connectionIdInput").value = connection.connectionId;
             break;
         } catch (err) {
             await delay(getRandomDelay());

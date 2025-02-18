@@ -49,32 +49,31 @@ dotnet run
 You can also specify a custom port:
 
 ```bash
-dotnet run --urls="http://localhost:5050"
+dotnet run --urls="https://localhost:5050"
 ```
 
 ## Accessing the Application
 
 To access the chat application, open your web browser and navigate to:
-- `http://localhost:5212` (or the custom port you specified)
+- `https://localhost:7113` (or the custom port you specified)
 
 
 #### Using broadcast method
 
 1. Browse to the site with your favorite browser and it will connect with the SignalR Javascript client.
 2. It creates 2 clients by default.
-3. Etner some message in the text box above 'Broadcast'.
+3. Enter some message in the text box above 'Broadcast'.
 4. Press 'Broadcast' to send message to all connected clients.
 
-#### Using Client results
+#### Using client results
 
 The sample also shows the usage of [SignalR client results](https://learn.microsoft.com/aspnet/core/signalr/hubs#client-results) which is the new feature supported since NET7.0.
 
-
 1. Browse to the site with your favorite browser and it will connect with the SignalR Javascript client.
 2. It creates 2 clients by default. Grab an ID from the connected connections and paste it in the ID text box.
-3. Press 'Get Message' to invoke a Hub method which will ask the specified ID for a result.
-4. The client invoked will unlock 'Ack Message' button and you can type something in the text box above.
-5. Press 'Ack Message' to return the message to the server which will return it to the original client that asked for a result.
+3. Press 'Invoke' to invoke a Hub method which will ask the specified ID for a result.
+4. The client invoked will unlock 'Reply' button and you can type something in the text box above.
+5. Press 'Reply' to return the message to the server which will return it to the original client that asked for a result.
 
 #### Using client results from anywhere with `IHubContext`
 
