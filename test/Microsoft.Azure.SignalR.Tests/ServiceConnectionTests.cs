@@ -36,10 +36,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     [Fact]
     public async Task TestServiceConnectionHandleOfflineMessageTask()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Information, logChecker: logs =>
-        {
-            return logs.Where(x => x.Write.EventId.Name == "ReceivedConnectionOffline").Single() != null;
-        }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Information))
         {
             var ccm = new TestClientConnectionManager();
             var ccf = new ClientConnectionFactory(loggerFactory);
@@ -72,17 +69,14 @@ public class ServiceConnectionTests : VerifiableLoggedTest
 
             await connectionTask.OrTimeout();
             Assert.Equal(ServiceConnectionStatus.Disconnected, serviceConnection.Status);
+            logCollector.Expects("ReceivedConnectionOffline");
         }
     }
 
     [Fact]
     public async Task TestServiceConnectionHandlePauseMessageTask()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Information, logChecker: logs =>
-        {
-            return logs.Where(x => x.Write.EventId.Name == "OutgoingTaskPaused").Count() == 2
-                && logs.Where(x => x.Write.EventId.Name == "OutgoingTaskPauseAck").SingleOrDefault() != null;
-        }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Information))
         {
             var ccm = new TestClientConnectionManager();
             var ccf = new ClientConnectionFactory(loggerFactory);
@@ -128,16 +122,15 @@ public class ServiceConnectionTests : VerifiableLoggedTest
 
             await connectionTask.OrTimeout();
             Assert.Equal(ServiceConnectionStatus.Disconnected, serviceConnection.Status);
+            logCollector.Expects("OutgoingTaskPaused");
+            logCollector.Expects("OutgoingTaskPauseAck");
         }
     }
 
     [Fact]
     public async Task TestServiceConnectionHandleResumeMessageTask()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Information, logChecker: logs =>
-        {
-            return logs.Where(x => x.Write.EventId.Name == "OutgoingTaskResume").SingleOrDefault() != null;
-        }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Information))
         {
             var ccm = new TestClientConnectionManager();
             var ccf = new ClientConnectionFactory(loggerFactory);
@@ -173,6 +166,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
 
             await connectionTask.OrTimeout();
             Assert.Equal(ServiceConnectionStatus.Disconnected, serviceConnection.Status);
+            logCollector.Expects("OutgoingTaskResume");
         }
     }
 
@@ -286,14 +280,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     [Fact]
     public async Task TestServiceConnectionWithErrorApplicationTask()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
-            logChecker: logs =>
-            {
-                Assert.Equal(2, logs.Count);
-                Assert.Equal("SendLoopStopped", logs[0].Write.EventId.Name);
-                Assert.Equal("ApplicationTaskFailed", logs[1].Write.EventId.Name);
-                return true;
-            }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var ccm = new TestClientConnectionManager();
             var ccf = new ClientConnectionFactory(loggerFactory);
@@ -347,6 +334,8 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             await connectionTask.OrTimeout();
             Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
             Assert.Empty(ccm.ClientConnections);
+            logCollector.Expects("SendLoopStopped");
+            logCollector.Expects("ApplicationTaskFailed");
         }
     }
 
@@ -354,14 +343,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     public async Task TestServiceConnectionWithEndlessApplicationTaskNeverEnds()
     {
         var clientConnectionId = Guid.NewGuid().ToString();
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
-            logChecker: logs =>
-            {
-                Assert.Single(logs);
-                Assert.Equal("DetectedLongRunningApplicationTask", logs[0].Write.EventId.Name);
-                Assert.Equal($"The connection {clientConnectionId} has a long running application logic that prevents the connection from complete after 1 milliseconds.", logs[0].Write.Message);
-                return true;
-            }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var ccm = new TestClientConnectionManager();
             var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 1);
@@ -418,19 +400,15 @@ public class ServiceConnectionTests : VerifiableLoggedTest
 
             // since the service connection ends, the client connection is cleaned up from the collection...
             Assert.Empty(ccm.ClientConnections);
+            var log = logCollector.Expects("DetectedLongRunningApplicationTask");
+            Assert.Equal($"The connection {clientConnectionId} has a long running application logic that prevents the connection from complete after 1 milliseconds.", log.Write.Message);
         }
     }
 
     [Fact]
     public async Task TestClientConnectionOutgoingAbortCanEndLifeTime()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
-            logChecker: logs =>
-            {
-                // Cancel does not need to throw
-                Assert.Empty(logs);
-                return true;
-            }))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var ccm = new TestClientConnectionManager();
             var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
@@ -494,8 +472,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     [Fact]
     public async Task TestClientConnectionContextAbortCanSendOutCloseMessage()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
-            logChecker: logs => true))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var ccm = new TestClientConnectionManager();
             var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
@@ -657,7 +634,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     [InlineData("anotherheader", false)]
     public async Task TestClientConnectionShouldSkipHandshakeWhenMigrateIn(string headerKey, bool shoudSkip)
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs => true))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var ccm = new TestClientConnectionManager();
             var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
@@ -741,12 +718,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     [Fact]
     public async Task TestClientConnectionLastWillCanSendOut()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
-            logChecker: logs =>
-            {
-                Assert.Empty(logs);
-                return true;
-            }))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var ccm = new TestClientConnectionManager();
             var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 1000);
@@ -809,12 +781,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     [Fact]
     public async Task TestPartialMessagesShouldFlushCorrectly()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
-            logChecker: logs =>
-            {
-                Assert.Empty(logs);
-                return true;
-            }))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var ccm = new TestClientConnectionManager();
             var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);
@@ -908,12 +875,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     [Fact]
     public async Task TestPartialMessagesShouldBeRemovedWhenReconnected()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
-            logChecker: logs =>
-            {
-                Assert.Empty(logs);
-                return true;
-            }))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var ccm = new TestClientConnectionManager();
             var ccf = new ClientConnectionFactory(loggerFactory, closeTimeOutMilliseconds: 500);

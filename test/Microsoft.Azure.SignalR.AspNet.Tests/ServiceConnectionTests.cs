@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -151,14 +150,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
     [Fact]
     public async Task ServiceConnectionWithErrorConnectHub()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true, logChecker:
-            logs =>
-            {
-                Assert.Equal(2, logs.Count);
-                Assert.Equal("ErrorExecuteConnected", logs[0].Write.EventId.Name);
-                Assert.Equal("ConnectedStartingFailed", logs[1].Write.EventId.Name);
-                return true;
-            }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
@@ -194,14 +186,16 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             // cleaned up clearly
             Assert.Empty(ccm.ClientConnections);
+
+            logCollector.Expects("ErrorExecuteConnected");
+            logCollector.Expects("ConnectedStartingFailed");
         }
     }
 
-    [RetryFact]
+    [Fact]
     public async Task ServiceConnectionWithErrorDisconnectHub()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: c => true, logChecker:
-            logs => true))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
@@ -259,14 +253,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
     [Fact]
     public async Task ServiceConnectionDispatchOpenConnectionToUnauthorizedHubTest()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true, logChecker:
-            logs =>
-            {
-                Assert.Single(logs);
-                Assert.Equal("ConnectedStartingFailed", logs[0].Write.EventId.Name);
-                Assert.Equal("Unable to authorize request", logs[0].Write.Exception.Message);
-                return true;
-            }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var hubConfig = new HubConfiguration();
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
@@ -289,20 +276,15 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             // Verify client connection is not created due to authorized failure.
             Assert.False(ccm.TryGetClientConnection(connectionId, out var connection));
+            var log = logCollector.Expects("ConnectedStartingFailed");
+            Assert.Equal("Unable to authorize request", log.Write.Exception.Message);
         }
     }
 
     [Fact]
     public async Task ServiceConnectionWithNormalClientConnection()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true, logChecker:
-            logs =>
-            {
-                Assert.Single(logs);
-                Assert.Equal("ConnectedStartingFailed", logs[0].Write.EventId.Name);
-                Assert.Equal("Unable to authorize request", logs[0].Write.Exception.Message);
-                return true;
-            }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var hubConfig = new HubConfiguration();
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
@@ -326,6 +308,8 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             // Verify client connection is not created due to authorized failure.
             Assert.False(ccm.TryGetClientConnection(connectionId, out var connection));
+            var log = logCollector.Expects("ConnectedStartingFailed");
+            Assert.Equal("Unable to authorize request", log.Write.Exception.Message);
         }
     }
 
@@ -334,7 +318,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
     [InlineData("ErrorDisconnect")]
     public async Task ServiceConnectionWithTransportLayerClosedShouldCleanupNormalClientConnections(string hub)
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: c => true))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
@@ -383,15 +367,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
     [Fact]
     public async Task ServiceConnectionWithTransportLayerClosedShouldCleanupEndlessConnectClientConnections()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: c => true, logChecker:
-            logs =>
-            {
-                var errorLogs = logs.Where(s => s.Write.LogLevel == LogLevel.Error).ToList();
-                Assert.Single(errorLogs);
-                Assert.Equal("ApplicationTaskTimedOut", errorLogs[0].Write.EventId.Name);
-
-                return true;
-            }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
@@ -417,7 +393,6 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var openConnectionMessage = new OpenConnectionMessage(clientConnection, [], null,
                 $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
             await proxy.WriteMessageAsync(openConnectionMessage);
-
             var connectMessage = (await connectTask) as GroupBroadcastDataMessage;
             Assert.NotNull(connectMessage);
             Assert.Equal($"hg-{hub}.note", connectMessage.GroupName);
@@ -438,13 +413,15 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             // cleaned up clearly
             Assert.Empty(ccm.ClientConnections);
+
+            logCollector.Expects("ApplicationTaskTimedOut");
         }
     }
 
     [Fact]
     public async Task ServiceConnectionWithTransportLayerClosedShouldCleanupEndlessInvokeClientConnections()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: c => true))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
@@ -489,6 +466,8 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var broadcastMessage = (await gbTask) as GroupBroadcastDataMessage;
             Assert.NotNull(broadcastMessage);
             Assert.Equal($"hg-{hub}.group1", broadcastMessage.GroupName);
+
+            var disconnectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
 
             // close transport layer
             proxy.TestConnectionContext.Application.Output.Complete();
@@ -575,6 +554,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             // Validate client2 is still connected
             Assert.Single(ccm.ClientConnections);
             Assert.Equal(connectionId2, ccm.ClientConnections.FirstOrDefault().ConnectionId);
+            await proxy.WaitForConnectionClose.OrTimeout();
         }
     }
 

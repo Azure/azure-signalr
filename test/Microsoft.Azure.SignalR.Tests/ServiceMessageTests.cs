@@ -264,7 +264,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
     [InlineData(121, false)] // becomes unavailable only after the key has expired.
     public async Task TestAccessKeyResponseMessageWithError(int minutesElapsed, bool expectAvailable)
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Error, expectedErrors: c => true))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Error))
         {
             var endpoint = new TestHubServiceEndpoint(endpoint: new TestServiceEndpoint(new DefaultAzureCredential()));
             var key = Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);

@@ -755,7 +755,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     [SkipIfConnectionStringNotPresent]
     public async Task ServiceHubContextIndependencyTest()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: context => context.EventId == new EventId(2, "EndpointOffline")))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
             using var serviceManager = new ServiceManagerBuilder()
                 .WithOptions(o =>
@@ -771,6 +771,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
             await hubContext_1.DisposeAsync();
             await hubContext_2.Clients.All.SendAsync(MethodName, Message);
             await hubContext_2.DisposeAsync();
+
+            logCollector.Expects("EndpointOffline");
         }
     }
 

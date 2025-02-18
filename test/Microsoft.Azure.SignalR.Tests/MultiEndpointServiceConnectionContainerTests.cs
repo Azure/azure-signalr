@@ -139,11 +139,11 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
     private static readonly JoinGroupWithAckMessage DefaultGroupMessage = new("a", "a", -1);
 
-    private readonly string ConnectionString1 = string.Format(CultureInfo.InvariantCulture, ConnectionStringFormatter, Url1);
+    private static readonly string ConnectionString1 = string.Format(CultureInfo.InvariantCulture, ConnectionStringFormatter, Url1);
 
-    private readonly string ConnectionString2 = string.Format(CultureInfo.InvariantCulture, ConnectionStringFormatter, Url2);
+    private static readonly string ConnectionString2 = string.Format(CultureInfo.InvariantCulture, ConnectionStringFormatter, Url2);
 
-    private readonly string ConnectionString3 = string.Format(CultureInfo.InvariantCulture, ConnectionStringFormatter, Url3);
+    private static readonly string ConnectionString3 = string.Format(CultureInfo.InvariantCulture, ConnectionStringFormatter, Url3);
 
     public MultiEndpointServiceConnectionContainerTests(ITestOutputHelper output) : base(output)
     {
@@ -473,14 +473,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
     [Fact]
     public async Task TestContainerWithTwoEndpointWithAllOfflineSucceedsWithWarning()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
-        {
-            var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
-
-            Assert.Single(warns);
-            Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
-            return true;
-        }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var sem = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1),
@@ -502,19 +495,17 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             _ = container.StartAsync();
             await container.ConnectionInitializedTask;
             await container.WriteAckableMessageAsync(DefaultGroupMessage);
+            var warns = logCollector.ExpectsMany(s => s.Write.LogLevel == LogLevel.Warning);
+
+            Assert.Single(warns);
+            Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
         }
     }
 
     [Fact]
     public async Task TestContainerWithTwoOfflineEndpointWriteAckableMessageSucceedsWithWarning()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
-        {
-            var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
-            Assert.Single(warns);
-            Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
-            return true;
-        }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var sem = new TestServiceEndpointManager(
             new ServiceEndpoint(ConnectionString1),
@@ -535,6 +526,9 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             await container.ConnectionInitializedTask;
 
             await container.WriteAckableMessageAsync(DefaultGroupMessage);
+            var warns = logCollector.ExpectsMany(s => s.Write.LogLevel == LogLevel.Warning);
+            Assert.Single(warns);
+            Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
         }
     }
 

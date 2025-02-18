@@ -448,7 +448,7 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
     [Fact]
     public async Task TestRunAzureSignalRWithDefaultRouterNegotiateWithFallback()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: e => true))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             // Prepare the configuration
             var hubConfig = Utility.GetTestHubConfig(loggerFactory, "chat");
@@ -830,15 +830,7 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
     public async Task TestRunAzureSignalStartsServerConnection()
     {
         // Prepare the configuration
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, logChecker: i =>
-        {
-            // the logs should contain start and stop
-            var names = i.Select(s => s.Write.EventId.Name).ToArray();
-            return names.Contains("StartingConnection")
-            && names.Contains("StartTransport")
-            && names.Contains("TransportStopping")
-            && names.Contains("FailedToConnect");
-        }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         using (new AppSettingsConfigScope(ConnectionString))
         {
             var hubConfig = Utility.GetTestHubConfig(loggerFactory);
@@ -854,6 +846,12 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
                 // 5 seconds for one websocket failure round
                 await options.ConnectionInitializedTask.OrTimeout(20000);
             }
+
+            // the logs should contain start and stop
+            logCollector.Expects("StartingConnection");
+            logCollector.Expects("StartTransport");
+            logCollector.Expects("TransportStopping");
+            logCollector.Expects("FailedToConnect");
         }
     }
 

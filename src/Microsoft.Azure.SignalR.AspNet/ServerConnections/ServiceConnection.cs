@@ -331,9 +331,9 @@ internal partial class ServiceConnection : ServiceConnectionBase
                 }
             }
         }
-        catch (OperationCanceledException e)
+        catch (OperationCanceledException)
         {
-            Log.SendLoopStopped(Logger, connectionId, e);
+            // Canceled
         }
         catch (Exception e)
         {

@@ -4,55 +4,72 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Testing;
+
+using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests.Common;
 
-internal class VerifyLogScope : IDisposable
+internal class VerifyLogScope : IVerifiableLog
 {
     private readonly IDisposable _wrappedDisposable;
-    private readonly Func<WriteContext, bool> _expectedErrors;
-    private readonly Func<IList<LogRecord>, bool> _logChecker;
     private readonly LogSinkProvider _sink;
+
+    private readonly List<Func<LogRecord, bool>> _expectedLogs = new();
 
     public ILoggerFactory LoggerFactory { get; }
 
-    public VerifyLogScope(ILoggerFactory loggerFactory = null, IDisposable wrappedDisposable = null, Func<WriteContext, bool> expectedErrors = null, Func<IList<LogRecord>, bool> logChecker = null)
+    public VerifyLogScope(ILoggerFactory loggerFactory = null, IDisposable wrappedDisposable = null)
     {
         _wrappedDisposable = wrappedDisposable;
-        _expectedErrors = expectedErrors;
-        _logChecker = logChecker;
         _sink = new LogSinkProvider();
 
         LoggerFactory = loggerFactory ?? new LoggerFactory();
         LoggerFactory.AddProvider(_sink);
     }
 
+    public LogRecord Expects(string logEventName) => Expects(i => i.Write.EventId.Name == logEventName);
+
+    public LogRecord Expects(Func<LogRecord, bool> predicate)
+    {
+        var matches = ExpectsMany(predicate);
+        Assert.NotEmpty(matches);
+        return matches[0];
+    }
+
+    public IReadOnlyList<LogRecord> ExpectsMany(string logEventName) => ExpectsMany(i => i.Write.EventId.Name == logEventName);
+
+    public IReadOnlyList<LogRecord> ExpectsMany(Func<LogRecord, bool> predicate)
+    {
+        _expectedLogs.Add(predicate);
+        return _sink.GetLogs().Where(predicate).ToArray();
+    }
+
     public void Dispose()
     {
         _wrappedDisposable?.Dispose();
-
-        var logs = _sink.GetLogs();
-        if (_logChecker?.Invoke(logs) == false)
+        var results = _sink.GetLogs().Where(i =>
         {
-            throw new InvalidOperationException("Failed checking log");
-        }
-
-        var results = _sink.GetLogs().Where(w => w.Write.LogLevel >= LogLevel.Error).ToList();
-
-        if (_expectedErrors != null)
-        {
-            if (results.Any(w => !_expectedErrors(w.Write)))
+            // Only check unexpected error logs
+            if (i.Write.LogLevel < LogLevel.Error)
             {
-                throw new InvalidOperationException("Fail to match expected error(s).");
+                return false;
             }
-            results = results.Where(w => !_expectedErrors(w.Write)).ToList();
-        }
 
-        if (results.Count > 0)
+            foreach (var filter in _expectedLogs)
+            {
+                if (filter(i))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }).ToArray();
+        if (results.Length > 0)
         {
-            string errorMessage = $"{results.Count} error(s) logged.";
+            string errorMessage = $"{results.Length} error(s) logged.";
             errorMessage += Environment.NewLine;
             errorMessage += string.Join(Environment.NewLine, results.Select(record =>
             {
