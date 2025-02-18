@@ -22,7 +22,6 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IServiceEndpointManager _endpointManager;
         private readonly IEndpointRouter _endpointRouter;
         private readonly IHubProtocolResolver _hubProtocolResolver;
-
         public WeakCallerClientResultsManager(IServiceEndpointManager serviceEndpointManager, IEndpointRouter endpointRouter, AckHandler ackHandler, IHubProtocolResolver hubProtocolResolver)
         {
             _endpointManager = serviceEndpointManager;
