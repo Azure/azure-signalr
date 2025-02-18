@@ -200,7 +200,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
             var hub = "ErrorDisconnect"; // error connect hub
-            var scm = new TestServiceConnectionHandler();
+            var scm = new TestServiceConnectionHandler(loggerFactory);
             hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
