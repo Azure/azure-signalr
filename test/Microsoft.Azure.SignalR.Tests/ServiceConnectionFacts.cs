@@ -588,7 +588,7 @@ public class ServiceConnectionFacts
         Assert.False(Task.WaitAll(task, DefaultTimeoutInMilliSeconds));
     }
 
-    private class TestConnectionFactoryWithHandshakeError : TestConnectionFactory
+    private sealed class TestConnectionFactoryWithHandshakeError : TestConnectionFactory
     {
         public TestConnectionFactoryWithHandshakeError(Func<TestConnection, Task> callback) : base(callback)
         {
@@ -602,7 +602,7 @@ public class ServiceConnectionFacts
         }
     }
 
-    private class TestConnectionFactoryWithConnectivityFailure : TestConnectionFactory
+    private sealed class TestConnectionFactoryWithConnectivityFailure : TestConnectionFactory
     {
         private const int MaxErrorCount = 3;
 
@@ -618,14 +618,14 @@ public class ServiceConnectionFacts
             if (_connectCount < MaxErrorCount)
             {
                 _connectCount++;
-                throw new Exception("Connect error.");
+                throw new InvalidOperationException("Connect error.");
             }
 
             return Task.CompletedTask;
         }
     }
 
-    private class TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage : TestConnectionFactory
+    private sealed class TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage : TestConnectionFactory
     {
         private const int MaxErrorCount = 3;
 

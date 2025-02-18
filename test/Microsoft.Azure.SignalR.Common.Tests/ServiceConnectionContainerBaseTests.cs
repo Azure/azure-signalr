@@ -37,13 +37,7 @@ public class ServiceConnectionContainerBaseTests(ITestOutputHelper output) : Ver
     [Fact]
     public void TestWeakConnectionStatus()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: e => true,
-            logChecker: s =>
-            {
-                Assert.Single(s);
-                Assert.Equal("EndpointOffline", s[0].Write.EventId.Name);
-                return true;
-            }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var endpoint1 = new TestHubServiceEndpoint();
             var conn1 = new TestServiceConnection();
@@ -68,19 +62,14 @@ public class ServiceConnectionContainerBaseTests(ITestOutputHelper output) : Ver
 
             conn1.SetStatus(ServiceConnectionStatus.Connected);
             Assert.True(endpoint1.Online);
+            logCollector.Expects("EndpointOffline");
         }
     }
 
     [Fact]
     public void TestStrongConnectionStatus()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: e => true,
-            logChecker: s =>
-            {
-                Assert.Single(s);
-                Assert.Equal("EndpointOffline", s[0].Write.EventId.Name);
-                return true;
-            }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var endpoint1 = new TestHubServiceEndpoint();
             var conn1 = new TestServiceConnection();
@@ -105,6 +94,7 @@ public class ServiceConnectionContainerBaseTests(ITestOutputHelper output) : Ver
 
             conn1.SetStatus(ServiceConnectionStatus.Connected);
             Assert.True(endpoint1.Online);
+            logCollector.Expects("EndpointOffline");
         }
     }
 

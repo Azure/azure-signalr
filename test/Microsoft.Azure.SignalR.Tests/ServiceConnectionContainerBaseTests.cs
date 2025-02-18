@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -27,16 +27,7 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
     [InlineData(3, 1, 0)]
     public async Task TestServersPing(int startCount, int stopCount, int expectedWarn)
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, logChecker: logs =>
-        {
-            var warns = logs.Where(s => s.Write.EventId.Name == "TimerAlreadyStopped").ToList();
-            Assert.Equal(expectedWarn, warns.Count);
-            if (expectedWarn > 0)
-            {
-                Assert.Contains(warns, s => s.Write.Message.Contains("Failed to stop Servers timer as it's not started"));
-            }
-            return true;
-        }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
             var connections = new List<IServiceConnection>
             {
@@ -78,6 +69,12 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
                 stopCount--;
             }
             await Task.WhenAll(tasks);
+            var warns = logCollector.ExpectsMany("TimerAlreadyStopped");
+            Assert.Equal(expectedWarn, warns.Count);
+            if (expectedWarn > 0)
+            {
+                Assert.Contains(warns, s => s.Write.Message.Contains("Failed to stop Servers timer as it's not started"));
+            }
         }
     }
 
@@ -88,16 +85,7 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
     [InlineData(1, 3, 2, 2, 2)] // first time error stop won't break second time write.
     public async Task TestServersPingWorkSecondTime(int firstStart, int firstStop, int secondStart, int secondStop, int expectedWarn)
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, logChecker: logs =>
-        {
-            var warns = logs.Where(s => s.Write.EventId.Name == "TimerAlreadyStopped").ToList();
-            Assert.Equal(expectedWarn, warns.Count);
-            if (expectedWarn > 0)
-            {
-                Assert.Contains(warns, s => s.Write.Message.Contains("Failed to stop Servers timer as it's not started"));
-            }
-            return true;
-        }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
             var connections = new List<IServiceConnection>
             {
@@ -158,6 +146,12 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
                 secondStop--;
             }
             await Task.WhenAll(tasks);
+            var warns = logCollector.ExpectsMany("TimerAlreadyStopped");
+            Assert.Equal(expectedWarn, warns.Count);
+            if (expectedWarn > 0)
+            {
+                Assert.Contains(warns, s => s.Write.Message.Contains("Failed to stop Servers timer as it's not started"));
+            }
         }
     }
 

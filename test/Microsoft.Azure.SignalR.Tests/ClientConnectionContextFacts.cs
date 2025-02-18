@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -47,7 +47,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestForwardCloseMessage()
+    public async Task TestForwardCloseMessage()
     {
         using var serviceConnection = new TestServiceConnection();
 
@@ -88,7 +88,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestForwardInvocationMessage()
+    public async Task TestForwardInvocationMessage()
     {
         using var serviceConnection = new TestServiceConnection();
 
@@ -129,7 +129,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestForwardHandshakeResponse()
+    public async Task TestForwardHandshakeResponse()
     {
         using var serviceConnection = new TestServiceConnection();
 
@@ -167,7 +167,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestSkipHandshakeResponse()
+    public async Task TestSkipHandshakeResponse()
     {
         using var serviceConnection = new TestServiceConnection();
 
@@ -204,13 +204,9 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestPauseResume()
+    public async Task TestPauseResume()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Information, logChecker: records =>
-        {
-            return records.Any(r => r.Write.EventId == 8) && 
-                   records.Single(r => r.Write.EventId == 9) != null;
-        }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Information))
         {
             using var serviceConnection = new TestServiceConnection();
 
@@ -258,16 +254,15 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
             var actual = Assert.IsType<ServiceProtocol.ConnectionDataMessage>(serviceConnection.Messages[1]);
             Assert.Equal(connectionId, actual.ConnectionId);
             Assert.Equal(hubProtocol.GetMessageBytes(expect).ToArray(), actual.Payload.ToArray());
+            logCollector.Expects("OutgoingTaskPaused");
+            logCollector.Expects("OutgoingTaskResume");
         }
     }
 
     [Fact]
-    public async void TestPauseAck()
+    public async Task TestPauseAck()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Information, logChecker: records =>
-        {
-            return records.Single(r => r.Write.EventId == 10) != null;
-        }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Information))
         {
             using var serviceConnection = new TestServiceConnection();
 
@@ -311,6 +306,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
             Assert.Equal(connectionId, message.ConnectionId);
             Assert.Equal(ServiceProtocol.ConnectionType.Client, message.ConnectionType);
             Assert.Equal(ServiceProtocol.ConnectionFlowControlOperation.PauseAck, message.Operation);
+            logCollector.Expects("OutgoingTaskPauseAck");
         }
     }
 

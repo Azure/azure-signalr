@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -28,6 +28,10 @@ internal sealed class TestServiceConnectionHandler : ServiceConnectionManager
         {
             tcs.SetResult(serviceMessage);
         }
+        else
+        {
+            throw new InvalidOperationException("Not expected to write before tcs is inited");
+        }
 
         return Task.CompletedTask;
     }
@@ -48,18 +52,19 @@ internal sealed class TestServiceConnectionHandler : ServiceConnectionManager
 
     public Task<ServiceMessage> WaitForTransportOutputMessageAsync(Type messageType)
     {
-        if (_waitForTransportOutputMessage.TryGetValue(messageType, out var tcs))
-        {
-            tcs.TrySetCanceled();
-        }
-
         // re-init the tcs
-        tcs = _waitForTransportOutputMessage[messageType] = new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
-
+        var tcs = _waitForTransportOutputMessage.AddOrUpdate(messageType, t =>
+        {
+            return new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        }, (t, old) =>
+        {
+            old.TrySetCanceled();
+            return new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        });
         return tcs.Task;
     }
 
-    public void DisposeServiceConnection(IServiceConnection connection)
+    public void DisposeServiceConnection(IServiceConnection _)
     {
     }
 }

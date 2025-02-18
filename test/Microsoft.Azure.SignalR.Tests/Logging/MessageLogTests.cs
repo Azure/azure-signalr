@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 MessageLog.StartToSendMessageToUser(logger, new UserDataMessage("user", null, tracingId: 123UL));
                 Assert.Equal(Format(MessageLog.StartToSendMessageToUserTemplate, 123UL, "user"), logger.LogStr);
 
-                MessageLog.FailedToSendMessage(logger, new UserDataMessage("user", null, tracingId: 123UL), new Exception());
+                MessageLog.FailedToSendMessage(logger, new UserDataMessage("user", null, tracingId: 123UL), new InvalidOperationException());
                 Assert.Equal(Format(MessageLog.FailedToSendMessageTemplate, 123UL), logger.LogStr);
 
                 MessageLog.SucceededToSendMessage(logger, new UserDataMessage("user", null, tracingId: 123UL));
@@ -92,13 +92,13 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private string Format(string logTemplate, params object[] values)
+        private static string Format(string logTemplate, params object[] values)
         {
             var index = 0;
             return Regex.Replace(logTemplate, "{[^}]*}", _ => values[index++].ToString());
         }
 
-        private class TestLogger : ILogger
+        private sealed class TestLogger : ILogger
         {
             public string LogStr { get; private set; }
 

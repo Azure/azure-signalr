@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -99,7 +99,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     public string ConnectionId { get; }
 
-    protected HubServiceEndpoint HubEndpoint { get; }
+    public HubServiceEndpoint HubEndpoint { get; }
 
     protected ILogger Logger { get; }
 
@@ -640,7 +640,6 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
             {
                 var result = await connection.Transport.Input.ReadAsync();
                 var buffer = result.Buffer;
-
                 try
                 {
                     if (result.IsCanceled)

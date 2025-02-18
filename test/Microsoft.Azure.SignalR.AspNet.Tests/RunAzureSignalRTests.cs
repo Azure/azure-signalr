@@ -448,7 +448,7 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
     [Fact]
     public async Task TestRunAzureSignalRWithDefaultRouterNegotiateWithFallback()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: e => true))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             // Prepare the configuration
             var hubConfig = Utility.GetTestHubConfig(loggerFactory, "chat");
@@ -826,6 +826,35 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
         }
     }
 
+    [Fact]
+    public async Task TestRunAzureSignalStartsServerConnection()
+    {
+        // Prepare the configuration
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+        using (new AppSettingsConfigScope(ConnectionString))
+        {
+            var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+            var hubName = "hub";
+            var testHub = new TestHubManager(hubName);
+            hubConfig.Resolver.Register(typeof(IHubManager), () => testHub);
+            using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig,
+                o => o.InitialHubServerConnectionCount = 1
+            )))
+            {
+                var options = hubConfig.Resolver.Resolve<IServiceConnectionManager>();
+
+                // 5 seconds for one websocket failure round
+                await options.ConnectionInitializedTask.OrTimeout(20000);
+            }
+
+            // the logs should contain start and stop
+            logCollector.Expects("StartingConnection");
+            logCollector.Expects("StartTransport");
+            logCollector.Expects("TransportStopping");
+            logCollector.Expects("FailedToConnect");
+        }
+    }
+
     private sealed class TestLoggerProvider : ILoggerProvider
     {
         public List<string> Loggers { get; } = new List<string>();
@@ -859,7 +888,7 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
             _id = id;
         }
 
-        public string GetRequestId()
+        public string GetRequestId(string traceIdentifer = "ut")
         {
             return _id;
         }

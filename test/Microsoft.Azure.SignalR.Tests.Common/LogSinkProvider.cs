@@ -1,11 +1,9 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 
@@ -27,7 +25,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         {
         }
 
-        public IList<LogRecord> GetLogs() => _logs.ToList();
+        public IEnumerable<LogRecord> GetLogs() => _logs;
 
         public void Log<TState>(string categoryName, LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {

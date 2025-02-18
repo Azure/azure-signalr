@@ -29,6 +29,7 @@ namespace Microsoft.Azure.SignalR.Tests;
 public class ServiceMessageTests : VerifiableLoggedTest
 {
     private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    
     private const string DefaultAudience = "https://localhost";
 
     private const string LocalConnectionString = "endpoint=https://localhost;accessKey=" + SigningKey;
@@ -263,7 +264,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
     [InlineData(121, false)] // becomes unavailable only after the key has expired.
     public async Task TestAccessKeyResponseMessageWithError(int minutesElapsed, bool expectAvailable)
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Error, expectedErrors: c => true))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Error))
         {
             var endpoint = new TestHubServiceEndpoint(endpoint: new TestServiceEndpoint(new DefaultAzureCredential()));
             var key = Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
@@ -360,7 +361,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         };
     }
 
-    private class TestTokenCredential : TokenCredential
+    private sealed class TestTokenCredential : TokenCredential
     {
         public string Token { get; } = Guid.NewGuid().ToString();
 
@@ -502,6 +503,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
                 serviceEventHandler,
                 clientInvocationManager,
                 hubProtocolResolver,
+                null,
                 connectionType: connectionType,
                 mode: mode)
         {

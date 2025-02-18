@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -47,7 +47,7 @@ internal class ServiceMessageBus : MessageBus
             return ProcessMessage(messages[0]);
         }
 
-        return Task.WhenAll(messages.Select(m => ProcessMessage(m)));
+        return Task.WhenAll(messages.Select(ProcessMessage));
     }
 
     private async Task ProcessMessage(AppMessage message)

@@ -24,7 +24,7 @@ public class ServiceContextFacts
     [Fact]
     public void ServiceConnectionContextWithEmptyClaimsIsUnauthenticated()
     {
-        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0]));
+        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", Array.Empty<Claim>()));
         Assert.NotNull(serviceConnectionContext.User.Identity);
         Assert.False(serviceConnectionContext.User.Identity.IsAuthenticated);
     }
@@ -96,7 +96,7 @@ public class ServiceContextFacts
     [Fact]
     public void ServiceConnectionContextWithEmptyHttpContextByDefault()
     {
-        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0]));
+        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", Array.Empty<Claim>()));
         Assert.NotNull(serviceConnectionContext.User.Identity);
         Assert.NotNull(serviceConnectionContext.HttpContext);
         Assert.Equal(serviceConnectionContext.User, serviceConnectionContext.HttpContext.User);
@@ -111,7 +111,7 @@ public class ServiceContextFacts
         const string key2 = "header-key-2";
         const string value1 = "header-value-1";
         var value2 = new[] { "header-value-2a", "header-value-2b" };
-        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0],
+        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", Array.Empty<Claim>(),
             new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
             {
                 {key1, value1},
@@ -133,7 +133,7 @@ public class ServiceContextFacts
     public void ServiceConnectionContextWithNonEmptyQueries()
     {
         const string queryString = "?query1=value1&query2=value2&query3=value3";
-        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
+        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", Array.Empty<Claim>(), EmptyHeaders, queryString));
 
         Assert.NotNull(serviceConnectionContext.User.Identity);
         Assert.NotNull(serviceConnectionContext.HttpContext);
@@ -201,42 +201,6 @@ public class ServiceContextFacts
         {
             Assert.Equal(remoteIP, address.ToString());
         }
-    }
-
-    [Theory]
-    // For Linux and Mac, `CultureInfo` ctor doesn't treat invalid culture string as an invalid one. See https://github.com/dotnet/runtime/issues/11590
-    // If `CultureInfo` ctor treats the culture string as an invalid one, the default culture won't be changed and `parsedCulture` will be ignored.
-    // Culture / UICulture by default is same as OS, typically en-US. See https://learn.microsoft.com/en-us/dotnet/api/system.threading.thread.currentuiculture?view=net-8.0&redirectedfrom=MSDN#remarks
-    [InlineData("&asrs_lang=ar-SA", true, "ar-SA", false, null)]
-    [InlineData("&asrs_lang=zh-CN", true, "zh-CN", false, null)]
-    [InlineData("&asrs_ui_lang=ar-SA", false, null, true, "ar-SA")]
-    [InlineData("&asrs_ui_lang=zh-CN", false, null, true, "zh-CN")]
-    [InlineData("&asrs_lang=ar-SA&asrs_ui_lang=zh-CN", true, "ar-SA", true, "zh-CN")]
-    [InlineData("&asrs_lang=zh-CN&asrs_ui_lang=ar-SA", true, "zh-CN", true, "ar-SA")]
-#if OS_WINDOWS
-    [InlineData("", false, null, false, null)]
-    [InlineData("&arsa_lang=", false, null, false, null)]
-    [InlineData("&arsa_lang=123", false, null, false, null)]
-    [InlineData("&arsa_ui_lang=", false, null, false, null)]
-    [InlineData("&arsa_ui_lang=123", false, null, false, null)]
-    [InlineData("&asrs_lang=ar-SA&asrs_ui_lang=", true, "ar-SA", false, null)]
-    [InlineData("&asrs_lang=ar-SA&asrs_ui_lang=123", true, "ar-SA", false, null)]
-    [InlineData("&asrs_lang=&asrs_ui_lang=ar-SA", false, null, true, "ar-SA")]
-    [InlineData("&asrs_lang=123&asrs_ui_lang=ar-SA", false, null, true, "ar-SA")]
-#endif
-    public void ServiceConnectionContextCultureTest(string cultureQuery, bool isCultureValid, string parsedCulture, bool isUiCultureValid, string parsedUiCulture)
-    {
-        var queryString = $"?{cultureQuery}";
-        var originalCulture = CultureInfo.CurrentCulture.Name;
-        var originalUiCulture = CultureInfo.CurrentUICulture.Name;
-
-        _ = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
-
-        var expectedCulture = isCultureValid ? parsedCulture : originalCulture;
-        var expectedUiCulture = isUiCultureValid ? parsedUiCulture : originalUiCulture;
-
-        Assert.Equal(expectedCulture, CultureInfo.CurrentCulture.Name);
-        Assert.Equal(expectedUiCulture, CultureInfo.CurrentUICulture.Name);
     }
 
     public static IEnumerable<object[]> TestCultures => new object[][]

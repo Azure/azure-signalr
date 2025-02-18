@@ -1,19 +1,17 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-// From AspNetCore 3.0 preview7, there's a break change in HubConnectionContext
-// which will break cross reference bettwen NETCOREAPP3.0 to NETStandard2.0 SDK
-// So skip this part of UT when target 2.0 only
-#if (MULTIFRAMEWORK)
-
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -25,7 +23,9 @@ using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
 using Moq;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -435,8 +435,10 @@ namespace Microsoft.Azure.SignalR.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Process(httpContext));
         }
 
-        [Fact]
-        public async Task TestNegotiateHandlerRespectClientRequestCulture()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TestNegotiateHandlerRespectClientRequestCulture(bool isBlazor)
         {
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = new ServiceCollection()
@@ -459,20 +461,31 @@ namespace Microsoft.Azure.SignalR.Tests
                 QueryString = "?endpoint=chosen"
             };
             features.Set<IHttpRequestFeature>(requestFeature);
-            var customCulture = new RequestCulture("ar-SA", "en-US");
-            features.Set<IRequestCultureFeature>(
-                new RequestCultureFeature(customCulture,
-                new AcceptLanguageHeaderRequestCultureProvider()));
+            var httpCultureFeature = new RequestCultureFeature(
+                new RequestCulture("ar-SA", "en-US"),
+                new AcceptLanguageHeaderRequestCultureProvider()
+            );
+            features.Set<IRequestCultureFeature>(httpCultureFeature);
 
             var httpContext = new DefaultHttpContext(features);
 
+            if (isBlazor)
+            {
+                var blazorDetector = serviceProvider.GetRequiredService<IBlazorDetector>();
+                blazorDetector.TrySetBlazor(nameof(Hub), true);
+            }
+
             var handler = serviceProvider.GetRequiredService<NegotiateHandler<Hub>>();
             var negotiateResponse = await handler.Process(httpContext);
+            var requestId = HttpUtility
+                                .ParseQueryString(negotiateResponse.Url)
+                                .Get(Constants.QueryParameter.ConnectionRequestId);
 
-            var queryContainsCulture = negotiateResponse.Url.Contains($"{Constants.QueryParameter.RequestCulture}=ar-SA");
-            var queryContainsUICulture = negotiateResponse.Url.Contains($"{Constants.QueryParameter.RequestUICulture}=en-US");
-            Assert.True(queryContainsCulture);
-            Assert.True(queryContainsUICulture);
+            var cultureFeatureManager = serviceProvider.GetRequiredService<ICultureFeatureManager>();
+            cultureFeatureManager.TryRemoveCultureFeature(requestId, out var actualCultureFeature);
+
+            var expectedCultureFeature = isBlazor ? httpCultureFeature : null;
+            Assert.Equal(expectedCultureFeature, actualCultureFeature);
         }
 
         [Theory]
@@ -493,7 +506,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddSingleton<IConfiguration>(config)
                 .BuildServiceProvider();
 
-            Assert.Throws<AzureSignalRInvalidServiceOptionsException>(() => serviceProvider.GetRequiredService<NegotiateHandler<Hub>>());
+            Assert.Throws<AzureSignalRInvalidServiceOptionsException>(serviceProvider.GetRequiredService<NegotiateHandler<Hub>>);
         }
 
         [Theory]
@@ -532,7 +545,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var tokens = JwtTokenHelper.JwtHandler.ReadJwtToken(response.AccessToken);
 
-            Assert.Contains(tokens.Claims, x => x.Type == Constants.ClaimType.MaxPollInterval && x.Value == maxPollInterval.ToString());
+            Assert.Contains(tokens.Claims, x => x.Type == Constants.ClaimType.MaxPollInterval && x.Value == maxPollInterval.ToString(CultureInfo.InvariantCulture));
         }
 
 #if NET6_0_OR_GREATER
@@ -674,7 +687,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private class TestCustomRouter : EndpointRouterDecorator
+        private sealed class TestCustomRouter : EndpointRouterDecorator
         {
             public override ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
             {
@@ -693,7 +706,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private class CustomUserIdProvider : IUserIdProvider
+        private sealed class CustomUserIdProvider : IUserIdProvider
         {
             public string GetUserId(HubConnectionContext connection)
             {
@@ -701,27 +714,27 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private class NullUserIdProvider : IUserIdProvider
+        private sealed class NullUserIdProvider : IUserIdProvider
         {
             public string GetUserId(HubConnectionContext connection) => null;
         }
 
-        private class ConnectionIdUserIdProvider : IUserIdProvider
+        private sealed class ConnectionIdUserIdProvider : IUserIdProvider
         {
             public string GetUserId(HubConnectionContext connection) => connection.ConnectionId;
         }
 
-        private class ConnectionAbortedTokenUserIdProvider : IUserIdProvider
+        private sealed class ConnectionAbortedTokenUserIdProvider : IUserIdProvider
         {
             public string GetUserId(HubConnectionContext connection) => connection.ConnectionAborted.IsCancellationRequested.ToString();
         }
 
-        private class ItemsUserIdProvider : IUserIdProvider
+        private sealed class ItemsUserIdProvider : IUserIdProvider
         {
             public string GetUserId(HubConnectionContext connection) => connection.Items.ToString();
         }
 
-        private class ProtocolUserIdProvider : IUserIdProvider
+        private sealed class ProtocolUserIdProvider : IUserIdProvider
         {
             public string GetUserId(HubConnectionContext connection) => connection.Protocol.Name;
         }
@@ -743,5 +756,3 @@ namespace Microsoft.Azure.SignalR.Tests
         }
     }
 }
-
-#endif

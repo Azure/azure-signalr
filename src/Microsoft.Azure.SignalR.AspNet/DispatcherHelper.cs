@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -130,7 +130,7 @@ internal class DispatcherHelper
         var cf = configuration.Resolver.Resolve<IConnectionFactory>();
         if (cf == null)
         {
-            var connectionFactory = new ConnectionFactory(serverNameProvider, loggerFactory);
+            cf = new ConnectionFactory(serverNameProvider, loggerFactory);
             configuration.Resolver.Register(typeof(IConnectionFactory), () => cf);
         }
 

@@ -1,9 +1,11 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
@@ -22,7 +24,7 @@ public class ServiceLifetimeManagerFactsForNet70 : ServiceLifetimeManagerFacts
     [InlineData("json", false)]
     [InlineData("messagepack", true)]
     [InlineData("messagepack", false)]
-    public async void TestClientInvocationOneService(string protocol, bool isCompletionWithResult)
+    public async Task TestClientInvocationOneService(string protocol, bool isCompletionWithResult)
     {
         var serviceConnection = new TestServiceConnection();
         var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
@@ -56,9 +58,9 @@ public class ServiceLifetimeManagerFactsForNet70 : ServiceLifetimeManagerFacts
         // Check if the invocation result is correct
         try
         {
-            await task;
+            var result = await task;
             Assert.True(isCompletionWithResult);
-            Assert.Equal(invocationResult, task.Result);
+            Assert.Equal(invocationResult, result);
         }
         catch (Exception e)
         {
@@ -72,7 +74,7 @@ public class ServiceLifetimeManagerFactsForNet70 : ServiceLifetimeManagerFacts
     [InlineData("json", false)]
     [InlineData("messagepack", true)]
     [InlineData("messagepack", false)]
-    public async void TestMultiClientInvocationsMultipleService(string protocol, bool isCompletionWithResult)
+    public async Task TestMultiClientInvocationsMultipleService(string protocol, bool isCompletionWithResult)
     {
         var clientConnectionContext = GetClientConnectionContextWithConnection(TestConnectionIds[1], protocol);
         var clientConnectionManager = new ClientConnectionManager();
@@ -115,9 +117,9 @@ public class ServiceLifetimeManagerFactsForNet70 : ServiceLifetimeManagerFacts
 
         try
         {
-            await task;
+            var result = await task;
             Assert.True(isCompletionWithResult);
-            Assert.Equal(invocationResult, task.Result);
+            Assert.Equal(invocationResult, result);
         }
         catch (Exception e)
         {

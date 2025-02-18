@@ -54,6 +54,7 @@ internal class NegotiateHandler<THub> where THub : Hub
 #if NET6_0_OR_GREATER
     private readonly HttpConnectionDispatcherOptions _dispatcherOptions;
 #endif
+    private readonly ICultureFeatureManager _cultureFeatureManager;
 
     public NegotiateHandler(
         IOptions<HubOptions> globalHubOptions,
@@ -68,6 +69,7 @@ internal class NegotiateHandler<THub> where THub : Hub
 #if NET6_0_OR_GREATER
         EndpointDataSource endpointDataSource,
 #endif
+        ICultureFeatureManager cultureFeatureManager,
         ILogger<NegotiateHandler<THub>> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -89,14 +91,14 @@ internal class NegotiateHandler<THub> where THub : Hub
 #if NET6_0_OR_GREATER
         _dispatcherOptions = GetDispatcherOptions(endpointDataSource, typeof(THub));
 #endif
+        _cultureFeatureManager = cultureFeatureManager ?? throw new ArgumentNullException(nameof(cultureFeatureManager));
     }
 
     public async Task<NegotiationResponse> Process(HttpContext context)
     {
         var claims = BuildClaims(context);
         var request = context.Request;
-        var cultureName = context.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture.Name;
-        var uiCultureName = context.Features.Get<IRequestCultureFeature>()?.RequestCulture.UICulture.Name;
+        var cultureFeature = context.Features.Get<IRequestCultureFeature>();
         var originalPath = GetOriginalPath(request.Path);
         var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(context, _endpointManager.GetEndpoints(_hubName)));
 
@@ -105,11 +107,16 @@ internal class NegotiateHandler<THub> where THub : Hub
             return null;
         }
 
-        var queryString = GetQueryString(
+        var clientRequestId = _connectionRequestIdProvider.GetRequestId(context.TraceIdentifier);
+        var queryString = NegotiateHandler<THub>.GetQueryString(
             request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null,
-            cultureName,
-            uiCultureName
+            clientRequestId
         );
+
+        if (_blazorDetector.IsBlazor(_hubName) && cultureFeature != null && !_cultureFeatureManager.IsDefaultFeature(cultureFeature))
+        {
+            _cultureFeatureManager.TryAddCultureFeature(clientRequestId, cultureFeature);
+        }
 
         return new NegotiationResponse
         {
@@ -128,24 +135,14 @@ internal class NegotiateHandler<THub> where THub : Hub
             : string.Empty;
     }
 
-    private string GetQueryString(string originalQueryString, string cultureName, string uiCultureName)
+    private static string GetQueryString(string originalQueryString, string clientRequestId)
     {
-        var clientRequestId = _connectionRequestIdProvider.GetRequestId();
         if (clientRequestId != null)
         {
             clientRequestId = WebUtility.UrlEncode(clientRequestId);
         }
 
         var queryString = $"{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
-        if (!string.IsNullOrEmpty(cultureName))
-        {
-            queryString += $"&{Constants.QueryParameter.RequestCulture}={cultureName}";
-        }
-        if (!string.IsNullOrEmpty(uiCultureName))
-        {
-            queryString += $"&{Constants.QueryParameter.RequestUICulture}={uiCultureName}";
-        }
-
         return originalQueryString != null
             ? $"{originalQueryString}&{queryString}"
             : queryString;

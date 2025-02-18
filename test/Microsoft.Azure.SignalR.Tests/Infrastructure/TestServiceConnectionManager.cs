@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -10,7 +10,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests;
 
-internal class TestServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
+internal sealed class TestServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
 {
     private readonly ConcurrentDictionary<Type, int> _writeAsyncCallCount = new ConcurrentDictionary<Type, int>();
 

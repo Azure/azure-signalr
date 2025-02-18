@@ -1,8 +1,9 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -76,7 +77,7 @@ public class ServiceConnectionContainerTests
         // write 100 messages.
         for (var i = 0; i < 100; i++)
         {
-            var message = new ConnectionDataMessage(i.ToString(), new byte[12]);
+            var message = new ConnectionDataMessage(i.ToString(CultureInfo.InvariantCulture), new byte[12]);
             await container.WriteAsync(message);
         }
 
@@ -92,7 +93,7 @@ public class ServiceConnectionContainerTests
         // write 100 more messages.
         for (var i = 0; i < 100; i++)
         {
-            var message = new ConnectionDataMessage(i.ToString(), new byte[12]);
+            var message = new ConnectionDataMessage(i.ToString(CultureInfo.InvariantCulture), new byte[12]);
             await container.WriteAsync(message);
         }
 
@@ -130,7 +131,7 @@ public class ServiceConnectionContainerTests
         // write 100000 messages.
         for (var i = 0; i < 100000; i++)
         {
-            var message = new ConnectionDataMessage(i.ToString(), new byte[12]);
+            var message = new ConnectionDataMessage(i.ToString(CultureInfo.InvariantCulture), new byte[12]);
             await container.WriteAsync(message);
         }
 
@@ -144,7 +145,7 @@ public class ServiceConnectionContainerTests
         // write 100000 messages with the same connectionIds should double the message count for each service connection
         for (var i = 0; i < 100000; i++)
         {
-            var message = new ConnectionDataMessage(i.ToString(), new byte[12]);
+            var message = new ConnectionDataMessage(i.ToString(CultureInfo.InvariantCulture), new byte[12]);
             await container.WriteAsync(message);
         }
 
@@ -164,7 +165,7 @@ public class ServiceConnectionContainerTests
         // write 100000 messages with the same connectionIds does not throw
         for (var i = 0; i < 100000; i++)
         {
-            var message = new ConnectionDataMessage(i.ToString(), new byte[12]);
+            var message = new ConnectionDataMessage(i.ToString(CultureInfo.InvariantCulture), new byte[12]);
             await container.WriteAsync(message);
         }
 
@@ -195,11 +196,11 @@ public class ServiceConnectionContainerTests
         // write 100000 messages.
         for (var i = 0; i < 100000; i++)
         {
-            var message = new ConnectionDataMessage(i.ToString(), new byte[12]);
+            var message = new ConnectionDataMessage(i.ToString(CultureInfo.InvariantCulture), new byte[12]);
             await container.WriteAsync(message);
         }
 
-        var selected = connections.Where(s => s.ReceivedMessages.Count > 0).ToArray();
+        var selected = connections.Where(s => !s.ReceivedMessages.IsEmpty).ToArray();
         Assert.Single(selected);
 
         Assert.Equal(100000, selected[0].ReceivedMessages.Count);
