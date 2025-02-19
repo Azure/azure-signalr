@@ -30,6 +30,8 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
 
     private readonly object _lock = new object();
 
+    private readonly IClientInvocationManager _clientInvocationManager;
+
     private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
 
     private int _started;
@@ -56,6 +58,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         int? maxCount,
         IServiceEndpointManager endpointManager,
         IMessageRouter router,
+        IClientInvocationManager clientInvocationManager,
         ILoggerFactory loggerFactory,
         TimeSpan? scaleTimeout = null
         ) : this(
@@ -63,6 +66,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
             endpoint => CreateContainer(serviceConnectionFactory, endpoint, count, maxCount, loggerFactory),
             endpointManager,
             router,
+            clientInvocationManager,
             loggerFactory,
             scaleTimeout)
     {
@@ -73,6 +77,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
         IServiceEndpointManager endpointManager,
         IMessageRouter router,
+        IClientInvocationManager clientInvocationManager,
         ILoggerFactory loggerFactory,
         TimeSpan? scaleTimeout = null)
     {
@@ -90,6 +95,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         _loggerFactory = loggerFactory;
         _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         _serviceEndpointManager = endpointManager;
+        _clientInvocationManager = clientInvocationManager;
         _scaleTimeout = scaleTimeout ?? Constants.Periods.DefaultScaleTimeout;
 
         // Reserve generator for potential scale use.
@@ -158,7 +164,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
     public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, CancellationToken token = default)
     {
         var targetEndpoints = _routerEndpoints.needRouter ? _router.GetEndpointsForGroup(groupName, _routerEndpoints.endpoints) : _routerEndpoints.endpoints;
-        var messageWriter = new MultiEndpointMessageWriter(targetEndpoints?.ToList(), _loggerFactory);
+        var messageWriter = new MultiEndpointMessageWriter(targetEndpoints?.ToList(), _clientInvocationManager, _loggerFactory);
         return messageWriter.ListConnectionsInGroupAsync(groupName, top, tracingId, token);
     }
 
@@ -271,7 +277,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
     private MultiEndpointMessageWriter CreateMessageWriter(ServiceMessage serviceMessage)
     {
         var targetEndpoints = GetRoutedEndpoints(serviceMessage)?.ToList();
-        return new MultiEndpointMessageWriter(targetEndpoints, _loggerFactory);
+        return new MultiEndpointMessageWriter(targetEndpoints, _clientInvocationManager, _loggerFactory);
     }
 
     private void OnAdd(HubServiceEndpoint endpoint)

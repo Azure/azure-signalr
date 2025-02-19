@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -18,16 +18,20 @@ internal class ServiceConnectionContainerFactory : IServiceConnectionContainerFa
 
     private readonly IServiceConnectionFactory _serviceConnectionFactory;
 
+    private readonly IClientInvocationManager _clientInvocationManager;
+
     public ServiceConnectionContainerFactory(IServiceConnectionFactory serviceConnectionFactory,
                                              IServiceEndpointManager serviceEndpointManager,
                                              IMessageRouter router,
                                              IServiceEndpointOptions options,
+                                             IClientInvocationManager clientInvocationManager,
                                              ILoggerFactory loggerFactory)
     {
         _serviceConnectionFactory = serviceConnectionFactory;
         _serviceEndpointManager = serviceEndpointManager ?? throw new ArgumentNullException(nameof(serviceEndpointManager));
         _router = router ?? throw new ArgumentNullException(nameof(router));
         _options = options;
+        _clientInvocationManager = clientInvocationManager;
         _loggerFactory = loggerFactory;
     }
 
@@ -39,6 +43,7 @@ internal class ServiceConnectionContainerFactory : IServiceConnectionContainerFa
                                                            _options.MaxHubServerConnectionCount,
                                                            _serviceEndpointManager,
                                                            _router,
+                                                           _clientInvocationManager,
                                                            _loggerFactory,
                                                            serviceScaleTimeout);
     }

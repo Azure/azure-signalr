@@ -36,12 +36,17 @@ public class ClientInvocationManagerTests
     private const string SuccessCompleteResult = "success-result";
     private const string ErrorCompleteResult = "error-result";
 
-    private static ClientInvocationManager GetTestClientInvocationManager(int endpointCount = 1)
+    private static ClientInvocationManager GetTestClientInvocationManager(int endpointCount = 1, int badEndpointsCount = 0)
     {
         var services = new ServiceCollection();
         var endpoints = Enumerable.Range(0, endpointCount)
             .Select(i => new ServiceEndpoint($"Endpoint=https://test{i}connectionstring;AccessKey=1"))
             .ToArray();
+
+        for (var i = 0; i < badEndpointsCount && i < endpointCount; i++)
+        {
+            endpoints[i].Online = false;
+        }
 
         var config = new ConfigurationBuilder().Build();
 
@@ -175,14 +180,19 @@ public class ClientInvocationManagerTests
     }
 
     [Theory]
-    [InlineData(true, 2)]
-    [InlineData(false, 2)]
-    [InlineData(true, 3)]
-    [InlineData(false, 3)]
+    [InlineData(true, 2, 0)]
+    [InlineData(true, 2, 1)]
+    [InlineData(true, 2, 2)]
+    [InlineData(false, 2, 0)]
+    [InlineData(false, 2, 1)]
+    [InlineData(false, 2, 2)]
+    [InlineData(true, 3, 0)]
+    [InlineData(false, 3, 0)]
     // isCompletionWithResult: the invocation is completed with result or error 
-    public async Task TestCompleteWithMultiEndpointAtLast(bool isCompletionWithResult, int endpointsCount)
+    public async Task TestCompleteWithMultiEndpointAtLast(bool isCompletionWithResult, int endpointsCount, int badEndpointsCount)
     {
         Assert.True(endpointsCount > 1);
+        Assert.True(endpointsCount >= badEndpointsCount);
         var clientInvocationManager = GetTestClientInvocationManager(endpointsCount);
         var connectionId = TestConnectionIds[0];
         var invocationId = clientInvocationManager.Caller.GenerateInvocationId(connectionId);

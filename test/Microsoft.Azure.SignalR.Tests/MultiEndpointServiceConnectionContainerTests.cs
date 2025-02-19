@@ -174,9 +174,9 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             var connectionFactory1 = new TestServiceConnectionFactory();
             var connectionFactory2 = new TestServiceConnectionFactory();
 
-            var hub1 = new MultiEndpointServiceConnectionContainer(connectionFactory1, "hub1", 2, null, sem, router,
+            var hub1 = new MultiEndpointServiceConnectionContainer(connectionFactory1, "hub1", 2, null, sem, router, null,
                 loggerFactory);
-            var hub2 = new MultiEndpointServiceConnectionContainer(connectionFactory2, "hub2", 2, null, sem, router,
+            var hub2 = new MultiEndpointServiceConnectionContainer(connectionFactory2, "hub2", 2, null, sem, router, null,
                 loggerFactory);
 
             var connections = connectionFactory1.CreatedConnections.SelectMany(kv => kv.Value).ToArray();
@@ -1985,7 +1985,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                                                       IEndpointRouter router,
                                                       ILoggerFactory loggerFactory,
                                                       TimeSpan? _ = null
-            ) : base(hub, generator, endpoint, router, loggerFactory)
+            ) : base(hub, generator, endpoint, router, null, loggerFactory)
         {
         }
 

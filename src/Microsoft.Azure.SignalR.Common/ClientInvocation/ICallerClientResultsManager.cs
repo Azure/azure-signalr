@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Threading;
@@ -31,5 +31,8 @@ namespace Microsoft.Azure.SignalR
         bool TryCompleteResult(string connectionId, ErrorCompletionMessage message);
 
         void RemoveInvocation(string invocationId);
+
+        void SetAckNumber(string invocationId, int ackNumber);
+
     }
 }

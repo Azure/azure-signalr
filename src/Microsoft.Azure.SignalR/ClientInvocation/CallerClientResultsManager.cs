@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #if NET7_0_OR_GREATER
 using System;
@@ -204,6 +204,14 @@ namespace Microsoft.Azure.SignalR
         public void RemoveInvocation(string invocationId)
         {
             _pendingInvocations.TryRemove(invocationId, out _);
+        }
+
+        public void SetAckNumber(string invocationId, int ackNumber)
+        {
+            if (_pendingInvocations.TryGetValue(invocationId, out var item))
+            {
+                _ackHandler.SetExpectedCount(item.AckId, ackNumber);
+            }
         }
 
         // Unused, here to honor the IInvocationBinder interface but should never be called
