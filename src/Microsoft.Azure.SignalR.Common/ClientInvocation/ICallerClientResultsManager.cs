@@ -33,6 +33,5 @@ namespace Microsoft.Azure.SignalR
         void RemoveInvocation(string invocationId);
 
         void SetAckNumber(string invocationId, int ackNumber);
-
     }
 }
