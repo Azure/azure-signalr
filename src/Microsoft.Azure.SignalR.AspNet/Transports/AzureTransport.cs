@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -113,7 +113,9 @@ internal class AzureTransport : IServiceTransport
             var connected = Connected;
             if (connected != null)
             {
+                Log.ExecutingConnected(_logger, ConnectionId);
                 await connected();
+                Log.ExecuteConnected(_logger, ConnectionId);
             }
 
             _connectedTcs.TrySetResult(null);
@@ -132,7 +134,9 @@ internal class AzureTransport : IServiceTransport
         {
             try
             {
+                Log.ExecutingDisconnected(_logger, ConnectionId);
                 await disconnected(true);
+                Log.ExecuteDisconnected(_logger, ConnectionId);
             }
             catch (Exception e)
             {
@@ -151,6 +155,18 @@ internal class AzureTransport : IServiceTransport
         private static readonly Action<ILogger, string, Exception> _errorExecuteDisconnected =
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, "ErrorExecuteDisconnected"), "Error executing OnDisconnected in Hub for connection {TransportConnectionId}.");
 
+        private static readonly Action<ILogger, string> _executingConnected =
+            LoggerMessage.Define<string>(LogLevel.Debug, new EventId(3, "ExecutingConnected"), "Executing OnConnected in Hub for connection {TransportConnectionId}.");
+
+        private static readonly Action<ILogger, string> _executeConnected =
+            LoggerMessage.Define<string>(LogLevel.Debug, new EventId(4, "ExecuteConnected"), "Executed OnConnected in Hub for connection {TransportConnectionId}.");
+
+        private static readonly Action<ILogger, string> _executingDisconnected =
+            LoggerMessage.Define<string>(LogLevel.Debug, new EventId(5, "ExecutingDisconnected"), "Executing OnDisconnected in Hub for connection {TransportConnectionId}.");
+
+        private static readonly Action<ILogger, string> _executeDisconnected =
+            LoggerMessage.Define<string>(LogLevel.Debug, new EventId(6, "ExecuteDisconnected"), "Executed OnDisconnected in Hub for connection {TransportConnectionId}.");
+
         public static void ErrorExecuteConnected(ILogger logger, string connectionId, Exception exception)
         {
             _errorExecuteConnected(logger, connectionId, exception);
@@ -159,6 +175,25 @@ internal class AzureTransport : IServiceTransport
         public static void ErrorExecuteDisconnected(ILogger logger, string connectionId, Exception exception)
         {
             _errorExecuteDisconnected(logger, connectionId, exception);
+        }
+
+        public static void ExecuteConnected(ILogger logger, string connectionId)
+        {
+            _executeConnected(logger, connectionId);
+        }
+
+        public static void ExecuteDisconnected(ILogger logger, string connectionId)
+        {
+            _executeDisconnected(logger, connectionId);
+        }
+        public static void ExecutingConnected(ILogger logger, string connectionId)
+        {
+            _executingConnected(logger, connectionId);
+        }
+
+        public static void ExecutingDisconnected(ILogger logger, string connectionId)
+        {
+            _executingDisconnected(logger, connectionId);
         }
     }
 }
