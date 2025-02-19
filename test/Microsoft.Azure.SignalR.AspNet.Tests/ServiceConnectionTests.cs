@@ -74,7 +74,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
             var hub = "chat";
-            var scm = new TestServiceConnectionHandler();
+            var scm = new TestServiceConnectionHandler(loggerFactory);
             hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
@@ -155,7 +155,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
             var hub = "ErrorConnect"; // error connect hub
-            var scm = new TestServiceConnectionHandler();
+            var scm = new TestServiceConnectionHandler(loggerFactory);
             hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
@@ -322,7 +322,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
         {
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
-            var scm = new TestServiceConnectionHandler();
+            var scm = new TestServiceConnectionHandler(loggerFactory);
             hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
@@ -372,7 +372,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
             var hub = "EndlessConnect";
-            var scm = new TestServiceConnectionHandler();
+            var scm = new TestServiceConnectionHandler(loggerFactory);
             hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
@@ -426,7 +426,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
             var hub = "EndlessInvoke";
-            var scm = new TestServiceConnectionHandler();
+            var scm = new TestServiceConnectionHandler(loggerFactory);
             hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
@@ -489,7 +489,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
             var hub = "chat";
-            var scm = new TestServiceConnectionHandler();
+            var scm = new TestServiceConnectionHandler(loggerFactory);
             hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);

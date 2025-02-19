@@ -17,17 +17,13 @@ internal sealed class TestServiceConnectionHandler : ServiceConnectionManager
     private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForTransportOutputMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
     private readonly ILogger _logger;
 
-    public TestServiceConnectionHandler() : this(null, null)
+    public TestServiceConnectionHandler(ILoggerFactory loggerFactory) : this(loggerFactory, null, null)
     {
     }
 
-    public TestServiceConnectionHandler(ILoggerFactory loggerFactory) : this(null, null)
+    public TestServiceConnectionHandler(ILoggerFactory loggerFactory, string appName, IReadOnlyList<string> hubs) : base(appName, hubs)
     {
         _logger = loggerFactory.CreateLogger<TestServiceConnectionHandler>();
-    }
-
-    public TestServiceConnectionHandler(string appName, IReadOnlyList<string> hubs) : base(appName, hubs)
-    {
     }
 
     public override Task WriteAsync(ServiceMessage serviceMessage)
