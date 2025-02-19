@@ -15,6 +15,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
     {
         public override Task OnConnected()
         {
+            Trace.TraceInformation($"OnConnected {Context.ConnectionId}");
             Clients.Group("note").echo("Connected");
             return Task.CompletedTask;
         }
