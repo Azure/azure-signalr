@@ -18,6 +18,8 @@ internal class AzureTransport : IServiceTransport
 {
     private readonly TaskCompletionSource<object> _lifetimeTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+    private readonly TaskCompletionSource<object> _disconnectTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
     private readonly TaskCompletionSource<object> _connectedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly HostContext _context;
@@ -43,6 +45,8 @@ internal class AzureTransport : IServiceTransport
     public string ConnectionId { get; set; }
 
     public Task WaitForConnected => _connectedTcs.Task;
+
+    public Task LifeTimeTask => _lifetimeTcs.Task;
 
     public AzureTransport(HostContext context, IDependencyResolver resolver)
     {
@@ -88,7 +92,7 @@ internal class AzureTransport : IServiceTransport
         }
     }
 
-    public void OnDisconnected() => _lifetimeTcs.TrySetResult(null);
+    public void OnDisconnected() => _disconnectTcs.TrySetResult(null);
 
     private ConnectionDataMessage CreateConnectionDataMessage(string connectionId,
                                                                       object value,
@@ -110,39 +114,49 @@ internal class AzureTransport : IServiceTransport
     {
         try
         {
-            var connected = Connected;
-            if (connected != null)
-            {
-                Log.ExecutingConnected(_logger, ConnectionId);
-                await connected();
-                Log.ExecuteConnected(_logger, ConnectionId);
-            }
 
-            _connectedTcs.TrySetResult(null);
-        }
-        catch (Exception e)
-        {
-            Log.ErrorExecuteConnected(_logger, ConnectionId, e);
-            _connectedTcs.TrySetException(e);
-            throw;
-        }
-
-        await _lifetimeTcs.Task;
-
-        var disconnected = Disconnected;
-        if (disconnected != null)
-        {
             try
             {
-                Log.ExecutingDisconnected(_logger, ConnectionId);
-                await disconnected(true);
-                Log.ExecuteDisconnected(_logger, ConnectionId);
+                var connected = Connected;
+                if (connected != null)
+                {
+                    Log.ExecutingConnected(_logger, ConnectionId);
+                    await connected();
+                    Log.ExecuteConnected(_logger, ConnectionId);
+                }
+
+                _connectedTcs.TrySetResult(null);
             }
             catch (Exception e)
             {
-                Log.ErrorExecuteDisconnected(_logger, ConnectionId, e);
+                Log.ErrorExecuteConnected(_logger, ConnectionId, e);
+                _connectedTcs.TrySetException(e);
                 throw;
             }
+
+            await _disconnectTcs.Task;
+
+            var disconnected = Disconnected;
+            if (disconnected != null)
+            {
+                try
+                {
+                    Log.ExecutingDisconnected(_logger, ConnectionId);
+                    await disconnected(true);
+                    Log.ExecuteDisconnected(_logger, ConnectionId);
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorExecuteDisconnected(_logger, ConnectionId, e);
+                    throw;
+                }
+            }
+
+            _lifetimeTcs.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+            _lifetimeTcs.TrySetException(e);
         }
     }
 
