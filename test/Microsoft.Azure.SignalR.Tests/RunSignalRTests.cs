@@ -7,6 +7,7 @@ using System.IO.Pipelines;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
@@ -20,10 +21,13 @@ using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Azure.SignalR.Tests.TestHubs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests;
+
+#nullable enable
 
 public class RunSignalRTests : VerifiableLoggedTest
 {
@@ -56,6 +60,7 @@ public class RunSignalRTests : VerifiableLoggedTest
             await sc.OpenClientConnectionAsync("conn1").OrTimeout();
 
             var ccm = server.Services.GetService<IClientConnectionManager>();
+            Assert.NotNull(ccm);
 
             await Utils.PollWait(() => ccm.TryGetClientConnection("conn1", out var connection));
             await sc.WriteServiceFinAck();
@@ -97,6 +102,7 @@ public class RunSignalRTests : VerifiableLoggedTest
             }
 
             var ccm = server.Services.GetService<IClientConnectionManager>();
+            Assert.NotNull(ccm);
 
             await Utils.PollWait(() => ccm.Count == count).OrTimeout();
             await sc.WriteServiceFinAck();
@@ -133,6 +139,7 @@ public class RunSignalRTests : VerifiableLoggedTest
             await sc.OpenClientConnectionAsync("conn1").OrTimeout();
 
             var ccm = server.Services.GetService<IClientConnectionManager>();
+            Assert.NotNull(ccm);
 
             await Utils.PollWait(() => ccm.TryGetClientConnection("conn1", out var connection));
 
@@ -159,6 +166,7 @@ public class RunSignalRTests : VerifiableLoggedTest
         {
             _configureServices = configureServices;
         }
+
         public void Configure(IApplicationBuilder app)
         {
             app.UseRouting();
@@ -190,7 +198,18 @@ public class RunSignalRTests : VerifiableLoggedTest
 
     private sealed class ControlledServiceConnectionContext : ConnectionContext
     {
-        private static readonly ServiceProtocol _serviceProtocol = new ServiceProtocol();
+        private static ServiceProtocol ServiceProtocol { get; } = new();
+
+        public override IDuplexPipe Transport { get; set; }
+
+        public IDuplexPipe Application { get; set; }
+
+        public override string ConnectionId { get; set; } = string.Empty;
+
+        public override IFeatureCollection Features { get; } = new FeatureCollection();
+
+        public override IDictionary<object, object?> Items { get; set; } = new Dictionary<object, object?>();
+
         public ControlledServiceConnectionContext()
         {
             var pipe = DuplexPipe.CreateConnectionPair(new PipeOptions(pauseWriterThreshold: 0), new PipeOptions(pauseWriterThreshold: 0));
@@ -198,37 +217,6 @@ public class RunSignalRTests : VerifiableLoggedTest
             Application = pipe.Application;
             // Write handshake response
             _ = WriteHandshakeResponseAsync(Application.Output);
-        }
-
-        private static async Task WriteHandshakeResponseAsync(PipeWriter output)
-        {
-            _serviceProtocol.WriteMessage(new Protocol.HandshakeResponseMessage(), output);
-            _ = await output.FlushAsync();
-        }
-
-        public override IDuplexPipe Transport { get; set; }
-
-        public IDuplexPipe Application { get; set; }
-        public override string ConnectionId { get; set; }
-        public override IFeatureCollection Features { get; }
-        public override IDictionary<object, object> Items { get; set; }
-
-        public async Task OpenClientConnectionAsync(string connectionId)
-        {
-            var openClientConnMsg = new OpenConnectionMessage(connectionId, Array.Empty<System.Security.Claims.Claim>()) { Protocol = "json" };
-            _serviceProtocol.WriteMessage(openClientConnMsg, Application.Output);
-            await Application.Output.FlushAsync();
-
-            var clientHandshakeRequest = new AspNetCore.SignalR.Protocol.HandshakeRequestMessage("json", 1);
-            var clientHandshake = new ConnectionDataMessage(connectionId, GetMessageBytes(clientHandshakeRequest));
-            _serviceProtocol.WriteMessage(clientHandshake, Application.Output);
-            await Application.Output.FlushAsync();
-        }
-
-        public ValueTask<FlushResult> WriteServiceFinAck()
-        {
-            _serviceProtocol.WriteMessage(RuntimeServicePingMessage.GetFinAckPingMessage(), Application.Output);
-            return Application.Output.FlushAsync();
         }
 
         public static ReadOnlyMemory<byte> GetMessageBytes(Microsoft.AspNetCore.SignalR.Protocol.HandshakeRequestMessage message)
@@ -244,18 +232,49 @@ public class RunSignalRTests : VerifiableLoggedTest
                 MemoryBufferWriter.Return(writer);
             }
         }
+
+        public async Task OpenClientConnectionAsync(string connectionId)
+        {
+            var openClientConnMsg = new OpenConnectionMessage(connectionId, Array.Empty<System.Security.Claims.Claim>()) { Protocol = "json" };
+            ServiceProtocol.WriteMessage(openClientConnMsg, Application.Output);
+            await Application.Output.FlushAsync();
+
+            var clientHandshakeRequest = new AspNetCore.SignalR.Protocol.HandshakeRequestMessage("json", 1);
+            var clientHandshake = new ConnectionDataMessage(connectionId, GetMessageBytes(clientHandshakeRequest));
+            ServiceProtocol.WriteMessage(clientHandshake, Application.Output);
+            await Application.Output.FlushAsync();
+        }
+
+        public ValueTask<FlushResult> WriteServiceFinAck()
+        {
+            ServiceProtocol.WriteMessage(RuntimeServicePingMessage.GetFinAckPingMessage(), Application.Output);
+            return Application.Output.FlushAsync();
+        }
+
+        private static async Task WriteHandshakeResponseAsync(PipeWriter output)
+        {
+            ServiceProtocol.WriteMessage(new Protocol.HandshakeResponseMessage(), output);
+            _ = await output.FlushAsync();
+        }
     }
 
     private sealed class CaptureDataConnectionFactory : IConnectionFactory
     {
-        private readonly TaskCompletionSource<ControlledServiceConnectionContext> _taskCompletionSource = new TaskCompletionSource<ControlledServiceConnectionContext>();
+        private readonly TaskCompletionSource<ControlledServiceConnectionContext> _taskCompletionSource = new();
+
         public Task<ControlledServiceConnectionContext> FirstConnectionTask => _taskCompletionSource.Task;
+
         public Task DisposeAsync(ConnectionContext connection)
         {
             return Task.CompletedTask;
         }
 
-        Task<ConnectionContext> IConnectionFactory.ConnectAsync(HubServiceEndpoint endpoint, TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken, IDictionary<string, string> headers)
+        Task<ConnectionContext> IConnectionFactory.ConnectAsync(HubServiceEndpoint endpoint,
+                                                                TransferFormat transferFormat,
+                                                                string connectionId,
+                                                                string target,
+                                                                CancellationToken cancellationToken,
+                                                                IDictionary<string, string>? headers)
         {
             var connection = new ControlledServiceConnectionContext();
             _taskCompletionSource.TrySetResult(connection);
