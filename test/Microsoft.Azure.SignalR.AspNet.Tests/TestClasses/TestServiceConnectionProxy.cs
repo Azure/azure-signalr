@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
@@ -25,11 +26,11 @@ internal class TestServiceConnectionProxy(IClientConnectionManagerAspNet clientC
                                               null,
                                               new AckHandler()), IDisposable
 {
-    private static readonly ServiceProtocol SharedServiceProtocol = new ServiceProtocol();
+    private static readonly ServiceProtocol SharedServiceProtocol = new();
 
-    private readonly ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>> _waitForOutgoingMessage = new ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>>();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>> _waitForOutgoingMessage = new();
 
-    private readonly TaskCompletionSource<object> _connectionClosedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object> _connectionClosedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public TestConnectionContext TestConnectionContext { get; private set; }
 

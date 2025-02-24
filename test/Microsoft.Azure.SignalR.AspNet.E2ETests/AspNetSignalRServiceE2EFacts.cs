@@ -3,8 +3,10 @@
 
 using System;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Azure.SignalR.Tests.Common;
+
 using Xunit;
 using Xunit.Abstractions;
 
