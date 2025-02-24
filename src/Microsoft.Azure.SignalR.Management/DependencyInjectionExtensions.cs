@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 using System;
 using System.Globalization;
@@ -106,16 +106,15 @@ namespace Microsoft.Azure.SignalR.Management
                     new JsonHubProtocol();
 #pragma warning restore CS0618 // Type or member is obsolete
             }));
-            //add dependencies for persistent mode only
+            // add dependencies for persistent mode only
             services
-                .AddSingleton<ConnectionFactory>()
                 .AddSingleton<IConnectionFactory, ManagementConnectionFactory>()
                 .AddSingleton<ConnectionDelegate>((connectionContext) => Task.CompletedTask)
                 .AddSingleton<IServiceConnectionFactory, ServiceConnectionFactory>()
                 .AddSingleton<MultiEndpointConnectionContainerFactory>()
                 .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
 
-            //add dependencies for transient mode only
+            // add dependencies for transient mode only
             services.AddSingleton<PayloadBuilderResolver>();
 
             services.AddRestClient();

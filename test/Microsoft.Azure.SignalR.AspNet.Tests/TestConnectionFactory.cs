@@ -1,13 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
 
-namespace Microsoft.Azure.SignalR.Tests.Common;
+namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
 #nullable enable
 
@@ -19,8 +18,7 @@ internal sealed class TestConnectionFactory : IConnectionFactory
                                                 TransferFormat transferFormat,
                                                 string connectionId,
                                                 string target,
-                                                CancellationToken cancellationToken = default,
-                                                IDictionary<string, string>? headers = null)
+                                                CancellationToken cancellationToken = default)
     {
         var connection = new TestConnectionContext();
 

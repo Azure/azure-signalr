@@ -273,8 +273,7 @@ public class RunSignalRTests : VerifiableLoggedTest
                                                                 TransferFormat transferFormat,
                                                                 string connectionId,
                                                                 string target,
-                                                                CancellationToken cancellationToken,
-                                                                IDictionary<string, string>? headers)
+                                                                CancellationToken cancellationToken)
         {
             var connection = new ControlledServiceConnectionContext();
             _taskCompletionSource.TrySetResult(connection);

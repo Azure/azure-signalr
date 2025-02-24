@@ -61,6 +61,9 @@ internal class DispatcherHelper
             configuration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
         }
 
+        // custom header provider can be null.
+        var customHeaderProvider = configuration.Resolver.Resolve<ICustomHeaderProvider>();
+
         var endpoint = new ServiceEndpointManager(options, loggerFactory);
         configuration.Resolver.Register(typeof(IServiceEndpointManager), () => endpoint);
 
@@ -130,7 +133,7 @@ internal class DispatcherHelper
         var cf = configuration.Resolver.Resolve<IConnectionFactory>();
         if (cf == null)
         {
-            cf = new ConnectionFactory(serverNameProvider, loggerFactory);
+            cf = new ConnectionFactory(serverNameProvider, customHeaderProvider, loggerFactory);
             configuration.Resolver.Register(typeof(IConnectionFactory), () => cf);
         }
 

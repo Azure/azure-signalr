@@ -2,10 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
-using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management;
@@ -13,33 +11,20 @@ namespace Microsoft.Azure.SignalR.Management;
 #nullable enable
 
 internal class ManagementConnectionFactory(IOptions<ServiceManagerOptions> context,
-                                           ConnectionFactory connectionFactory) : IConnectionFactory
+                                           IServerNameProvider serverNameProvider,
+                                           ICustomHeaderProvider? customHeaderProvider,
+                                           ILoggerFactory loggerFactory)
+    : ConnectionFactory(serverNameProvider, customHeaderProvider, loggerFactory)
 {
     private readonly string? _productInfo = context.Value.ProductInfo;
 
-    public Task<ConnectionContext> ConnectAsync(HubServiceEndpoint endpoint,
-                                                TransferFormat transferFormat,
-                                                string connectionId,
-                                                string target,
-                                                CancellationToken cancellationToken = default,
-                                                IDictionary<string, string>? headers = null)
+    internal override IDictionary<string, string> GetRequestHeaders()
     {
+        var headers = base.GetRequestHeaders();
         if (_productInfo != null)
         {
-            if (headers == null)
-            {
-                headers = new Dictionary<string, string> { { Constants.AsrsUserAgent, _productInfo } };
-            }
-            else
-            {
-                headers[Constants.AsrsUserAgent] = _productInfo;
-            }
+            headers[Constants.AsrsUserAgent] = _productInfo;
         }
-        return connectionFactory.ConnectAsync(endpoint, transferFormat, connectionId, target, cancellationToken, headers);
-    }
-
-    public Task DisposeAsync(ConnectionContext connection)
-    {
-        return connectionFactory.DisposeAsync(connection);
+        return headers;
     }
 }

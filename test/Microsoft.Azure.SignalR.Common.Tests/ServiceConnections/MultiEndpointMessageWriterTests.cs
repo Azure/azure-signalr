@@ -10,6 +10,7 @@ using Moq;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.ServiceConnections;
+
 public class MultiEndpointMessageWriterTests
 {
     [Theory]

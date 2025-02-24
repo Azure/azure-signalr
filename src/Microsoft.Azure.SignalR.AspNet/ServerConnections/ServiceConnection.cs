@@ -4,7 +4,6 @@
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -22,13 +21,9 @@ internal partial class ServiceConnection : ServiceConnectionBase
 {
     private const string ReconnectMessage = "asrs:reconnect";
 
-    private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string>
-        {{Constants.AsrsUserAgent, ProductInfo.GetProductInfo()}};
-
     private static readonly TimeSpan CloseApplicationTimeout = TimeSpan.FromSeconds(5);
 
-    private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections =
-        new ConcurrentDictionary<string, ClientConnectionContext>(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections = new(StringComparer.Ordinal);
 
     private readonly IConnectionFactory _connectionFactory;
 
@@ -76,10 +71,14 @@ internal partial class ServiceConnection : ServiceConnectionBase
         return r;
     }
 
+    public override Task CloseClientConnections(CancellationToken token)
+    {
+        throw new NotSupportedException();
+    }
+
     protected override Task<ConnectionContext> CreateConnection(string target = null)
     {
-        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target,
-            headers: CustomHeader);
+        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target);
     }
 
     protected override Task DisposeConnection(ConnectionContext connection)
@@ -96,11 +95,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
     {
         _ = CleanupConnectionsAsyncCore(fromInstanceId);
         return Task.CompletedTask;
-    }
-
-    public override Task CloseClientConnections(CancellationToken token)
-    {
-        throw new NotSupportedException();
     }
 
     protected override Task OnClientConnectedAsync(OpenConnectionMessage openConnectionMessage)

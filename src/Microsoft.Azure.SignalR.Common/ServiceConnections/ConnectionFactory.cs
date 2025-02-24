@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 
@@ -19,38 +20,36 @@ internal class ConnectionFactory : IConnectionFactory
 
     private readonly string _serverId;
 
-    public ConnectionFactory(IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
+    private readonly ICustomHeaderProvider? _customHeaderProvider;
+
+    public ConnectionFactory(IServerNameProvider nameProvider,
+                             ICustomHeaderProvider? customHeaderProvider,
+                             ILoggerFactory loggerFactory)
     {
-        _loggerFactory = loggerFactory != null ? new GracefulLoggerFactory(loggerFactory) : throw new ArgumentNullException(nameof(loggerFactory));
+        _loggerFactory = new GracefulLoggerFactory(loggerFactory);
         _serverId = nameProvider.GetName();
+        _customHeaderProvider = customHeaderProvider;
     }
 
     public async Task<ConnectionContext> ConnectAsync(HubServiceEndpoint hubServiceEndpoint,
                                                       TransferFormat transferFormat,
                                                       string connectionId,
                                                       string target,
-                                                      CancellationToken cancellationToken = default,
-                                                      IDictionary<string, string>? headers = null)
+                                                      CancellationToken cancellationToken = default)
     {
         var provider = hubServiceEndpoint.Provider;
         var hubName = hubServiceEndpoint.Hub;
 
         var accessTokenProvider = provider.GetServerAccessTokenProvider(hubName, _serverId);
-
         var url = GetServiceUrl(provider, hubName, connectionId, target);
-
-        headers ??= new Dictionary<string, string>();
-        if (!string.IsNullOrEmpty(_serverId) && !headers.ContainsKey(Constants.Headers.AsrsServerId))
-        {
-            headers.Add(Constants.Headers.AsrsServerId, _serverId);
-        }
 
         var connectionOptions = new WebSocketConnectionOptions
         {
-            Headers = headers,
+            Headers = GetRequestHeaders(),
             Proxy = provider.Proxy,
         };
         var connection = new WebSocketConnectionContext(connectionOptions, _loggerFactory, accessTokenProvider);
+
         try
         {
             await connection.StartAsync(url, cancellationToken);
@@ -70,8 +69,22 @@ internal class ConnectionFactory : IConnectionFactory
         {
             return Task.CompletedTask;
         }
-
         return ((WebSocketConnectionContext)connection).StopAsync();
+    }
+
+    internal virtual IDictionary<string, string> GetRequestHeaders()
+    {
+        var headers = _customHeaderProvider?.GetCustomHeaders() ?? new Dictionary<string, string>();
+
+        // Fix issue: https://github.com/Azure/azure-signalr/issues/198
+        // .NET Framework has restriction about reserved string as the header name like "User-Agent"
+        headers[Constants.AsrsUserAgent] = ProductInfo.GetProductInfo();
+
+        if (!string.IsNullOrEmpty(_serverId) && !headers.ContainsKey(Constants.Headers.AsrsServerId))
+        {
+            headers.Add(Constants.Headers.AsrsServerId, _serverId);
+        }
+        return headers;
     }
 
     private static Uri GetServiceUrl(IServiceEndpointProvider provider, string hubName, string connectionId, string target)
@@ -142,7 +155,11 @@ internal class ConnectionFactory : IConnectionFactory
             /// <param name="state"></param>
             /// <param name="exception"></param>
             /// <param name="formatter"></param>
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+            public void Log<TState>(LogLevel logLevel,
+                                    EventId eventId,
+                                    TState state,
+                                    Exception? exception,
+                                    Func<TState, Exception?, string> formatter)
             {
                 if (logLevel >= LogLevel.Error)
                 {
@@ -161,7 +178,7 @@ internal class ConnectionFactory : IConnectionFactory
             {
                 return _inner.BeginScope(state);
             }
-        }
 #nullable restore
+        }
     }
 }

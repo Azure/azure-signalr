@@ -8,6 +8,7 @@ using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.Extensions.Primitives;
 #nullable enable
 namespace Microsoft.Azure.SignalR
 {
@@ -61,6 +62,12 @@ namespace Microsoft.Azure.SignalR
         /// The claims will be included in the auto-generated token for clients.
         /// </summary>
         public Func<HttpContext, IEnumerable<Claim>>? ClaimsProvider { get; set; }
+
+        /// <summary>
+        /// Gets or sets the func to generate custom headers.
+        /// The headers key should not startwith "asrs-", as it is for Azure SignalR Service internal usage and can be overwritten.
+        /// </summary>
+        public Func<IDictionary<string, string>>? CustomHeaderProvider { get; set; }
 
         /// <summary>
         /// Gets or sets the func to set diagnostic client filter from <see cref="HttpContext" />.

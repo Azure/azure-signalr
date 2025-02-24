@@ -9,17 +9,19 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 
-#nullable enable
-
 namespace Microsoft.Azure.SignalR.Tests;
+
+#nullable enable
 
 internal class TestConnectionFactory : IConnectionFactory
 {
-    private readonly Func<TestConnection, Task>? _connectCallback;
-
     public IList<TestConnection> Connections = new List<TestConnection>();
 
+    private readonly Func<TestConnection, Task>? _connectCallback;
+
     public List<DateTime> Times { get; } = new List<DateTime>();
+
+    public HandshakeRequestMessage? HandshakeRequest { get; set; }
 
     public TestConnectionFactory()
     {
@@ -31,14 +33,11 @@ internal class TestConnectionFactory : IConnectionFactory
         _connectCallback = connectCallback;
     }
 
-    public HandshakeRequestMessage? HandshakeRequest { get; set; }
-
     public async Task<ConnectionContext> ConnectAsync(HubServiceEndpoint endpoint,
                                                       TransferFormat transferFormat,
                                                       string connectionId,
                                                       string target,
-                                                      CancellationToken cancellationToken = default,
-                                                      IDictionary<string, string>? headers = null)
+                                                      CancellationToken cancellationToken = default)
     {
         Times.Add(DateTime.Now);
 
@@ -68,11 +67,6 @@ internal class TestConnectionFactory : IConnectionFactory
         return Task.CompletedTask;
     }
 
-    private async Task HandshakeAsync(TestConnection connection)
-    {
-        await DoHandshakeAsync(connection);
-    }
-
     /// <summary>
     /// Allow sub-class to override the handshake behavior
     /// </summary>
@@ -88,5 +82,10 @@ internal class TestConnectionFactory : IConnectionFactory
     protected virtual Task AfterConnectedAsync(TestConnection connection)
     {
         return Task.CompletedTask;
+    }
+
+    private async Task HandshakeAsync(TestConnection connection)
+    {
+        await DoHandshakeAsync(connection);
     }
 }
