@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #if NET7_0_OR_GREATER
 using System;
@@ -47,8 +47,6 @@ namespace Microsoft.Azure.SignalR
             var ackNumber = _endpointRouter.GetEndpointsForConnection(connectionId, serviceEndpoints).Count();
 
             var multiAck = _ackHandler.CreateMultiAck(out var ackId);
-
-            _ackHandler.SetExpectedCount(ackId, ackNumber);
 
             // When the caller server is also the client router, Azure SignalR service won't send a ServiceMappingMessage to server.
             // To handle this condition, CallerClientResultsManager itself should record this mapping information rather than waiting for a ServiceMappingMessage sent by service. Only in this condition, this method is called with instanceId != null.
