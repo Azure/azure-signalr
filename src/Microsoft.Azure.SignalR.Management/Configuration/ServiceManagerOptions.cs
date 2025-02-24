@@ -3,100 +3,101 @@
 
 using System;
 using System.Net;
+
 using Azure.Core.Serialization;
+
 using Newtonsoft.Json;
+
+namespace Microsoft.Azure.SignalR.Management;
 
 #nullable enable
 
-namespace Microsoft.Azure.SignalR.Management
+/// <summary>
+/// Configurable options for Azure SignalR Management SDK.
+/// </summary>
+public class ServiceManagerOptions
 {
     /// <summary>
-    /// Configurable options for Azure SignalR Management SDK.
+    /// Gets or sets the ApplicationName which will be prefixed to each hub name
     /// </summary>
-    public class ServiceManagerOptions
+    public string? ApplicationName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 1.
+    /// </summary>
+    public int ConnectionCount { get; set; } = 1;
+
+    /// <summary>
+    /// Gets or sets a service endpoint of Azure SignalR Service instance by connection string.
+    /// </summary>
+    public string? ConnectionString { get; set; }
+
+    /// <summary>
+    /// Gets or sets multiple service endpoints of Azure SignalR Service instances.
+    /// </summary>
+    public ServiceEndpoint[]? ServiceEndpoints { get; set; }
+
+    /// <summary>
+    /// Gets or sets the proxy used when ServiceManager will attempt to connect to Azure SignalR Service.
+    /// </summary>
+    public IWebProxy? Proxy { get; set; }
+
+    /// <summary>
+    /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
+    /// </summary>
+    public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
+
+    /// <summary>
+    /// Gets or sets the timespan to wait before the HTTP request times out. The default value is 100 seconds.
+    /// </summary>
+    public TimeSpan HttpClientTimeout { get; set; } = TimeSpan.FromSeconds(100);
+
+    public ServiceManagerRetryOptions? RetryOptions { get; set; }
+
+    /// <summary>
+    /// Gets the json serializer settings that will be used to serialize content sent to Azure SignalR Service.
+    /// </summary>
+    [Obsolete("Use ServiceManagerBuilder.WithNewtonsoftJson instead.")]
+    public JsonSerializerSettings JsonSerializerSettings { get; } = new JsonSerializerSettings();
+
+    /// <summary>
+    /// If users want to use MessagePack, they should go to <see cref="ServiceManagerBuilder.AddHubProtocol(AspNetCore.SignalR.Protocol.IHubProtocol)"/>
+    /// </summary>
+    internal ObjectSerializer? ObjectSerializer { get; set; }
+
+    /// <summary>
+    /// Set a JSON object serializer used to serialize the data sent to clients.
+    /// </summary>
+    public void UseJsonObjectSerializer(ObjectSerializer objectSerializer)
     {
-        /// <summary>
-        /// Gets or sets the ApplicationName which will be prefixed to each hub name
-        /// </summary>
-        public string? ApplicationName { get; set; }
+        ObjectSerializer = objectSerializer;
+    }
 
-        /// <summary>
-        /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 1.
-        /// </summary>
-        public int ConnectionCount { get; set; } = 1;
+    /// <summary>
+    /// Gets or sets a value indicating whether message tracing ID is append to messages. By default it is false.
+    /// </summary>
+    // not ready
+    internal bool EnableMessageTracing { get; set; }
 
-        /// <summary>
-        /// Gets or sets a service endpoint of Azure SignalR Service instance by connection string.
-        /// </summary>
-        public string? ConnectionString { get; set; }
+    internal string? ProductInfo { get; set; }
 
-        /// <summary>
-        /// Gets or sets multiple service endpoints of Azure SignalR Service instances.
-        /// </summary>
-        public ServiceEndpoint[]? ServiceEndpoints { get; set; }
-
-        /// <summary>
-        /// Gets or sets the proxy used when ServiceManager will attempt to connect to Azure SignalR Service.
-        /// </summary>
-        public IWebProxy? Proxy { get; set; }
-
-        /// <summary>
-        /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
-        /// </summary>
-        public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
-
-        /// <summary>
-        /// Gets or sets the timespan to wait before the HTTP request times out. The default value is 100 seconds.
-        /// </summary>
-        public TimeSpan HttpClientTimeout { get; set; } = TimeSpan.FromSeconds(100);
-
-        public ServiceManagerRetryOptions? RetryOptions { get; set; }
-
-        /// <summary>
-        /// Gets the json serializer settings that will be used to serialize content sent to Azure SignalR Service.
-        /// </summary>
-        [Obsolete("Use ServiceManagerBuilder.WithNewtonsoftJson instead.")]
-        public JsonSerializerSettings JsonSerializerSettings { get; } = new JsonSerializerSettings();
-
-        /// <summary>
-        /// If users want to use MessagePack, they should go to <see cref="ServiceManagerBuilder.AddHubProtocol(AspNetCore.SignalR.Protocol.IHubProtocol)"/>
-        /// </summary>
-        internal ObjectSerializer? ObjectSerializer { get; set; }
-
-        /// <summary>
-        /// Set a JSON object serializer used to serialize the data sent to clients.
-        /// </summary>
-        public void UseJsonObjectSerializer(ObjectSerializer objectSerializer)
+    internal void ValidateOptions()
+    {
+        if ((ServiceEndpoints == null || ServiceEndpoints.Length == 0) && string.IsNullOrWhiteSpace(ConnectionString))
         {
-            ObjectSerializer = objectSerializer;
+            throw new InvalidOperationException($"{nameof(ServiceEndpoints)} is empty. {nameof(ConnectionString)} is  null, empty, or consists only of white-space.");
         }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether message tracing ID is append to messages. By default it is false.
-        /// </summary>
-        // not ready
-        internal bool EnableMessageTracing { get; set; }
-
-        internal string? ProductInfo { get; set; }
-
-        internal void ValidateOptions()
+        // forbid multiple endpoints in transient mode.
+        if (ServiceTransportType == ServiceTransportType.Transient)
         {
-            if ((ServiceEndpoints == null || ServiceEndpoints.Length == 0) && string.IsNullOrWhiteSpace(ConnectionString))
+            var count = ConnectionString == null ? 0 : 1;
+            if (ServiceEndpoints != null)
             {
-                throw new InvalidOperationException($"{nameof(ServiceEndpoints)} is empty. {nameof(ConnectionString)} is  null, empty, or consists only of white-space.");
+                count += ServiceEndpoints.Length;
             }
-            // forbid multiple endpoints in transient mode.
-            if (ServiceTransportType == ServiceTransportType.Transient)
+            if (count > 1)
             {
-                var count = ConnectionString == null ? 0 : 1;
-                if (ServiceEndpoints != null)
-                {
-                    count += ServiceEndpoints.Length;
-                }
-                if (count > 1)
-                {
-                    throw new NotImplementedException($"Multiple service endpoints are set via {ConnectionString} or {ServiceEndpoints}, but multiple service endpoints in transient mode are not implemented yet.");
-                }
+                throw new NotImplementedException($"Multiple service endpoints are set via {ConnectionString} or {ServiceEndpoints}, but multiple service endpoints in transient mode are not implemented yet.");
             }
         }
     }
