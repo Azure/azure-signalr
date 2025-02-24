@@ -6,13 +6,14 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
 internal sealed class TestServiceConnectionHandler : ServiceConnectionManager
 {
-    private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForTransportOutputMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
+    private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForTransportOutputMessage = new();
 
     public TestServiceConnectionHandler() : this(null, null)
     {

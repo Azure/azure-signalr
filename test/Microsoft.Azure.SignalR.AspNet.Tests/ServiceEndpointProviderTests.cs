@@ -8,7 +8,9 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+
 using Microsoft.IdentityModel.Tokens;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests;
@@ -16,9 +18,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests;
 public class ServiceEndpointProviderTests
 {
     private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    private static readonly SymmetricSecurityKey SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SigningKey));
+    private static readonly SymmetricSecurityKey SecurityKey = new(Encoding.UTF8.GetBytes(SigningKey));
     private const string DefaultConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
-
 
     [Theory]
     [InlineData("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost/aspnetclient")]
@@ -30,7 +31,7 @@ public class ServiceEndpointProviderTests
 
         var clientToken = await provider.GenerateClientAccessTokenAsync(null, new Claim[]
         {
-            new Claim("type1", "value1")
+            new("type1", "value1")
         });
 
         var handler = new JwtSecurityTokenHandler();
@@ -39,7 +40,7 @@ public class ServiceEndpointProviderTests
             ValidateIssuer = false,
             IssuerSigningKey = SecurityKey,
             ValidAudience = expectedAudience
-        }, out var token);
+        }, out _);
 
         var customClaims = principal.FindAll("type1").ToList();
         Assert.Single(customClaims);
@@ -97,7 +98,7 @@ public class ServiceEndpointProviderTests
             ValidateIssuer = false,
             IssuerSigningKey = SecurityKey,
             ValidAudience = expectedAudience
-        }, out var token);
+        }, out _);
 
         Assert.Equal("user1", principal.FindFirst(ClaimTypes.NameIdentifier).Value);
     }

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 
@@ -67,7 +68,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
 
         public void SendGroupExcept(string name, string groupName, string[] connectionIdExcept, string message)
         {
-            Clients.Groups(new List<string> { groupName }, connectionIdExcept).echo(name, message);
+            Clients.Groups([groupName], connectionIdExcept).echo(name, message);
         }
 
         public void SendUser(string name, string userId, string message)
