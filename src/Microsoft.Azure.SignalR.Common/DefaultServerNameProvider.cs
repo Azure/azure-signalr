@@ -3,14 +3,16 @@
 
 using System;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+#nullable enable
+
+internal class DefaultServerNameProvider : IServerNameProvider
 {
-    internal class DefaultServerNameProvider : IServerNameProvider
+    private readonly string _name = $"{Environment.MachineName}_{Guid.NewGuid():N}";
+
+    public string GetName()
     {
-        private readonly string _name = $"{Environment.MachineName}_{Guid.NewGuid():N}";
-        public string GetName()
-        {
-            return _name;
-        }
+        return _name;
     }
 }
