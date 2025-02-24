@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #if NET7_0_OR_GREATER
 using System;
@@ -42,9 +42,6 @@ namespace Microsoft.Azure.SignalR
             var tcs = new TaskCompletionSourceWithCancellation<T>(
                 cancellationToken,
                 () => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
-
-            var serviceEndpoints = _serviceEndpointManager.GetEndpoints(hub);
-            var ackNumber = _endpointRouter.GetEndpointsForConnection(connectionId, serviceEndpoints).Count();
 
             var multiAck = _ackHandler.CreateMultiAck(out var ackId);
 

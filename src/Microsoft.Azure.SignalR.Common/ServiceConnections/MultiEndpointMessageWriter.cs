@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -58,6 +59,13 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceMana
         {
             // Accroding to target endpoints in method `WriteMultiEndpointMessageAsync`
             _clientInvocationManager.Caller.SetAckNumber(invocationMessage.InvocationId, TargetEndpoints.Length);
+            if (TargetEndpoints.Length == 0)
+            {
+                _clientInvocationManager.Caller.TryCompleteResult(
+                    invocationMessage.ConnectionId,
+                    CompletionMessage.WithError(invocationMessage.InvocationId, "No available endpoint to send invocation message.")
+                );
+            }
         }
 
         return WriteMultiEndpointMessageAsync(serviceMessage, connection => connection.WriteAsync(serviceMessage));

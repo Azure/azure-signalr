@@ -132,6 +132,11 @@ namespace Microsoft.Azure.SignalR
             // The ack number of invocation will be set inside `WriteAsync`. So adding invocation should be first.
             var task = _clientInvocationManager.Caller.AddInvocation<T>(_hub, connectionId, invocationId, cancellationToken);
             await WriteAsync(message);
+            if (ServiceConnectionContainer is not MultiEndpointServiceConnectionContainer)
+            {
+                // `WriteAsync` in test class `TestServiceConnectionHandler` does not set ack number. Set the number manually.
+                _clientInvocationManager.Caller.SetAckNumber(invocationId, 1);
+            }
 
             // Exception handling follows https://source.dot.net/#Microsoft.AspNetCore.SignalR.Core/DefaultHubLifetimeManager.cs,349
             try
