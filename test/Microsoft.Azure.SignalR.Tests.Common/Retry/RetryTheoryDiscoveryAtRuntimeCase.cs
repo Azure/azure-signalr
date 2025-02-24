@@ -48,11 +48,13 @@ public class RetryTheoryDiscoveryAtRuntimeCase : XunitTestCase, IRetryableTestCa
     /// <inheritdoc />
     public override Task<RunSummary> RunAsync(IMessageSink diagnosticMessageSink, IMessageBus messageBus,
         object[] constructorArguments, ExceptionAggregator aggregator,
-        CancellationTokenSource cancellationTokenSource) =>
-        RetryTestCaseRunner.RunAsync(this, diagnosticMessageSink, messageBus, cancellationTokenSource,
+        CancellationTokenSource cancellationTokenSource)
+    {
+        return RetryTestCaseRunner.RunAsync(this, diagnosticMessageSink, messageBus, cancellationTokenSource,
             blockingMessageBus => new XunitTheoryTestCaseRunner(this, DisplayName, SkipReason, constructorArguments,
                     diagnosticMessageSink, blockingMessageBus, aggregator, cancellationTokenSource)
                 .RunAsync());
+    }
 
     public override void Serialize(IXunitSerializationInfo data)
     {

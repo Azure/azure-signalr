@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {

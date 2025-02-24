@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -17,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common;
 
 internal class TestServiceConnection : ServiceConnectionBase
 {
-    private readonly TaskCompletionSource<object?> _created = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object?> _created = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly bool _throws;
 

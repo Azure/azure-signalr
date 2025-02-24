@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -51,7 +52,7 @@ public class EndpointRouterTests
         var endpointA = GenerateServiceEndpoint(quotaOfScaleUpInstance, 0, 80, "a");
         var endpointB = GenerateServiceEndpoint(100, 0, 70, "b");
         var endpointC = GenerateServiceEndpoint(100, 0, 70, "c");
-        var el = new List<ServiceEndpoint>() {endpointA, endpointB, endpointC};
+        var el = new List<ServiceEndpoint>() { endpointA, endpointB, endpointC };
         context.BenchTest(loops, () =>
         {
             var ep = drt.GetNegotiateEndpoint(null, el);
@@ -84,7 +85,8 @@ public class EndpointRouterTests
             ServerConnectionCount = serverConnectionCount
         };
         return new ServiceEndpoint("Endpoint=https://url;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;",
-            EndpointType.Primary, name) { EndpointMetrics = endpointMetrics };
+            EndpointType.Primary, name)
+        { EndpointMetrics = endpointMetrics };
     }
 
     private sealed class RandomContext

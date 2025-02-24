@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.Extensions.Configuration;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -14,7 +16,7 @@ public class ServiceOptionsSetupFacts
 
     private static readonly string[] ConnectionStringKeys = new[] { Constants.Keys.ConnectionStringDefaultKey, Constants.Keys.ConnectionStringSecondaryKey };
 
-    private static readonly Dictionary<string, (string, EndpointType)> EndpointDict = new Dictionary<string, (string, EndpointType)>
+    private static readonly Dictionary<string, (string, EndpointType)> EndpointDict = new()
     {
         {"a",("a",EndpointType.Primary) },
         {"secondary",("secondary",EndpointType.Primary) },

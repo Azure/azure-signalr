@@ -7,8 +7,10 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Azure.Core;
 using Azure.Identity;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth;

@@ -9,10 +9,12 @@ using System.Net;
 using System.Reflection;
 using System.Security.Claims;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -211,7 +213,7 @@ public class ServiceContextFacts
             },
             new object[]
             {
-                new CultureInfo("zh-CN") { DateTimeFormat = { ShortDatePattern = "MM#dd#yyyy" } }, 
+                new CultureInfo("zh-CN") { DateTimeFormat = { ShortDatePattern = "MM#dd#yyyy" } },
                 new CultureInfo("fr-CA") { DateTimeFormat = { ShortDatePattern = "yyyy|MM|dd" } }
             }
     };
@@ -220,12 +222,11 @@ public class ServiceContextFacts
     [MemberData(nameof(TestCultures))]
     public async Task ServiceConnectionContextCultureManagerTest(CultureInfo expectCulture, CultureInfo expectUICulture)
     {
-        var (originalCulture, originalUICulture) = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
+        var (_, _) = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
 
         var timeoutSeconds = 1;
         var cultureManager = new DefaultCultureFeatureManager(timeoutSeconds);
-
-        var requestIdProvider = new DefaultConnectionRequestIdProvider();
+        _ = new DefaultConnectionRequestIdProvider();
         var requestId1 = "1";
         var requestId2 = "2";
         var expectFeature = new RequestCultureFeature(new RequestCulture(expectCulture, expectUICulture), null);
@@ -236,7 +237,7 @@ public class ServiceContextFacts
         Assert.True(cultureManager.TryRemoveCultureFeature(requestId1, out var actualFeature));
         Assert.Equal(expectFeature, actualFeature);
 
-        await Task.Delay(timeoutSeconds * 1000 + 100);
+        await Task.Delay((timeoutSeconds * 1000) + 100);
         cultureManager.Cleanup();
         Assert.False(cultureManager.TryRemoveCultureFeature(requestId2, out var _));
     }

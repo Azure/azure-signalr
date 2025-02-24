@@ -16,7 +16,7 @@ internal class VerifyLogScope : IVerifiableLog
     private readonly IDisposable _wrappedDisposable;
     private readonly LogSinkProvider _sink;
 
-    private readonly List<Func<LogRecord, bool>> _expectedLogs = new();
+    private readonly List<Func<LogRecord, bool>> _expectedLogs = [];
 
     public ILoggerFactory LoggerFactory { get; }
 
@@ -29,7 +29,10 @@ internal class VerifyLogScope : IVerifiableLog
         LoggerFactory.AddProvider(_sink);
     }
 
-    public LogRecord Expects(string logEventName) => Expects(i => i.Write.EventId.Name == logEventName);
+    public LogRecord Expects(string logEventName)
+    {
+        return Expects(i => i.Write.EventId.Name == logEventName);
+    }
 
     public LogRecord Expects(Func<LogRecord, bool> predicate)
     {
@@ -38,7 +41,10 @@ internal class VerifyLogScope : IVerifiableLog
         return matches[0];
     }
 
-    public IReadOnlyList<LogRecord> ExpectsMany(string logEventName) => ExpectsMany(i => i.Write.EventId.Name == logEventName);
+    public IReadOnlyList<LogRecord> ExpectsMany(string logEventName)
+    {
+        return ExpectsMany(i => i.Write.EventId.Name == logEventName);
+    }
 
     public IReadOnlyList<LogRecord> ExpectsMany(Func<LogRecord, bool> predicate)
     {
@@ -69,13 +75,13 @@ internal class VerifyLogScope : IVerifiableLog
         }).ToArray();
         if (results.Length > 0)
         {
-            string errorMessage = $"{results.Length} error(s) logged.";
+            var errorMessage = $"{results.Length} error(s) logged.";
             errorMessage += Environment.NewLine;
             errorMessage += string.Join(Environment.NewLine, results.Select(record =>
             {
                 var r = record.Write;
 
-                string lineMessage = r.LoggerName + " - " + r.EventId.ToString() + " - " + r.Formatter(r.State, r.Exception);
+                var lineMessage = r.LoggerName + " - " + r.EventId.ToString() + " - " + r.Formatter(r.State, r.Exception);
                 if (r.Exception != null)
                 {
                     lineMessage += Environment.NewLine;

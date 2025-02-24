@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Features;
 
@@ -18,7 +19,7 @@ internal sealed class TestConnectionContext : ConnectionContext
 
         var pipeOptions = new PipeOptions();
         var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
-        var proxyToApplication = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+        _ = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
 
         Transport = pair.Transport;
         Application = pair.Application;

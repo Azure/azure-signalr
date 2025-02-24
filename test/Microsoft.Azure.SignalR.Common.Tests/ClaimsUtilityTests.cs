@@ -5,13 +5,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests
 {
     public class ClaimsUtilityTests
     {
-        private static readonly Claim[] JwtAuthenticatedClaims = new Claim[] { new Claim("dummy", "dummy"), new Claim("name", "name"), new Claim("role", "admin"), new Claim("aud", "aud") };
+        private static readonly Claim[] JwtAuthenticatedClaims = new Claim[] { new("dummy", "dummy"), new("name", "name"), new("role", "admin"), new("aud", "aud") };
         private static readonly (ClaimsIdentity identity, string userId, Func<IEnumerable<Claim>> provider, string expectedAuthenticationType, int expectedClaimsCount)[] _claimsParameters =
         {
             (new ClaimsIdentity(), null, null, null, 0),
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         {
             // preserved system claims are renamed and reverted back
             var claims = ClaimsUtility.BuildJwtClaims(
-                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim("iss", "A"), new Claim("jti", "B") })), null, null).ToArray();
+                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new("iss", "A"), new("jti", "B") })), null, null).ToArray();
             Assert.Equal("asrs.u.iss", claims[0].Type);
             Assert.Equal("asrs.u.jti", claims[1].Type);
 
@@ -74,7 +75,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         {
             // only the first sub claim is considered as valid to the service
             var claims = ClaimsUtility.BuildJwtClaims(
-                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim("sub", "A"), new Claim("sub", "B") })), null, null).ToArray();
+                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new("sub", "A"), new("sub", "B") })), null, null).ToArray();
             Assert.Equal("sub", claims[0].Type);
             Assert.Equal("asrs.u.sub", claims[1].Type);
 
@@ -87,7 +88,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             Assert.True(ci.HasClaim("sub", "B"));
 
             claims = ClaimsUtility.BuildJwtClaims(
-                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim("sub", "A"), new Claim("sub", "B") })), "C", null).ToArray();
+                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new("sub", "A"), new("sub", "B") })), "C", null).ToArray();
             Assert.Equal("asrs.s.uid", claims[0].Type);
             Assert.Equal("sub", claims[1].Type);
             Assert.Equal("asrs.u.sub", claims[2].Type);
@@ -102,7 +103,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 
             // single sub claim is considered as valid
             claims = ClaimsUtility.BuildJwtClaims(
-                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim("sub", "A") })), null, null).ToArray();
+                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new("sub", "A") })), null, null).ToArray();
             Assert.Single(claims);
             Assert.Equal("sub", claims[0].Type);
 
@@ -114,7 +115,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             Assert.True(ci.HasClaim("sub", "A"));
 
             claims = ClaimsUtility.BuildJwtClaims(
-                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim("sub", "A") })), "C", null).ToArray();
+                new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new("sub", "A") })), "C", null).ToArray();
             Assert.Equal("asrs.s.uid", claims[0].Type);
             Assert.Equal("sub", claims[1].Type);
 

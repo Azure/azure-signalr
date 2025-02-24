@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests.Common;
@@ -13,7 +14,10 @@ internal sealed class TestServiceMessageHandler : IServiceMessageHandler
     {
     }
 
-    public Task HandlePingAsync(PingMessage pingMessage) => Task.CompletedTask;
+    public Task HandlePingAsync(PingMessage pingMessage)
+    {
+        return Task.CompletedTask;
+    }
 
     public void HandleAck(AckMessage serviceMessage)
     {

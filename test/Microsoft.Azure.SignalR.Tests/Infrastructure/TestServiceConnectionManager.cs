@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 
@@ -12,9 +13,9 @@ namespace Microsoft.Azure.SignalR.Tests;
 
 internal sealed class TestServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
 {
-    private readonly ConcurrentDictionary<Type, int> _writeAsyncCallCount = new ConcurrentDictionary<Type, int>();
+    private readonly ConcurrentDictionary<Type, int> _writeAsyncCallCount = new();
 
-    private readonly ConcurrentDictionary<Type, int> _partitionedWriteAsyncCallCount = new ConcurrentDictionary<Type, int>();
+    private readonly ConcurrentDictionary<Type, int> _partitionedWriteAsyncCallCount = new();
 
     public ServiceMessage ServiceMessage { get; private set; }
 
@@ -59,7 +60,13 @@ internal sealed class TestServiceConnectionManager<THub> : IServiceConnectionMan
         return Task.CompletedTask;
     }
 
-    public Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token) => Task.CompletedTask;
+    public Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
+    {
+        return Task.CompletedTask;
+    }
 
-    public Task CloseClientConnections(CancellationToken token) => Task.CompletedTask;
+    public Task CloseClientConnections(CancellationToken token)
+    {
+        return Task.CompletedTask;
+    }
 }
