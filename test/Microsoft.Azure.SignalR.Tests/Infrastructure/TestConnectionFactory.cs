@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 
-#nullable enable
-
 namespace Microsoft.Azure.SignalR.Tests;
+
+#nullable enable
 
 internal class TestConnectionFactory : IConnectionFactory
 {
@@ -37,8 +37,7 @@ internal class TestConnectionFactory : IConnectionFactory
                                                       TransferFormat transferFormat,
                                                       string connectionId,
                                                       string target,
-                                                      CancellationToken cancellationToken = default,
-                                                      IDictionary<string, string>? headers = null)
+                                                      CancellationToken cancellationToken = default)
     {
         Times.Add(DateTime.Now);
 

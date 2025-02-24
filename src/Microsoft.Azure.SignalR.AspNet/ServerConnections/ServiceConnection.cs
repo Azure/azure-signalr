@@ -4,7 +4,6 @@
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -21,8 +20,6 @@ namespace Microsoft.Azure.SignalR.AspNet;
 internal partial class ServiceConnection : ServiceConnectionBase
 {
     private const string ReconnectMessage = "asrs:reconnect";
-
-    private static readonly Dictionary<string, string> CustomHeader = new() { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
 
     private static readonly TimeSpan CloseApplicationTimeout = TimeSpan.FromSeconds(5);
 
@@ -81,8 +78,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     protected override Task<ConnectionContext> CreateConnection(string target = null)
     {
-        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target,
-            headers: CustomHeader);
+        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target);
     }
 
     protected override Task DisposeConnection(ConnectionContext connection)
