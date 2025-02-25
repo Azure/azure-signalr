@@ -15,121 +15,120 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace Microsoft.Extensions.DependencyInjection;
+
+/// <summary>
+/// Extension methods for <see cref="ISignalRServerBuilder"/>.
+/// </summary>
+public static class AzureSignalRDependencyInjectionExtensions
 {
     /// <summary>
-    /// Extension methods for <see cref="ISignalRServerBuilder"/>.
+    /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
     /// </summary>
-    public static class AzureSignalRDependencyInjectionExtensions
+    /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
+    /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
+    /// <remarks>
+    /// It reads connection string from a configuration entry Azure:SignalR:ConnectionString.
+    /// In development environment, try `dotnet user-secrets set Azure:SignalR:ConnectionString {YourConnectionString}`.
+    /// </remarks>
+    public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder)
     {
-        /// <summary>
-        /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
-        /// </summary>
-        /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
-        /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
-        /// <remarks>
-        /// It reads connection string from a configuration entry Azure:SignalR:ConnectionString.
-        /// In development environment, try `dotnet user-secrets set Azure:SignalR:ConnectionString {YourConnectionString}`.
-        /// </remarks>
-        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder)
+        return builder.AddAzureSignalR<ServiceOptionsSetup>();
+    }
+
+    /// <summary>
+    /// Add Azure SignalR with specified name, the connection string will be read from ConnectionStrings_{name}, the settings are loaded from Azure:SignalR:{name} section
+    /// </summary>
+    /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
+    /// <param name="name">The name of the Azure SignalR service that settings and connection strings are read from</param>
+    /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
+    public static ISignalRServerBuilder AddNamedAzureSignalR(this ISignalRServerBuilder builder, string name)
+    {
+        if (string.IsNullOrEmpty(name))
         {
-            return builder.AddAzureSignalR<ServiceOptionsSetup>();
+            throw name == null ? new ArgumentNullException(nameof(name)) : new ArgumentException("The value cannot be an empty string.", nameof(name));
         }
 
-        /// <summary>
-        /// Add Azure SignalR with specified name, the connection string will be read from ConnectionStrings_{name}, the settings are loaded from Azure:SignalR:{name} section
-        /// </summary>
-        /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
-        /// <param name="name">The name of the Azure SignalR service that settings and connection strings are read from</param>
-        /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
-        public static ISignalRServerBuilder AddNamedAzureSignalR(this ISignalRServerBuilder builder, string name)
+        builder.Services.SetupOptions<ServiceOptions, ServiceOptionsSetup>(s => ActivatorUtilities.CreateInstance<ServiceOptionsSetup>(s, name));
+        return builder.AddAzureSignalRCore();
+    }
+
+    /// <summary>
+    /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
+    /// </summary>
+    /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
+    /// <param name="connectionString">The connection string of an Azure SignalR Service instance.</param>
+    /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
+    public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, string connectionString)
+    {
+        return builder.AddAzureSignalR(options =>
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw name == null ? new ArgumentNullException(nameof(name)) : new ArgumentException("The value cannot be an empty string.", nameof(name));
-            }
+            options.ConnectionString = connectionString;
+        });
+    }
 
-            builder.Services.SetupOptions<ServiceOptions, ServiceOptionsSetup>(s => ActivatorUtilities.CreateInstance<ServiceOptionsSetup>(s, name));
-            return builder.AddAzureSignalRCore();
-        }
+    /// <summary>
+    /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
+    /// </summary>
+    /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
+    /// <param name="configure">A callback to configure the <see cref="ServiceOptions"/>.</param>
+    /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
+    public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, Action<ServiceOptions> configure)
+    {
+        builder.AddAzureSignalR()
+               .Services.Configure(configure);
 
-        /// <summary>
-        /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
-        /// </summary>
-        /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
-        /// <param name="connectionString">The connection string of an Azure SignalR Service instance.</param>
-        /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
-        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, string connectionString)
-        {
-            return builder.AddAzureSignalR(options =>
-            {
-                options.ConnectionString = connectionString;
-            });
-        }
+        return builder;
+    }
 
-        /// <summary>
-        /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
-        /// </summary>
-        /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
-        /// <param name="configure">A callback to configure the <see cref="ServiceOptions"/>.</param>
-        /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
-        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, Action<ServiceOptions> configure)
-        {
-            builder.AddAzureSignalR()
-                   .Services.Configure(configure);
+    /// <typeparam name="TOptionsSetup">The set up class used to configure <see cref="ServiceOptions"/> and track changes.</typeparam>
+    internal static ISignalRServerBuilder AddAzureSignalR<TOptionsSetup>(this ISignalRServerBuilder builder) where TOptionsSetup : class, IConfigureOptions<ServiceOptions>, IOptionsChangeTokenSource<ServiceOptions>
+    {
+        builder.Services.SetupOptions<ServiceOptions, TOptionsSetup>();
+        return builder.AddAzureSignalRCore();
+    }
 
-            return builder;
-        }
+    private static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)
+    {
+        builder.Services
+            .PostConfigure<ServiceOptions>(o => o.Validate())
+            .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManager<>))
+            .AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol))
+            .AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager))
+            .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
+            .AddSingleton(typeof(IServiceEndpointManager), typeof(ServiceEndpointManager))
+            .AddSingleton(typeof(IServerNameProvider), typeof(DefaultServerNameProvider))
+            .AddSingleton(typeof(IBlazorDetector), typeof(DefaultBlazorDetector))
+            .AddSingleton(typeof(IConnectionFactory), typeof(ConnectionFactory))
+            .AddSingleton(typeof(ICultureFeatureManager), typeof(DefaultCultureFeatureManager))
+            .AddSingleton(typeof(ServiceHubDispatcher<>))
+            .AddSingleton(typeof(ServerLifetimeManager))
+            .AddSingleton(typeof(AzureSignalRMarkerService))
+            .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
+            .AddSingleton<IHostedService, HeartBeat>()
+            .AddSingleton(typeof(NegotiateHandler<>));
 
-        /// <typeparam name="TOptionsSetup">The set up class used to configure <see cref="ServiceOptions"/> and track changes.</typeparam>
-        internal static ISignalRServerBuilder AddAzureSignalR<TOptionsSetup>(this ISignalRServerBuilder builder) where TOptionsSetup : class, IConfigureOptions<ServiceOptions>, IOptionsChangeTokenSource<ServiceOptions>
-        {
-            builder.Services.SetupOptions<ServiceOptions, TOptionsSetup>();
-            return builder.AddAzureSignalRCore();
-        }
+        // If a custom router is added, do not add the default router
+        builder.Services.TryAddSingleton(typeof(IEndpointRouter), typeof(DefaultEndpointRouter));
+        builder.Services.TryAddSingleton(typeof(IConnectionRequestIdProvider), typeof(DefaultConnectionRequestIdProvider));
 
-        private static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)
-        {
-            builder.Services
-                .PostConfigure<ServiceOptions>(o => o.Validate())
-                .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManager<>))
-                .AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol))
-                .AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager))
-                .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
-                .AddSingleton(typeof(IServiceEndpointManager), typeof(ServiceEndpointManager))
-                .AddSingleton(typeof(IServerNameProvider), typeof(DefaultServerNameProvider))
-                .AddSingleton(typeof(IBlazorDetector), typeof(DefaultBlazorDetector))
-                .AddSingleton(typeof(IConnectionFactory), typeof(ConnectionFactory))
-                .AddSingleton(typeof(ICultureFeatureManager), typeof(DefaultCultureFeatureManager))
-                .AddSingleton(typeof(ServiceHubDispatcher<>))
-                .AddSingleton(typeof(ServerLifetimeManager))
-                .AddSingleton(typeof(AzureSignalRMarkerService))
-                .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
-                .AddSingleton<IHostedService, HeartBeat>()
-                .AddSingleton(typeof(NegotiateHandler<>));
+        // If a custom service event handler is added, do not add the default handler.
+        builder.Services.TryAddSingleton<IServiceEventHandler, DefaultServiceEventHandler>();
 
-            // If a custom router is added, do not add the default router
-            builder.Services.TryAddSingleton(typeof(IEndpointRouter), typeof(DefaultEndpointRouter));
-            builder.Services.TryAddSingleton(typeof(IConnectionRequestIdProvider), typeof(DefaultConnectionRequestIdProvider));
-
-            // If a custom service event handler is added, do not add the default handler.
-            builder.Services.TryAddSingleton<IServiceEventHandler, DefaultServiceEventHandler>();
-
-            // IEndpointRouter and IAccessKeySynchronizer is required to build ClientInvocationManager.
-            builder.Services
+        // IEndpointRouter and IAccessKeySynchronizer is required to build ClientInvocationManager.
+        builder.Services
 #if NET7_0_OR_GREATER
-                .AddSingleton<IClientInvocationManager, ClientInvocationManager>();
+            .AddSingleton<IClientInvocationManager, ClientInvocationManager>();
 #else
-                .AddSingleton<IClientInvocationManager, DummyClientInvocationManager>();
+            .AddSingleton<IClientInvocationManager, DummyClientInvocationManager>();
 #endif
 
 #if !NETSTANDARD2_0
-            builder.Services.TryAddSingleton<AzureSignalRHostedService>();
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IStartupFilter, AzureSignalRStartupFilter>());
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<MatcherPolicy, NegotiateMatcherPolicy>());
+        builder.Services.TryAddSingleton<AzureSignalRHostedService>();
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IStartupFilter, AzureSignalRStartupFilter>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<MatcherPolicy, NegotiateMatcherPolicy>());
 #endif
 
-            return builder;
-        }
+        return builder;
     }
 }

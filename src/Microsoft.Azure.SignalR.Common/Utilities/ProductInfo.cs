@@ -4,19 +4,18 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal static class ProductInfo
 {
-    internal static class ProductInfo
+    public static string GetProductInfo(Assembly assembly = null)
     {
-        public static string GetProductInfo(Assembly assembly = null)
-        {
-            assembly = assembly ?? Assembly.GetCallingAssembly();
-            var packageId = assembly.GetName().Name;
-            var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
-            var runtime = RuntimeInformation.FrameworkDescription?.Trim();
-            var operatingSystem = RuntimeInformation.OSDescription?.Trim();
-            var processorArchitecture = RuntimeInformation.ProcessArchitecture.ToString().Trim();
-            return $"{packageId}/{version} ({runtime}; {operatingSystem}; {processorArchitecture})";
-        }
+        assembly = assembly ?? Assembly.GetCallingAssembly();
+        var packageId = assembly.GetName().Name;
+        var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+        var runtime = RuntimeInformation.FrameworkDescription?.Trim();
+        var operatingSystem = RuntimeInformation.OSDescription?.Trim();
+        var processorArchitecture = RuntimeInformation.ProcessArchitecture.ToString().Trim();
+        return $"{packageId}/{version} ({runtime}; {operatingSystem}; {processorArchitecture})";
     }
 }

@@ -66,20 +66,20 @@ public class ServiceManagerOptions
     internal ObjectSerializer? ObjectSerializer { get; set; }
 
     /// <summary>
-    /// Set a JSON object serializer used to serialize the data sent to clients.
-    /// </summary>
-    public void UseJsonObjectSerializer(ObjectSerializer objectSerializer)
-    {
-        ObjectSerializer = objectSerializer;
-    }
-
-    /// <summary>
     /// Gets or sets a value indicating whether message tracing ID is append to messages. By default it is false.
     /// </summary>
     // not ready
     internal bool EnableMessageTracing { get; set; }
 
     internal string? ProductInfo { get; set; }
+
+    /// <summary>
+    /// Set a JSON object serializer used to serialize the data sent to clients.
+    /// </summary>
+    public void UseJsonObjectSerializer(ObjectSerializer objectSerializer)
+    {
+        ObjectSerializer = objectSerializer;
+    }
 
     internal void ValidateOptions()
     {

@@ -13,13 +13,13 @@ namespace Microsoft.Azure.SignalR;
 
 internal class WebSocketConnectionOptions
 {
-    public IDictionary<string, string> Headers { get; set; }
+    public IDictionary<string, string> Headers { get; set; } = new Dictionary<string, string>();
 
-    public X509CertificateCollection ClientCertificates { get; set; }
+    public X509CertificateCollection ClientCertificates { get; set; } = new X509CertificateCollection();
 
-    public CookieContainer Cookies { get; set; }
+    public CookieContainer Cookies { get; set; } = new CookieContainer();
 
-    public TimeSpan CloseTimeout { get; set; }
+    public TimeSpan CloseTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
     public ICredentials? Credentials { get; set; }
 
@@ -28,12 +28,4 @@ internal class WebSocketConnectionOptions
     public bool? UseDefaultCredentials { get; set; }
 
     public Action<ClientWebSocketOptions>? WebSocketConfiguration { get; set; }
-
-    public WebSocketConnectionOptions()
-    {
-        Headers = new Dictionary<string, string>();
-        ClientCertificates = new X509CertificateCollection();
-        Cookies = new CookieContainer();
-        CloseTimeout = TimeSpan.FromSeconds(5);
-    }
 }
