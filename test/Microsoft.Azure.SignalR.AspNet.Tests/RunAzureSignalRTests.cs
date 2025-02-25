@@ -883,12 +883,12 @@ public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTe
 
     private sealed class TestLoggingBuilder : ILoggingBuilder
     {
-        public IServiceCollection Services { get; }
-
         public TestLoggingBuilder()
         {
             Services = new ServiceCollection();
         }
+
+        public IServiceCollection Services { get; }
     }
 
     private sealed class TestRequestIdProvider(string id) : IConnectionRequestIdProvider

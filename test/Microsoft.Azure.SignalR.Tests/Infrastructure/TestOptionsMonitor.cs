@@ -8,36 +8,35 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace Microsoft.Azure.SignalR.Tests
+namespace Microsoft.Azure.SignalR.Tests;
+
+internal sealed class TestOptionsMonitor : IOptionsMonitor<ServiceOptions>
 {
-    internal sealed class TestOptionsMonitor : IOptionsMonitor<ServiceOptions>
+    private readonly IOptionsMonitor<ServiceOptions> _monitor;
+
+    public TestOptionsMonitor()
     {
-        private readonly IOptionsMonitor<ServiceOptions> _monitor;
+        var config = new ConfigurationBuilder().Build();
 
-        public TestOptionsMonitor()
-        {
-            var config = new ConfigurationBuilder().Build();
+        var services = new ServiceCollection();
+        var endpoints = new List<ServiceEndpoint>() { new($"Endpoint=https://testconnectionstring;AccessKey=1") };
+        var serviceProvider = services.AddLogging()
+            .AddSignalR().AddAzureSignalR(o => o.Endpoints = endpoints.ToArray())
+            .Services
+            .AddSingleton<IConfiguration>(config)
+            .BuildServiceProvider();
+        _monitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceOptions>>();
+    }
 
-            var services = new ServiceCollection();
-            var endpoints = new List<ServiceEndpoint>() { new($"Endpoint=https://testconnectionstring;AccessKey=1") };
-            var serviceProvider = services.AddLogging()
-                .AddSignalR().AddAzureSignalR(o => o.Endpoints = endpoints.ToArray())
-                .Services
-                .AddSingleton<IConfiguration>(config)
-                .BuildServiceProvider();
-            _monitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceOptions>>();
-        }
+    public ServiceOptions CurrentValue => _monitor.CurrentValue;
 
-        public ServiceOptions CurrentValue => _monitor.CurrentValue;
+    public ServiceOptions Get(string name)
+    {
+        return _monitor.Get(name);
+    }
 
-        public ServiceOptions Get(string name)
-        {
-            return _monitor.Get(name);
-        }
-
-        public IDisposable OnChange(Action<ServiceOptions, string> listener)
-        {
-            return _monitor.OnChange(listener);
-        }
+    public IDisposable OnChange(Action<ServiceOptions, string> listener)
+    {
+        return _monitor.OnChange(listener);
     }
 }
