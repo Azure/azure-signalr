@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.Tests;
 
 internal static class JwtTokenHelper
 {
-    public static readonly JwtSecurityTokenHandler JwtHandler = new JwtSecurityTokenHandler();
+    public static readonly JwtSecurityTokenHandler JwtHandler = new();
 
     public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, AccessKey accessKey, IEnumerable<Claim> customClaims = null)
     {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Text;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Exceptions;

@@ -15,11 +15,23 @@ internal class TestClientConnectionManager : IClientConnectionManager
 
     public int Count => throw new System.NotImplementedException();
 
-    public bool TryAddClientConnection(IClientConnection connection) => _dict.TryAdd(connection.ConnectionId, connection);
+    public bool TryAddClientConnection(IClientConnection connection)
+    {
+        return _dict.TryAdd(connection.ConnectionId, connection);
+    }
 
-    public bool TryGetClientConnection(string connectionId, out IClientConnection connection) => _dict.TryGetValue(connectionId, out connection);
+    public bool TryGetClientConnection(string connectionId, out IClientConnection connection)
+    {
+        return _dict.TryGetValue(connectionId, out connection);
+    }
 
-    public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection) => _dict.TryRemove(connectionId, out connection);
+    public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
+    {
+        return _dict.TryRemove(connectionId, out connection);
+    }
 
-    public Task WhenAllCompleted() => Task.CompletedTask;
+    public Task WhenAllCompleted()
+    {
+        return Task.CompletedTask;
+    }
 }

@@ -5,7 +5,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+
 using Azure.Identity;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth;
@@ -236,6 +238,9 @@ public class ConnectionStringParserTests
             yield return new object[] { $"endpoint={HttpsEndpoint}/;accesskey={DefaultKey}", HttpsEndpoint };
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

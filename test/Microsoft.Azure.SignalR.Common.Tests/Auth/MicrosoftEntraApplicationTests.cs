@@ -1,12 +1,18 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Threading.Tasks;
+
 using Azure.Core;
 using Azure.Identity;
+
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth;

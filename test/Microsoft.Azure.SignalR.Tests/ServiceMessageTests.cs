@@ -9,8 +9,10 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Azure.Core;
 using Azure.Identity;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
@@ -20,8 +22,10 @@ using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 using Xunit.Abstractions;
+
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -29,7 +33,7 @@ namespace Microsoft.Azure.SignalR.Tests;
 public class ServiceMessageTests : VerifiableLoggedTest
 {
     private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    
+
     private const string DefaultAudience = "https://localhost";
 
     private const string LocalConnectionString = "endpoint=https://localhost;accessKey=" + SigningKey;

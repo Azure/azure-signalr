@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 
@@ -12,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
     // TestSink does not have an event
     internal class LogSinkProvider : ILoggerProvider
     {
-        private readonly ConcurrentQueue<LogRecord> _logs = new ConcurrentQueue<LogRecord>();
+        private readonly ConcurrentQueue<LogRecord> _logs = new();
 
         public event Action<LogRecord> RecordLogged;
 
@@ -25,7 +26,10 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         {
         }
 
-        public IEnumerable<LogRecord> GetLogs() => _logs;
+        public IEnumerable<LogRecord> GetLogs()
+        {
+            return _logs;
+        }
 
         public void Log<TState>(string categoryName, LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {

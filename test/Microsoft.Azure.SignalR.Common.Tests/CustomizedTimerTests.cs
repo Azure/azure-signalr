@@ -5,10 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -147,8 +149,9 @@ public class CustomizedTimerTests(ITestOutputHelper output) : VerifiableLoggedTe
         }
     }
 
-    private static ServiceConnectionContainerBase.CustomizedPingTimer CreatePingTimer(ILoggerFactory loggerFactory, Action counter) =>
-        CustomizedPingTimerFactory.CreateCustomizedPingTimer(loggerFactory.CreateLogger(
+    private static ServiceConnectionContainerBase.CustomizedPingTimer CreatePingTimer(ILoggerFactory loggerFactory, Action counter)
+    {
+        return CustomizedPingTimerFactory.CreateCustomizedPingTimer(loggerFactory.CreateLogger(
             nameof(BasicStartStopTest)), nameof(BasicStartStopTest),
             () =>
             {
@@ -156,6 +159,7 @@ public class CustomizedTimerTests(ITestOutputHelper output) : VerifiableLoggedTe
                 return Task.CompletedTask;
             },
             BaseTs, BaseTs);
+    }
 
     private sealed class CustomizedPingTimerFactory : ServiceConnectionContainerBase
     {
@@ -163,7 +167,9 @@ public class CustomizedTimerTests(ITestOutputHelper output) : VerifiableLoggedTe
         {
         }
 
-        internal static CustomizedPingTimer CreateCustomizedPingTimer(ILogger logger, string name, Func<Task> func, TimeSpan due, TimeSpan interval) =>
-            new CustomizedPingTimer(logger, name, func, due, interval);
+        internal static CustomizedPingTimer CreateCustomizedPingTimer(ILogger logger, string name, Func<Task> func, TimeSpan due, TimeSpan interval)
+        {
+            return new CustomizedPingTimer(logger, name, func, due, interval);
+        }
     }
 }

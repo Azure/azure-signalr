@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=fake_key;";
         private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=fake_key;";
 
-        private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+        private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new();
 
         [Theory]
         [InlineData(typeof(CustomUserIdProvider), CustomUserId)]
@@ -332,9 +332,9 @@ namespace Microsoft.Azure.SignalR.Tests
                     o.ApplicationName = "testprefix";
                     o.Endpoints = new ServiceEndpoint[]
                     {
-                        new ServiceEndpoint(ConnectionString2),
-                        new ServiceEndpoint(ConnectionString3, name: "chosen"),
-                        new ServiceEndpoint(ConnectionString4),
+                        new(ConnectionString2),
+                        new(ConnectionString3, name: "chosen"),
+                        new(ConnectionString4),
                     };
                 })
                 .Services
@@ -371,9 +371,9 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddAzureSignalR(
                 o => o.Endpoints = new ServiceEndpoint[]
                 {
-                    new ServiceEndpoint(ConnectionString2),
-                    new ServiceEndpoint(ConnectionString3, name: "chosen"),
-                    new ServiceEndpoint(ConnectionString4),
+                    new(ConnectionString2),
+                    new(ConnectionString3, name: "chosen"),
+                    new(ConnectionString4),
                 })
                 .Services
                 .AddLogging()
@@ -716,27 +716,42 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private sealed class NullUserIdProvider : IUserIdProvider
         {
-            public string GetUserId(HubConnectionContext connection) => null;
+            public string GetUserId(HubConnectionContext connection)
+            {
+                return null;
+            }
         }
 
         private sealed class ConnectionIdUserIdProvider : IUserIdProvider
         {
-            public string GetUserId(HubConnectionContext connection) => connection.ConnectionId;
+            public string GetUserId(HubConnectionContext connection)
+            {
+                return connection.ConnectionId;
+            }
         }
 
         private sealed class ConnectionAbortedTokenUserIdProvider : IUserIdProvider
         {
-            public string GetUserId(HubConnectionContext connection) => connection.ConnectionAborted.IsCancellationRequested.ToString();
+            public string GetUserId(HubConnectionContext connection)
+            {
+                return connection.ConnectionAborted.IsCancellationRequested.ToString();
+            }
         }
 
         private sealed class ItemsUserIdProvider : IUserIdProvider
         {
-            public string GetUserId(HubConnectionContext connection) => connection.Items.ToString();
+            public string GetUserId(HubConnectionContext connection)
+            {
+                return connection.Items.ToString();
+            }
         }
 
         private sealed class ProtocolUserIdProvider : IUserIdProvider
         {
-            public string GetUserId(HubConnectionContext connection) => connection.Protocol.Name;
+            public string GetUserId(HubConnectionContext connection)
+            {
+                return connection.Protocol.Name;
+            }
         }
 
         private sealed class Chat : Hub
