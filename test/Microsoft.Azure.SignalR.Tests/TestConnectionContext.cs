@@ -8,10 +8,20 @@ using System.IO.Pipelines;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Features;
 
-namespace Microsoft.Azure.SignalR.Tests.Common;
+namespace Microsoft.Azure.SignalR.Tests;
 
 internal sealed class TestConnectionContext : ConnectionContext
 {
+    public override string ConnectionId { get; set; }
+
+    public override IFeatureCollection Features { get; }
+
+    public override IDictionary<object, object> Items { get; set; }
+
+    public override IDuplexPipe Transport { get; set; }
+
+    public IDuplexPipe Application { get; set; }
+
     public TestConnectionContext()
     {
         Features = new FeatureCollection();
@@ -24,14 +34,4 @@ internal sealed class TestConnectionContext : ConnectionContext
         Transport = pair.Transport;
         Application = pair.Application;
     }
-
-    public override string ConnectionId { get; set; }
-
-    public override IFeatureCollection Features { get; }
-
-    public override IDictionary<object, object> Items { get; set; }
-
-    public override IDuplexPipe Transport { get; set; }
-
-    public IDuplexPipe Application { get; set; }
 }
