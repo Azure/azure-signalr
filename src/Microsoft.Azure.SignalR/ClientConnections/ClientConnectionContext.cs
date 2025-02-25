@@ -6,13 +6,13 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http;
@@ -65,21 +65,21 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private const int IdleState = 0;
 
-    private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(
+    private static readonly PipeOptions DefaultPipeOptions = new(
         readerScheduler: PipeScheduler.ThreadPool,
         useSynchronizationContext: false);
 
-    private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object> _connectionEndTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private readonly TaskCompletionSource<object> _hanshakeCompleteTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object> _hanshakeCompleteTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
+    private readonly CancellationTokenSource _abortOutgoingCts = new();
 
-    private readonly CancellationTokenSource _connectionClosedCts = new CancellationTokenSource();
+    private readonly CancellationTokenSource _connectionClosedCts = new();
 
-    private readonly object _heartbeatLock = new object();
+    private readonly object _heartbeatLock = new();
 
-    private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
+    private readonly SemaphoreSlim _writeLock = new(1, 1);
 
     private readonly Queue<IMemoryOwner<byte>> _bufferedMessages = new();
 
@@ -87,7 +87,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private readonly bool _isMigrated;
 
-    private readonly PauseHandler _pauseHandler = new PauseHandler();
+    private readonly PauseHandler _pauseHandler = new();
 
     private int _connectionState = IdleState;
 
@@ -134,7 +134,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     public HttpContext HttpContext { get; set; }
 
-    public DateTime LastMessageReceivedAtUtc => new DateTime(Volatile.Read(ref _lastMessageReceivedAt), DateTimeKind.Utc);
+    public DateTime LastMessageReceivedAtUtc => new(Volatile.Read(ref _lastMessageReceivedAt), DateTimeKind.Utc);
 
     public DateTime StartedAtUtc { get; } = DateTime.UtcNow;
 
@@ -522,36 +522,6 @@ internal partial class ClientConnectionContext : ConnectionContext,
         }
     }
 
-    private static void SetCurrentThreadCulture(string cultureName)
-    {
-        if (!string.IsNullOrEmpty(cultureName))
-        {
-            try
-            {
-                CultureInfo.CurrentCulture = new CultureInfo(cultureName);
-            }
-            catch (Exception)
-            {
-                // skip invalid culture, normal won't hit.
-            }
-        }
-    }
-
-    private static void SetCurrentThreadUiCulture(string uiCultureName)
-    {
-        if (!string.IsNullOrEmpty(uiCultureName))
-        {
-            try
-            {
-                CultureInfo.CurrentUICulture = new CultureInfo(uiCultureName);
-            }
-            catch (Exception)
-            {
-                // skip invalid culture, normal won't hit.
-            }
-        }
-    }
-
     private static string GetInstanceId(IDictionary<string, StringValues> header)
     {
         return header.TryGetValue(Constants.AsrsInstanceId, out var instanceId) ? (string)instanceId : string.Empty;
@@ -688,13 +658,22 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private sealed class FakeInvocationBinder : IInvocationBinder
     {
-        public static readonly FakeInvocationBinder Instance = new FakeInvocationBinder();
+        public static readonly FakeInvocationBinder Instance = new();
 
-        public IReadOnlyList<Type> GetParameterTypes(string methodName) => Type.EmptyTypes;
+        public IReadOnlyList<Type> GetParameterTypes(string methodName)
+        {
+            return Type.EmptyTypes;
+        }
 
-        public Type GetReturnType(string invocationId) => typeof(object);
+        public Type GetReturnType(string invocationId)
+        {
+            return typeof(object);
+        }
 
-        public Type GetStreamItemType(string _) => typeof(object);
+        public Type GetStreamItemType(string _)
+        {
+            return typeof(object);
+        }
     }
 
     private sealed class ForwardMessageException : Exception

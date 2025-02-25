@@ -10,7 +10,7 @@ internal static class ProductInfo
 {
     public static string GetProductInfo(Assembly assembly = null)
     {
-        assembly = assembly ?? Assembly.GetCallingAssembly();
+        assembly ??= Assembly.GetCallingAssembly();
         var packageId = assembly.GetName().Name;
         var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
         var runtime = RuntimeInformation.FrameworkDescription?.Trim();
