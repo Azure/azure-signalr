@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Owin;
 

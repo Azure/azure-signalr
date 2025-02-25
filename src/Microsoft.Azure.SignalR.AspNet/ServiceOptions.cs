@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Configuration;
 using System.Net;
 using System.Security.Claims;
+
 using Microsoft.Owin;
 
 namespace Microsoft.Azure.SignalR.AspNet

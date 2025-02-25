@@ -1,10 +1,11 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Azure.SignalR;
 using Microsoft.Extensions.DependencyInjection;

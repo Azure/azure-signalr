@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR.Emulator;

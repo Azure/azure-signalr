@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;

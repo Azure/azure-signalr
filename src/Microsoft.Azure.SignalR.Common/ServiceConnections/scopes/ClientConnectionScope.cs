@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+
 using Microsoft.Azure.SignalR.Common.Utilities;
 
 namespace Microsoft.Azure.SignalR
