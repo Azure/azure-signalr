@@ -8,7 +8,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Security.Claims;
 using System.Threading.Tasks;
 
 using Microsoft.AspNet.SignalR;
@@ -34,21 +33,25 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
-public class RunAzureSignalRTests : VerifiableLoggedTest
+public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTest(output)
 {
-    private static readonly Version VersionSupportingApplicationNamePrefix = new(1, 0, 9);
-
     private const string ServiceUrl = "http://localhost:8086";
+
     private const string ConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+
     private const string ConnectionStringWithRedirect = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;ClientEndpoint=http://redirect";
+
     private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+
     private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+
     private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+
     private const string AppName = "AzureSignalRTest";
 
-    public RunAzureSignalRTests(ITestOutputHelper output) : base(output)
-    {
-    }
+    private static readonly Version VersionSupportingApplicationNamePrefix = new(1, 0, 9);
+
+    private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new();
 
     [Fact]
     public void TestRunAzureSignalRWithDefaultOptions()
@@ -237,12 +240,12 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
         {
             var hubConfig = Utility.GetTestHubConfig(loggerFactory);
             using (WebApp.Start(ServiceUrl,
-                app => app.RunAzureSignalR(AppName, hubConfig, s => s.Endpoints = new[]
-                {
+                app => app.RunAzureSignalR(AppName, hubConfig, s => s.Endpoints =
+                [
                     new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
                     new ServiceEndpoint(ConnectionString3),
                     new ServiceEndpoint(ConnectionString4)
-                })))
+                ])))
             {
                 var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
 
@@ -273,12 +276,12 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
                 app => app.RunAzureSignalR(AppName, hubConfig, s =>
                 {
                     s.ConnectionString = customConnectionString;
-                    s.Endpoints = new[]
-                    {
+                    s.Endpoints =
+                    [
                         new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
                         new ServiceEndpoint(ConnectionString3),
                         new ServiceEndpoint(ConnectionString4)
-                    };
+                    ];
                 })))
             {
                 var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
@@ -307,12 +310,12 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
                     s =>
                     {
                         s.ConnectionString = ConnectionString;
-                        s.Endpoints = new[]
-                        {
+                        s.Endpoints =
+                        [
                             new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
                             new ServiceEndpoint(ConnectionString3),
                             new ServiceEndpoint(ConnectionString4)
-                        };
+                        ];
                     })))
             {
                 var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
@@ -338,12 +341,12 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
             var hubConfig = Utility.GetTestHubConfig(loggerFactory);
             using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
             {
-                options.Endpoints = new ServiceEndpoint[]
-                {
+                options.Endpoints =
+                [
                     new(ConnectionString2, EndpointType.Secondary),
                     new(ConnectionString3),
                     new(ConnectionString4)
-                };
+                ];
             })))
             {
                 var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
@@ -369,12 +372,12 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
             var hubConfig = Utility.GetTestHubConfig(loggerFactory);
             using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
             {
-                options.Endpoints = new ServiceEndpoint[]
-                {
+                options.Endpoints =
+                [
                     new(ConnectionString2, EndpointType.Secondary),
                     new(ConnectionString3),
                     new(ConnectionString4)
-                };
+                ];
             })))
             {
                 var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
@@ -403,12 +406,12 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
             hubConfig.Resolver.Register(typeof(IEndpointRouter), () => router);
             using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
             {
-                options.Endpoints = new ServiceEndpoint[]
-                {
+                options.Endpoints =
+                [
                     new(ConnectionString2, EndpointType.Secondary),
                     new(ConnectionString3, name: "chosen"),
                     new(ConnectionString4)
-                };
+                ];
             })))
             {
                 var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
@@ -466,12 +469,12 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
 
             using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
             {
-                options.Endpoints = new ServiceEndpoint[]
-                {
+                options.Endpoints =
+                [
                     new(ConnectionString2, EndpointType.Secondary, "es"),
                     new(ConnectionString3, name: "tt3"),
                     new(ConnectionString4, name: "tt4", type: EndpointType.Secondary),
-                };
+                ];
             })))
             {
                 var connection = hubConfig.Resolver.GetService(typeof(IServiceConnectionManager)) as ServiceConnectionManager;
@@ -629,10 +632,10 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
             using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
             {
                 options.ConnectionString = ConnectionString;
-                options.ClaimsProvider = context => new Claim[]
-                {
+                options.ClaimsProvider = context =>
+                [
                 new("user", "hello"),
-                };
+                ];
                 options.AccessTokenLifetime = TimeSpan.FromDays(1);
             })))
             {
@@ -670,7 +673,11 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
-            bool diagnosticClientFilter(IOwinContext context) => context.Request.Query["diag"] != null;
+            static bool diagnosticClientFilter(IOwinContext context)
+            {
+                return context.Request.Query["diag"] != null;
+            }
+
             var hubConfiguration = Utility.GetTestHubConfig(loggerFactory);
             hubConfiguration.EnableDetailedErrors = true;
             using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
@@ -703,10 +710,10 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
             {
                 options.ServerStickyMode = ServerStickyMode.Preferred;
                 options.ConnectionString = ConnectionString;
-                options.ClaimsProvider = context => new Claim[]
-                {
-                new("user", "hello"),
-                };
+                options.ClaimsProvider = context =>
+                [
+                    new("user", "hello"),
+                ];
                 options.AccessTokenLifetime = TimeSpan.FromDays(1);
             })))
             {
@@ -862,6 +869,7 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
     private sealed class TestLoggerProvider : ILoggerProvider
     {
         public List<string> Loggers { get; } = [];
+
         public void Dispose()
         {
         }
@@ -883,32 +891,19 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
         }
     }
 
-    private sealed class TestRequestIdProvider : IConnectionRequestIdProvider
+    private sealed class TestRequestIdProvider(string id) : IConnectionRequestIdProvider
     {
-        private readonly string _id;
-
-        public TestRequestIdProvider(string id)
-        {
-            _id = id;
-        }
-
         public string GetRequestId(string traceIdentifer = "ut")
         {
-            return _id;
+            return id;
         }
     }
 
-    private sealed class TestServerNameProvider : IServerNameProvider
+    private sealed class TestServerNameProvider(string serverName) : IServerNameProvider
     {
-        private readonly string _serverName;
-        public TestServerNameProvider(string serverName)
-        {
-            _serverName = serverName;
-        }
-
         public string GetName()
         {
-            return _serverName;
+            return serverName;
         }
     }
 
@@ -935,7 +930,6 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
                 ConfigurationManager.AppSettings[s.Key] = s.Value;
                 return new KeyValuePair<string, string>(s.Key, original);
             }).ToList();
-
         }
 
         public void Dispose()
@@ -963,8 +957,6 @@ public class RunAzureSignalRTests : VerifiableLoggedTest
             return "hello";
         }
     }
-
-    private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new();
 
     private sealed class ResponseMessage
     {

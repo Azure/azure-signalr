@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
 
-namespace Microsoft.Azure.SignalR.Tests.Common;
+namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
 #nullable enable
 

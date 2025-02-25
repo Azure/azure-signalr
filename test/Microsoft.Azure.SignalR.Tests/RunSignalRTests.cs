@@ -198,8 +198,6 @@ public class RunSignalRTests : VerifiableLoggedTest
 
     private sealed class ControlledServiceConnectionContext : ConnectionContext
     {
-        private static ServiceProtocol ServiceProtocol { get; } = new();
-
         public override IDuplexPipe Transport { get; set; }
 
         public IDuplexPipe Application { get; set; }
@@ -209,6 +207,8 @@ public class RunSignalRTests : VerifiableLoggedTest
         public override IFeatureCollection Features { get; } = new FeatureCollection();
 
         public override IDictionary<object, object?> Items { get; set; } = new Dictionary<object, object?>();
+
+        private static ServiceProtocol ServiceProtocol { get; } = new();
 
         public ControlledServiceConnectionContext()
         {
