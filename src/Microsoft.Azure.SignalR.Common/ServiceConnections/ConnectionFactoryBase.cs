@@ -72,36 +72,25 @@ internal abstract class ConnectionFactoryBase : IConnectionFactory
     internal IDictionary<string, string> GetRequestHeaders()
     {
         var headers = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
-        SetCustomHeaders(headers);
-        CheckHeaders(headers, Constants.Headers.AsrsHeaderPrefix);
-        CheckHeaders(headers, Constants.Headers.AsrsInternalHeaderPrefix);
-        SetInternalHeaders(headers);
+        CheckHeadersPrefix(headers, Constants.Headers.AsrsHeaderPrefix, Constants.Headers.AsrsInternalHeaderPrefix);
+        SetInternalUserAgent(headers);
+        SetServerId(headers);
         return headers;
     }
 
-    internal virtual void SetInternalHeaders(IDictionary<string, string> headers)
-    {
-        // Fix issue: https://github.com/Azure/azure-signalr/issues/198
-        // .NET Framework has restriction about reserved string as the header name like "User-Agent"
-        headers[Constants.AsrsUserAgent] = ProductInfo.GetProductInfo();
+    protected abstract void SetInternalUserAgent(IDictionary<string, string> headers);
 
-        if (!string.IsNullOrEmpty(_serverId) && !headers.ContainsKey(Constants.Headers.AsrsServerId))
+    private static void CheckHeadersPrefix(IDictionary<string, string> headers, params string[] forbidPrefixes)
+    {
+        foreach (var (key, prefix) in from key in headers.Keys
+                                      from prefix in forbidPrefixes
+                                      where key.StartsWith(prefix, StringComparison.InvariantCultureIgnoreCase)
+                                      select (key, prefix))
         {
-            headers.Add(Constants.Headers.AsrsServerId, _serverId);
+            throw new ArgumentException($"Invalid header {key}, custom header cannot startwith '{prefix}'");
         }
     }
 
-    protected abstract void SetCustomHeaders(IDictionary<string, string> headers);
-
-    private static void CheckHeaders(IDictionary<string, string> headers, string forbidPrefix)
-    {
-        var item = headers.Where(x => x.Key.StartsWith(forbidPrefix, StringComparison.InvariantCultureIgnoreCase));
-        if (item.Any())
-        {
-            var key = item.First().Key;
-            throw new ArgumentException($"Invalid header {key}, custom header cannot startwith '{forbidPrefix}'");
-        }
-    }
     private static Uri GetServiceUrl(IServiceEndpointProvider provider, string hubName, string connectionId, string target)
     {
         var baseUri = new UriBuilder(provider.GetServerEndpoint(hubName));
@@ -124,6 +113,14 @@ internal abstract class ConnectionFactoryBase : IConnectionFactory
             baseUri.Query = query;
         }
         return baseUri.Uri;
+    }
+
+    private void SetServerId(IDictionary<string, string> headers)
+    {
+        if (!string.IsNullOrEmpty(_serverId) && !headers.ContainsKey(Constants.Headers.AsrsServerId))
+        {
+            headers.Add(Constants.Headers.AsrsServerId, _serverId);
+        }
     }
 
     private sealed class GracefulLoggerFactory : ILoggerFactory
@@ -150,6 +147,7 @@ internal abstract class ConnectionFactoryBase : IConnectionFactory
         {
             _inner.Dispose();
         }
+
         private sealed class GracefulLogger : ILogger
         {
             private readonly ILogger _inner;
@@ -160,10 +158,12 @@ internal abstract class ConnectionFactoryBase : IConnectionFactory
             }
 
 #nullable disable
+
             public IDisposable BeginScope<TState>(TState state)
             {
                 return _inner.BeginScope(state);
             }
+
 #nullable enable
 
             public bool IsEnabled(LogLevel logLevel)

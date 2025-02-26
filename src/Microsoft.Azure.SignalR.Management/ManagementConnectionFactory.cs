@@ -17,18 +17,8 @@ internal class ManagementConnectionFactory(IOptions<ServiceManagerOptions> conte
 {
     private readonly string? _productInfo = context.Value.ProductInfo;
 
-    internal override void SetInternalHeaders(IDictionary<string, string> headers)
+    protected override void SetInternalUserAgent(IDictionary<string, string> headers)
     {
-        base.SetInternalHeaders(headers);
-
-        if (_productInfo != null)
-        {
-            headers[Constants.AsrsUserAgent] = _productInfo;
-        }
-    }
-
-    protected override void SetCustomHeaders(IDictionary<string, string> headers)
-    {
-        return;
+        headers[Constants.AsrsUserAgent] = _productInfo ?? ProductInfo.GetProductInfo();
     }
 }

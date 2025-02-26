@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests;
 
 public class ManagementConnectionFactoryTests
 {
-    private const string OptionsAsrsUserAgent = $"Microsoft.Azure.SignalR.Management.123456";
+    private const string OptionsAsrsUserAgent = $"Microsoft.Azure.SignalR.Foo/123456";
 
     [Theory]
     [InlineData(true)]
@@ -39,11 +39,35 @@ public class ManagementConnectionFactoryTests
 
         if (setManagementProductInfo)
         {
-            Assert.StartsWith("Microsoft.Azure.SignalR.Management", productInfo);
+            Assert.StartsWith("Microsoft.Azure.SignalR.Foo/", productInfo);
         }
         else
         {
-            Assert.StartsWith("Microsoft.Azure.SignalR.Common", productInfo);
+            Assert.StartsWith("Microsoft.Azure.SignalR.Management/", productInfo);
         }
+    }
+
+    [Fact]
+    public void TestGetServerIdInRequestHeaders()
+    {
+        var nameProvider1 = new DefaultServerNameProvider();
+        var nameProvider2 = new DefaultServerNameProvider();
+
+        var name1 = nameProvider1.GetName();
+        var name2 = nameProvider2.GetName();
+        Assert.NotEqual(name1, name2);
+
+        static string GetServerId(IServerNameProvider nameProvider)
+        {
+            var options = Options.Create(new ServiceManagerOptions());
+            var connectionFactory = new ManagementConnectionFactory(options, nameProvider, NullLoggerFactory.Instance);
+            var headers = connectionFactory.GetRequestHeaders();
+            Assert.True(headers.TryGetValue(Constants.Headers.AsrsServerId, out var serverId));
+            return serverId;
+        }
+
+        var serverId1 = GetServerId(nameProvider1);
+        var serverId2 = GetServerId(nameProvider2);
+        Assert.NotEqual(serverId1, serverId2);
     }
 }
