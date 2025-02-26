@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,8 +18,7 @@ internal sealed class TestConnectionFactory : IConnectionFactory
                                                 TransferFormat transferFormat,
                                                 string connectionId,
                                                 string target,
-                                                CancellationToken cancellationToken = default,
-                                                IDictionary<string, string>? headers = null)
+                                                CancellationToken cancellationToken = default)
     {
         var connection = new TestConnectionContext();
 

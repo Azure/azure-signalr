@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -27,10 +27,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
     private const string ClientConnectionCountInHub = "#clientInHub";
 
     private const string ClientConnectionCountInServiceConnection = "#client";
-
-    // Fix issue: https://github.com/Azure/azure-signalr/issues/198
-    // .NET Framework has restriction about reserved string as the header name like "User-Agent"
-    private static readonly Dictionary<string, string> CustomHeader = new() { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
 
     private readonly IConnectionFactory _connectionFactory;
 
@@ -135,7 +131,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     protected override Task<ConnectionContext> CreateConnection(string target = null)
     {
-        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target, headers: CustomHeader);
+        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target);
     }
 
     protected override Task DisposeConnection(ConnectionContext connection)
