@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <DefineConstants>MULTIFRAMEWORK</DefineConstants>
   </PropertyGroup>
 

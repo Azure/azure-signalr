@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     /// </summary>
     internal class ConnectionTrackingMockService : IMockService
     {
-        private object _addRemoveLock = new object();
+        private readonly object _addRemoveLock = new();
         private ConcurrentBag<MockServiceSideConnection> _serviceSideConnections = new ConcurrentBag<MockServiceSideConnection>();
         private ConcurrentBag<MockServiceConnection> _sdkSideConnections = new ConcurrentBag<MockServiceConnection>();
 
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 
         public IInvocationBinder CurrentInvocationBinder { get; set; } = new DefaultMockInvocationBinder();
 
-        public bool RemoveUnregisteredConnections { get; set; } = false;
+        public bool RemoveUnregisteredConnections { get; set; }
 
         public Task AllConnectionsEstablished()
         {
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                 // as it flows from MockServiceConnection instance to MockServiceConnectionContext 
                 // see MockServiceConnection.StartAsync
                 string startTag = "svc_";
-                Debug.Assert(target.IndexOf(startTag) == 0);
+                Debug.Assert(target.StartsWith(startTag));
 
                 int endTagIndex = target.IndexOf(value: "_", startIndex: startTag.Length);
                 Debug.Assert(endTagIndex >= startTag.Length + 1);
@@ -83,7 +83,6 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                     System.Threading.Thread.Sleep(1111);
                     svcConnection = _sdkSideConnections.Where(c => c.ConnectionNumber == serviceConnectionIndex).FirstOrDefault();
                 }
-
 
                 Debug.Assert(svcConnection != default, $"Missing MockServiceConnection with id {id}");
 
@@ -167,7 +166,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
         {
             public IReadOnlyList<Type> GetParameterTypes(string methodName)
             {
-                return new List<Type>(new Type[] { });
+                return [];
             }
 
             public Type GetReturnType(string invocationId)

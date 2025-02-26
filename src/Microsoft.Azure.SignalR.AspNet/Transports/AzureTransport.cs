@@ -164,11 +164,11 @@ internal class AzureTransport : IServiceTransport
 
     private static class Log
     {
-        private static readonly Action<ILogger, string, Exception> _errorExecuteConnected =
+        private static readonly Action<ILogger, string, Exception> ErrorExecuteConnectedAction =
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(1, "ErrorExecuteConnected"), "Error executing OnConnected in Hub for connection {TransportConnectionId}.");
 
         // Category: ServiceConnection
-        private static readonly Action<ILogger, string, Exception> _errorExecuteDisconnected =
+        private static readonly Action<ILogger, string, Exception> ErrorExecuteDisconnectedAction =
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, "ErrorExecuteDisconnected"), "Error executing OnDisconnected in Hub for connection {TransportConnectionId}.");
 
         private static readonly Action<ILogger, string, Exception> _executingConnected =
@@ -185,12 +185,12 @@ internal class AzureTransport : IServiceTransport
 
         public static void ErrorExecuteConnected(ILogger logger, string connectionId, Exception exception)
         {
-            _errorExecuteConnected(logger, connectionId, exception);
+            ErrorExecuteConnectedAction(logger, connectionId, exception);
         }
 
         public static void ErrorExecuteDisconnected(ILogger logger, string connectionId, Exception exception)
         {
-            _errorExecuteDisconnected(logger, connectionId, exception);
+            ErrorExecuteDisconnectedAction(logger, connectionId, exception);
         }
 
         public static void ExecuteConnected(ILogger logger, string connectionId)
