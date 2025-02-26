@@ -1,0 +1,21 @@
+<Project>
+
+  <PropertyGroup>
+    <_SupportsApiListing Condition="'$(GenerateApiListingOnBuild)' == 'true' AND '$(GenerateAPIListing)' == 'true'">true</_SupportsApiListing>
+    <GenerateReferenceAssemblySource Condition="'$(GenerateApiListingOnBuild)' == 'true' AND '$(GenerateAPIListing)' == 'true'">true</GenerateReferenceAssemblySource>
+  </PropertyGroup>
+
+  <Target 
+    Name="_GenerateApiListingAfterBuild"
+    BeforeTargets="GenerateReferenceAssemblySource" 
+    Condition="'$(_SupportsApiListing)' == 'true'">
+    
+    <PropertyGroup>
+      <_RefSourceOutputPath>$(MSBuildThisFileDirectory)../api</_RefSourceOutputPath>
+      <GenAPITargetPath>$(_RefSourceOutputPath)/$(AssemblyName).$(TargetFramework).cs</GenAPITargetPath>
+    </PropertyGroup>
+    <Message Text="_RefSourceOutputPath $(_RefSourceOutputPath), GenAPITargetPath $(GenAPITargetPath)" Importance="high" />
+    <MakeDir Directories="$(_RefSourceOutputPath)" Condition="!Exists('$(_RefSourceOutputPath)')" />
+    <Delete Files="$(GenAPITargetPath)" />
+  </Target>
+</Project>

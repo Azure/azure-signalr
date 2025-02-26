@@ -1,0 +1,57 @@
+name: API Compatibility Check
+
+on:
+  pull_request:
+    branches:
+     - 'releases/**'
+     - dev
+
+jobs:
+  api-check:
+    name: API Compatibility Check
+    runs-on: windows-latest  # Use Windows for PowerShell script execution
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure full history for diff comparison
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            src:
+            - 'src/**'
+            - 'eng/**'
+            - 'api/**'
+            - '**.props'
+            - '**.csproj'
+            - '**.targets'
+            - '*.sln'
+      - name: Update SubModules
+        if: steps.filter.outputs.src == 'true'
+        run: git submodule update --init --recursive
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'  # Adjust as needed
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run API Export PowerShell Script
+        run: |
+          powershell -ExecutionPolicy Bypass -File .\eng\Export-API.ps1 *> export-api.log
+
+      # Upload the log file as an artifact
+      - name: Upload Export API Log as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: export-api-log
+          path: ./export-api.log
+          
+      - name: Check for API Changes
+        run: |
+          git status
+          git diff --exit-code api/
+        shell: bash
