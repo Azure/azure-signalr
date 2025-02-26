@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
@@ -14,6 +15,7 @@ using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+
 using Xunit;
 
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
@@ -26,7 +28,7 @@ public class ServiceLifetimeManagerFacts
 
     internal static readonly ILogger<ServiceLifetimeManager<TestHub>> Logger = NullLogger<ServiceLifetimeManager<TestHub>>.Instance;
 
-    internal static readonly AzureSignalRMarkerService Marker = new AzureSignalRMarkerService();
+    internal static readonly AzureSignalRMarkerService Marker = new();
 
     protected static readonly IHubProtocolResolver HubProtocolResolver =
         new DefaultHubProtocolResolver(new SignalRProtocol.IHubProtocol[]
@@ -42,13 +44,13 @@ public class ServiceLifetimeManagerFacts
 
     private const string TestMethod = "TestMethod";
 
-    private static readonly List<string> TestUsers = new List<string> { "user1", "user2" };
+    private static readonly List<string> TestUsers = new() { "user1", "user2" };
 
-    private static readonly List<string> TestGroups = new List<string> { "group1", "group2" };
+    private static readonly List<string> TestGroups = new() { "group1", "group2" };
 
     private static readonly object[] TestArgs = { "TestArgs" };
 
-    private static readonly List<string> TestConnectionIds = new List<string> { "connection1", "connection2" };
+    private static readonly List<string> TestConnectionIds = new() { "connection1", "connection2" };
 
     public ServiceLifetimeManagerFacts()
     {
@@ -400,7 +402,10 @@ public class ServiceLifetimeManagerFacts
 
         public int Version => throw new NotImplementedException();
 
-        public ReadOnlyMemory<byte> GetMessageBytes(SignalRProtocol.HubMessage message) => ""u8.ToArray();
+        public ReadOnlyMemory<byte> GetMessageBytes(SignalRProtocol.HubMessage message)
+        {
+            return ""u8.ToArray();
+        }
 
         public bool IsVersionSupported(int version)
         {

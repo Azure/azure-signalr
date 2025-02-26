@@ -13,13 +13,13 @@ internal sealed class TestClientConnectionManager : IClientConnectionManager
 {
     public int CompleteIndex = -1;
 
-    private readonly ClientConnectionManager _ccm = new ClientConnectionManager();
+    private readonly ClientConnectionManager _ccm = new();
 
     private readonly ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>> _tcs =
-        new ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>>();
+        new();
 
     private readonly ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>> _tcsForRemoval
-        = new ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>>();
+        = new();
 
     private readonly StrongBox<int> _index;
 
@@ -52,7 +52,10 @@ internal sealed class TestClientConnectionManager : IClientConnectionManager
         return tcs.Task;
     }
 
-    public bool TryAddClientConnection(IClientConnection connection) => TryAddClientConnection(connection as ClientConnectionContext);
+    public bool TryAddClientConnection(IClientConnection connection)
+    {
+        return TryAddClientConnection(connection as ClientConnectionContext);
+    }
 
     public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
     {

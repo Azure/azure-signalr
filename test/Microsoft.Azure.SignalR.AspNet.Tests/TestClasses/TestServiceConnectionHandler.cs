@@ -14,8 +14,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
 internal sealed class TestServiceConnectionHandler : ServiceConnectionManager
 {
-    private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForTransportOutputMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
     private readonly ILogger _logger;
+    private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForTransportOutputMessage = new();
 
     public TestServiceConnectionHandler(ILoggerFactory loggerFactory) : this(loggerFactory, null, null)
     {

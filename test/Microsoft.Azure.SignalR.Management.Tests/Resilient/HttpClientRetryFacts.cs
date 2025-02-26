@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -8,13 +8,16 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
+
 using Moq;
 using Moq.Protected;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests;
@@ -24,8 +27,9 @@ using HttpHandlerSetup = Moq.Language.Flow.ISetup<HttpMessageHandler, Task<HttpR
 public class HttpClientRetryFacts
 {
     private const string HubName = "hub";
-    private static readonly Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>>[] NonMessageApiTransientHttpErrorSetup = new Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>>[]
-    {
+
+    private static readonly Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>>[] NonMessageApiTransientHttpErrorSetup =
+    [
         (setup) => setup.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.InternalServerError)),
         (setup) => setup.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway)),
         (setup) => setup.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.RequestTimeout)),
@@ -35,7 +39,7 @@ public class HttpClientRetryFacts
             await Task.Delay(-1, token);
             return new HttpResponseMessage(HttpStatusCode.OK);
         })
-    };
+    ];
 
     public static readonly IEnumerable<object[]> NullRetryOptionsTestData = NonMessageApiTransientHttpErrorSetup.Zip(new Action<Exception>[]
     {
@@ -71,8 +75,8 @@ public class HttpClientRetryFacts
         assert(exception);
     }
 
-    public static readonly Func<ServiceHubContext, Task>[] NonMessageApis = new Func<ServiceHubContext, Task>[]
-    {
+    public static readonly Func<ServiceHubContext, Task>[] NonMessageApis =
+    [
         hubContext=>hubContext.Groups.AddToGroupAsync("connectionId", "groupName"),
         hubContext=>hubContext.Groups.RemoveFromGroupAsync("connectionId", "groupName"),
         hubContext=>hubContext.Groups.RemoveFromAllGroupsAsync("connectionId"),
@@ -83,7 +87,7 @@ public class HttpClientRetryFacts
         hubContext=>hubContext.ClientManager.UserExistsAsync("userId"),
         hubContext=>hubContext.ClientManager.ConnectionExistsAsync("connectionId"),
         hubContext=>hubContext.ClientManager.CloseConnectionAsync("connectionId", "reason"),
-    };
+    ];
 
     public static readonly IEnumerable<object[]> FixedDelayRetryTestData =
         from pair in NonMessageApiTransientHttpErrorSetup.Zip(new Action<AggregateException>[]
@@ -102,24 +106,27 @@ public class HttpClientRetryFacts
 
     [Theory]
     [MemberData(nameof(FixedDelayRetryTestData))]
-    public async Task FixedDelayRetryTestNonMessageApi(Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>> setup, Action<AggregateException> assert, Func<ServiceHubContext, Task> api)
+    public async Task FixedDelayRetryTestNonMessageApi(
+        Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>> setup,
+        Action<AggregateException> assert,
+        Func<ServiceHubContext, Task> api)
     {
         await FixedDelayRetryTestCore(setup, assert, api, Constants.HttpClientNames.Resilient);
     }
 
-    private static readonly Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>>[] MessageApiTransientHttpErrorSetup = new Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>>[]
-    {
+    private static readonly Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>>[] MessageApiTransientHttpErrorSetup =
+    [
         (setup) => setup.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)),
         (setup) => setup.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway))
-    };
+    ];
 
-    public static readonly Func<ServiceHubContext, Task>[] MessageApis = new Func<ServiceHubContext, Task>[]
-    {
+    public static readonly Func<ServiceHubContext, Task>[] MessageApis =
+    [
         hubContext=>hubContext.Clients.All.SendAsync("method"),
         hubContext=>hubContext.Clients.Client("abc").SendAsync("method"),
         hubContext=>hubContext.Clients.Group("groupName").SendAsync("method"),
         hubContext=>hubContext.Clients.User("userName").SendAsync("method"),
-    };
+    ];
 
     public static readonly IEnumerable<object[]> FixedDelayRetryTestMessageApiTestData =
         from setup in MessageApiTransientHttpErrorSetup
@@ -163,12 +170,12 @@ public class HttpClientRetryFacts
         handlerMock.Protected().Verify("SendAsync", Times.Exactly(4), ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
     }
 
-    private static readonly Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>>[] NonMessageApi_NotTransientHttpErrorSetup = new Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>>[]
-    {
+    private static readonly Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>>[] NonMessageApi_NotTransientHttpErrorSetup =
+    [
         (setup) => setup.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadRequest)),
         (setup) => setup.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.NotFound)),
         (setup) => setup.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Unauthorized))
-    };
+    ];
 
     public static IEnumerable<object[]> NotRetryable_RetryTestNonMessageApiTestData =
         from pair in NonMessageApi_NotTransientHttpErrorSetup.Zip(new Action<Exception>[]
@@ -187,8 +194,8 @@ public class HttpClientRetryFacts
         await NonRetryableError_RetryTestCore(setup, assert, api, Constants.HttpClientNames.Resilient);
     }
 
-    private static readonly Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>>[] MessageApi_NotTransientHttpErrorSetup = new Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>>[]
-    {
+    private static readonly Func<HttpHandlerSetup, Moq.Language.Flow.IReturnsResult<HttpMessageHandler>>[] MessageApi_NotTransientHttpErrorSetup =
+    [
         (setup) => setup.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.InternalServerError)),
         (setup) => setup.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadRequest)),
         (setup) => setup.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.NotFound)),
@@ -199,7 +206,7 @@ public class HttpClientRetryFacts
             await Task.Delay(-1, token);
             return new HttpResponseMessage(HttpStatusCode.OK);
         })
-    };
+    ];
 
     public static IEnumerable<object[]> NotRetryable_RetryTest_MessageApiTestData =
     from pair in MessageApi_NotTransientHttpErrorSetup.Zip(new Action<Exception>[]

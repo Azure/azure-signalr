@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Azure.SignalR.Protocol;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests
@@ -24,14 +25,14 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         {
             var msg1 = new BroadcastDataMessage(null).WithTracingId();
 
-            Assert.NotNull(msg1 as IMessageWithTracingId);
+            Assert.NotNull(msg1);
             Assert.Null((msg1 as IMessageWithTracingId).TracingId);
 
             using (new ClientConnectionScope(null, null, true))
             {
                 var msg2 = new BroadcastDataMessage(null).WithTracingId();
 
-                Assert.NotNull(msg2 as IMessageWithTracingId);
+                Assert.NotNull(msg2);
                 Assert.NotNull((msg2 as IMessageWithTracingId).TracingId);
             }
 
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             {
                 var msg3 = new BroadcastDataMessage(null).WithTracingId();
 
-                Assert.NotNull(msg3 as IMessageWithTracingId);
+                Assert.NotNull(msg3);
                 Assert.NotNull((msg3 as IMessageWithTracingId).TracingId);
             }
         }

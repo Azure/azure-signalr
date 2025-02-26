@@ -4,8 +4,10 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -139,7 +141,7 @@ public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest
             var currentProbe = testData.Params[index];
             testData.Results[index] = new ProbeResult();
 
-            Func<Task<bool>> probeFunc = async () =>
+            async Task<bool> probeFunc()
             {
                 var result = testData.Results[index];
                 result.ActualCallTime = DateTime.UtcNow - startTime;
@@ -152,9 +154,9 @@ public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest
                     throw new InvalidOperationException("exception from probe func");
                 }
                 return currentProbe.Result;
-            };
+            }
 
-            Func<Task> testFunc = async () =>
+            async Task testFunc()
             {
                 try
                 {
@@ -166,7 +168,7 @@ public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest
                 {
                     testData.Results[index].ActualException = ex;
                 }
-            };
+            }
 
             probeTestTasks[index] = testFunc();
         }

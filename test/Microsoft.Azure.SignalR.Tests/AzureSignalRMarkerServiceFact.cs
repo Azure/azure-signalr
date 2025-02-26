@@ -5,12 +5,14 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Versioning;
 using System.Threading;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -63,7 +65,7 @@ public class AzureSignalRMarkerServiceFact
             .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
             .AddSingleton<IConfiguration>(config)
             .BuildServiceProvider();
-    
+
         var app = new ApplicationBuilder(serviceProvider);
         app.UseRouting();
         app.UseEndpoints(routes =>

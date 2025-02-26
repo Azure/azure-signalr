@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -11,6 +11,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR;
 
+#nullable enable
+
 internal class ConnectionFactory : IConnectionFactory
 {
     private readonly ILoggerFactory _loggerFactory;
@@ -20,7 +22,7 @@ internal class ConnectionFactory : IConnectionFactory
     public ConnectionFactory(IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
     {
         _loggerFactory = loggerFactory != null ? new GracefulLoggerFactory(loggerFactory) : throw new ArgumentNullException(nameof(loggerFactory));
-        _serverId = nameProvider?.GetName();
+        _serverId = nameProvider.GetName();
     }
 
     public async Task<ConnectionContext> ConnectAsync(HubServiceEndpoint hubServiceEndpoint,
@@ -28,7 +30,7 @@ internal class ConnectionFactory : IConnectionFactory
                                                       string connectionId,
                                                       string target,
                                                       CancellationToken cancellationToken = default,
-                                                      IDictionary<string, string> headers = null)
+                                                      IDictionary<string, string>? headers = null)
     {
         var provider = hubServiceEndpoint.Provider;
         var hubName = hubServiceEndpoint.Hub;
@@ -140,7 +142,7 @@ internal class ConnectionFactory : IConnectionFactory
             /// <param name="state"></param>
             /// <param name="exception"></param>
             /// <param name="formatter"></param>
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
             {
                 if (logLevel >= LogLevel.Error)
                 {
@@ -154,10 +156,12 @@ internal class ConnectionFactory : IConnectionFactory
                 return _inner.IsEnabled(logLevel);
             }
 
+#nullable disable
             public IDisposable BeginScope<TState>(TState state)
             {
                 return _inner.BeginScope(state);
             }
         }
+#nullable restore
     }
 }

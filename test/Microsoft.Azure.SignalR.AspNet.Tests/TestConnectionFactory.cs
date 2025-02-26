@@ -1,18 +1,26 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 
-namespace Microsoft.Azure.SignalR.Tests.Common;
+namespace Microsoft.Azure.SignalR.AspNet.Tests;
+
+#nullable enable
 
 internal sealed class TestConnectionFactory : IConnectionFactory
 {
-    private TaskCompletionSource<TestConnectionContext> _waitForServerConnection = new TaskCompletionSource<TestConnectionContext>();
+    private readonly TaskCompletionSource<TestConnectionContext> _waitForServerConnection = new();
 
-    public Task<ConnectionContext> ConnectAsync(HubServiceEndpoint endpoint, TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default, IDictionary<string, string> headers = null)
+    public Task<ConnectionContext> ConnectAsync(HubServiceEndpoint endpoint,
+                                                TransferFormat transferFormat,
+                                                string connectionId,
+                                                string target,
+                                                CancellationToken cancellationToken = default,
+                                                IDictionary<string, string>? headers = null)
     {
         var connection = new TestConnectionContext();
 

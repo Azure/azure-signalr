@@ -4,26 +4,14 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Features;
 
-namespace Microsoft.Azure.SignalR.Tests.Common;
+namespace Microsoft.Azure.SignalR.Tests;
 
 internal sealed class TestConnectionContext : ConnectionContext
 {
-    public TestConnectionContext()
-    {
-        Features = new FeatureCollection();
-        Items = new ConcurrentDictionary<object, object>();
-
-        var pipeOptions = new PipeOptions();
-        var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
-        var proxyToApplication = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
-
-        Transport = pair.Transport;
-        Application = pair.Application;
-    }
-
     public override string ConnectionId { get; set; }
 
     public override IFeatureCollection Features { get; }
@@ -33,4 +21,17 @@ internal sealed class TestConnectionContext : ConnectionContext
     public override IDuplexPipe Transport { get; set; }
 
     public IDuplexPipe Application { get; set; }
+
+    public TestConnectionContext()
+    {
+        Features = new FeatureCollection();
+        Items = new ConcurrentDictionary<object, object>();
+
+        var pipeOptions = new PipeOptions();
+        var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+        _ = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+
+        Transport = pair.Transport;
+        Application = pair.Application;
+    }
 }

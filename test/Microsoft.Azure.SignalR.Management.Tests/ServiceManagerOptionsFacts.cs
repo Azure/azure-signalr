@@ -3,8 +3,10 @@
 
 using System;
 using System.Linq;
+
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests

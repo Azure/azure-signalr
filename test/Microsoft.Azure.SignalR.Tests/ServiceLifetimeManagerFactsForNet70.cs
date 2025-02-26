@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -17,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Tests;
 
 public class ServiceLifetimeManagerFactsForNet70 : ServiceLifetimeManagerFacts
 {
-    private static readonly List<string> TestConnectionIds = new List<string> { "connection1", "connection2" };
+    private static readonly List<string> TestConnectionIds = new() { "connection1", "connection2" };
 
     [Theory]
     [InlineData("json", true)]
@@ -157,8 +158,10 @@ public class ServiceLifetimeManagerFactsForNet70 : ServiceLifetimeManagerFacts
 
     private static ClientConnectionContext GetClientConnectionContextWithConnection(string connectionId = null, string protocol = null)
     {
-        var connectMessage = new OpenConnectionMessage(connectionId, Array.Empty<Claim>());
-        connectMessage.Protocol = protocol;
+        var connectMessage = new OpenConnectionMessage(connectionId, Array.Empty<Claim>())
+        {
+            Protocol = protocol
+        };
         return new ClientConnectionContext(connectMessage);
     }
 }

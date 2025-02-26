@@ -2,20 +2,21 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+
 using Azure.Core.Serialization;
+
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Azure.SignalR.Management
+namespace Microsoft.Azure.SignalR.Management;
+
+internal static class SerializationDependencyInjectionExtensions
 {
-    internal static class SerializationDependencyInjectionExtensions
+    public static IServiceCollection AddNewtonsoftHubProtocol(this IServiceCollection services, Action<NewtonsoftServiceHubProtocolOptions> configure)
     {
-        public static IServiceCollection AddNewtonsoftHubProtocol(this IServiceCollection services, Action<NewtonsoftServiceHubProtocolOptions> configure)
-        {
-            var options = new NewtonsoftServiceHubProtocolOptions();
-            configure?.Invoke(options);
-            services.AddSingleton<IHubProtocol>(new JsonObjectSerializerHubProtocol(new NewtonsoftJsonObjectSerializer(options.PayloadSerializerSettings)));
-            return services;
-        }
+        var options = new NewtonsoftServiceHubProtocolOptions();
+        configure?.Invoke(options);
+        services.AddSingleton<IHubProtocol>(new JsonObjectSerializerHubProtocol(new NewtonsoftJsonObjectSerializer(options.PayloadSerializerSettings)));
+        return services;
     }
 }

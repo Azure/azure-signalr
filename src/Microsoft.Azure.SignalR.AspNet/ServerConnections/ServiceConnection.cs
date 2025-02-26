@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -21,13 +22,11 @@ internal partial class ServiceConnection : ServiceConnectionBase
 {
     private const string ReconnectMessage = "asrs:reconnect";
 
-    private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string>
-        {{Constants.AsrsUserAgent, ProductInfo.GetProductInfo()}};
+    private static readonly Dictionary<string, string> CustomHeader = new() { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
 
     private static readonly TimeSpan CloseApplicationTimeout = TimeSpan.FromSeconds(5);
 
-    private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections =
-        new ConcurrentDictionary<string, ClientConnectionContext>(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections = new(StringComparer.Ordinal);
 
     private readonly IConnectionFactory _connectionFactory;
 
@@ -75,6 +74,11 @@ internal partial class ServiceConnection : ServiceConnectionBase
         return r;
     }
 
+    public override Task CloseClientConnections(CancellationToken token)
+    {
+        throw new NotSupportedException();
+    }
+
     protected override Task<ConnectionContext> CreateConnection(string target = null)
     {
         return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target,
@@ -95,11 +99,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
     {
         _ = CleanupConnectionsAsyncCore(fromInstanceId);
         return Task.CompletedTask;
-    }
-
-    public override Task CloseClientConnections(CancellationToken token)
-    {
-        throw new NotSupportedException();
     }
 
     protected override Task OnClientConnectedAsync(OpenConnectionMessage openConnectionMessage)

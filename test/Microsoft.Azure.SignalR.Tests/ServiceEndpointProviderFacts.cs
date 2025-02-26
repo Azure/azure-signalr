@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+
 using Microsoft.Extensions.Options;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -31,16 +33,16 @@ public class ServiceEndpointProviderFacts
 
     private static readonly ServiceEndpointProvider[] EndpointProviderArray =
     {
-        new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithoutAppName),
-        new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName),
-        new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithoutAppName)
+        new(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithoutAppName),
+        new(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName),
+        new(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithoutAppName)
     };
 
     private static readonly ServiceEndpointProvider[] EndpointProviderArrayWithPrefix =
     {
-        new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithAppName),
-        new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithAppName),
-        new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithAppName)
+        new(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithAppName),
+        new(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithAppName),
+        new(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithAppName)
     };
 
     private static readonly (string path, string queryString, string expectedQuery)[] PathAndQueryArray =
@@ -172,7 +174,7 @@ public class ServiceEndpointProviderFacts
     [MemberData(nameof(DefaultEndpointProviders))]
     internal async Task GenerateClientAccessToken(IServiceEndpointProvider provider)
     {
-        var requestId = Guid.NewGuid().ToString();
+        _ = Guid.NewGuid().ToString();
         var tokenString = await provider.GenerateClientAccessTokenAsync(HubName);
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
