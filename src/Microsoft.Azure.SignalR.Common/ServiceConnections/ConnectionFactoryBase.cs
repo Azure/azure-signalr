@@ -71,7 +71,7 @@ internal abstract class ConnectionFactoryBase : IConnectionFactory
 
     internal IDictionary<string, string> GetRequestHeaders()
     {
-        var headers = new Dictionary<string, string>();
+        var headers = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
         SetCustomHeaders(headers);
         CheckHeaders(headers, Constants.Headers.AsrsHeaderPrefix);
         CheckHeaders(headers, Constants.Headers.AsrsInternalHeaderPrefix);
