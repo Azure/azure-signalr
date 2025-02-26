@@ -9,7 +9,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class ServiceOptionsExtensions
     {
-        private static readonly Regex AppNameRegex = new Regex("^[a-zA-Z][a-zA-Z0-9_]*$", RegexOptions.Compiled);
+        private static readonly Regex AppNameRegex = new("^[a-zA-Z][a-zA-Z0-9_]*$", RegexOptions.Compiled);
         public static void Validate(this ServiceOptions options)
         {
             if (options.MaxPollIntervalInSeconds.HasValue &&

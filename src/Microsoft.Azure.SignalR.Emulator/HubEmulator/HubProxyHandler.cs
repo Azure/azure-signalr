@@ -272,7 +272,7 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 
                     if (!buffer.IsEmpty)
                     {
-                        bool messageReceived = false;
+                        var messageReceived = false;
 
                         // No message limit, just parse and dispatch
                         while (TryParse(protocol, binder, ref buffer, out var message))
@@ -317,7 +317,7 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 
         private static bool TryParse(IHubProtocol protocol, IInvocationBinder[] binders, ref ReadOnlySequence<byte> buffer, out HubMessage message)
         {
-            ReadOnlySequence<byte> seq = buffer;
+            var seq = buffer;
             message = null;
             foreach (var binder in binders)
             {

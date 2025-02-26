@@ -7,7 +7,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal class DefaultBlazorDetector: IBlazorDetector
     {
-        private readonly ConcurrentDictionary<string, bool> _blazor = new ConcurrentDictionary<string, bool>();
+        private readonly ConcurrentDictionary<string, bool> _blazor = new();
 
         public bool IsBlazor(string hubName)
         {

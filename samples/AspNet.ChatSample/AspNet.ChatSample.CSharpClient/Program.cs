@@ -14,14 +14,14 @@ namespace AspNet.ChatSample.CSharpClient;
 sealed class Program
 {
     private static readonly Func<Task> ReconnectDelayTask = () => DelayRandom(200, 1000);
-    private static readonly SemaphoreSlim ReconnectLock = new SemaphoreSlim(1);
+    private static readonly SemaphoreSlim ReconnectLock = new(1);
     static async Task Main(string[] args)
     {
         var url = "http://localhost:8009";
         var proxy = await ConnectAsync(url, Console.Out).ConfigureAwait(false);
         var currentUser = Guid.NewGuid().ToString("N");
 
-        Mode mode = Mode.Broadcast;
+        var mode = Mode.Broadcast;
         if (args.Length > 0)
         {
             Enum.TryParse(args[0], true, out mode);

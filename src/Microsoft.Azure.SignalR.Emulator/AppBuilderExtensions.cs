@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Emulator
     {
         internal const string AccessKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH";
         private static readonly SecurityKey[] ValidKeys = new SecurityKey[] { new SymmetricSecurityKey(Encoding.UTF8.GetBytes(AccessKey)) };
-        private static readonly MediaTypeHeaderValue EventStreamMediaType = new MediaTypeHeaderValue("text/event-stream");
+        private static readonly MediaTypeHeaderValue EventStreamMediaType = new("text/event-stream");
         private const string AllowAllCors = nameof(AllowAllCors);
 
         public static IServiceCollection AddAllowAllCors(this IServiceCollection services)

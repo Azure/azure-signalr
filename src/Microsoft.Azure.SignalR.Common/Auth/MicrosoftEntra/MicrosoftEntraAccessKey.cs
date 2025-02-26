@@ -28,11 +28,11 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     private const int GetMicrosoftEntraTokenMaxRetryTimes = 3;
 
-    private readonly object _lock = new object();
+    private readonly object _lock = new();
 
     private volatile TaskCompletionSource<bool> _updateTaskSource;
 
-    private static readonly TokenRequestContext DefaultRequestContext = new TokenRequestContext(new string[] { Constants.AsrsDefaultScope });
+    private static readonly TokenRequestContext DefaultRequestContext = new(new string[] { Constants.AsrsDefaultScope });
 
     private static readonly TimeSpan GetAccessKeyInterval = TimeSpan.FromMinutes(55);
 

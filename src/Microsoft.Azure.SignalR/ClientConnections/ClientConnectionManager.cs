@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR;
 internal class ClientConnectionManager : IClientConnectionManager
 {
     private readonly ConcurrentDictionary<string, IClientConnection> _clientConnections =
-        new ConcurrentDictionary<string, IClientConnection>();
+        new();
 
     public IEnumerable<IClientConnection> ClientConnections
     {

@@ -15,7 +15,7 @@ internal class DefaultCultureFeatureManager : ICultureFeatureManager
 {
     private readonly long _cacheTimeoutTicks;
 
-    private readonly ConcurrentDictionary<string, RequestCultureFeatureWithTimestamp> _cultures = new ConcurrentDictionary<string, RequestCultureFeatureWithTimestamp>();
+    private readonly ConcurrentDictionary<string, RequestCultureFeatureWithTimestamp> _cultures = new();
 
     public DefaultCultureFeatureManager(long cacheTimeoutInSecond = 30)
     {

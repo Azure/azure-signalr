@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.Emulator
 {
     internal static class Utils
     {
-        private static readonly Regex UpstreamReplaceRegex = new Regex("\\{(?:hub|category|event)\\}", RegexOptions.Compiled);
+        private static readonly Regex UpstreamReplaceRegex = new("\\{(?:hub|category|event)\\}", RegexOptions.Compiled);
 
         public static IEnumerable<string> GetConnectionSignature(string connectionId, IReadOnlyList<string> keys)
         {

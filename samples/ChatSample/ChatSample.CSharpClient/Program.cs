@@ -20,7 +20,7 @@ namespace ChatSample.CSharpClient
             var proxy = await ConnectAsync(url + "/chat", Console.Out).ConfigureAwait(false);
             var currentUser = Guid.NewGuid().ToString("N");
 
-            Mode mode = Mode.Broadcast;
+            var mode = Mode.Broadcast;
             if (args.Length > 0)
             {
                 Enum.TryParse(args[0], true, out mode);

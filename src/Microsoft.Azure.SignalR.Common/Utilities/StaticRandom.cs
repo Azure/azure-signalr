@@ -7,8 +7,8 @@ namespace Microsoft.Azure.SignalR
 {
     internal sealed class StaticRandom
     {
-        private static readonly object RandomLock = new object();
-        private static readonly Random RandomInterval = new Random((int)DateTime.UtcNow.Ticks);
+        private static readonly object RandomLock = new();
+        private static readonly Random RandomInterval = new((int)DateTime.UtcNow.Ticks);
 
         public static int Next(int maxValue)
         {

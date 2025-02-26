@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR
 {
     public class GracefulShutdownOptions
     {
-        private readonly Dictionary<string, List<object>> _dict = new Dictionary<string, List<object>>();
+        private readonly Dictionary<string, List<object>> _dict = new();
 
         /// <summary>
         /// This mode defines the server's behavior after receiving a `Ctrl+C` (SIGINT).

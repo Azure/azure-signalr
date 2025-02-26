@@ -15,15 +15,15 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 {
     internal class GroupManager
     {
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+        private readonly SemaphoreSlim _semaphore = new(1);
         private readonly ManyToManyMap<string, string> _connectionGroupMap =
-            new ManyToManyMap<string, string>(StringComparer.Ordinal, StringComparer.Ordinal);
+            new(StringComparer.Ordinal, StringComparer.Ordinal);
         private readonly ManyToManyMap<string, string> _userGroupMap =
-            new ManyToManyMap<string, string>(StringComparer.Ordinal, StringComparer.Ordinal);
+            new(StringComparer.Ordinal, StringComparer.Ordinal);
         private readonly ConcurrentDictionary<string, Connections> _userConnections =
-            new ConcurrentDictionary<string, Connections>(StringComparer.Ordinal);
+            new(StringComparer.Ordinal);
         private readonly Dictionary<(string user, string group), DateTimeOffset> _expires =
-            new Dictionary<(string user, string group), DateTimeOffset>();
+            new();
 
         public void AddConnectionIntoGroup(string connectionId, string group)
         {

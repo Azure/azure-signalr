@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR;
 internal abstract class ServiceEndpointManagerBase : IServiceEndpointManager
 {
     // Endpoints for negotiation
-    private readonly ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>> _endpointsPerHub = new ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>>();
+    private readonly ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>> _endpointsPerHub = new();
 
     private readonly ILogger _logger;
 

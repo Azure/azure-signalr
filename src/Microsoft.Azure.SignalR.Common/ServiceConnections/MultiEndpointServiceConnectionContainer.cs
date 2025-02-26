@@ -28,7 +28,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
 
     private readonly Func<HubServiceEndpoint, IServiceConnectionContainer> _generator;
 
-    private readonly object _lock = new object();
+    private readonly object _lock = new();
 
     private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
 

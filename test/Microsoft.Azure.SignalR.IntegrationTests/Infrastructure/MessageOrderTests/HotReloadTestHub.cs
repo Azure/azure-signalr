@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure.MessageOrderTe
         {
             var all = Clients.All;
             Task.Run(async () => {
-                for (int i = 0; i < numCalls;)
+                for (var i = 0; i < numCalls;)
                 {
                     await all.SendAsync("Callback", ++i);
                 }

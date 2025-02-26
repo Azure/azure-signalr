@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure.MessageOrderTe
                 {
                     using (new ClientConnectionScope())
                     {
-                        for (int i = 0; i < numCalls;)
+                        for (var i = 0; i < numCalls;)
                         {
                             await all.SendAsync("Callback", ++i);
                         }

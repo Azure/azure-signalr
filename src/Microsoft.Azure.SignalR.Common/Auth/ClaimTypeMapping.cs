@@ -19,7 +19,7 @@ internal static class ClaimTypeMapping
     // This is the short to long mapping.
     // key      is the long  claim type
     // value    is the short claim type
-    private static Dictionary<string, string> shortToLongClaimTypeMapping = new Dictionary<string, string>
+    private static Dictionary<string, string> shortToLongClaimTypeMapping = new()
     {
         { JwtRegisteredClaimNames.Actort, ClaimTypes.Actor },
         { JwtRegisteredClaimNames.Birthdate, ClaimTypes.DateOfBirth },
@@ -104,7 +104,7 @@ internal static class ClaimTypeMapping
     /// </summary>
     static ClaimTypeMapping()
     {
-        foreach (KeyValuePair<string, string> kv in shortToLongClaimTypeMapping)
+        foreach (var kv in shortToLongClaimTypeMapping)
         {
             if (longToShortClaimTypeMapping.ContainsKey(kv.Value))
             {

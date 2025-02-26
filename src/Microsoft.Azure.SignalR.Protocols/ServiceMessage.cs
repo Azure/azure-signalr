@@ -95,7 +95,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         internal void WriteExtensionMembers(ref MessagePackWriter writer)
         {
-            int count = 0;
+            var count = 0;
             var tracingId = (this as IMessageWithTracingId)?.TracingId;
             if (tracingId != null)
             {
@@ -167,8 +167,8 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         internal void ReadExtensionMembers(ref MessagePackReader reader)
         {
-            int count = reader.ReadMapHeader();
-            for (int i = 0; i < count; i++)
+            var count = reader.ReadMapHeader();
+            for (var i = 0; i < count; i++)
             {
                 switch (reader.ReadInt32())
                 {
@@ -426,7 +426,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// A static ping message.
         /// </summary>
-        public static PingMessage Instance = new PingMessage();
+        public static PingMessage Instance = new();
 
         public string?[] Messages { get; set; } = Array.Empty<string?>();
     }

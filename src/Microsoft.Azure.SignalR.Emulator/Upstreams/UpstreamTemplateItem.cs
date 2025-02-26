@@ -11,8 +11,8 @@ namespace Microsoft.Azure.SignalR.Emulator;
 
 internal class UpstreamTemplateItem : IEquatable<UpstreamTemplateItem>
 {
-    private static readonly HashSet<string> MatchAllPattern = new HashSet<string>(new[] { Constants.Asterisk });
-    private static readonly HashSet<string> EmptyPattern = new HashSet<string>();
+    private static readonly HashSet<string> MatchAllPattern = new(new[] { Constants.Asterisk });
+    private static readonly HashSet<string> EmptyPattern = new();
 
     private string _eventPattern = Constants.Asterisk;
     private string _hubPattern = Constants.Asterisk;

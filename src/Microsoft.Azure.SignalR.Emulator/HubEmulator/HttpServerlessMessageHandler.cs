@@ -33,8 +33,8 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
         private readonly string _hubName;
         private readonly ILogger _logger;
 
-        public static readonly MediaTypeHeaderValue JsonMediaType = new MediaTypeHeaderValue(Constants.ContentTypes.JsonContentType);
-        public static readonly MediaTypeHeaderValue MessagePackMediaType = new MediaTypeHeaderValue(Constants.ContentTypes.MessagePackContentType);
+        public static readonly MediaTypeHeaderValue JsonMediaType = new(Constants.ContentTypes.JsonContentType);
+        public static readonly MediaTypeHeaderValue MessagePackMediaType = new(Constants.ContentTypes.MessagePackContentType);
 
         public HttpServerlessMessageHandler(IHttpUpstreamTrigger httpUpstreamTrigger, ILogger<HttpServerlessMessageHandler<THub>> logger)
         {

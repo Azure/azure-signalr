@@ -18,8 +18,8 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     /// </summary>
     internal class MockServiceSideClientConnection
     {
-        private static readonly JsonHubProtocol _signalRPro = new JsonHubProtocol();
-        private static readonly ServiceProtocol _servicePro = new ServiceProtocol();
+        private static readonly JsonHubProtocol _signalRPro = new();
+        private static readonly ServiceProtocol _servicePro = new();
 
 
         public string ConnectionId { get; private set; }
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
             ServiceSideConnection = serviceSideConnection;
         }
 
-        private ConcurrentDictionary<Type, Channel<HubMessage>> _hubMessagesFromSDK = new ConcurrentDictionary<Type, Channel<HubMessage>>();
+        private ConcurrentDictionary<Type, Channel<HubMessage>> _hubMessagesFromSDK = new();
 
         public void EnqueueMessage(HubMessage m) =>
             _hubMessagesFromSDK.GetOrAdd(m.GetType(), _ => CreateChannel<HubMessage>()).Writer.TryWrite(m);

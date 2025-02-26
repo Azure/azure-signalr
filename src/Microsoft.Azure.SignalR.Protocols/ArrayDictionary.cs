@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
             set
             {
-                for (int i = 0; i < count; i++)
+                for (var i = 0; i < count; i++)
                 {
                     if (_comparer.Equals(key, _keys[i]))
                     {
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
             var valueComparer = ValueComparer;
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 if (_comparer.Equals(item.Key, _keys[i]) && valueComparer.Equals(item.Value, _values[i]))
                 {
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         public bool ContainsKey(TKey key)
         {
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 if (_comparer.Equals(key, _keys[i]))
                 {
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 array[arrayIndex + i] = new(_keys[i], _values[i]);
             }
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         // Add this method to avoid boxing for `foreach` statement.
         public Enumerator GetEnumerator() =>
-            new Enumerator(this);
+            new(this);
 
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() => GetEnumerator();
 
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         public bool TryGetValue(TKey key, out TValue value)
         {
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 if (_comparer.Equals(key, _keys[i]))
                 {
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
 
             public KeyValuePair<TKey, TValue> Current =>
-                new KeyValuePair<TKey, TValue>(
+                new(
                     _dictionary._keys[_position],
                     _dictionary._values[_position]);
 

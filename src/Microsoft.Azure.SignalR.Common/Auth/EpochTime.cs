@@ -14,7 +14,7 @@ internal static class EpochTime
     /// <summary>
     /// DateTime as UTV for UnixEpoch
     /// </summary>
-    public static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+    public static readonly DateTime UnixEpoch = new(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
     /// <summary>
     /// Per JWT spec:
@@ -25,7 +25,7 @@ internal static class EpochTime
     /// <returns>the number of seconds since Unix Epoch.</returns>
     public static long GetIntDate(DateTime datetime)
     {
-        DateTime dateTimeUtc = datetime;
+        var dateTimeUtc = datetime;
         if (datetime.Kind != DateTimeKind.Utc)
         {
             dateTimeUtc = datetime.ToUniversalTime();

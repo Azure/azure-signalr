@@ -25,9 +25,9 @@ namespace Nerdbank.Streams
     {
         private static readonly int DefaultLengthFromArrayPool = 1 + (4095 / Marshal.SizeOf<T>());
 
-        private static readonly ReadOnlySequence<T> Empty = new ReadOnlySequence<T>(SequenceSegment.Empty, 0, SequenceSegment.Empty, 0);
+        private static readonly ReadOnlySequence<T> Empty = new(SequenceSegment.Empty, 0, SequenceSegment.Empty, 0);
 
-        private readonly Stack<SequenceSegment> segmentPool = new Stack<SequenceSegment>();
+        private readonly Stack<SequenceSegment> segmentPool = new();
 
         private readonly MemoryPool<T>? memoryPool;
 
@@ -136,7 +136,7 @@ namespace Nerdbank.Streams
                 return;
             }
 
-            int firstIndex = position.GetInteger();
+            var firstIndex = position.GetInteger();
 
             // Before making any mutations, confirm that the block specified belongs to this sequence.
             var current = this.first;
@@ -180,7 +180,7 @@ namespace Nerdbank.Streams
         /// <param name="count">The number of elements written into memory.</param>
         public void Advance(int count)
         {
-            SequenceSegment? last = this.last;
+            var last = this.last;
 
             if (last == null)
             {
@@ -286,7 +286,7 @@ namespace Nerdbank.Streams
                 else
                 {
                     // The last block is completely unused. Replace it instead of appending to it.
-                    Sequence<T>.SequenceSegment? current = this.first;
+                    var current = this.first;
                     if (this.first != this.last)
                     {
                         while (current!.Next != this.last)
@@ -318,7 +318,7 @@ namespace Nerdbank.Streams
 
         private class SequenceSegment : ReadOnlySequenceSegment<T>
         {
-            internal static readonly SequenceSegment Empty = new SequenceSegment();
+            internal static readonly SequenceSegment Empty = new();
 
             /// <summary>
             /// A value indicating whether the element is a value type.

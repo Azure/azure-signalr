@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure.MessageOrderTe
     {
         public async Task<bool> BroadcastNumCalls(int numCalls, int countOffset = 0)
         {
-            for (int i = 0; i < numCalls;)
+            for (var i = 0; i < numCalls;)
             {
                 await Clients.All.SendAsync("Callback", ++i + countOffset);
             }
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure.MessageOrderTe
                 // The future product fixes should help with this problem.
 
                 await Task.Delay(2222);
-                for (int i = 0; i < numCalls;)
+                for (var i = 0; i < numCalls;)
                 {
                     await all.SendAsync("Callback", ++i + countOffset);
                 }

@@ -24,9 +24,9 @@ namespace Microsoft.Azure.SignalR.AspNet;
 internal class NegotiateMiddleware : OwinMiddleware
 {
     private static readonly HashSet<string> PreservedQueryParameters =
-        new HashSet<string>(new[] { "clientProtocol", "connectionToken", "connectionData" });
+        new(new[] { "clientProtocol", "connectionToken", "connectionData" });
 
-    private static readonly Version ClientSupportQueryStringVersion = new Version(2, 1);
+    private static readonly Version ClientSupportQueryStringVersion = new(2, 1);
 
     private static readonly string AssemblyVersion = typeof(NegotiateMiddleware).Assembly.GetName().Version.ToString();
 

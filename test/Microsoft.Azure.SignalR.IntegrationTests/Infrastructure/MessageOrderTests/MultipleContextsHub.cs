@@ -11,8 +11,8 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure.MessageOrderTe
     public class MultipleContextsHub : Hub
     {
         // note: to be used only from BroadcastNumCallsMultipleContexts
-        private static TaskCompletionSource<IClientProxy> s_connectedTcs = new TaskCompletionSource<IClientProxy>(TaskCreationOptions.RunContinuationsAsynchronously);
-        private static TaskCompletionSource<bool> s_connectedDoneTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private static TaskCompletionSource<IClientProxy> s_connectedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private static TaskCompletionSource<bool> s_connectedDoneTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public override Task OnConnectedAsync()
         {
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure.MessageOrderTe
             await s_connectedDoneTcs.Task;
 
             // by this time the secondary endpoint selection is done and persisted
-            for (int i = 1; i < numCalls;)
+            for (var i = 1; i < numCalls;)
             {
                 await Clients.All.SendAsync("Callback", ++i);
             }

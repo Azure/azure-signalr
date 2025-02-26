@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 {
     internal class LimitedStream : Stream
     {
-        private readonly MemoryStream _ms = new MemoryStream();
+        private readonly MemoryStream _ms = new();
         private readonly int _maxSize;
 
         public LimitedStream(int maxSize)
@@ -53,6 +53,6 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
         }
 
         public ReadOnlyMemory<byte> ToMemory() =>
-            new ReadOnlyMemory<byte>(_ms.GetBuffer(), 0, (int)_ms.Length);
+            new(_ms.GetBuffer(), 0, (int)_ms.Length);
     }
 }

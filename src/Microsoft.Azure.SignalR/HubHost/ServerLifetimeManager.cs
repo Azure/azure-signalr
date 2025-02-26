@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServerLifetimeManager
     {
-        private readonly ConcurrentBag<Func<Task>> _shutdownHooks = new ConcurrentBag<Func<Task>>();
+        private readonly ConcurrentBag<Func<Task>> _shutdownHooks = new();
 
         public ServerLifetimeManager(
             IServiceProvider provider

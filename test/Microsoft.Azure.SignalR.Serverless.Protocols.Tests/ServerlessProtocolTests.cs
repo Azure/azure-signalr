@@ -65,7 +65,7 @@ public class ServerlessProtocolTests
     public void InvocationMessageParseTest(string protocolName, string invocationId, string target, object[] arguments)
     {
         var message = new AspNetCore.SignalR.Protocol.InvocationMessage(invocationId, target, arguments);
-        IHubProtocol protocol = protocolName == "json" ? (IHubProtocol)new JsonHubProtocol() : new MessagePackHubProtocol();
+        var protocol = protocolName == "json" ? (IHubProtocol)new JsonHubProtocol() : new MessagePackHubProtocol();
         var bytes = new ReadOnlySequence<byte>(protocol.GetMessageBytes(message));
         ReadOnlySequence<byte> payload;
         if (protocolName == "json")

@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         internal const int DefaultStreamBufferCapacity = 10;
 
-        private readonly List<string> _defaultProtocols = new List<string>();
+        private readonly List<string> _defaultProtocols = new();
 
         public ManagementHubOptionsSetup(IEnumerable<IHubProtocol> protocols)
         {

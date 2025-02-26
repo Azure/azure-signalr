@@ -29,8 +29,8 @@ namespace Microsoft.Azure.SignalR.Common
         /// </returns>
         public async Task<bool> CallProbeWithBackOffAsync(Func<Task<bool>> probe, Func<int, TimeSpan> getRetryDelay)
         {
-            bool calledProbeOnce = false;
-            bool probeSuccess = false;
+            var calledProbeOnce = false;
+            var probeSuccess = false;
             var myTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             do
             {
@@ -40,14 +40,14 @@ namespace Microsoft.Azure.SignalR.Common
                 {
                     // initiate the probe and indicate its result to others
                     Task<bool> probeTask = null;
-                    bool awaitProbeTask = false;
+                    var awaitProbeTask = false;
                     try
                     {
                         Debug.Assert(!calledProbeOnce);
                         calledProbeOnce = true;
                         probeTask = probe();
 
-                        using (CancellationTokenSource delayCts = new CancellationTokenSource())
+                        using (var delayCts = new CancellationTokenSource())
                         {
                             var delayTask = Task.Delay(getRetryDelay(_currentRetryCount++), delayCts.Token);
                             await Task.WhenAny(delayTask, probeTask);

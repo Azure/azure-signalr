@@ -63,7 +63,7 @@ public class Program
 
         initCommand.SetHandler((string? output) =>
         {
-            string outputFile = !string.IsNullOrEmpty(output)
+            var outputFile = !string.IsNullOrEmpty(output)
                 ? Path.GetFullPath(Path.Combine(output, SettingsFileName))
                 : SettingsFile;
 

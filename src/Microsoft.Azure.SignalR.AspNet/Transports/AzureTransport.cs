@@ -18,9 +18,9 @@ namespace Microsoft.Azure.SignalR.AspNet;
 
 internal class AzureTransport : IServiceTransport
 {
-    private readonly TaskCompletionSource<object> _lifetimeTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object> _lifetimeTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private readonly TaskCompletionSource<object> _connectedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object> _connectedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly HostContext _context;
 

@@ -20,7 +20,7 @@ public class ServiceEndpoint
 
     private readonly TokenCredential? _tokenCredential;
 
-    private readonly object _lock = new object();
+    private readonly object _lock = new();
 
     private volatile IAccessKey? _accessKey;
 

@@ -85,18 +85,18 @@ namespace Microsoft.Azure.SignalR
                 throw LogHelper.LogExceptionMessage(new ArgumentOutOfRangeException(LogHelper.FormatInvariant("IDX10106: The parameter {0} had an invalid value: '{1}'.", nameof(length), length)));
             // Modifications 1 ends here
 
-            int lengthmod3 = length % 3;
-            int limit = offset + (length - lengthmod3);
-            char[] output = new char[(length + 2) / 3 * 4];
-            char[] table = s_base64Table;
+            var lengthmod3 = length % 3;
+            var limit = offset + (length - lengthmod3);
+            var output = new char[(length + 2) / 3 * 4];
+            var table = s_base64Table;
             int i, j = 0;
 
             // takes 3 bytes from inArray and insert 4 bytes into output
             for (i = offset; i < limit; i += 3)
             {
-                byte d0 = inArray[i];
-                byte d1 = inArray[i + 1];
-                byte d2 = inArray[i + 2];
+                var d0 = inArray[i];
+                var d1 = inArray[i + 1];
+                var d2 = inArray[i + 2];
 
                 output[j + 0] = table[d0 >> 2];
                 output[j + 1] = table[((d0 & 0x03) << 4) | (d1 >> 4)];
@@ -112,8 +112,8 @@ namespace Microsoft.Azure.SignalR
             {
                 case 2:
                     {
-                        byte d0 = inArray[i];
-                        byte d1 = inArray[i + 1];
+                        var d0 = inArray[i];
+                        var d1 = inArray[i + 1];
 
                         output[j + 0] = table[d0 >> 2];
                         output[j + 1] = table[((d0 & 0x03) << 4) | (d1 >> 4)];
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.SignalR
 
                 case 1:
                     {
-                        byte d0 = inArray[i];
+                        var d0 = inArray[i];
 
                         output[j + 0] = table[d0 >> 2];
                         output[j + 1] = table[(d0 & 0x03) << 4];
@@ -210,16 +210,16 @@ namespace Microsoft.Azure.SignalR
 #if !NET45
         private unsafe static byte[] UnsafeDecode(string str)
         {
-            int mod = str.Length % 4;
+            var mod = str.Length % 4;
             if (mod == 1)
                 // Modification 2 starts here
                 throw LogHelper.LogExceptionMessage(new FormatException(LogHelper.FormatInvariant("IDX10400: Unable to decode: '{0}' as Base64url encoded string.", str)));
                 // Modification 2 ends here
 
-            bool needReplace = false;
-            int decodedLength = str.Length + (4 - mod) % 4;
+            var needReplace = false;
+            var decodedLength = str.Length + (4 - mod) % 4;
 
-            for (int i = 0; i < str.Length; i++)
+            for (var i = 0; i < str.Length; i++)
             {
                 if (str[i] == base64UrlCharacter62 || str[i] == base64UrlCharacter63)
                 {
@@ -230,10 +230,10 @@ namespace Microsoft.Azure.SignalR
 
             if (needReplace)
             {
-                string decodedString = new string(char.MinValue, decodedLength);
+                var decodedString = new string(char.MinValue, decodedLength);
                 fixed (char* dest = decodedString)
                 {
-                    int i = 0;
+                    var i = 0;
                     for (; i < str.Length; i++)
                     {
                         if (str[i] == base64UrlCharacter62)
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.SignalR
                 }
                 else
                 {
-                    string decodedString = new string(char.MinValue, decodedLength);
+                    var decodedString = new string(char.MinValue, decodedLength);
                     fixed (char* src = str)
                     fixed (char* dest = decodedString)
                     {

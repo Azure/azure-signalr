@@ -25,9 +25,9 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     /// </summary>
     internal class ConnectionTrackingMockService : IMockService
     {
-        private object _addRemoveLock = new object();
-        private ConcurrentBag<MockServiceSideConnection> _serviceSideConnections = new ConcurrentBag<MockServiceSideConnection>();
-        private ConcurrentBag<MockServiceConnection> _sdkSideConnections = new ConcurrentBag<MockServiceConnection>();
+        private object _addRemoveLock = new();
+        private ConcurrentBag<MockServiceSideConnection> _serviceSideConnections = new();
+        private ConcurrentBag<MockServiceConnection> _sdkSideConnections = new();
 
         public List<MockServiceSideConnection> ServiceSideConnections => _serviceSideConnections.ToList();
 
@@ -67,14 +67,14 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                 // we piggy back on the only parameter that we can control 
                 // as it flows from MockServiceConnection instance to MockServiceConnectionContext 
                 // see MockServiceConnection.StartAsync
-                string startTag = "svc_";
+                var startTag = "svc_";
                 Debug.Assert(target.IndexOf(startTag) == 0);
 
-                int endTagIndex = target.IndexOf(value: "_", startIndex: startTag.Length);
+                var endTagIndex = target.IndexOf(value: "_", startIndex: startTag.Length);
                 Debug.Assert(endTagIndex >= startTag.Length + 1);
 
-                string id = target.Substring(startTag.Length, endTagIndex - startTag.Length);
-                int.TryParse(id, out int serviceConnectionIndex);
+                var id = target.Substring(startTag.Length, endTagIndex - startTag.Length);
+                int.TryParse(id, out var serviceConnectionIndex);
                 Debug.Assert(serviceConnectionIndex > 0);   // indexes start from 1
 
                 var svcConnection = _sdkSideConnections.Where(c => c.ConnectionNumber == serviceConnectionIndex).FirstOrDefault();

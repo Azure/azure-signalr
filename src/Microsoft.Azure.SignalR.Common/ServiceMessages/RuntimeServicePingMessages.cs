@@ -47,25 +47,32 @@ internal static class RuntimeServicePingMessage
     private const string ShutdownFinAckValue = "finack";
 
     private static readonly ServicePingMessage StatusActive =
-        new ServicePingMessage { Messages = new[] { StatusKey, StatusActiveValue } };
+        new()
+        { Messages = new[] { StatusKey, StatusActiveValue } };
 
     private static readonly ServicePingMessage StatusInactive =
-        new ServicePingMessage { Messages = new[] { StatusKey, StatusInactiveValue } };
+        new()
+        { Messages = new[] { StatusKey, StatusInactiveValue } };
 
     private static readonly ServicePingMessage ShutdownFin =
-        new ServicePingMessage { Messages = new[] { ShutdownKey, ShutdownFinValue } };
+        new()
+        { Messages = new[] { ShutdownKey, ShutdownFinValue } };
 
     private static readonly ServicePingMessage ShutdownFinMigrateClients =
-        new ServicePingMessage { Messages = new[] { ShutdownKey, ShutdownFinMigrateClientsValue } };
+        new()
+        { Messages = new[] { ShutdownKey, ShutdownFinMigrateClientsValue } };
 
     private static readonly ServicePingMessage ShutdownFinWaitForClients =
-        new ServicePingMessage { Messages = new[] { ShutdownKey, ShutdownFinWaitForClientsValue } };
+        new()
+        { Messages = new[] { ShutdownKey, ShutdownFinWaitForClientsValue } };
 
     private static readonly ServicePingMessage ShutdownFinAck =
-        new ServicePingMessage { Messages = new[] { ShutdownKey, ShutdownFinAckValue } };
+        new()
+        { Messages = new[] { ShutdownKey, ShutdownFinAckValue } };
 
     private static readonly ServicePingMessage ServersTag =
-        new ServicePingMessage { Messages = new[] { ServersKey, string.Empty } };
+        new()
+        { Messages = new[] { ServersKey, string.Empty } };
 
     public static bool IsEchoMessage(this ServicePingMessage ping)
     {

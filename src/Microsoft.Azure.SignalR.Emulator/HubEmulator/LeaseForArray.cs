@@ -9,15 +9,15 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
     internal static class LeaseForArray
     {
         public static LeaseForArray<T> Create<T>(T[] array, int count) =>
-            new LeaseForArray<T>(new ArraySegment<T>(array, 0, count));
+            new(new ArraySegment<T>(array, 0, count));
 
         public static LeaseForArray<T> Create<T>(T[] array, int index, int count) =>
-            new LeaseForArray<T>(new ArraySegment<T>(array, index, count));
+            new(new ArraySegment<T>(array, index, count));
     }
 
     internal struct LeaseForArray<T> : IDisposable
     {
-        public static readonly LeaseForArray<T> Empty = new LeaseForArray<T>(new ArraySegment<T>(Array.Empty<T>()));
+        public static readonly LeaseForArray<T> Empty = new(new ArraySegment<T>(Array.Empty<T>()));
 
         public LeaseForArray(ArraySegment<T> value)
         {

@@ -30,8 +30,8 @@ namespace Microsoft.Azure.SignalR
             "nonce",
         };
 
-        private static readonly ClaimsIdentity DefaultClaimsIdentity = new ClaimsIdentity();
-        private static readonly ClaimsPrincipal EmptyPrincipal = new ClaimsPrincipal(DefaultClaimsIdentity);
+        private static readonly ClaimsIdentity DefaultClaimsIdentity = new();
+        private static readonly ClaimsPrincipal EmptyPrincipal = new(DefaultClaimsIdentity);
         private static readonly string DefaultNameClaimType = DefaultClaimsIdentity.NameClaimType;
         private static readonly string DefaultRoleClaimType = DefaultClaimsIdentity.RoleClaimType;
 

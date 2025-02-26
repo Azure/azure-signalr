@@ -28,14 +28,14 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     /// </summary>
     internal class MockServiceSideConnection : IAsyncDisposable
     {
-        private static readonly ServiceProtocol _servicePro = new ServiceProtocol();
-        private static readonly JsonHubProtocol _signalRPro = new JsonHubProtocol();
+        private static readonly ServiceProtocol _servicePro = new();
+        private static readonly JsonHubProtocol _signalRPro = new();
         private static int s_clientConnNum = 0;
 
         private static int s_index = 0;
         private Task _processIncoming;
-        private TaskCompletionSource<bool> _completedHandshake = new TaskCompletionSource<bool>();
-        private ConcurrentDictionary<Type, Channel<ServiceMessage>> _messagesFromSDK = new ConcurrentDictionary<Type, Channel<ServiceMessage>>();
+        private TaskCompletionSource<bool> _completedHandshake = new();
+        private ConcurrentDictionary<Type, Channel<ServiceMessage>> _messagesFromSDK = new();
         private int _stopped = 0;
         
         // to help with debugging, make public if useful to check in tests
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
             }
 
             var clientConnId = SDKSideServiceConnection.ConnectionId + "_client_" + Interlocked.Increment(ref s_clientConnNum);
-            MockServiceSideClientConnection clientConn = new MockServiceSideClientConnection(clientConnId, this);
+            var clientConn = new MockServiceSideClientConnection(clientConnId, this);
             ClientConnections.Add(clientConn);
 
             var openClientConnMsg = new OpenConnectionMessage(clientConnId, new System.Security.Claims.Claim[] { }) { Protocol = "json" };
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                 throw new InvalidOperationException($"Sending HandshakeRequestMessage for clientConnId {clientConnId} returned flush result: IsCanceled {flushResult.IsCanceled} IsCompleted {flushResult.IsCompleted}");
             }
 
-            string hsErr = await clientConn.HandshakeCompleted.Task;
+            var hsErr = await clientConn.HandshakeCompleted.Task;
             if (!string.IsNullOrEmpty(hsErr))
             {
                 throw new InvalidOperationException($"client connection {clientConnId} handshake returned {hsErr}");
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 
                                             // There is no such goal to provide full message parsing capabilities here
                                             // But it is useful to know the hub invocation return result in some tests so there we have it.
-                                            while (_signalRPro.TryParseMessage(ref payload, MockSvc.CurrentInvocationBinder, out HubMessage hubMessage))
+                                            while (_signalRPro.TryParseMessage(ref payload, MockSvc.CurrentInvocationBinder, out var hubMessage))
                                             {
                                                 clientConnection.EnqueueMessage(hubMessage);
 

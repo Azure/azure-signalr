@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 {
     public class ServiceMessageEqualityComparer : IEqualityComparer<ServiceMessage>
     {
-        public static readonly ServiceMessageEqualityComparer Instance = new ServiceMessageEqualityComparer();
+        public static readonly ServiceMessageEqualityComparer Instance = new();
 
         public bool Equals(ServiceMessage x, ServiceMessage y)
         {
@@ -448,7 +448,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 return false;
             }
 
-            for (int i = 0; i < x.Count; i++)
+            for (var i = 0; i < x.Count; i++)
             {
                 if (!StringEqual(x.ElementAt(i).Key, y.ElementAt(i).Key) ||
                     !SequenceEqual(x.ElementAt(i).Value.ToArray(), y.ElementAt(i).Value.ToArray()))
@@ -472,7 +472,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 return false;
             }
 
-            for (int i = 0; i < x.Count; i++)
+            for (var i = 0; i < x.Count; i++)
             {
                 var xKey = x.ElementAt(i).Key;
                 var yKey = y.ElementAt(i).Key;

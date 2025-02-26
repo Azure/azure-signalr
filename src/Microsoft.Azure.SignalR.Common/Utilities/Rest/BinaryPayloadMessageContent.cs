@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR.Common
 {
     internal class BinaryPayloadMessageContent : HttpContent
     {
-        private static readonly Dictionary<string, byte[]> ProtocolMap = new Dictionary<string, byte[]>(2)
+        private static readonly Dictionary<string, byte[]> ProtocolMap = new(2)
         {
             {Constants.Protocol.Json, Encoding.UTF8.GetBytes(Constants.Protocol.Json) },
             {Constants.Protocol.MessagePack,Encoding.UTF8.GetBytes(Constants.Protocol.MessagePack)}

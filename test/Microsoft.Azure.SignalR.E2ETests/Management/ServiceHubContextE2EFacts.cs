@@ -1102,7 +1102,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
         public sealed class TestLogger : ILogger
         {
-            public List<EventId> EventIds = new List<EventId>();
+            public List<EventId> EventIds = new();
 
             public IDisposable BeginScope<TState>(TState state)
             {

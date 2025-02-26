@@ -13,13 +13,13 @@ namespace Microsoft.Azure.SignalR.AspNet;
 
 internal class ServiceConnectionManager : IServiceConnectionManager
 {
-    private readonly object _lock = new object();
+    private readonly object _lock = new();
 
     private readonly IReadOnlyList<string> _hubs;
 
     private readonly string _appName;
 
-    private readonly TaskCompletionSource<object> _managerInitializedTcs = new TaskCompletionSource<object>();
+    private readonly TaskCompletionSource<object> _managerInitializedTcs = new();
 
     private IReadOnlyDictionary<string, IServiceConnectionContainer> _hubConnections = null;
 

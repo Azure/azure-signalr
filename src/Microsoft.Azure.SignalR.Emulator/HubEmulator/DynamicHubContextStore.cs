@@ -18,11 +18,11 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             .DefineDynamicAssembly(new AssemblyName("temp"), AssemblyBuilderAccess.Run)
             .DefineDynamicModule("TempModule");
 
-        private readonly ConcurrentDictionary<string, Lazy<DynamicHubContext>> _hubContextCache = new ConcurrentDictionary<string, Lazy<DynamicHubContext>>(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, Lazy<DynamicHubContext>> _hubContextCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly string _hubNamespace = "TempNamespace";
         private readonly IServiceProvider _provider;
 
-        private readonly object _lock = new object();
+        private readonly object _lock = new();
 
         public DynamicHubContextStore(IServiceProvider provider)
         {

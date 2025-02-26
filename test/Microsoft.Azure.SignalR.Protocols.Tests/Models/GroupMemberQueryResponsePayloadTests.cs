@@ -17,8 +17,8 @@ public class GroupMemberQueryResponsePayloadTests
     {
         var groupMembers = new List<GroupMember>
         {
-            new GroupMember { ConnectionId = "conn1", UserId = "user1" },
-            new GroupMember { ConnectionId = "conn2", UserId = "user2" }
+            new() { ConnectionId = "conn1", UserId = "user1" },
+            new() { ConnectionId = "conn2", UserId = "user2" }
         };
         var payload = new GroupMemberQueryResponse
         {

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
             if (array?.Length > 0)
             {
                 var ret = new object[array.Length];
-                for (int i = 0; i < array.Length; i++)
+                for (var i = 0; i < array.Length; i++)
                 {
                     ret[i] = ConvertToObject(array[i]);
                 }
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
 
             var array = new object[jArray.Count];
 
-            for (int i = 0; i < jArray.Count; i++)
+            for (var i = 0; i < jArray.Count; i++)
             {
                 array[i] = ConvertToObject(jArray[i]);
             }

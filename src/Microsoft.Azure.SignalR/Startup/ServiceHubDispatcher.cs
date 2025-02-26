@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR
                 Endpoint = endpoint
             });
 
-            object dispatcher = _serviceProvider.GetRequiredService(type);
+            var dispatcher = _serviceProvider.GetRequiredService(type);
 
             startMethod.Invoke(dispatcher, new object[] { app, configureContext });
         }

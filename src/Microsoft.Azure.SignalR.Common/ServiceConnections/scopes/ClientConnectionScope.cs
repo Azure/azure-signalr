@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR
                 // The lifetime of the async local we're about to create can be much longer than some of the objects we store inside.
                 // Instances of IServiceConnection can be stopped and replaced over time and nobody should keep references to the old ones.
                 // So we keep them inside async local wrapped in weak references to avoid unnecessarily prolonging their lifetime.
-                ConcurrentDictionary<long, WeakReference<IServiceConnection>> dict = new ConcurrentDictionary<long, WeakReference<IServiceConnection>>();
+                var dict = new ConcurrentDictionary<long, WeakReference<IServiceConnection>>();
                 if (endpoint != null)
                 {
                     dict.TryAdd(endpoint.UniqueIndex, new WeakReference<IServiceConnection>(outboundConnection));

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly MethodInfo _createNegotiateEndpointCoreMethodInfo = typeof(NegotiateMatcherPolicy).GetMethod(nameof(CreateNegotiateEndpointCore), BindingFlags.NonPublic | BindingFlags.Static);
         
         // This caches the replacement endpoints for negotiate so they are not recomputed on every request
-        private readonly ConcurrentDictionary<Type, Endpoint> _negotiateEndpointCache = new ConcurrentDictionary<Type, Endpoint>();
+        private readonly ConcurrentDictionary<Type, Endpoint> _negotiateEndpointCache = new();
 
         public override int Order => 1;
 

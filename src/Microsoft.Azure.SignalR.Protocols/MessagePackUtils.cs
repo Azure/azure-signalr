@@ -162,7 +162,7 @@ internal static class MessagePackUtils
         if (arrayLength > 0)
         {
             var array = new string[arrayLength];
-            for (int i = 0; i < arrayLength; i++)
+            for (var i = 0; i < arrayLength; i++)
             {
                 var fieldName = $"{field}[{i}]";
                 array[i] = ReadStringNotNull(ref reader, fieldName);

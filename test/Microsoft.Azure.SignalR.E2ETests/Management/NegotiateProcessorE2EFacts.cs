@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.Management.E2ETests
         public async Task ColdStartNegotiateTest()
         {
             var hubName = "hub";
-            ServiceCollection services = new ServiceCollection();
+            var services = new ServiceCollection();
             services.AddSignalRServiceManager();
 
             //configure two fake service endpoints and one real endpoints.
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Management.E2ETests
 
             var realEndpoint = new ServiceEndpoint(TestConfiguration.Instance.ConnectionString).Endpoint;
             //reduce the effect of randomness
-            for (int i = 0; i < 5; i++)
+            for (var i = 0; i < 5; i++)
             {
                 var clientEndoint = await (hubContext as ServiceHubContext).NegotiateAsync();
                 var expectedUrl = ClientEndpointUtils.GetExpectedClientEndpoint(hubName, null, realEndpoint);

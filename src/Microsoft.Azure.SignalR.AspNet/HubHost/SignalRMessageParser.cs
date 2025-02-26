@@ -22,8 +22,8 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         private const char DotChar = '.';
 
-        private readonly HashSet<string> _hubNameWithDots = new HashSet<string>();
-        private readonly HashSet<string> _hubs = new HashSet<string>();
+        private readonly HashSet<string> _hubNameWithDots = new();
+        private readonly HashSet<string> _hubs = new();
 
         private readonly JsonSerializer _serializer;
         private readonly IMemoryPool _pool;
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 Messages = new List<ArraySegment<Message>>
                 {
-                    new ArraySegment<Message>(new[] {message})
+                    new(new[] {message})
                 },
                 TotalCount = 1
             };
