@@ -14,11 +14,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs;
 [HubName("ErrorDisconnect")]
 public class ErrorDisconnectHub : Hub
 {
-    public override Task OnConnected()
+    public override async Task OnConnected()
     {
+        await Task.Yield();
         Trace.TraceInformation($"OnConnected {Context.ConnectionId}");
         Clients.Group("note").echo("Connected");
-        return Task.CompletedTask;
+        Trace.TraceInformation($"Done Clients.Group(\"note\").echo(\"Connected\")");
     }
 
     public override Task OnReconnected()
