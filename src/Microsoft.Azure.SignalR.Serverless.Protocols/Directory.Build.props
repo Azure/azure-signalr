@@ -1,4 +1,0 @@
-<Project>
-    <!-- This file is used to exclude the impact of ..\Directory.Build.props -->
-    <Import Project="..\..\Directory.Build.props" />
-</Project>

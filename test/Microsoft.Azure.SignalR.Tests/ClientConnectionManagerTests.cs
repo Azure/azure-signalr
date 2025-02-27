@@ -4,6 +4,7 @@
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;

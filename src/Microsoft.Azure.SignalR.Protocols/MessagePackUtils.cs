@@ -6,7 +6,9 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Claims;
+
 using MessagePack;
+
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.Protocol;

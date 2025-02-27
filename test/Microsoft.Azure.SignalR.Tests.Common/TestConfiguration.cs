@@ -2,13 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO;
+
 using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
     public class TestConfiguration
     {
-        public static readonly TestConfiguration Instance = new TestConfiguration();
+        public static readonly TestConfiguration Instance = new();
 
         public IConfiguration Configuration { get; }
 

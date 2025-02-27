@@ -3,13 +3,14 @@
 
 using System;
 using System.Threading.Tasks;
+
 using Microsoft.AspNet.SignalR.Transports;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
 public class TestTransport : IServiceTransport
 {
-    private readonly TaskCompletionSource<object> _lifetimeTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object> _lifetimeTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public long MessageCount = 0;
     public Func<string, Task> Received { get; set; }
@@ -23,7 +24,10 @@ public class TestTransport : IServiceTransport
         return Task.FromResult<string>(null);
     }
 
-    public void OnDisconnected() => _lifetimeTcs.TrySetResult(null);
+    public void OnDisconnected()
+    {
+        _lifetimeTcs.TrySetResult(null);
+    }
 
     public void OnReceived(string value)
     {

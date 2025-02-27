@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
+
 using Microsoft.AspNet.SignalR;
 using Microsoft.Azure.SignalR.AspNet;
 using Microsoft.Azure.SignalR.Common;

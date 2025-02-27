@@ -5,6 +5,7 @@ using System;
 using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -57,8 +58,9 @@ public class RetryTestCase : XunitTestCase, IRetryableTestCase
                                               IMessageBus messageBus,
                                               object[] constructorArguments,
                                               ExceptionAggregator aggregator,
-                                              CancellationTokenSource cancellationTokenSource) =>
-        RetryTestCaseRunner.RunAsync(this, diagnosticMessageSink, messageBus, cancellationTokenSource,
+                                              CancellationTokenSource cancellationTokenSource)
+    {
+        return RetryTestCaseRunner.RunAsync(this, diagnosticMessageSink, messageBus, cancellationTokenSource,
             blockingMessageBus => new XunitTestCaseRunner(this,
                                                           DisplayName,
                                                           SkipReason,
@@ -68,6 +70,7 @@ public class RetryTestCase : XunitTestCase, IRetryableTestCase
                                                           aggregator,
                                                           cancellationTokenSource)
                 .RunAsync());
+    }
 
     public override void Serialize(IXunitSerializationInfo data)
     {

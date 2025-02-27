@@ -6,6 +6,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+
 using MessagePack;
 
 namespace Microsoft.Azure.SignalR.Serverless.Protocols;

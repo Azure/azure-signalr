@@ -34,15 +34,9 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             new object[] { "SendToGroup", GetGroupSize(DefaultSendGroupIndex), new Func<string, ITestClientSet, Task>(GroupTask) },
         };
 
-        private static IDictionary<int, string> ConnectionGroupMap
-        {
-            get
-            {
-                return (from i in Enumerable.Range(0, DefaultClientCount) select new { ind = i, groupName = GetGroupName(i) }).ToDictionary(t => t.ind, t => t.groupName);
-            }
-        }
+        private static IDictionary<int, string> ConnectionGroupMap => (from i in Enumerable.Range(0, DefaultClientCount) select new { ind = i, groupName = GetGroupName(i) }).ToDictionary(t => t.ind, t => t.groupName);
 
-        
+
 
         public ServiceE2EFactsBase(ITestServerFactory testServerFactory, ITestClientSetFactory testClientSetFactory, ITestOutputHelper output) : base(output)
         {
@@ -85,18 +79,22 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             await Task.Delay(DefaultDelayMilliseconds);
         }
 
-        private static string GetGroupName(int ind) => $"group_{ind % 2}";
+        private static string GetGroupName(int ind)
+        {
+            return $"group_{ind % 2}";
+        }
 
-        protected static int GetGroupSize(int ind) => (from entry in ConnectionGroupMap where GetGroupName(ind) == entry.Value select entry).Count();
+        protected static int GetGroupSize(int ind)
+        {
+            return (from entry in ConnectionGroupMap where GetGroupName(ind) == entry.Value select entry).Count();
+        }
 
         private static void Shuffle<T>(T[] array)
         {
             for (var i = array.Length - 1; i > 0; i--)
             {
                 var k = StaticRandom.Next(i + 1);
-                var value = array[k];
-                array[k] = array[i];
-                array[i] = value;
+                (array[i], array[k]) = (array[k], array[i]);
             }
         }
     }

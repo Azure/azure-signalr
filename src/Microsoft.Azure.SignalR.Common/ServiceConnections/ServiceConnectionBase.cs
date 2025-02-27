@@ -38,11 +38,11 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     private readonly HandshakeRequestMessage _handshakeRequest;
 
-    private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
+    private readonly SemaphoreSlim _writeLock = new(1, 1);
 
-    private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private readonly TaskCompletionSource<object> _serviceConnectionOfflineTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object> _serviceConnectionOfflineTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly ServiceConnectionType _connectionType;
 
@@ -52,7 +52,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     private readonly IClientConnectionManager _clientConnectionManager;
 
-    private readonly object _statusLock = new object();
+    private readonly object _statusLock = new();
 
     private readonly string _endpointName;
 

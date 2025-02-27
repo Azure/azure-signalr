@@ -11,6 +11,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -21,7 +22,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 using Newtonsoft.Json;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -315,7 +318,7 @@ public class DependencyInjectionExtensionFacts
     [MemberData(nameof(CustomizeHttpClientTimeoutTestData))]
     public async Task CustomizeHttpClientTimeoutTestAsync(string httpClientName, Func<ServiceHubContext, Task> testFunc)
     {
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
             using var serviceManager = new ServiceManagerBuilder()
                 .WithOptions(o =>

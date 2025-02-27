@@ -9,10 +9,13 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+
 #if NET5_0_OR_GREATER
 using System.Text.Json.Serialization;
+
 #endif
 using Azure.Core.Serialization;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;

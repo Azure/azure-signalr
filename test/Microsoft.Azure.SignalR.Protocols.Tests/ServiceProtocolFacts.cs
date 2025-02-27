@@ -9,6 +9,7 @@ using System.Security.Claims;
 using System.Text;
 
 using Microsoft.Extensions.Primitives;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Protocol.Tests

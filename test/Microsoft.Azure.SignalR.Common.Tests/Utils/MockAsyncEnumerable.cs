@@ -8,18 +8,28 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.SignalR.Common.Tests;
 public class MockAsyncEnumerable<T>(IEnumerable<T> values) : IAsyncEnumerable<T>
 {
-    public static IAsyncEnumerable<Tp> From<Tp>(params Tp[] items) =>
-        new MockAsyncEnumerable<Tp>(items);
+    public static IAsyncEnumerable<Tp> From<Tp>(params Tp[] items)
+    {
+        return new MockAsyncEnumerable<Tp>(items);
+    }
 
-    public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default) =>
-        new MockAsyncEnumerator<T>(values.GetEnumerator());
+    public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    {
+        return new MockAsyncEnumerator<T>(values.GetEnumerator());
+    }
 
     private sealed class MockAsyncEnumerator<Tp>(IEnumerator<Tp> enumerator) : IAsyncEnumerator<Tp>
     {
         public Tp Current => enumerator.Current;
 
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        public ValueTask DisposeAsync()
+        {
+            return ValueTask.CompletedTask;
+        }
 
-        public ValueTask<bool> MoveNextAsync() => ValueTask.FromResult(enumerator.MoveNext());
+        public ValueTask<bool> MoveNextAsync()
+        {
+            return ValueTask.FromResult(enumerator.MoveNext());
+        }
     }
 }

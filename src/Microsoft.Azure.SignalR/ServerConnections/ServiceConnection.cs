@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
@@ -27,18 +28,13 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     private const string ClientConnectionCountInServiceConnection = "#client";
 
-    // Fix issue: https://github.com/Azure/azure-signalr/issues/198
-    // .NET Framework has restriction about reserved string as the header name like "User-Agent"
-    private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
-
     private readonly IConnectionFactory _connectionFactory;
 
     private readonly IClientConnectionFactory _clientConnectionFactory;
 
     private readonly IClientConnectionManager _clientConnectionManager;
 
-    private readonly ConcurrentDictionary<string, string> _connectionIds =
-        new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string> _connectionIds = new(StringComparer.Ordinal);
 
     private readonly string[] _pingMessages =
         new string[4] { ClientConnectionCountInHub, null, ClientConnectionCountInServiceConnection, null };
@@ -108,16 +104,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
         return r;
     }
 
-    protected override Task<ConnectionContext> CreateConnection(string target = null)
-    {
-        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target, headers: CustomHeader);
-    }
-
-    protected override Task DisposeConnection(ConnectionContext connection)
-    {
-        return _connectionFactory.DisposeAsync(connection);
-    }
-
     public override async Task CloseClientConnections(CancellationToken token)
     {
         var tasks = new List<Task>();
@@ -141,6 +127,16 @@ internal partial class ServiceConnection : ServiceConnectionBase
         {
             await Task.WhenAll(tasks);
         }
+    }
+
+    protected override Task<ConnectionContext> CreateConnection(string target = null)
+    {
+        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target);
+    }
+
+    protected override Task DisposeConnection(ConnectionContext connection)
+    {
+        return _connectionFactory.DisposeAsync(connection);
     }
 
     protected override Task CleanupClientConnections(string fromInstanceId = null)
@@ -400,5 +396,4 @@ internal partial class ServiceConnection : ServiceConnectionBase
         }
         return Task.CompletedTask;
     }
-
 }

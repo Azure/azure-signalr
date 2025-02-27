@@ -12,8 +12,10 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Azure.Core;
 using Azure.Identity;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth;
@@ -270,7 +272,7 @@ public class MicrosoftEntraAccessKeyTests
         UpdateAtField?.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(6));
         Assert.False(key.Available);
         Assert.True(key.NeedRefresh);
-        
+
         var task1 = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
         var task2 = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
         await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await Task.WhenAll(task1, task2));
@@ -387,7 +389,10 @@ public class MicrosoftEntraAccessKeyTests
             yield return [new AzureSignalRRuntimeException(DefaultUri, new InvalidOperationException("inner-exception-message"), HttpStatusCode.NotFound, "http"), AzureSignalRRuntimeException.ErrorMessage];
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 
     private sealed class TestHttpClientFactory(HttpResponseMessage message) : IHttpClientFactory
@@ -416,7 +421,10 @@ public class MicrosoftEntraAccessKeyTests
             _content = content;
         }
 
-        internal static HttpContent From(string content) => new TextHttpContent(content);
+        internal static HttpContent From(string content)
+        {
+            return new TextHttpContent(content);
+        }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {

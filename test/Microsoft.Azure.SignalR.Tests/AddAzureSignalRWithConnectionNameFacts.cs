@@ -4,12 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -385,7 +387,7 @@ public class AddAzureSignalRWithConnectionNameFacts : VerifiableLoggedTest
                 Assert.Single(options.Endpoints);
                 Assert.Equal(secondaryValue, options.Endpoints[0].ConnectionString);
             }
-            
+
             // Endpoints from Endpoints and ConnectionString config are merged inside the EndpointManager
             var endpoints = serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.Keys.ToArray();
             if (secondaryValue == null)

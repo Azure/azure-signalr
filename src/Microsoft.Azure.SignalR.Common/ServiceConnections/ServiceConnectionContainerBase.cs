@@ -31,17 +31,17 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
     private const int MessageWriteMaxRetry = 3;
 
     // Give (interval * 3 + 1) delay when check value expire.
-    private static readonly long DefaultServersPingTimeoutTicks = Stopwatch.Frequency * ((long)Constants.Periods.DefaultServersPingInterval.TotalSeconds * 3 + 1);
+    private static readonly long DefaultServersPingTimeoutTicks = Stopwatch.Frequency * (((long)Constants.Periods.DefaultServersPingInterval.TotalSeconds * 3) + 1);
 
-    private static readonly Tuple<string, long> DefaultServersTagContext = new Tuple<string, long>(string.Empty, 0);
+    private static readonly Tuple<string, long> DefaultServersTagContext = new(string.Empty, 0);
 
     private readonly IReadOnlyDictionary<byte, StrongBox<WeakReference<IServiceConnection>>> _partitionedCache;
 
-    private readonly BackOffPolicy _backOffPolicy = new BackOffPolicy();
+    private readonly BackOffPolicy _backOffPolicy = new();
 
-    private readonly object _lock = new object();
+    private readonly object _lock = new();
 
-    private readonly object _statusLock = new object();
+    private readonly object _statusLock = new();
 
     private readonly AckHandler _ackHandler;
 
@@ -49,7 +49,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     private readonly CustomizedPingTimer _serversPing;
 
-    private readonly ServiceDiagnosticLogsContext _serviceDiagnosticLogsContext = new ServiceDiagnosticLogsContext { EnableMessageLog = false };
+    private readonly ServiceDiagnosticLogsContext _serviceDiagnosticLogsContext = new() { EnableMessageLog = false };
 
     private (int count, DateTime? last) _inactiveInfo;
 
@@ -256,7 +256,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         {
             throw new ArgumentException($"'{nameof(groupName)}' cannot be null or whitespace.", nameof(groupName));
         }
-        if (top != null && top <= 0)
+        if (top is not null and <= 0)
         {
             throw new ArgumentException($"'{nameof(top)}' must be greater than 0.", nameof(top));
         }
@@ -487,7 +487,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     private async Task StartStatusPing()
     {
-        await this.ConnectionInitializedTask.ConfigureAwait(false);
+        await ConnectionInitializedTask.ConfigureAwait(false);
         _statusPing.Start();
     }
 
@@ -607,7 +607,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
             return;
         }
 
-        Func<Task<bool>> tryNewConnection = async () =>
+        async Task<bool> tryNewConnection()
         {
             var connection = CreateServiceConnectionCore(InitialConnectionType);
             ReplaceFixedConnection(index, connection);
@@ -616,7 +616,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
             await connection.ConnectionInitializedTask;
 
             return connection.Status == ServiceConnectionStatus.Connected;
-        };
+        }
         await _backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
     }
 
@@ -669,7 +669,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     private IEnumerable<IServiceConnection> CreateFixedServiceConnection(int count)
     {
-        for (int i = 0; i < count; i++)
+        for (var i = 0; i < count; i++)
         {
             yield return CreateServiceConnectionCore(InitialConnectionType);
         }
@@ -704,7 +704,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
     protected internal sealed class CustomizedPingTimer : IDisposable
     {
-        private readonly object _lock = new object();
+        private readonly object _lock = new();
 
         private readonly long _defaultPingTicks;
 

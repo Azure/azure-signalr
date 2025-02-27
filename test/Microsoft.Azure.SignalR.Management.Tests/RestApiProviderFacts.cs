@@ -5,7 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Tests;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests;
@@ -18,12 +20,14 @@ public class RestApiProviderFacts
 
     private const string ConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0;";
 
-    private static readonly RestApiProvider RestApiProvider = new RestApiProvider(new ServiceEndpoint(ConnectionString));
+    private static readonly RestApiProvider RestApiProvider = new(new ServiceEndpoint(ConnectionString));
 
-    public static IEnumerable<object[]> GetTestData() =>
-        from context in GetContext()
-        from pair in GetTestDataByContext(context)
-        select pair;
+    public static IEnumerable<object[]> GetTestData()
+    {
+        return from context in GetContext()
+               from pair in GetTestDataByContext(context)
+               select pair;
+    }
 
     [Theory]
     [MemberData(nameof(GetTestData))]

@@ -9,8 +9,14 @@ namespace Microsoft.Azure.SignalR.Tests.Common
     {
         private readonly ReloadableMemoryProvider _provider;
 
-        public ReloadableMemorySource(ReloadableMemoryProvider provider) => _provider = provider;
+        public ReloadableMemorySource(ReloadableMemoryProvider provider)
+        {
+            _provider = provider;
+        }
 
-        public IConfigurationProvider Build(IConfigurationBuilder builder) => _provider;
+        public IConfigurationProvider Build(IConfigurationBuilder builder)
+        {
+            return _provider;
+        }
     }
 }

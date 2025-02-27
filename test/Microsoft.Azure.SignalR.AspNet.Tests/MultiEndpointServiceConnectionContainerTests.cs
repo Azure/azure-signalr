@@ -5,12 +5,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Owin;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -24,7 +26,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
     private const string Url2 = "https://url2";
 
-    private static readonly JoinGroupWithAckMessage DefaultGroupMessage = new JoinGroupWithAckMessage("a", "a");
+    private static readonly JoinGroupWithAckMessage DefaultGroupMessage = new("a", "a");
 
     private static readonly string ConnectionString1 = string.Format(ConnectionStringFormatter, Url1);
 
@@ -49,10 +51,10 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
         var router = new TestEndpointRouter(false);
         var container = new TestMultiEndpointServiceConnectionContainer("hub",
-            e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+            e => new TestBaseServiceConnectionContainer([
             new TestServiceConnection(),
             new TestServiceConnection(),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        ], e), sem, router, NullLoggerFactory.Instance);
 
         // Start the container for it to disconnect
         _ = container.StartAsync();
@@ -82,22 +84,22 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
         var router = new TestEndpointRouter(false);
         var container1 = new TestMultiEndpointServiceConnectionContainer("hub",
-            e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+            e => new TestBaseServiceConnectionContainer([
             new TestServiceConnection(ServiceConnectionStatus.Disconnected),
             new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        ], e), sem, router, NullLoggerFactory.Instance);
 
         var container2 = new TestMultiEndpointServiceConnectionContainer("hub",
-            e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+            e => new TestBaseServiceConnectionContainer([
             new TestServiceConnection(),
             new TestServiceConnection(),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        ], e), sem, router, NullLoggerFactory.Instance);
 
         var container3 = new TestMultiEndpointServiceConnectionContainer("hub-another",
-            e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+            e => new TestBaseServiceConnectionContainer([
             new TestServiceConnection(),
             new TestServiceConnection(),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        ], e), sem, router, NullLoggerFactory.Instance);
 
         // Start the container for it to disconnect
         _ = container1.StartAsync();
@@ -154,10 +156,10 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
         var router = new TestEndpointRouter(false);
         var container = new TestMultiEndpointServiceConnectionContainer("hub",
-            e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+            e => new TestBaseServiceConnectionContainer([
             new TestServiceConnection(),
             new TestServiceConnection(),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        ], e), sem, router, NullLoggerFactory.Instance);
 
         _ = container.StartAsync();
         await container.ConnectionInitializedTask.OrTimeout();
@@ -182,10 +184,10 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
         var router = new TestEndpointRouter(false);
         var container = new TestMultiEndpointServiceConnectionContainer("hub",
-            e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+            e => new TestBaseServiceConnectionContainer([
             new TestServiceConnection(),
             new TestServiceConnection(),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        ], e), sem, router, NullLoggerFactory.Instance);
 
         _ = container.StartAsync();
         await container.ConnectionInitializedTask.OrTimeout();
@@ -207,7 +209,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
     {
         Assert.Throws<AzureSignalRNoPrimaryEndpointException>(() => new TestServiceEndpointManager(new ServiceEndpoint[]
         {
-            new ServiceEndpoint(ConnectionString1, EndpointType.Secondary)
+            new(ConnectionString1, EndpointType.Secondary)
         }));
     }
 
@@ -217,7 +219,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
         var router = new DefaultEndpointRouter();
         var container = new TestMultiEndpointServiceConnectionContainer("hub",
-            e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+            e => new TestBaseServiceConnectionContainer([
             new TestServiceConnection(),
             new TestServiceConnection(),
             new TestServiceConnection(),
@@ -225,7 +227,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             new TestServiceConnection(),
             new TestServiceConnection(),
             new TestServiceConnection(),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        ], e), sem, router, NullLoggerFactory.Instance);
 
         _ = container.StartAsync();
         await container.ConnectionInitializedTask.OrTimeout();
@@ -239,7 +241,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
         var router = new TestEndpointRouter(false);
         var container = new TestMultiEndpointServiceConnectionContainer("hub",
-            e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+            e => new TestBaseServiceConnectionContainer([
             new TestServiceConnection(),
             new TestServiceConnection(),
             new TestServiceConnection(),
@@ -247,7 +249,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             new TestServiceConnection(),
             new TestServiceConnection(),
             new TestServiceConnection(),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        ], e), sem, router, NullLoggerFactory.Instance);
 
         _ = container.StartAsync();
         await container.ConnectionInitializedTask.OrTimeout();
@@ -261,7 +263,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
         var router = new TestEndpointRouter(true);
         var container = new TestMultiEndpointServiceConnectionContainer("hub",
-            e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+            e => new TestBaseServiceConnectionContainer([
             new TestServiceConnection(),
             new TestServiceConnection(),
             new TestServiceConnection(),
@@ -269,7 +271,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             new TestServiceConnection(),
             new TestServiceConnection(),
             new TestServiceConnection(),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        ], e), sem, router, NullLoggerFactory.Instance);
 
         _ = container.StartAsync();
         await container.ConnectionInitializedTask.OrTimeout();
@@ -288,7 +290,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             var sem = new TestServiceEndpointManager(endpoint);
             var router = new DefaultEndpointRouter();
             var container = new TestMultiEndpointServiceConnectionContainer("hub",
-                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                e => new TestBaseServiceConnectionContainer([
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -296,7 +298,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-            }, e), sem, router, loggerFactory);
+            ], e), sem, router, loggerFactory);
 
             _ = container.StartAsync();
             await container.ConnectionInitializedTask.OrTimeout();
@@ -317,7 +319,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             var logger = loggerFactory.CreateLogger<TestServiceConnection>();
             var router = new TestEndpointRouter(true);
             var container = new TestMultiEndpointServiceConnectionContainer("hub",
-                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                e => new TestBaseServiceConnectionContainer([
                     new TestServiceConnection(logger: logger),
                     new TestServiceConnection(logger: logger),
                     new TestServiceConnection(logger: logger),
@@ -325,7 +327,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                     new TestServiceConnection(logger: logger),
                     new TestServiceConnection(logger: logger),
                     new TestServiceConnection(logger: logger),
-                }, e, logger), sem, router, loggerFactory);
+                ], e, logger), sem, router, loggerFactory);
             _ = Task.Run(container.StartAsync);
             await container.ConnectionInitializedTask.OrTimeout();
 
@@ -346,7 +348,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
             var router = new TestEndpointRouter(false);
             var container = new TestMultiEndpointServiceConnectionContainer("hub",
-                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                e => new TestBaseServiceConnectionContainer([
                     new TestServiceConnection(),
                     new TestServiceConnection(),
                     new TestServiceConnection(),
@@ -354,7 +356,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                     new TestServiceConnection(),
                     new TestServiceConnection(),
                     new TestServiceConnection(),
-                }, e), sem, router, loggerFactory);
+                ], e), sem, router, loggerFactory);
 
             _ = container.StartAsync();
             await container.ConnectionInitializedTask.OrTimeout();
@@ -366,32 +368,30 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
     [Fact]
     public async Task TestContainerWithTwoEndpointWithAllOfflineSucceedsWithWarning()
     {
-        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
-        {
-            var sem = new TestServiceEndpointManager(
-            new ServiceEndpoint(ConnectionString1),
-            new ServiceEndpoint(ConnectionString2));
+        using var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning);
+        var sem = new TestServiceEndpointManager(
+        new ServiceEndpoint(ConnectionString1),
+        new ServiceEndpoint(ConnectionString2));
 
-            var router = new TestEndpointRouter(false);
-            var container = new TestMultiEndpointServiceConnectionContainer("hub",
-                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+        var router = new TestEndpointRouter(false);
+        var container = new TestMultiEndpointServiceConnectionContainer("hub",
+            e => new TestBaseServiceConnectionContainer([
+        new TestServiceConnection(ServiceConnectionStatus.Disconnected),
             new TestServiceConnection(ServiceConnectionStatus.Disconnected),
             new TestServiceConnection(ServiceConnectionStatus.Disconnected),
             new TestServiceConnection(ServiceConnectionStatus.Disconnected),
             new TestServiceConnection(ServiceConnectionStatus.Disconnected),
             new TestServiceConnection(ServiceConnectionStatus.Disconnected),
             new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-            new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-            }, e), sem, router, loggerFactory);
+        ], e), sem, router, loggerFactory);
 
-            _ = container.StartAsync();
-            await container.ConnectionInitializedTask.OrTimeout();
-            await container.WriteAsync(DefaultGroupMessage);
-            var warns = logCollector.ExpectsMany(s => s.Write.LogLevel == LogLevel.Warning).ToList();
+        _ = container.StartAsync();
+        await container.ConnectionInitializedTask.OrTimeout();
+        await container.WriteAsync(DefaultGroupMessage);
+        var warns = logCollector.ExpectsMany(s => s.Write.LogLevel == LogLevel.Warning).ToList();
 
-            Assert.Single(warns);
-            Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
-        }
+        Assert.Single(warns);
+        Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
     }
 
     [Fact]
@@ -408,7 +408,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             {
                 if (string.IsNullOrEmpty(e.Name))
                 {
-                    return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                    return new TestBaseServiceConnectionContainer([
                     new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -416,9 +416,9 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                     new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                    }, e);
+                    ], e);
                 }
-                return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                return new TestBaseServiceConnectionContainer([
                     new TestServiceConnection(),
                     new TestServiceConnection(),
                     new TestServiceConnection(),
@@ -426,7 +426,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                     new TestServiceConnection(),
                     new TestServiceConnection(),
                     new TestServiceConnection(),
-                    }, e);
+                    ], e);
             }, sem, router, loggerFactory);
 
             _ = container.StartAsync();
@@ -447,7 +447,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         {
             if (string.IsNullOrEmpty(e.Name))
             {
-                return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                return new TestBaseServiceConnectionContainer([
                     new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -455,9 +455,9 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                     new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                }, e);
+                ], e);
             }
-            return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+            return new TestBaseServiceConnectionContainer([
                     new TestServiceConnection(),
                     new TestServiceConnection(),
                     new TestServiceConnection(),
@@ -465,7 +465,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                     new TestServiceConnection(),
                     new TestServiceConnection(),
                     new TestServiceConnection(),
-                }, e);
+                ], e);
         }, sem, router, NullLoggerFactory.Instance);
 
         _ = container.StartAsync();

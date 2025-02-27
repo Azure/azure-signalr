@@ -2,9 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #if NET7_0_OR_GREATER
 using System;
-using System.Threading;
-using System.Diagnostics;
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Threading;
+
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 

@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR.Internal;
@@ -19,8 +20,10 @@ using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 using Xunit.Abstractions;
+
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -473,15 +476,14 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
     [Fact]
     public async Task TestContainerWithTwoEndpointWithAllOfflineSucceedsWithWarning()
     {
-        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
-        {
-            var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1),
-                new ServiceEndpoint(ConnectionString2));
+        using var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning);
+        var sem = new TestServiceEndpointManager(
+            new ServiceEndpoint(ConnectionString1),
+            new ServiceEndpoint(ConnectionString2));
 
-            var router = new TestEndpointRouter();
-            var container = new TestMultiEndpointServiceConnectionContainer("hub",
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+        var router = new TestEndpointRouter();
+        var container = new TestMultiEndpointServiceConnectionContainer("hub",
+            e => new TestServiceConnectionContainer(new List<IServiceConnection> {
             new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
             new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
             new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -489,30 +491,28 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
             new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
             new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
-            }, e), sem, router, loggerFactory);
+        }, e), sem, router, loggerFactory);
 
-            // All the connections started
-            _ = container.StartAsync();
-            await container.ConnectionInitializedTask;
-            await container.WriteAckableMessageAsync(DefaultGroupMessage);
-            var warns = logCollector.ExpectsMany(s => s.Write.LogLevel == LogLevel.Warning);
+        // All the connections started
+        _ = container.StartAsync();
+        await container.ConnectionInitializedTask;
+        await container.WriteAckableMessageAsync(DefaultGroupMessage);
+        var warns = logCollector.ExpectsMany(s => s.Write.LogLevel == LogLevel.Warning);
 
-            Assert.Single(warns);
-            Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
-        }
+        Assert.Single(warns);
+        Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
     }
 
     [Fact]
     public async Task TestContainerWithTwoOfflineEndpointWriteAckableMessageSucceedsWithWarning()
     {
-        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
-        {
-            var sem = new TestServiceEndpointManager(
-            new ServiceEndpoint(ConnectionString1),
-            new ServiceEndpoint(ConnectionString2));
+        using var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning);
+        var sem = new TestServiceEndpointManager(
+        new ServiceEndpoint(ConnectionString1),
+        new ServiceEndpoint(ConnectionString2));
 
-            var router = new TestEndpointRouter();
-            var container = new TestMultiEndpointServiceConnectionContainer("hub", e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+        var router = new TestEndpointRouter();
+        var container = new TestMultiEndpointServiceConnectionContainer("hub", e => new TestServiceConnectionContainer(new List<IServiceConnection> {
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -522,14 +522,13 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                 }, e), sem, router, loggerFactory);
 
-            _ = container.StartAsync();
-            await container.ConnectionInitializedTask;
+        _ = container.StartAsync();
+        await container.ConnectionInitializedTask;
 
-            await container.WriteAckableMessageAsync(DefaultGroupMessage);
-            var warns = logCollector.ExpectsMany(s => s.Write.LogLevel == LogLevel.Warning);
-            Assert.Single(warns);
-            Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
-        }
+        await container.WriteAckableMessageAsync(DefaultGroupMessage);
+        var warns = logCollector.ExpectsMany(s => s.Write.LogLevel == LogLevel.Warning);
+        Assert.Single(warns);
+        Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
     }
 
     [Fact]

@@ -1,12 +1,11 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
-
   <PropertyGroup>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>aspnetcore;azure;signalr</PackageTags>
-    <EnableApiCheck>false</EnableApiCheck>
-    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <IsProtocolLibrary Condition="'$(MSBuildProjectName)' == 'Microsoft.Azure.SignalR.Protocols' OR '$(MSBuildProjectName)' == 'Microsoft.Azure.SignalR.Serverless.Protocols'">true</IsProtocolLibrary>
+    <IsSignalRLibrary Condition="'$(OutputType)' != 'Exe' AND '$(IsProtocolLibrary)' == ''">true</IsSignalRLibrary>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudioEng.MicroBuild.Core" Version="$(MicrosoftVisualStudioEngMicroBuildCoreVersion)">
@@ -15,7 +14,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubPackageVersion)" PrivateAssets="All" />
   </ItemGroup>
-
   <ItemGroup>
       <!-- Adding the assemblies to sign -->
       <FilesToSign Include="$(OutDir)\$(RootNamespace)*.nupkg">
@@ -23,13 +21,13 @@
       </FilesToSign>
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(OutputType)' != 'Exe'">
+  <ItemGroup Condition=" '$(IsSignalRLibrary)' != '' ">
     <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionHttpVersion)" />
     <PackageReference Include="Azure.Identity" Version="$(AzureIdentityPackageVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' AND '$(OutputType)' != 'Exe'">
+  <ItemGroup Condition=" '$(IsSignalRLibrary)' != '' AND '$(TargetFramework)' == 'netstandard2.0' ">
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Connections.Abstractions" Version="$(MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Common" Version="$(MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion)" />
@@ -45,7 +43,7 @@
   </ItemGroup>
 
   <!-- For AspNet SignalR only-->
-  <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' == '.NETFramework' ">
+  <ItemGroup Condition=" '$(IsSignalRLibrary)' != '' AND '$(TargetFrameworkIdentifier)' == '.NETFramework' ">
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionNet8PackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Connections.Abstractions" Version="$(MicrosoftAspNetCoreConnectionsAbstractionsNet8PackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Common" Version="$(MicrosoftAspNetCoreHttpConnectionsCommonNet8PackageVersion)" />

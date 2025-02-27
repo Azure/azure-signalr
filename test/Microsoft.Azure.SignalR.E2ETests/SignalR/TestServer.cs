@@ -3,11 +3,13 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests

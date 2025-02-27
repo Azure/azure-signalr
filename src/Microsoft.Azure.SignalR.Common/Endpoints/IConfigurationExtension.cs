@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Azure.SignalR

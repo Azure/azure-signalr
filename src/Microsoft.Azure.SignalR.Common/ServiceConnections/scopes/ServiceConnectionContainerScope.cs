@@ -5,42 +5,41 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal class ServiceConnectionContainerScope : IDisposable
 {
-    internal class ServiceConnectionContainerScope : IDisposable
+    private static readonly AsyncLocal<ServiceDiagnosticLogsContext> AsyncLocal = new();
+
+    private readonly bool _needCleanup;
+
+    public static bool IsScopeEstablished => AsyncLocal.Value != null;
+
+    public static bool EnableMessageLog
     {
-        public static bool IsScopeEstablished => _asyncLocal.Value != null;
+        get => AsyncLocal.Value?.EnableMessageLog ?? default;
+    }
 
-        private static readonly AsyncLocal<ServiceDiagnosticLogsContext> _asyncLocal = new AsyncLocal<ServiceDiagnosticLogsContext>();
-
-        private readonly bool _needCleanup;
-
-        public ServiceConnectionContainerScope(ServiceDiagnosticLogsContext props)
+    public ServiceConnectionContainerScope(ServiceDiagnosticLogsContext props)
+    {
+        if (!IsScopeEstablished)
         {
-            if (!IsScopeEstablished)
-            {
-                _needCleanup = true;
-                _asyncLocal.Value = props;
-            }
-            else
-            {
-                Debug.Assert(!IsScopeEstablished, "Attempt to replace an already established scope");
-            }
+            _needCleanup = true;
+            AsyncLocal.Value = props;
         }
-
-        public static bool EnableMessageLog
+        else
         {
-            get => _asyncLocal.Value?.EnableMessageLog ?? default;
+            Debug.Assert(!IsScopeEstablished, "Attempt to replace an already established scope");
         }
+    }
 
-        public void Dispose()
+    public void Dispose()
+    {
+        if (_needCleanup)
         {
-            if (_needCleanup)
-            {
-                // shallow cleanup since we don't want any execution contexts in unawaited tasks 
-                // to suddenly change behavior once we're done with disposing
-                _asyncLocal.Value = null;
-            }
+            // shallow cleanup since we don't want any execution contexts in unawaited tasks
+            // to suddenly change behavior once we're done with disposing
+            AsyncLocal.Value = null;
         }
     }
 }

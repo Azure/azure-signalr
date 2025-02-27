@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
 
@@ -13,7 +14,7 @@ namespace Microsoft.Azure.SignalR.AspNet;
 
 internal class ClientConnectionContext : IClientConnection
 {
-    private readonly CancellationTokenSource _source = new CancellationTokenSource();
+    private readonly CancellationTokenSource _source = new();
 
     public string ConnectionId { get; }
 

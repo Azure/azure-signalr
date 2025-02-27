@@ -20,11 +20,11 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public IList<string> Users => _connectedUsers.Keys.ToList();
 
-        private readonly ConcurrentDictionary<string, bool> _connectedConnections = new ConcurrentDictionary<string, bool>();
-        private readonly ConcurrentDictionary<string, bool> _connectedUsers = new ConcurrentDictionary<string, bool>();
+        private readonly ConcurrentDictionary<string, bool> _connectedConnections = new();
+        private readonly ConcurrentDictionary<string, bool> _connectedUsers = new();
 
         private readonly ConcurrentDictionary<int, TaskCompletionSource<string>> _connectionCountTcs =
-            new ConcurrentDictionary<int, TaskCompletionSource<string>>();
+            new();
 
         private int _count;
 

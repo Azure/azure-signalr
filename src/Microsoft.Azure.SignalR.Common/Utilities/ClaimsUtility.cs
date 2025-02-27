@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
+
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 

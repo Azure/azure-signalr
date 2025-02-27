@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net.Http;
+
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR

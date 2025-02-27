@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 using Microsoft.Azure.SignalR.Protocol;
 
@@ -14,7 +15,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 /// </summary>
 internal class MockServiceConnection : IServiceConnection
 {
-    private static int Number = 0;
+    private static int Number;
 
     private readonly IMockService _mockService;
 

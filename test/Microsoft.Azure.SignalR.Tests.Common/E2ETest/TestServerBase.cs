@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public async Task<string> StartAsync(Dictionary<string, string> configuration = null)
         {
-            for (int retry = 0; retry < MaxRetry; retry++)
+            for (var retry = 0; retry < MaxRetry; retry++)
             {
                 try
                 {
