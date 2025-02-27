@@ -12,6 +12,7 @@ jobs:
     runs-on: windows-latest  # Use Windows for PowerShell script execution
     outputs:
       api_check_status: ${{ steps.api-check.outcome }}  # Capture step outcome
+    continue-on-error: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -56,7 +57,6 @@ jobs:
           git status
           git diff --exit-code api/
         shell: bash
-      continue-on-error: true
   check-label:
     runs-on: ubuntu-latest
     steps:
