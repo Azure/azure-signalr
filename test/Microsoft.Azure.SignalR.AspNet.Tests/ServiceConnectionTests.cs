@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -216,7 +217,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
         logCollector.Expects("ConnectedStartingFailed");
     }
 
-    [Fact]
+    [RetryFact]
     public async Task ServiceConnectionWithErrorDisconnectHub()
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))

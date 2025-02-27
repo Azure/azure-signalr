@@ -36,9 +36,7 @@ internal class ServiceMessageBus : MessageBus
 
     public override Task Publish(Message message)
     {
-        _logger.LogInformation($"Publishing message {message.Key}");
         var messages = _parser.GetMessages(message).ToList();
-        _logger.LogInformation($"Publishing messages.Count {messages.Count}");
         if (messages.Count == 0)
         {
             return Task.CompletedTask;
