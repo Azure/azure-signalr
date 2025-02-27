@@ -5,6 +5,7 @@ using System;
 using System.Globalization;
 
 using Microsoft.Azure.SignalR.Protocol;
+
 using ServicePingMessage = Microsoft.Azure.SignalR.Protocol.PingMessage;
 
 namespace Microsoft.Azure.SignalR;

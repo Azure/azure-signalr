@@ -9,8 +9,10 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Primitives;
+
 using static Microsoft.Azure.SignalR.Constants;
 
 namespace Microsoft.Azure.SignalR.Management

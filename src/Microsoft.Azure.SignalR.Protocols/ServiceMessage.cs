@@ -4,6 +4,7 @@
 
 using System;
 using System.Buffers;
+
 using MessagePack;
 
 namespace Microsoft.Azure.SignalR.Protocol

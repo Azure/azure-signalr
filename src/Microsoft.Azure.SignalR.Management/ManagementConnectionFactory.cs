@@ -2,10 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
-using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management;
@@ -13,33 +11,24 @@ namespace Microsoft.Azure.SignalR.Management;
 #nullable enable
 
 internal class ManagementConnectionFactory(IOptions<ServiceManagerOptions> context,
-                                           ConnectionFactory connectionFactory) : IConnectionFactory
+                                           IServerNameProvider serverNameProvider,
+                                           ILoggerFactory loggerFactory)
+    : ConnectionFactoryBase(serverNameProvider, loggerFactory)
 {
     private readonly string? _productInfo = context.Value.ProductInfo;
 
-    public Task<ConnectionContext> ConnectAsync(HubServiceEndpoint endpoint,
-                                                TransferFormat transferFormat,
-                                                string connectionId,
-                                                string target,
-                                                CancellationToken cancellationToken = default,
-                                                IDictionary<string, string>? headers = null)
+    internal override void SetInternalHeaders(IDictionary<string, string> headers)
     {
+        base.SetInternalHeaders(headers);
+
         if (_productInfo != null)
         {
-            if (headers == null)
-            {
-                headers = new Dictionary<string, string> { { Constants.AsrsUserAgent, _productInfo } };
-            }
-            else
-            {
-                headers[Constants.AsrsUserAgent] = _productInfo;
-            }
+            headers[Constants.AsrsUserAgent] = _productInfo;
         }
-        return connectionFactory.ConnectAsync(endpoint, transferFormat, connectionId, target, cancellationToken, headers);
     }
 
-    public Task DisposeAsync(ConnectionContext connection)
+    protected override void SetCustomHeaders(IDictionary<string, string> headers)
     {
-        return connectionFactory.DisposeAsync(connection);
+        return;
     }
 }

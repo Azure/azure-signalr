@@ -131,11 +131,13 @@ internal static class Constants
 
     public static class Headers
     {
-        public const string AsrsHeaderPrefix = "X-ASRS-";
+        public const string AsrsHeaderPrefix = "ASRS-";
 
-        public const string AsrsServerId = AsrsHeaderPrefix + "Server-Id";
+        public const string AsrsInternalHeaderPrefix = "X-ASRS-";
 
-        public const string AsrsMessageTracingId = AsrsHeaderPrefix + "Message-Tracing-Id";
+        public const string AsrsServerId = AsrsInternalHeaderPrefix + "Server-Id";
+
+        public const string AsrsMessageTracingId = AsrsInternalHeaderPrefix + "Message-Tracing-Id";
 
         public const string MicrosoftErrorCode = "x-ms-error-code";
     }

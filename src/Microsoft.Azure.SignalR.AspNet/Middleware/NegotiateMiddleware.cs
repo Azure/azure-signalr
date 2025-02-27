@@ -8,6 +8,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -15,6 +16,7 @@ using Microsoft.AspNet.SignalR.Json;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Owin;
+
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.AspNet;

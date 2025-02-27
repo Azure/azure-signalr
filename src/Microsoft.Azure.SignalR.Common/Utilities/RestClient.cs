@@ -9,7 +9,9 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Azure.Core.Serialization;
+
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Primitives;
 
