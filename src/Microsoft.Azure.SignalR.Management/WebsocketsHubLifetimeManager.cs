@@ -17,7 +17,7 @@ namespace Microsoft.Azure.SignalR.Management
     internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IServiceHubLifetimeManager<THub> where THub : Hub
     {
 #if NET7_0_OR_GREATER
-        private const int DefaultInvocationTimeoutSeconds = 3;
+        private const int DefaultInvocationTimeoutSeconds = 100;
 #endif
         private readonly IOptions<ServiceManagerOptions> _serviceManagerOptions;
         private readonly IClientInvocationManager _clientInvocationManager;
@@ -231,13 +231,6 @@ namespace Microsoft.Azure.SignalR.Management
 #if NET7_0_OR_GREATER
         public override async Task<T> InvokeConnectionAsync<T>(string connectionId, string methodName, object?[] args, CancellationToken cancellationToken = default)
         {
-            // cancellationToken is required to be cancellable.
-            if (!cancellationToken.CanBeCanceled)
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(DefaultInvocationTimeoutSeconds));
-                cancellationToken = cts.Token;
-            }
-
             if (IsInvalidArgument(connectionId))
             {
                 throw new ArgumentNullException(nameof(connectionId));
@@ -248,10 +241,19 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentNullException(nameof(methodName));
             }
 
+            // cancellationToken is required to be cancellable.
+            var cancellationTokenInUse = cancellationToken;
+
+            if (!cancellationToken.CanBeCanceled)
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(DefaultInvocationTimeoutSeconds));
+                cancellationTokenInUse = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken).Token;
+            }
+
             var invocationId = _clientInvocationManager.Caller.GenerateInvocationId(connectionId);
             var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, invocationId)));
             await WriteAsync(message);
-            var task = _clientInvocationManager.Caller.AddInvocation<T>(_hub, connectionId, invocationId, cancellationToken);
+            var task = _clientInvocationManager.Caller.AddInvocation<T>(_hub, connectionId, invocationId, cancellationTokenInUse);
 
             // Exception handling follows https://source.dot.net/#Microsoft.AspNetCore.SignalR.Core/DefaultHubLifetimeManager.cs,349
             try
@@ -267,23 +269,8 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override Task SetConnectionResultAsync(string connectionId, CompletionMessage result)
         {
-            if (IsInvalidArgument(connectionId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
-            }
-
-            if (result == null || string.IsNullOrEmpty(result.InvocationId))
-            {
-                throw new ArgumentException("Invalid result or invocationId", nameof(result));
-            }
-
-            // `TryCompletionResult` returns false when the corresponding invocation is not existing.
-            if (!_clientInvocationManager.Caller.TryCompleteResult(connectionId, result))
-            {
-                Logger.LogInformation("Failed to set result for connection {connectionId} with invocationId {invocationId}", connectionId, result.InvocationId);
-            }
-
-            // Since this method doesn't perform any asynchronous work, return a completed task.
+            // This method won't get trigger because we will not be sending CompletionMessage back from serverless mode.
+            // this is to honor the interface
             return Task.CompletedTask;
         }
 #endif
