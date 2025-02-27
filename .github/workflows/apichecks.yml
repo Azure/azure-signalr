@@ -10,9 +10,6 @@ jobs:
   api-check:
     name: API Breaking Change Check
     runs-on: windows-latest  # Use Windows for PowerShell script execution
-    outputs:
-      api_check_status: ${{ steps.api-check.outcome }}  # Capture step outcome
-    continue-on-error: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,7 +34,6 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'  # Adjust as needed
-
       - name: Restore dependencies
         run: dotnet restore
 
@@ -57,11 +53,11 @@ jobs:
           git status
           git diff --exit-code api/
         shell: bash
-  check-label:
-    runs-on: ubuntu-latest
-    steps:
+        continue-on-error: true
+      # Add check-label step after api-check
       - name: Check for special label
         id: check_label
+        if: failure()  # Run only if the api-check step failed
         run: |
           LABELS="${{ toJson(github.event.pull_request.labels) }}"
           echo "PR Labels: $LABELS"
@@ -72,15 +68,9 @@ jobs:
           else
             echo "api-breaking-change-signoff label not found ❌"
             echo "HAS_SPECIAL_LABEL=false" >> $GITHUB_ENV
-          fi
-
-  finalize-status:
-    needs: [api-check, check-label]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Determine merge eligibility
+      - name: Determine breaking change allowed
         run: |
-          if [[ "${{ needs.ci-check.outputs.api_check_status }}" == "success" ]]; then
+          if [[ "${{ steps.api-check.outcome }}" == "success" ]]; then
             echo "API check passed, no breaking changes detected ✅"
             exit 0
           elif [[ "${{ env.HAS_SPECIAL_LABEL }}" == "true" ]]; then
