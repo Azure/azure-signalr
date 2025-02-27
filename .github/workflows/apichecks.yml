@@ -1,4 +1,4 @@
-name: API Compatibility Check
+name: API Breaking Change Check
 
 on:
   pull_request:
@@ -8,9 +8,8 @@ on:
 
 jobs:
   api-check:
-    name: API Compatibility Check
+    name: API Breaking Change Check
     runs-on: windows-latest  # Use Windows for PowerShell script execution
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -55,3 +54,34 @@ jobs:
           git status
           git diff --exit-code api/
         shell: bash
+    continue-on-error: true
+  check-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for special label
+        id: check_label
+        run: |
+          LABELS="${{ toJson(github.event.pull_request.labels) }}"
+          echo "PR Labels: $LABELS"
+          
+          if echo "$LABELS" | grep -q '"api-breaking-change-signoff"'; then
+            echo "Special label found ✅"
+            echo "HAS_SPECIAL_LABEL=true" >> $GITHUB_ENV
+          else
+            echo "No special label found ❌"
+            echo "HAS_SPECIAL_LABEL=false" >> $GITHUB_ENV
+          fi
+
+  finalize-status:
+    needs: [api-check, check-label]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine merge eligibility
+        run: |
+          if [[ "${{ needs.api-check.result }}" == "success" ]] || [[ "${{ env.HAS_SPECIAL_LABEL }}" == "true" ]]; then
+            echo "Merge allowed ✅"
+            exit 0
+          else
+            echo "Merge conditions not met ❌"
+            exit 1
+          fi
