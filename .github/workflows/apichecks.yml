@@ -10,6 +10,8 @@ jobs:
   api-check:
     name: API Breaking Change Check
     runs-on: windows-latest  # Use Windows for PowerShell script execution
+    outputs:
+      api_check_status: ${{ steps.api-check.outcome }}  # Capture step outcome
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -48,13 +50,13 @@ jobs:
         with:
           name: export-api-log
           path: ./export-api.log
-          
       - name: Check for API Changes
+        id: api-check
         run: |
           git status
           git diff --exit-code api/
         shell: bash
-    continue-on-error: true
+        continue-on-error: true
   check-label:
     runs-on: ubuntu-latest
     steps:
@@ -78,7 +80,7 @@ jobs:
     steps:
       - name: Determine merge eligibility
         run: |
-          if [[ "${{ needs.api-check.result }}" == "success" ]] || [[ "${{ env.HAS_SPECIAL_LABEL }}" == "true" ]]; then
+          if [[ "${{ needs.api-check.outputs.api_check_status }}" == "success" ]] || [[ "${{ env.HAS_SPECIAL_LABEL }}" == "true" ]]; then
             echo "Merge allowed ✅"
             exit 0
           else
