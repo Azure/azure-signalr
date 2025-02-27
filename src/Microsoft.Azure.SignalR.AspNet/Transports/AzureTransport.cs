@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -19,6 +19,8 @@ namespace Microsoft.Azure.SignalR.AspNet;
 internal class AzureTransport : IServiceTransport
 {
     private readonly TaskCompletionSource<object> _lifetimeTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    private readonly TaskCompletionSource<object> _disconnectTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly TaskCompletionSource<object> _connectedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -45,6 +47,8 @@ internal class AzureTransport : IServiceTransport
     public string ConnectionId { get; set; }
 
     public Task WaitForConnected => _connectedTcs.Task;
+
+    public Task LifeTimeTask => _lifetimeTcs.Task;
 
     public AzureTransport(HostContext context, IDependencyResolver resolver)
     {
@@ -90,7 +94,7 @@ internal class AzureTransport : IServiceTransport
         }
     }
 
-    public void OnDisconnected() => _lifetimeTcs.TrySetResult(null);
+    public void OnDisconnected() => _disconnectTcs.TrySetResult(null);
 
     private ConnectionDataMessage CreateConnectionDataMessage(string connectionId,
                                                                       object value,
@@ -112,35 +116,49 @@ internal class AzureTransport : IServiceTransport
     {
         try
         {
-            var connected = Connected;
-            if (connected != null)
-            {
-                await connected();
-            }
 
-            _connectedTcs.TrySetResult(null);
-        }
-        catch (Exception e)
-        {
-            Log.ErrorExecuteConnected(_logger, ConnectionId, e);
-            _connectedTcs.TrySetException(e);
-            throw;
-        }
-
-        await _lifetimeTcs.Task;
-
-        var disconnected = Disconnected;
-        if (disconnected != null)
-        {
             try
             {
-                await disconnected(true);
+                var connected = Connected;
+                if (connected != null)
+                {
+                    Log.ExecutingConnected(_logger, ConnectionId);
+                    await connected();
+                    Log.ExecuteConnected(_logger, ConnectionId);
+                }
+
+                _connectedTcs.TrySetResult(null);
             }
             catch (Exception e)
             {
-                Log.ErrorExecuteDisconnected(_logger, ConnectionId, e);
+                Log.ErrorExecuteConnected(_logger, ConnectionId, e);
+                _connectedTcs.TrySetException(e);
                 throw;
             }
+
+            await _disconnectTcs.Task;
+
+            var disconnected = Disconnected;
+            if (disconnected != null)
+            {
+                try
+                {
+                    Log.ExecutingDisconnected(_logger, ConnectionId);
+                    await disconnected(true);
+                    Log.ExecuteDisconnected(_logger, ConnectionId);
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorExecuteDisconnected(_logger, ConnectionId, e);
+                    throw;
+                }
+            }
+
+            _lifetimeTcs.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+            _lifetimeTcs.TrySetException(e);
         }
     }
 
@@ -153,6 +171,18 @@ internal class AzureTransport : IServiceTransport
         private static readonly Action<ILogger, string, Exception> _errorExecuteDisconnected =
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, "ErrorExecuteDisconnected"), "Error executing OnDisconnected in Hub for connection {TransportConnectionId}.");
 
+        private static readonly Action<ILogger, string, Exception> _executingConnected =
+            LoggerMessage.Define<string>(LogLevel.Debug, new EventId(3, "ExecutingConnected"), "Executing OnConnected in Hub for connection {TransportConnectionId}.");
+
+        private static readonly Action<ILogger, string, Exception> _executeConnected =
+            LoggerMessage.Define<string>(LogLevel.Debug, new EventId(4, "ExecuteConnected"), "Executed OnConnected in Hub for connection {TransportConnectionId}.");
+
+        private static readonly Action<ILogger, string, Exception> _executingDisconnected =
+            LoggerMessage.Define<string>(LogLevel.Debug, new EventId(5, "ExecutingDisconnected"), "Executing OnDisconnected in Hub for connection {TransportConnectionId}.");
+
+        private static readonly Action<ILogger, string, Exception> _executeDisconnected =
+            LoggerMessage.Define<string>(LogLevel.Debug, new EventId(6, "ExecuteDisconnected"), "Executed OnDisconnected in Hub for connection {TransportConnectionId}.");
+
         public static void ErrorExecuteConnected(ILogger logger, string connectionId, Exception exception)
         {
             _errorExecuteConnected(logger, connectionId, exception);
@@ -161,6 +191,25 @@ internal class AzureTransport : IServiceTransport
         public static void ErrorExecuteDisconnected(ILogger logger, string connectionId, Exception exception)
         {
             _errorExecuteDisconnected(logger, connectionId, exception);
+        }
+
+        public static void ExecuteConnected(ILogger logger, string connectionId)
+        {
+            _executeConnected(logger, connectionId, null);
+        }
+
+        public static void ExecuteDisconnected(ILogger logger, string connectionId)
+        {
+            _executeDisconnected(logger, connectionId, null);
+        }
+        public static void ExecutingConnected(ILogger logger, string connectionId)
+        {
+            _executingConnected(logger, connectionId, null);
+        }
+
+        public static void ExecutingDisconnected(ILogger logger, string connectionId)
+        {
+            _executingDisconnected(logger, connectionId, null);
         }
     }
 }

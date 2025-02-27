@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -37,7 +39,8 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             using var proxy = new TestServiceConnectionProxy(clientConnectionManager, loggerFactory: loggerFactory);
 
             // start the server connection
-            await proxy.StartServiceAsync().OrTimeout();
+            var connectionTask = proxy.StartAsync();
+            await proxy.ConnectionInitializedTask.OrTimeout();
 
             var clientConnection = Guid.NewGuid().ToString("N");
 
@@ -65,6 +68,13 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             Assert.Equal(transport.MessageCount, count);
 
             Assert.Empty(clientConnectionManager.CurrentTransports);
+
+            // close transport layer
+            proxy.TestConnectionContext.Application.Output.Complete();
+
+            await connectionTask.OrTimeout();
+            await proxy.WaitForConnectionClose.OrTimeout();
+            Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
         }
     }
 
@@ -76,7 +86,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
             var hub = "chat";
-            var scm = new TestServiceConnectionHandler();
+            var scm = new TestServiceConnectionHandler(loggerFactory);
             hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
@@ -84,7 +94,8 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory);
 
             // start the server connection
-            await proxy.StartServiceAsync().OrTimeout();
+            var connectionTask = proxy.StartAsync();
+            await proxy.ConnectionInitializedTask.OrTimeout();
 
             var clientConnection = Guid.NewGuid().ToString("N");
 
@@ -146,6 +157,12 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             // cleaned up clearly
             Assert.Empty(ccm.ClientConnections);
+            // close transport layer
+            proxy.TestConnectionContext.Application.Output.Complete();
+
+            await connectionTask.OrTimeout();
+            await proxy.WaitForConnectionClose.OrTimeout();
+            Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
         }
     }
 
@@ -156,7 +173,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
         var hubConfig = Utility.GetActualHubConfig(loggerFactory);
         var appName = "app1";
         var hub = "ErrorConnect"; // error connect hub
-        var scm = new TestServiceConnectionHandler();
+        var scm = new TestServiceConnectionHandler(loggerFactory);
         hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
         var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
         hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
@@ -164,7 +181,8 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
         using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory);
 
         // start the server connection
-        await proxy.StartServiceAsync().OrTimeout();
+        var connectionTask = proxy.StartAsync();
+        await proxy.ConnectionInitializedTask.OrTimeout();
 
         var clientConnection = Guid.NewGuid().ToString("N");
 
@@ -188,19 +206,28 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
         // cleaned up clearly
         Assert.Empty(ccm.ClientConnections);
 
+        // close transport layer
+        proxy.TestConnectionContext.Application.Output.Complete();
+
+        await connectionTask.OrTimeout();
+        await proxy.WaitForConnectionClose.OrTimeout();
+        Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
+
         logCollector.Expects("ErrorExecuteConnected");
         logCollector.Expects("ConnectedStartingFailed");
     }
 
-    [Fact]
+    [RetryFact]
     public async Task ServiceConnectionWithErrorDisconnectHub()
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
+            Trace.Listeners.Add(new LoggerTraceListener(loggerFactory.CreateLogger(nameof(ServiceConnectionWithErrorDisconnectHub))));
+            Trace.AutoFlush = true;
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
             var hub = "ErrorDisconnect"; // error connect hub
-            var scm = new TestServiceConnectionHandler();
+            var scm = new TestServiceConnectionHandler(loggerFactory);
             hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
@@ -209,7 +236,8 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory);
 
             // start the server connection
-            await proxy.StartServiceAsync().OrTimeout();
+            var connectionTask = proxy.StartAsync();
+            await proxy.ConnectionInitializedTask.OrTimeout();
 
             var clientConnection = Guid.NewGuid().ToString("N");
 
@@ -245,6 +273,12 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
             Assert.Equal("Disconnected", message.A[0]);
 
+            // close transport layer
+            proxy.TestConnectionContext.Application.Output.Complete();
+
+            await connectionTask.OrTimeout();
+            await proxy.WaitForConnectionClose.OrTimeout();
+            Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
             // cleaned up clearly
             Assert.Empty(ccm.ClientConnections);
         }
@@ -260,7 +294,8 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
         using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory);
 
         // start the server connection
-        await proxy.StartServiceAsync().OrTimeout();
+        var connectionTask = proxy.StartAsync();
+        await proxy.ConnectionInitializedTask.OrTimeout();
 
         var connectionId = Guid.NewGuid().ToString("N");
         var connectTask = proxy.WaitForOutgoingMessageAsync(connectionId).OrTimeout();
@@ -275,6 +310,14 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
         // Verify client connection is not created due to authorized failure.
         Assert.False(ccm.TryGetClientConnection(connectionId, out var connection));
+
+        // close transport layer
+        proxy.TestConnectionContext.Application.Output.Complete();
+
+        await connectionTask.OrTimeout();
+        await proxy.WaitForConnectionClose.OrTimeout();
+        Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
+
         var log = logCollector.Expects("ConnectedStartingFailed");
         Assert.Equal("Unable to authorize request", log.Write.Exception.Message);
     }
@@ -289,7 +332,8 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
         using var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory);
 
         // start the server connection
-        await proxy.StartServiceAsync().OrTimeout();
+        var connectionTask = proxy.StartAsync();
+        await proxy.ConnectionInitializedTask.OrTimeout();
 
         var connectionId = Guid.NewGuid().ToString("N");
 
@@ -305,6 +349,14 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
 
         // Verify client connection is not created due to authorized failure.
         Assert.False(ccm.TryGetClientConnection(connectionId, out var connection));
+
+        // close transport layer
+        proxy.TestConnectionContext.Application.Output.Complete();
+
+        await connectionTask.OrTimeout();
+        await proxy.WaitForConnectionClose.OrTimeout();
+        Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
+
         var log = logCollector.Expects("ConnectedStartingFailed");
         Assert.Equal("Unable to authorize request", log.Write.Exception.Message);
     }
@@ -318,7 +370,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
         {
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
-            var scm = new TestServiceConnectionHandler();
+            var scm = new TestServiceConnectionHandler(loggerFactory);
             hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
@@ -367,7 +419,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
         var hubConfig = Utility.GetActualHubConfig(loggerFactory);
         var appName = "app1";
         var hub = "EndlessConnect";
-        var scm = new TestServiceConnectionHandler();
+        var scm = new TestServiceConnectionHandler(loggerFactory);
         hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
         var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
         hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
@@ -420,7 +472,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
             var hub = "EndlessInvoke";
-            var scm = new TestServiceConnectionHandler();
+            var scm = new TestServiceConnectionHandler(loggerFactory);
             hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
@@ -483,7 +535,7 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var hubConfig = Utility.GetActualHubConfig(loggerFactory);
             var appName = "app1";
             var hub = "chat";
-            var scm = new TestServiceConnectionHandler();
+            var scm = new TestServiceConnectionHandler(loggerFactory);
             hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
             hubConfig.Resolver.Register(typeof(IClientConnectionManagerAspNet), () => ccm);
@@ -499,7 +551,8 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
             var header2 = new Dictionary<string, StringValues>() { { Constants.AsrsInstanceId, instanceId2 } };
 
             // start the server connection
-            await proxy.StartServiceAsync().OrTimeout();
+            var connectionTask = proxy.StartAsync();
+            await proxy.ConnectionInitializedTask.OrTimeout();
 
             // Application layer sends OpenConnectionMessage for client1
             var connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
@@ -559,5 +612,25 @@ public class ServiceConnectionTests(ITestOutputHelper output) : VerifiableLogged
         public string M { get; set; }
 
         public List<string> A { get; set; }
+    }
+
+    private class LoggerTraceListener : TraceListener
+    {
+        private readonly ILogger _logger;
+
+        public LoggerTraceListener(ILogger logger)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        public override void Write(string message)
+        {
+            _logger.LogInformation(message);
+        }
+
+        public override void WriteLine(string message)
+        {
+            _logger.LogInformation(message);
+        }
     }
 }

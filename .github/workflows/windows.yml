@@ -46,7 +46,8 @@ jobs:
       run:  "dotnet build AzureSignalR.sln"
       if: steps.filter.outputs.src == 'true'
     - name: Test
-      run: dotnet test --no-build --logger trx --results-directory "TestResults-ubuntu-${{ matrix.dotnet-version }}"
+      # exclude E2Etest until creating test resources are supported
+      run: dotnet test --no-build --filter "FullyQualifiedName!~Microsoft.Azure.SignalR.E2ETests&FullyQualifiedName!~Microsoft.Azure.SignalR.AspNet.E2ETests" --logger trx --results-directory "TestResults-ubuntu-${{ matrix.dotnet-version }}"
     - name: Upload dotnet test results
       uses: actions/upload-artifact@v4
       with:
