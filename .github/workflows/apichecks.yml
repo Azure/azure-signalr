@@ -68,7 +68,8 @@ jobs:
           else
             echo "api-breaking-change-signoff label not found ❌"
             echo "HAS_SPECIAL_LABEL=false" >> $GITHUB_ENV
-      - name: Determine breaking change allowed
+        shell: bash
+      - name: Determine merge eligibility
         run: |
           if [[ "${{ steps.api-check.outcome }}" == "success" ]]; then
             echo "API check passed, no breaking changes detected ✅"
@@ -80,3 +81,4 @@ jobs:
             echo "API breaking change detected, please ask for api-breaking-change-signoff"
             exit 1
           fi
+        shell: bash
