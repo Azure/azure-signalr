@@ -12,6 +12,8 @@
   <ItemGroup>
     <!-- Directly reference Microsoft.Owin 4.x for security fix -->
     <PackageReference Include="Microsoft.Owin" Version="$(MicrosoftOwinPackageVersion)" />
+    <!-- Directly reference jQuery 3.x for security fix -->
+    <PackageReference Include="jQuery" Version="$(jQueryPackageVersion)" />
     <PackageReference Include="Microsoft.AspNet.SignalR" Version="$(MicrosoftAspNetSignalRPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging.EventSource" Version="$(MicrosoftExtensionsLoggingEventSourcePackageVersion)" />
   </ItemGroup>

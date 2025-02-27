@@ -72,12 +72,6 @@ public class ServiceOptions : IServiceEndpointOptions
     public string? ConnectionString { get; set; }
 
     /// <summary>
-    /// Gets or sets the func to generate custom headers.
-    /// The headers key should not startwith "asrs-" or "x-asrs", as those are Azure SignalR Service SDK preserved headers and cannot be overwritten.
-    /// </summary>
-    public Action<IDictionary<string, string>>? CustomHeaderProvider { get; set; }
-
-    /// <summary>
     /// Gets or sets the func to set diagnostic client filter from <see cref="HttpContext" />.
     /// The clients will be regarded as diagnostic client only if the function returns true.
     /// </summary>

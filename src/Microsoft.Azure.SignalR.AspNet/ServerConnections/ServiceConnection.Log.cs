@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -21,8 +21,11 @@ internal partial class ServiceConnection
         private static readonly Action<ILogger, string, string, ulong?, Exception> _failToWriteMessageToApplication =
             LoggerMessage.Define<string, string, ulong?>(LogLevel.Error, new EventId(3, "FailToWriteMessageToApplication"), "Failed to write {messageType} message {tracingId} to {TransportConnectionId}.");
 
+        private static readonly Action<ILogger, string, Exception> _connectedStarted =
+            LoggerMessage.Define<string>(LogLevel.Debug, new EventId(4, "ConnectedStarted"), "Connection {TransportConnectionId} started.");
+
         private static readonly Action<ILogger, string, Exception> _connectedStarting =
-            LoggerMessage.Define<string>(LogLevel.Debug, new EventId(4, "ConnectedStarting"), "Connection {TransportConnectionId} started.");
+            LoggerMessage.Define<string>(LogLevel.Debug, new EventId(14, "ConnectedStarting"), "Connection {TransportConnectionId} starting.");
 
         private static readonly Action<ILogger, string, Exception> _connectedStartingFailed =
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(5, "ConnectedStartingFailed"), "Connection {TransportConnectionId} failed to start.");
@@ -68,6 +71,11 @@ internal partial class ServiceConnection
         public static void ConnectedStarting(ILogger logger, string connectionId)
         {
             _connectedStarting(logger, connectionId, null);
+        }
+
+        public static void ConnectedStarted(ILogger logger, string connectionId)
+        {
+            _connectedStarted(logger, connectionId, null);
         }
 
         public static void ConnectedStartingFailed(ILogger logger, string connectionId, Exception e)

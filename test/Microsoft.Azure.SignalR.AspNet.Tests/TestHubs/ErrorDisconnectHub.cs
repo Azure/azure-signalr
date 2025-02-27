@@ -1,8 +1,9 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 using Microsoft.AspNet.SignalR;
@@ -13,10 +14,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs;
 [HubName("ErrorDisconnect")]
 public class ErrorDisconnectHub : Hub
 {
-    public override Task OnConnected()
+    public override async Task OnConnected()
     {
+        await Task.Yield();
+        Trace.TraceInformation($"OnConnected {Context.ConnectionId}");
         Clients.Group("note").echo("Connected");
-        return Task.CompletedTask;
+        Trace.TraceInformation($"Done Clients.Group(\"note\").echo(\"Connected\")");
     }
 
     public override Task OnReconnected()

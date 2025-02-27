@@ -15,8 +15,10 @@ internal class ConnectionFactory : ConnectionFactoryBase
     {
     }
 
-    protected override void SetCustomHeaders(IDictionary<string, string> headers)
+    protected override void SetInternalUserAgent(IDictionary<string, string> headers)
     {
-        return;
+        // Fix issue: https://github.com/Azure/azure-signalr/issues/198
+        // .NET Framework has restriction about reserved string as the header name like "User-Agent"
+        headers[Constants.AsrsUserAgent] = ProductInfo.GetProductInfo();
     }
 }
