@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure.MessageOrderTests
 {
-    internal class HotReloadMessageOrderTestParams : IHotReloadIntegrationTestStartupParameters
+    internal sealed class HotReloadMessageOrderTestParams : IHotReloadIntegrationTestStartupParameters
     {
         public static int ConnectionCount = 1;
         public static GracefulShutdownMode ShutdownMode = GracefulShutdownMode.WaitForClientsClose;

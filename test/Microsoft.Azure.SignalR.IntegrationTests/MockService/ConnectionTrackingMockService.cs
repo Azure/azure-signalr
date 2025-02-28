@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     /// - routing of messages to clients
     /// - group management
     /// </summary>
-    internal class ConnectionTrackingMockService : IMockService
+    internal sealed class ConnectionTrackingMockService : IMockService
     {
         private readonly object _addRemoveLock = new();
         private ConcurrentBag<MockServiceSideConnection> _serviceSideConnections = new ConcurrentBag<MockServiceSideConnection>();
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
             }
         }
 
-        internal class DefaultMockInvocationBinder : IInvocationBinder
+        internal sealed class DefaultMockInvocationBinder : IInvocationBinder
         {
             public IReadOnlyList<Type> GetParameterTypes(string methodName)
             {

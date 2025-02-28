@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     /// Provides start / stop / connect new client functionality 
     /// Receives and stores messages received from SDK side
     /// </summary>
-    internal class MockServiceSideConnection : IAsyncDisposable
+    internal sealed class MockServiceSideConnection : IAsyncDisposable
     {
         private static readonly ServiceProtocol ServicePro = new ServiceProtocol();
         private static readonly JsonHubProtocol SignalRPro = new JsonHubProtocol();

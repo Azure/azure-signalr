@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 
-internal class MockServiceHubDispatcher<THub>(
+internal sealed class MockServiceHubDispatcher<THub>(
     IMockService mockService,
     IServiceProtocol serviceProtocol,
     IHubContext<THub> context,

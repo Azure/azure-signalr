@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -16,7 +16,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 
-internal class HotReloadIntegrationTestStartup<TParams, THub>(IConfiguration configuration) : IStartup where THub : Hub
+internal sealed class HotReloadIntegrationTestStartup<TParams, THub>(IConfiguration configuration) : IStartup where THub : Hub
     where TParams : IHotReloadIntegrationTestStartupParameters, new()
 {
     public const string ApplicationName = "AppName";
@@ -80,7 +80,7 @@ internal class HotReloadIntegrationTestStartup<TParams, THub>(IConfiguration con
     }
 
     // Custom in memory config provider capable of dynamically changing in memory config data
-    internal class ReloadableMemoryConfigurationProvider : ConfigurationProvider, IEnumerable<KeyValuePair<string, string>>
+    internal sealed class ReloadableMemoryConfigurationProvider : ConfigurationProvider, IEnumerable<KeyValuePair<string, string>>
     {
         private readonly ReloadableMemoryConfigurationSource _source;
 
@@ -112,7 +112,7 @@ internal class HotReloadIntegrationTestStartup<TParams, THub>(IConfiguration con
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
-    internal class ReloadableMemoryConfigurationSource : IConfigurationSource
+    internal sealed class ReloadableMemoryConfigurationSource : IConfigurationSource
     {
         public IEnumerable<KeyValuePair<string, string>> InitialData { get; set; }
 
