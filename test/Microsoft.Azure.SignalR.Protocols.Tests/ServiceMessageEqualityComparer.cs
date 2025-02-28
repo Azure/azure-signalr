@@ -171,20 +171,20 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private static bool CloseConnectionsWithAckMessagesEqual(CloseConnectionsWithAckMessage x, CloseConnectionsWithAckMessage y)
         {
-            return SequenceEqual(x.ExcludedList, y.ExcludedList) && StringEqual(x.Reason, y.Reason)
+            return SequenceEqualSkipNull(x.ExcludedList, y.ExcludedList) && StringEqual(x.Reason, y.Reason)
                 && x.TracingId == y.TracingId && x.AckId == y.AckId;
         }
 #pragma warning restore CS0618 // Type or member is obsolete
 
         private static bool CloseUserConnectionsWithAckMessagesEqual(CloseUserConnectionsWithAckMessage x, CloseUserConnectionsWithAckMessage y)
         {
-            return SequenceEqual(x.ExcludedList, y.ExcludedList) && StringEqual(x.Reason, y.Reason) && StringEqual(x.UserId, y.UserId)
+            return SequenceEqualSkipNull(x.ExcludedList, y.ExcludedList) && StringEqual(x.Reason, y.Reason) && StringEqual(x.UserId, y.UserId)
                 && x.TracingId == y.TracingId && x.AckId == y.AckId;
         }
 
         private static bool CloseGroupConnectionsWithAckMessagesEqual(CloseGroupConnectionsWithAckMessage x, CloseGroupConnectionsWithAckMessage y)
         {
-            return SequenceEqual(x.ExcludedList, y.ExcludedList) && StringEqual(x.Reason, y.Reason) && StringEqual(x.GroupName, y.GroupName)
+            return SequenceEqualSkipNull(x.ExcludedList, y.ExcludedList) && StringEqual(x.Reason, y.Reason) && StringEqual(x.GroupName, y.GroupName)
                 && x.TracingId == y.TracingId && x.AckId == y.AckId;
         }
 
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private static bool MultiConnectionDataMessagesEqual(MultiConnectionDataMessage x, MultiConnectionDataMessage y)
         {
-            return SequenceEqual(x.ConnectionList, y.ConnectionList) &&
+            return SequenceEqualSkipNull(x.ConnectionList, y.ConnectionList) &&
                    PayloadsEqual(x.Payloads, y.Payloads) &&
                    x.TracingId == y.TracingId;
         }
@@ -218,14 +218,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private static bool MultiUserDataMessagesEqual(MultiUserDataMessage x, MultiUserDataMessage y)
         {
-            return SequenceEqual(x.UserList, y.UserList) &&
+            return SequenceEqualSkipNull(x.UserList, y.UserList) &&
                    PayloadsEqual(x.Payloads, y.Payloads) &&
                    x.TracingId == y.TracingId;
         }
 
         private static bool BroadcastDataMessagesEqual(BroadcastDataMessage x, BroadcastDataMessage y)
         {
-            return SequenceEqual(x.ExcludedList, y.ExcludedList) &&
+            return SequenceEqualSkipNull(x.ExcludedList, y.ExcludedList) &&
                    PayloadsEqual(x.Payloads, y.Payloads) &&
                    x.TracingId == y.TracingId;
         }
@@ -280,8 +280,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return StringEqual(x.GroupName, y.GroupName) &&
                    StringEqual(x.CallerUserId, y.CallerUserId) &&
-                   SequenceEqual(x.ExcludedList, y.ExcludedList) &&
-                   SequenceEqual(x.ExcludedUserList, y.ExcludedUserList) &&
+                   SequenceEqualSkipNull(x.ExcludedList, y.ExcludedList) &&
+                   SequenceEqualSkipNull(x.ExcludedUserList, y.ExcludedUserList) &&
                    PayloadsEqual(x.Payloads, y.Payloads) &&
                    x.TracingId == y.TracingId;
         }
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         private static bool MultiGroupBroadcastDataMessagesEqual(MultiGroupBroadcastDataMessage x,
             MultiGroupBroadcastDataMessage y)
         {
-            return SequenceEqual(x.GroupList, y.GroupList) &&
+            return SequenceEqualSkipNull(x.GroupList, y.GroupList) &&
                    PayloadsEqual(x.Payloads, y.Payloads) &&
                    x.TracingId == y.TracingId;
         }
@@ -485,6 +485,45 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             }
 
             return true;
+        }
+
+        private static bool MoveUntilNotNull(IEnumerator enumerator)
+        {
+            var moveNext = enumerator.MoveNext();
+            while (moveNext && enumerator.Current == null)
+            {
+                moveNext = enumerator.MoveNext();
+            }
+            return moveNext;
+        }
+
+        private static bool SequenceEqualSkipNull(object left, object right)
+        {
+            if (left == null && right == null)
+            {
+                return true;
+            }
+
+            var leftEnumerable = left as IEnumerable;
+            var rightEnumerable = right as IEnumerable;
+            if (leftEnumerable == null || rightEnumerable == null)
+            {
+                return false;
+            }
+
+            var leftEnumerator = leftEnumerable.GetEnumerator();
+            var rightEnumerator = rightEnumerable.GetEnumerator();
+            var leftMoved = MoveUntilNotNull(leftEnumerator);
+            var rightMoved = MoveUntilNotNull(rightEnumerator);
+            for (; leftMoved && rightMoved; leftMoved = MoveUntilNotNull(leftEnumerator), rightMoved = MoveUntilNotNull(rightEnumerator))
+            {
+                if (!Equals(leftEnumerator.Current, rightEnumerator.Current))
+                {
+                    return false;
+                }
+            }
+
+            return !leftMoved && !rightMoved;
         }
 
         private static bool SequenceEqual(object left, object right)

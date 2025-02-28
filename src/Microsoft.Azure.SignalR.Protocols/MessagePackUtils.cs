@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -125,7 +125,7 @@ internal static class MessagePackUtils
 
     internal static string ReadStringNotNull(ref MessagePackReader reader, string field)
     {
-        string? result = null;
+        string? result;
         try
         {
             result = reader.ReadString();
@@ -156,19 +156,23 @@ internal static class MessagePackUtils
         }
     }
 
-    internal static string[] ReadStringArray(ref MessagePackReader reader, string field)
+    internal static string[] ReadStringArrayExcludeNull(ref MessagePackReader reader, string field)
     {
         var arrayLength = ReadArrayLength(ref reader, field);
         if (arrayLength > 0)
         {
-            var array = new string[arrayLength];
+            var list = new List<string>();
             for (int i = 0; i < arrayLength; i++)
             {
                 var fieldName = $"{field}[{i}]";
-                array[i] = ReadStringNotNull(ref reader, fieldName);
+                var val = ReadString(ref reader, fieldName);
+                if (val != null)
+                {
+                    list.Add(val);
+                }
             }
 
-            return array;
+            return [.. list];
         }
 
         return [];
