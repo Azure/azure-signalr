@@ -128,8 +128,6 @@ internal static class DependencyInjectionExtensions
 #else
             services.AddSingleton<IClientInvocationManager, DummyClientInvocationManager>();
 #endif
-            services.AddSingleton<NegotiateProcessor>();
-
 
             return services.TrySetProductInfo();
         }
