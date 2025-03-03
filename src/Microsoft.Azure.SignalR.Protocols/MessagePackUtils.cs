@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Claims;
 
 using MessagePack;
@@ -161,18 +162,27 @@ internal static class MessagePackUtils
         var arrayLength = ReadArrayLength(ref reader, field);
         if (arrayLength > 0)
         {
-            var list = new List<string>(arrayLength);
+            var array = new string[arrayLength];
+            var count = 0;
             for (int i = 0; i < arrayLength; i++)
             {
                 var fieldName = $"{field}[{i}]";
                 var val = ReadString(ref reader, fieldName);
                 if (val != null)
                 {
-                    list.Add(val);
+                    array[count] = val;
+                    count++;
                 }
             }
 
-            return [.. list];
+            if (arrayLength == count)
+            {
+                return array;
+            }
+            else
+            {
+                return array.Take(count).ToArray();
+            }
         }
         return [];
     }
