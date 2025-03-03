@@ -487,43 +487,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return true;
         }
 
-        private static bool MoveUntilNotNull(IEnumerator enumerator)
+        private static bool SequenceEqualSkipNull<T>(IEnumerable<T> leftEnumerable, IEnumerable<T> rightEnumerable)
         {
-            var moveNext = enumerator.MoveNext();
-            while (moveNext && enumerator.Current == null)
-            {
-                moveNext = enumerator.MoveNext();
-            }
-            return moveNext;
-        }
-
-        private static bool SequenceEqualSkipNull(object left, object right)
-        {
-            if (left == null && right == null)
-            {
-                return true;
-            }
-
-            var leftEnumerable = left as IEnumerable;
-            var rightEnumerable = right as IEnumerable;
             if (leftEnumerable == null || rightEnumerable == null)
             {
                 return false;
             }
 
-            var leftEnumerator = leftEnumerable.GetEnumerator();
-            var rightEnumerator = rightEnumerable.GetEnumerator();
-            var leftMoved = MoveUntilNotNull(leftEnumerator);
-            var rightMoved = MoveUntilNotNull(rightEnumerator);
-            for (; leftMoved && rightMoved; leftMoved = MoveUntilNotNull(leftEnumerator), rightMoved = MoveUntilNotNull(rightEnumerator))
-            {
-                if (!Equals(leftEnumerator.Current, rightEnumerator.Current))
-                {
-                    return false;
-                }
-            }
-
-            return !leftMoved && !rightMoved;
+            return leftEnumerable.Where(x => x != null).Zip(rightEnumerable.Where(x => x != null), (x, y) => Equals(x, y)).All(z => z);
         }
 
         private static bool SequenceEqual(object left, object right)

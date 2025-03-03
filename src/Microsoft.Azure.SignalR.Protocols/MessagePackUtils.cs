@@ -161,7 +161,7 @@ internal static class MessagePackUtils
         var arrayLength = ReadArrayLength(ref reader, field);
         if (arrayLength > 0)
         {
-            var list = new List<string>();
+            var list = new List<string>(arrayLength);
             for (int i = 0; i < arrayLength; i++)
             {
                 var fieldName = $"{field}[{i}]";
@@ -174,7 +174,6 @@ internal static class MessagePackUtils
 
             return [.. list];
         }
-
         return [];
     }
 
@@ -226,7 +225,7 @@ internal static class MessagePackUtils
         }
     }
 
-    internal static long ReadArrayLength(ref MessagePackReader reader, string field)
+    internal static int ReadArrayLength(ref MessagePackReader reader, string field)
     {
         try
         {
