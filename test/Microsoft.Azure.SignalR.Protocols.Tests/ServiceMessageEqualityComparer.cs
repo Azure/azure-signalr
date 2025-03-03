@@ -3,7 +3,6 @@
 
 using System;
 using System.Buffers;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -489,41 +488,32 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private static bool SequenceEqualSkipNull<T>(IEnumerable<T> leftEnumerable, IEnumerable<T> rightEnumerable)
         {
-            if (leftEnumerable == null || rightEnumerable == null)
-            {
-                return false;
-            }
-
-            return leftEnumerable.Where(x => x != null).Zip(rightEnumerable.Where(x => x != null), (x, y) => Equals(x, y)).All(z => z);
-        }
-
-        private static bool SequenceEqual(object left, object right)
-        {
-            if (left == null && right == null)
+            if (leftEnumerable == null && rightEnumerable == null)
             {
                 return true;
             }
 
-            var leftEnumerable = left as IEnumerable;
-            var rightEnumerable = right as IEnumerable;
             if (leftEnumerable == null || rightEnumerable == null)
             {
                 return false;
             }
 
-            var leftEnumerator = leftEnumerable.GetEnumerator();
-            var rightEnumerator = rightEnumerable.GetEnumerator();
-            var leftMoved = leftEnumerator.MoveNext();
-            var rightMoved = rightEnumerator.MoveNext();
-            for (; leftMoved && rightMoved; leftMoved = leftEnumerator.MoveNext(), rightMoved = rightEnumerator.MoveNext())
+            return leftEnumerable.Where(x => x != null).SequenceEqual(rightEnumerable.Where(x => x != null));
+        }
+
+        private static bool SequenceEqual<T>(IEnumerable<T> leftEnumerable, IEnumerable<T> rightEnumerable)
+        {
+            if (leftEnumerable == null && rightEnumerable == null)
             {
-                if (!Equals(leftEnumerator.Current, rightEnumerator.Current))
-                {
-                    return false;
-                }
+                return true;
             }
 
-            return !leftMoved && !rightMoved;
+            if (leftEnumerable == null || rightEnumerable == null)
+            {
+                return false;
+            }
+
+            return leftEnumerable.SequenceEqual(rightEnumerable);
         }
     }
 }
