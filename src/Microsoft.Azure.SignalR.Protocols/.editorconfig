@@ -1,0 +1,6 @@
+
+[*.{cs,vb}]
+
+# IDE0060: Remove unused parameter
+# Disable for protocol project for now
+dotnet_diagnostic.IDE0060.severity = silent

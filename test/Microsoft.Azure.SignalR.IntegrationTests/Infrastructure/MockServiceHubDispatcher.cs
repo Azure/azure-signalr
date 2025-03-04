@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 
-internal class MockServiceHubDispatcher<THub>(
+internal sealed class MockServiceHubDispatcher<THub>(
     IMockService mockService,
     IServiceProtocol serviceProtocol,
     IHubContext<THub> context,

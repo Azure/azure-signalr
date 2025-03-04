@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 
 #nullable enable
 
-internal class MockServiceConnectionContextFactory(IMockService mockService) : IConnectionFactory
+internal sealed class MockServiceConnectionContextFactory(IMockService mockService) : IConnectionFactory
 {
     public Task<ConnectionContext> ConnectAsync(HubServiceEndpoint endpoint,
                                                 TransferFormat transferFormat,

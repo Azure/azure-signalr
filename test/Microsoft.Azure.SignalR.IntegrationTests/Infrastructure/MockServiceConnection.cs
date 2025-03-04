@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 /// <summary>
 /// Encapsulates the actual ServiceConnection to facilitate sync up of MockService and SDK connections
 /// </summary>
-internal class MockServiceConnection : IServiceConnection
+internal sealed class MockServiceConnection : IServiceConnection
 {
     private static int Number;
 

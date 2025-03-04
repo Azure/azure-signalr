@@ -1,9 +1,9 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure.MessageOrderTests;
 
-internal class MockServiceMessageOrderTestParams : IIntegrationTestStartupParameters
+internal sealed class MockServiceMessageOrderTestParams : IIntegrationTestStartupParameters
 {
     public static int ConnectionCount = 2;
 

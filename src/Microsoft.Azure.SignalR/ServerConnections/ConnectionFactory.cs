@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR;
 
@@ -12,17 +11,15 @@ namespace Microsoft.Azure.SignalR;
 
 internal class ConnectionFactory : ConnectionFactoryBase
 {
-    private readonly IOptions<ServiceOptions> _options;
-
     public ConnectionFactory(IServerNameProvider nameProvider,
-                             IOptions<ServiceOptions> options,
                              ILoggerFactory loggerFactory) : base(nameProvider, loggerFactory)
     {
-        _options = options;
     }
 
-    protected override void SetCustomHeaders(IDictionary<string, string> headers)
+    protected override void SetInternalUserAgent(IDictionary<string, string> headers)
     {
-        _options.Value.CustomHeaderProvider?.Invoke(headers);
+        // Fix issue: https://github.com/Azure/azure-signalr/issues/198
+        // .NET Framework has restriction about reserved string as the header name like "User-Agent"
+        headers[Constants.AsrsUserAgent] = ProductInfo.GetProductInfo();
     }
 }

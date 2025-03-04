@@ -4,15 +4,19 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>aspnetcore;azure;signalr</PackageTags>
+    <GenerateAPIListing>true</GenerateAPIListing>
     <IsProtocolLibrary Condition="'$(MSBuildProjectName)' == 'Microsoft.Azure.SignalR.Protocols' OR '$(MSBuildProjectName)' == 'Microsoft.Azure.SignalR.Serverless.Protocols'">true</IsProtocolLibrary>
     <IsSignalRLibrary Condition="'$(OutputType)' != 'Exe' AND '$(IsProtocolLibrary)' == ''">true</IsSignalRLibrary>
   </PropertyGroup>
+  <!-- Order matters, please do not change the order -->
+  <Import Project="..\eng\ApiListing.targets" />
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudioEng.MicroBuild.Core" Version="$(MicrosoftVisualStudioEngMicroBuildCoreVersion)">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubPackageVersion)" PrivateAssets="All" />
+    <PackageReference Condition="'$(GenerateAPIListing)' == 'true'" Include="Microsoft.DotNet.GenAPI" Version="5.0.0-beta.19552.1" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup>
       <!-- Adding the assemblies to sign -->

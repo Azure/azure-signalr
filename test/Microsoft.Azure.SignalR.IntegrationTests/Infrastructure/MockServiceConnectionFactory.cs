@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.AspNetCore.Connections;
@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 
-internal class MockServiceConnectionFactory(
+internal sealed class MockServiceConnectionFactory(
     IMockService mockService,
     IServiceProtocol serviceProtocol,
     IClientConnectionManager clientConnectionManager,

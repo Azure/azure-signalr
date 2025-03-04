@@ -3,12 +3,12 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
-
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 {
@@ -16,11 +16,10 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     /// Represents client connection on mock service side
     /// Allows sending messages to and storing received messages from SDK
     /// </summary>
-    internal class MockServiceSideClientConnection
+    internal sealed class MockServiceSideClientConnection
     {
-        private static readonly JsonHubProtocol _signalRPro = new JsonHubProtocol();
-        private static readonly ServiceProtocol _servicePro = new ServiceProtocol();
-
+        private static readonly JsonHubProtocol SignalRPro = new();
+        private static readonly ServiceProtocol ServicePro = new();
 
         public string ConnectionId { get; private set; }
         public MockServiceSideConnection ServiceSideConnection { get; private set; }
@@ -30,13 +29,13 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
         public TaskCompletionSource<string> HandshakeCompleted { get; } = new TaskCompletionSource<string>();
         public bool CloseMessageReceivedFromSdk { get; set; }
 
-        private int _invId = 0;
+        private int _invId;
 
         public async Task SendMessage(string target, object[] args)
         {
-            var callHubRequest = new InvocationMessage(invocationId: _invId++.ToString(), target: target, arguments: args);
-            var callHubServiceMessage = new ConnectionDataMessage(ConnectionId, _signalRPro.GetMessageBytes(callHubRequest));
-            _servicePro.WriteMessage(callHubServiceMessage, ServiceSideConnection.MockServicePipe.Output);
+            var callHubRequest = new InvocationMessage(invocationId: _invId++.ToString(CultureInfo.InvariantCulture), target: target, arguments: args);
+            var callHubServiceMessage = new ConnectionDataMessage(ConnectionId, SignalRPro.GetMessageBytes(callHubRequest));
+            ServicePro.WriteMessage(callHubServiceMessage, ServiceSideConnection.MockServicePipe.Output);
             var flushResult = await ServiceSideConnection.MockServicePipe.Output.FlushAsync();
 
             if (flushResult.IsCanceled || flushResult.IsCompleted)
@@ -48,7 +47,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
         public async Task CloseConnection(string errorMsg = null)
         {
             var closeClientMessage = new CloseConnectionMessage(ConnectionId, errorMsg);
-            _servicePro.WriteMessage(closeClientMessage, ServiceSideConnection.MockServicePipe.Output);
+            ServicePro.WriteMessage(closeClientMessage, ServiceSideConnection.MockServicePipe.Output);
             var flushResult = await ServiceSideConnection.MockServicePipe.Output.FlushAsync();
 
             if (flushResult.IsCanceled || flushResult.IsCompleted)
@@ -63,7 +62,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
             ServiceSideConnection = serviceSideConnection;
         }
 
-        private ConcurrentDictionary<Type, Channel<HubMessage>> _hubMessagesFromSDK = new ConcurrentDictionary<Type, Channel<HubMessage>>();
+        private readonly ConcurrentDictionary<Type, Channel<HubMessage>> _hubMessagesFromSDK = new ConcurrentDictionary<Type, Channel<HubMessage>>();
 
         public void EnqueueMessage(HubMessage m) =>
             _hubMessagesFromSDK.GetOrAdd(m.GetType(), _ => CreateChannel<HubMessage>()).Writer.TryWrite(m);

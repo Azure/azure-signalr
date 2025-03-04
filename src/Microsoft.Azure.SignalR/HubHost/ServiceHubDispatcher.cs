@@ -13,7 +13,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-
 #if NET8_0_OR_GREATER
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http.Connections;
@@ -209,60 +208,60 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
 
     private static class Log
     {
-        private static readonly Action<ILogger, string, int, Exception> _startingConnection =
+        private static readonly Action<ILogger, string, int, Exception> StartingConnectionAction =
             LoggerMessage.Define<string, int>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Starting {name} with {connectionNumber} connections...");
 
-        private static readonly Action<ILogger, string, int, Exception> _gracefulShutdownTimeoutExceeded =
+        private static readonly Action<ILogger, string, int, Exception> GracefulShutdownTimeoutExceededAction =
             LoggerMessage.Define<string, int>(LogLevel.Warning, new EventId(2, "GracefulShutdownTimeoutExceeded"), "[{hubName}] Timeout({timeoutInMs}ms) reached, existing client connections will be dropped immediately.");
 
-        private static readonly Action<ILogger, string, Exception> _settingServerOffline =
+        private static readonly Action<ILogger, string, Exception> SettingServerOfflineAction =
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(3, "SettingServerOffline"), "[{hubName}] Setting the hub server offline...");
 
-        private static readonly Action<ILogger, string, Exception> _triggeringShutdownHooks =
+        private static readonly Action<ILogger, string, Exception> TriggeringShutdownHooksAction =
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(4, "TriggeringShutdownHooks"), "[{hubName}] Triggering shutdown hooks...");
 
-        private static readonly Action<ILogger, string, Exception> _waitingClientConnectionsToClose =
+        private static readonly Action<ILogger, string, Exception> WaitingClientConnectionsToCloseAction =
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(5, "WaitingClientConnectionsToClose"), "[{hubName}] Waiting for client connections to close...");
 
-        private static readonly Action<ILogger, string, Exception> _stoppingServer =
+        private static readonly Action<ILogger, string, Exception> StoppingServerAction =
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(6, "StoppingServer"), "[{hubName}] Stopping the hub server...");
 
-        private static readonly Action<ILogger, string, Exception> _closeClientConnections =
+        private static readonly Action<ILogger, string, Exception> CloseClientConnectionsAction =
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(7, "CloseClientConnections"), "[{hubName}] Closing client connections...");
 
         public static void StartingConnection(ILogger logger, string name, int connectionNumber)
         {
-            _startingConnection(logger, name, connectionNumber, null);
+            StartingConnectionAction(logger, name, connectionNumber, null);
         }
 
         public static void GracefulShutdownTimeoutExceeded(ILogger logger, string hubName, int timeoutInMs)
         {
-            _gracefulShutdownTimeoutExceeded(logger, hubName, timeoutInMs, null);
+            GracefulShutdownTimeoutExceededAction(logger, hubName, timeoutInMs, null);
         }
 
         public static void SettingServerOffline(ILogger logger, string hubName)
         {
-            _settingServerOffline(logger, hubName, null);
+            SettingServerOfflineAction(logger, hubName, null);
         }
 
         public static void TriggeringShutdownHooks(ILogger logger, string hubName)
         {
-            _triggeringShutdownHooks(logger, hubName, null);
+            TriggeringShutdownHooksAction(logger, hubName, null);
         }
 
         public static void WaitingClientConnectionsToClose(ILogger logger, string hubName)
         {
-            _waitingClientConnectionsToClose(logger, hubName, null);
+            WaitingClientConnectionsToCloseAction(logger, hubName, null);
         }
 
         public static void CloseClientConnections(ILogger logger, string hubName)
         {
-            _closeClientConnections(logger, hubName, null);
+            CloseClientConnectionsAction(logger, hubName, null);
         }
 
         public static void StoppingServer(ILogger logger, string hubName)
         {
-            _stoppingServer(logger, hubName, null);
+            StoppingServerAction(logger, hubName, null);
         }
     }
 }

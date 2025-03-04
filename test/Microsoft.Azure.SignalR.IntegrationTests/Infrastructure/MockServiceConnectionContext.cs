@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Concurrent;
@@ -12,7 +12,7 @@ using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 
-internal class MockServiceConnectionContext : ConnectionContext
+internal sealed class MockServiceConnectionContext : ConnectionContext
 {
     private readonly IMockService _mockService;
 

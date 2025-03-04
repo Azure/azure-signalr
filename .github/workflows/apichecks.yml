@@ -1,0 +1,84 @@
+name: API Breaking Change Check
+
+on:
+  pull_request:
+    branches:
+     - 'releases/**'
+     - dev
+
+jobs:
+  api-check:
+    name: API Breaking Change Check
+    runs-on: windows-latest  # Use Windows for PowerShell script execution
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure full history for diff comparison
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            src:
+            - 'src/**'
+            - 'eng/**'
+            - 'api/**'
+            - '**.props'
+            - '**.csproj'
+            - '**.targets'
+            - '*.sln'
+      - name: Update SubModules
+        if: steps.filter.outputs.src == 'true'
+        run: git submodule update --init --recursive
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'  # Adjust as needed
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run API Export PowerShell Script
+        run: |
+          powershell -ExecutionPolicy Bypass -File .\eng\Export-API.ps1 *> export-api.log
+
+      # Upload the log file as an artifact
+      - name: Upload Export API Log as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: export-api-log
+          path: ./export-api.log
+      - name: Check for API Changes
+        id: api-check
+        run: |
+          git status
+          git diff --exit-code api/
+        shell: bash
+        continue-on-error: true
+      # Add check-label step after api-check
+      - name: Check for special label
+        id: check_label
+        if: failure()  # Run only if the api-check step failed
+        run: |
+          LABELS="${{ toJson(github.event.pull_request.labels) }}"
+          echo "PR Labels: $LABELS"
+          
+          if echo "$LABELS" | grep -q '"api-breaking-change-signoff"'; then
+            echo "api-breaking-change-signoff label found ✅"
+            echo "HAS_SPECIAL_LABEL=true" >> $GITHUB_ENV
+          else
+            echo "api-breaking-change-signoff label not found ❌"
+            echo "HAS_SPECIAL_LABEL=false" >> $GITHUB_ENV
+        shell: bash
+      - name: Determine merge eligibility
+        run: |
+          if [[ "${{ steps.api-check.outcome }}" == "success" ]]; then
+            echo "API check passed, no breaking changes detected ✅"
+            exit 0
+          elif [[ "${{ env.HAS_SPECIAL_LABEL }}" == "true" ]]; then
+            echo "Label api-breaking-change-signoff found, merge allowed ✅"
+            exit 0
+          else
+            echo "API breaking change detected, please ask for api-breaking-change-signoff"
+            exit 1
+          fi
+        shell: bash

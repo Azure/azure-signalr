@@ -26,26 +26,26 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     /// Provides start / stop / connect new client functionality 
     /// Receives and stores messages received from SDK side
     /// </summary>
-    internal class MockServiceSideConnection : IAsyncDisposable
+    internal sealed class MockServiceSideConnection : IAsyncDisposable
     {
-        private static readonly ServiceProtocol _servicePro = new ServiceProtocol();
-        private static readonly JsonHubProtocol _signalRPro = new JsonHubProtocol();
-        private static int s_clientConnNum = 0;
+        private static readonly ServiceProtocol ServicePro = new ServiceProtocol();
+        private static readonly JsonHubProtocol SignalRPro = new JsonHubProtocol();
+        private static int ClientConnNum;
 
-        private static int s_index = 0;
+        private static int Counter;
         private Task _processIncoming;
-        private TaskCompletionSource<bool> _completedHandshake = new TaskCompletionSource<bool>();
-        private ConcurrentDictionary<Type, Channel<ServiceMessage>> _messagesFromSDK = new ConcurrentDictionary<Type, Channel<ServiceMessage>>();
-        private int _stopped = 0;
+        private readonly TaskCompletionSource<bool> _completedHandshake = new TaskCompletionSource<bool>();
+        private readonly ConcurrentDictionary<Type, Channel<ServiceMessage>> _messagesFromSDK = new ConcurrentDictionary<Type, Channel<ServiceMessage>>();
+        private int _stopped;
         
         // to help with debugging, make public if useful to check in tests
-        private Exception _processIncomingException = null;
+        private Exception _processIncomingException;
         private FlushResult _lastFlushResult;
         private ReadResult _lastReadResult;
 
         public MockServiceSideConnection(IMockService mocksvc, MockServiceConnectionContext sdkSideConnCtx, HubServiceEndpoint endpoint, string target, IDuplexPipe pipe)
         {
-            Index = Interlocked.Increment(ref s_index);
+            Index = Interlocked.Increment(ref Counter);
             MockSvc = mocksvc;
             SDKSideServiceConnection = sdkSideConnCtx;
             Endpoint = endpoint;
@@ -70,12 +70,12 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                 throw new InvalidOperationException("Service connection has failed service connection handshake");
             }
 
-            var clientConnId = SDKSideServiceConnection.ConnectionId + "_client_" + Interlocked.Increment(ref s_clientConnNum);
+            var clientConnId = SDKSideServiceConnection.ConnectionId + "_client_" + Interlocked.Increment(ref ClientConnNum);
             MockServiceSideClientConnection clientConn = new MockServiceSideClientConnection(clientConnId, this);
             ClientConnections.Add(clientConn);
 
-            var openClientConnMsg = new OpenConnectionMessage(clientConnId, new System.Security.Claims.Claim[] { }) { Protocol = "json" };
-            _servicePro.WriteMessage(openClientConnMsg, MockServicePipe.Output);
+            var openClientConnMsg = new OpenConnectionMessage(clientConnId, []) { Protocol = "json" };
+            ServicePro.WriteMessage(openClientConnMsg, MockServicePipe.Output);
             var flushResult = _lastFlushResult = await MockServicePipe.Output.FlushAsync();
 
             if (flushResult.IsCanceled || flushResult.IsCompleted)
@@ -84,10 +84,9 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                 throw new InvalidOperationException($"Sending OpenConnectionMessage for clientConnId {clientConnId} returned flush result: IsCanceled {flushResult.IsCanceled} IsCompleted {flushResult.IsCompleted}");
             }
 
-
             var clientHandshakeRequest = new AspNetCore.SignalR.Protocol.HandshakeRequestMessage("json", 1);
             var clientHandshake = new ConnectionDataMessage(clientConnId, GetMessageBytes(clientHandshakeRequest));
-            _servicePro.WriteMessage(clientHandshake, MockServicePipe.Output);
+            ServicePro.WriteMessage(clientHandshake, MockServicePipe.Output);
             flushResult = _lastFlushResult = await MockServicePipe.Output.FlushAsync();
 
             if (flushResult.IsCanceled || flushResult.IsCompleted)
@@ -124,7 +123,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                         {
                             if (!buffer.IsEmpty)
                             {
-                                while (_servicePro.TryParseMessage(ref buffer, out var message))
+                                while (ServicePro.TryParseMessage(ref buffer, out var message))
                                 {
                                     // always enqueue so tests can peek and analyze any of these messages
                                     EnqueueMessage(message);
@@ -133,7 +132,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                                     if (message is HandshakeRequestMessage)
                                     {
                                         var handshakeResponse = new HandshakeResponseMessage("");
-                                        _servicePro.WriteMessage(handshakeResponse, MockServicePipe.Output);
+                                        ServicePro.WriteMessage(handshakeResponse, MockServicePipe.Output);
                                         var flushResult = _lastFlushResult = await MockServicePipe.Output.FlushAsync();
 
                                         if (flushResult.IsCanceled || flushResult.IsCompleted)
@@ -170,7 +169,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 
                                             // There is no such goal to provide full message parsing capabilities here
                                             // But it is useful to know the hub invocation return result in some tests so there we have it.
-                                            while (_signalRPro.TryParseMessage(ref payload, MockSvc.CurrentInvocationBinder, out HubMessage hubMessage))
+                                            while (SignalRPro.TryParseMessage(ref payload, MockSvc.CurrentInvocationBinder, out HubMessage hubMessage))
                                             {
                                                 clientConnection.EnqueueMessage(hubMessage);
 
@@ -184,7 +183,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                                     else if (message is ServicePingMessage ping && ping.IsFin())
                                     {
                                         var pong = RuntimeServicePingMessage.GetFinAckPingMessage();
-                                        _servicePro.WriteMessage(pong, MockServicePipe.Output);
+                                        ServicePro.WriteMessage(pong, MockServicePipe.Output);
                                         var flushResult = _lastFlushResult = await MockServicePipe.Output.FlushAsync();
 
                                         //todo: do we care about this flush result?

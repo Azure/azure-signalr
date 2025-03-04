@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.Tests;
+namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
 #nullable enable
 
@@ -15,12 +15,14 @@ public class ConnectionFactoryTests
     public void TestGetRequestHeaders()
     {
         var nameProvider = new DefaultServerNameProvider();
+
         var loggerFactory = NullLoggerFactory.Instance;
+
         var factory = new ConnectionFactory(nameProvider, loggerFactory);
 
         var headers = factory.GetRequestHeaders();
         Assert.True(headers.TryGetValue(Constants.AsrsUserAgent, out var productInfo));
-        Assert.StartsWith("Microsoft.Azure.SignalR/", productInfo);
+        Assert.StartsWith("Microsoft.Azure.SignalR.AspNet/", productInfo);
 
         Assert.True(headers.TryGetValue(Constants.Headers.AsrsServerId, out var serverId));
         Assert.Equal(nameProvider.GetName(), serverId);

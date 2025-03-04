@@ -14,7 +14,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 
-internal class IntegrationTestStartup<TParams, THub>(IConfiguration configuration) : IStartup
+internal sealed class IntegrationTestStartup<TParams, THub>(IConfiguration configuration) : IStartup
     where TParams : IIntegrationTestStartupParameters, new()
     where THub : Hub
 {
