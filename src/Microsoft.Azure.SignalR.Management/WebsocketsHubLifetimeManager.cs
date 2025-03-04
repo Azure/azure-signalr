@@ -18,11 +18,10 @@ namespace Microsoft.Azure.SignalR.Management
     internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IServiceHubLifetimeManager<THub> where THub : Hub
     {
 #if NET7_0_OR_GREATER
-        private const int DefaultInvocationTimeoutSeconds = 100;
+        private static readonly TimeSpan DefaultInvocationTimeoutTimespan = TimeSpan.FromSeconds(100);
 #endif
         private readonly IOptions<ServiceManagerOptions> _serviceManagerOptions;
         private readonly IClientInvocationManager _clientInvocationManager;
-        private readonly IServerNameProvider _serverNameProvider;
         private readonly string _callerId;
         private readonly string _hub;
 
@@ -33,8 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _serviceManagerOptions = serviceManagerOptions ?? throw new ArgumentNullException(nameof(serviceManagerOptions));
             _clientInvocationManager = clientInvocationManager;
-            _serverNameProvider = serverNameProvider;
-            _callerId = _serverNameProvider.GetName();
+            _callerId = serverNameProvider.GetName();
             _hub = typeof(THub).Name;
         }
 
@@ -243,14 +241,10 @@ namespace Microsoft.Azure.SignalR.Management
             }
 
             // cancellationToken is required to be cancellable.
-            var cancellationTokenInUse = cancellationToken;
 
-            if (!cancellationToken.CanBeCanceled)
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(DefaultInvocationTimeoutSeconds));
-                cancellationTokenInUse = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken).Token;
-            }
-
+            using var cts = new CancellationTokenSource(DefaultInvocationTimeoutTimespan);
+            var cancellationTokenInUse = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken).Token;
+           
             var invocationId = _clientInvocationManager.Caller.GenerateInvocationId(connectionId);
             var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, invocationId)));
             await WriteAsync(message);
@@ -272,7 +266,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             // This method won't get trigger because we will not be sending CompletionMessage back from serverless mode.
             // this is to honor the interface
-            return Task.CompletedTask;
+            throw new NotImplementedException();
         }
 #endif
     }
