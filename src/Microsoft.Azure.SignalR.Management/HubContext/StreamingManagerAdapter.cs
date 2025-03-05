@@ -14,10 +14,12 @@ namespace Microsoft.Azure.SignalR.Management;
 internal class StreamingManagerAdapter : StreamingManager
 {
     private readonly IStreamingHubLifetimeManager _lifetimeManager;
+    private readonly NegotiationOptions _negotiationOptions;
 
-    public StreamingManagerAdapter(IStreamingHubLifetimeManager lifetimeManager)
+    public StreamingManagerAdapter(IStreamingHubLifetimeManager lifetimeManager, NegotiationOptions negotiationOptions)
     {
         _lifetimeManager = lifetimeManager;
+        _negotiationOptions = negotiationOptions;
     }
 
     public override async Task SendStreamAsync<TItem>(string connectionId, string streamId, IAsyncEnumerable<TItem> items, CancellationToken cancellationToken = default)
@@ -37,7 +39,7 @@ internal class StreamingManagerAdapter : StreamingManager
         }
         catch (Exception ex)
         {
-            await _lifetimeManager.SendStreamCompletionAsync(connectionId, streamId, ex.Message, cancellationToken);
+            await SendErrorAsync(connectionId, streamId, ex, cancellationToken);
         }
         if (isCompleted)
         {
@@ -65,11 +67,17 @@ internal class StreamingManagerAdapter : StreamingManager
         }
         catch (Exception ex)
         {
-            await _lifetimeManager.SendStreamCompletionAsync(connectionId, streamId, ex.Message, cancellationToken);
+            await SendErrorAsync(connectionId, streamId, ex, cancellationToken);
         }
         if (isCompleted)
         {
             await _lifetimeManager.SendStreamCompletionAsync(connectionId, streamId, null, cancellationToken);
         }
+    }
+
+    private async Task SendErrorAsync(string connectionId, string streamId, Exception ex, CancellationToken cancellationToken)
+    {
+        var message = _negotiationOptions.EnableDetailedErrors ? ex.Message : "An error occurred.";
+        await _lifetimeManager.SendStreamCompletionAsync(connectionId, streamId, message, cancellationToken);
     }
 }
