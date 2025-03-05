@@ -348,10 +348,6 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         await _restClient.SendWithRetryAsync(api, HttpMethod.Post, cancellationToken: cancellationToken);
     }
 
-#pragma warning disable CA1822
-    public Task DisposeAsync() => Task.CompletedTask;
-#pragma warning restore CA1822
-
     private static bool FilterExpectedResponse(HttpResponseMessage response, string expectedErrorCode) =>
         response.IsSuccessStatusCode
         || (response.StatusCode == HttpStatusCode.NotFound && response.Headers.TryGetValues(Headers.MicrosoftErrorCode, out var errorCodes) && errorCodes.First().Equals(expectedErrorCode, StringComparison.OrdinalIgnoreCase));
