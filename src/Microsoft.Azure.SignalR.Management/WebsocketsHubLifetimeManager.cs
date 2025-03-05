@@ -11,250 +11,247 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Microsoft.Azure.SignalR.Management
+namespace Microsoft.Azure.SignalR.Management;
+
+internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IServiceHubLifetimeManager<THub> where THub : Hub
 {
-    internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IServiceHubLifetimeManager<THub> where THub : Hub
+    private readonly IOptions<ServiceManagerOptions> _serviceManagerOptions;
+
+    public WebSocketsHubLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver,
+        IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILoggerFactory loggerFactory, IOptions<ServiceManagerOptions> serviceManagerOptions) :
+        base(serviceConnectionManager, protocolResolver, globalHubOptions, hubOptions, loggerFactory?.CreateLogger(nameof(WebSocketsHubLifetimeManager<Hub>)))
     {
-        private readonly IOptions<ServiceManagerOptions> _serviceManagerOptions;
+        _serviceManagerOptions = serviceManagerOptions ?? throw new ArgumentNullException(nameof(serviceManagerOptions));
+    }
 
-        public WebSocketsHubLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver,
-            IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILoggerFactory loggerFactory, IOptions<ServiceManagerOptions> serviceManagerOptions) :
-            base(serviceConnectionManager, protocolResolver, globalHubOptions, hubOptions, loggerFactory?.CreateLogger(nameof(WebSocketsHubLifetimeManager<Hub>)))
+    public Task RemoveFromAllGroupsAsync(string connectionId, CancellationToken cancellationToken = default)
+    {
+        if (IsInvalidArgument(connectionId))
         {
-            _serviceManagerOptions = serviceManagerOptions ?? throw new ArgumentNullException(nameof(serviceManagerOptions));
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
         }
 
-        public Task RemoveFromAllGroupsAsync(string connectionId, CancellationToken cancellationToken = default)
+        var message = AppendMessageTracingId(new LeaveGroupWithAckMessage(connectionId, null));
+        if (message.TracingId != null)
         {
-            if (IsInvalidArgument(connectionId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
-            }
+            MessageLog.StartToRemoveConnectionFromGroup(Logger, message);
+        }
+        return WriteAckableMessageAsync(message, cancellationToken);
+    }
 
-            var message = AppendMessageTracingId(new LeaveGroupWithAckMessage(connectionId, null));
-            if (message.TracingId != null)
-            {
-                MessageLog.StartToRemoveConnectionFromGroup(Logger, message);
-            }
-            return WriteAckableMessageAsync(message, cancellationToken);
+    public Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
         }
 
-        public Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
+        if (string.IsNullOrEmpty(groupName))
         {
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
-            }
-
-            if (string.IsNullOrEmpty(groupName))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
-            }
-
-            // todo: apply to other methods
-            // todo: apply to transient mode
-            var message = AppendMessageTracingId(new UserJoinGroupWithAckMessage(userId, groupName, 0));
-            if (message.TracingId != null)
-            {
-                // todo: generate ack id on ctor, so that we can log ack id
-                MessageLog.StartToAddUserToGroup(Logger, message);
-            }
-            return WriteAckableMessageAsync(message, cancellationToken);
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
         }
 
-        public Task UserAddToGroupAsync(string userId, string groupName, TimeSpan ttl, CancellationToken cancellationToken = default)
+        // todo: apply to other methods
+        // todo: apply to transient mode
+        var message = AppendMessageTracingId(new UserJoinGroupWithAckMessage(userId, groupName, 0));
+        if (message.TracingId != null)
         {
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
-            }
+            // todo: generate ack id on ctor, so that we can log ack id
+            MessageLog.StartToAddUserToGroup(Logger, message);
+        }
+        return WriteAckableMessageAsync(message, cancellationToken);
+    }
 
-            if (string.IsNullOrEmpty(groupName))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
-            }
-
-            if (ttl < TimeSpan.Zero)
-            {
-                throw new ArgumentOutOfRangeException(nameof(ttl), TtlOutOfRangeErrorMessage);
-            }
-            var message = AppendMessageTracingId(new UserJoinGroupWithAckMessage(userId, groupName, 0) { Ttl = (int)ttl.TotalSeconds });
-            if (message.TracingId != null)
-            {
-                // todo: generate ack id on ctor, so that we can log ack id
-                MessageLog.StartToAddUserToGroup(Logger, message);
-            }
-            return WriteAckableMessageAsync(message, cancellationToken);
+    public Task UserAddToGroupAsync(string userId, string groupName, TimeSpan ttl, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
         }
 
-        public Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
+        if (string.IsNullOrEmpty(groupName))
         {
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
-            }
-
-            if (string.IsNullOrEmpty(groupName))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
-            }
-
-            var message = AppendMessageTracingId(new UserLeaveGroupWithAckMessage(userId, groupName, 0));
-            if (message.TracingId != null)
-            {
-                // todo: generate ack id on ctor, so that we can log ack id
-                MessageLog.StartToRemoveUserFromGroup(Logger, message);
-            }
-            return WriteAckableMessageAsync(message, cancellationToken);
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
         }
 
-        public Task UserRemoveFromAllGroupsAsync(string userId, CancellationToken cancellationToken = default)
+        if (ttl < TimeSpan.Zero)
         {
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
-            }
+            throw new ArgumentOutOfRangeException(nameof(ttl), TtlOutOfRangeErrorMessage);
+        }
+        var message = AppendMessageTracingId(new UserJoinGroupWithAckMessage(userId, groupName, 0) { Ttl = (int)ttl.TotalSeconds });
+        if (message.TracingId != null)
+        {
+            // todo: generate ack id on ctor, so that we can log ack id
+            MessageLog.StartToAddUserToGroup(Logger, message);
+        }
+        return WriteAckableMessageAsync(message, cancellationToken);
+    }
 
-            var message = AppendMessageTracingId(new UserLeaveGroupWithAckMessage(userId, null, 0));
-            if (message.TracingId != null)
-            {
-                // todo: generate ack id on ctor, so that we can log ack id
-                MessageLog.StartToRemoveUserFromGroup(Logger, message);
-            }
-            return WriteAckableMessageAsync(message, cancellationToken);
+    public Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
         }
 
-
-
-        public Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default)
+        if (string.IsNullOrEmpty(groupName))
         {
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
-            }
-
-            if (string.IsNullOrEmpty(groupName))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
-            }
-
-            var message = AppendMessageTracingId(new CheckUserInGroupWithAckMessage(userId, groupName));
-            if (message.TracingId != null)
-            {
-                MessageLog.StartToCheckIfUserInGroup(Logger, message);
-            }
-            return WriteAckableMessageAsync(message, cancellationToken);
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
         }
 
-        public Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken)
+        var message = AppendMessageTracingId(new UserLeaveGroupWithAckMessage(userId, groupName, 0));
+        if (message.TracingId != null)
         {
-            if (string.IsNullOrEmpty(connectionId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
-            }
+            // todo: generate ack id on ctor, so that we can log ack id
+            MessageLog.StartToRemoveUserFromGroup(Logger, message);
+        }
+        return WriteAckableMessageAsync(message, cancellationToken);
+    }
 
-            var message = AppendMessageTracingId(new CloseConnectionMessage(connectionId, reason));
-            if (message.TracingId != null)
-            {
-                MessageLog.StartToCloseConnection(Logger, message);
-            }
-            return WriteAsync(message);
+    public Task UserRemoveFromAllGroupsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
         }
 
-        public Task<bool> ConnectionExistsAsync(string connectionId, CancellationToken cancellationToken = default)
+        var message = AppendMessageTracingId(new UserLeaveGroupWithAckMessage(userId, null, 0));
+        if (message.TracingId != null)
         {
-            if (string.IsNullOrEmpty(connectionId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
-            }
+            // todo: generate ack id on ctor, so that we can log ack id
+            MessageLog.StartToRemoveUserFromGroup(Logger, message);
+        }
+        return WriteAckableMessageAsync(message, cancellationToken);
+    }
 
-            var message = AppendMessageTracingId(new CheckConnectionExistenceWithAckMessage(connectionId));
-            if (message.TracingId != null)
-            {
-                MessageLog.StartToCheckIfConnectionExists(Logger, message);
-            }
-            return WriteAckableMessageAsync(message, cancellationToken);
+    public Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
         }
 
-        public Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default)
+        if (string.IsNullOrEmpty(groupName))
         {
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
-            }
-
-            var message = AppendMessageTracingId(new CheckUserExistenceWithAckMessage(userId));
-            if (message.TracingId != null)
-            {
-                MessageLog.StartToCheckIfUserExists(Logger, message);
-            }
-            return WriteAckableMessageAsync(message, cancellationToken);
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
         }
 
-        public Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken = default)
+        var message = AppendMessageTracingId(new CheckUserInGroupWithAckMessage(userId, groupName));
+        if (message.TracingId != null)
         {
-            if (string.IsNullOrEmpty(groupName))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
-            }
+            MessageLog.StartToCheckIfUserInGroup(Logger, message);
+        }
+        return WriteAckableMessageAsync(message, cancellationToken);
+    }
 
-            var message = AppendMessageTracingId(new CheckGroupExistenceWithAckMessage(groupName));
-            if (message.TracingId != null)
-            {
-                MessageLog.StartToCheckIfGroupExists(Logger, message);
-            }
-            return WriteAckableMessageAsync(message, cancellationToken);
+    public Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(connectionId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
         }
 
-        public Task SendStreamItemAsync<TItem>(string connectionId, string streamId, TItem item, CancellationToken cancellationToken = default)
+        var message = AppendMessageTracingId(new CloseConnectionMessage(connectionId, reason));
+        if (message.TracingId != null)
         {
-            if (IsInvalidArgument(connectionId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
-            }
+            MessageLog.StartToCloseConnection(Logger, message);
+        }
+        return WriteAsync(message);
+    }
 
-            if (IsInvalidArgument(streamId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(streamId));
-            }
-
-            var message = AppendMessageTracingId(new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(new StreamItemMessage(streamId, item))));
-            if (message.TracingId != null)
-            {
-                MessageLog.StartToSendMessageToConnections(Logger, message);
-            }
-            return WriteAsync(message);
+    public Task<bool> ConnectionExistsAsync(string connectionId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(connectionId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
         }
 
-        public Task SendStreamCompletionAsync(string connectionId, string streamId, string error, CancellationToken cancellationToken = default)
+        var message = AppendMessageTracingId(new CheckConnectionExistenceWithAckMessage(connectionId));
+        if (message.TracingId != null)
         {
-            if (IsInvalidArgument(connectionId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
-            }
+            MessageLog.StartToCheckIfConnectionExists(Logger, message);
+        }
+        return WriteAckableMessageAsync(message, cancellationToken);
+    }
 
-            if (IsInvalidArgument(streamId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(streamId));
-            }
-
-            var message = AppendMessageTracingId(new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(new CompletionMessage(streamId, error, null, false))));
-            if (message.TracingId != null)
-            {
-                MessageLog.StartToSendMessageToConnections(Logger, message);
-            }
-            return WriteAsync(message);
+    public Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
         }
 
-        protected override T AppendMessageTracingId<T>(T message)
+        var message = AppendMessageTracingId(new CheckUserExistenceWithAckMessage(userId));
+        if (message.TracingId != null)
         {
-            if (_serviceManagerOptions.Value.EnableMessageTracing)
-            {
-                message.TracingId = MessageWithTracingIdHelper.Generate();
-                return message;
-            }
-
-            return base.AppendMessageTracingId(message);
+            MessageLog.StartToCheckIfUserExists(Logger, message);
         }
+        return WriteAckableMessageAsync(message, cancellationToken);
+    }
+
+    public Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(groupName))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
+        }
+
+        var message = AppendMessageTracingId(new CheckGroupExistenceWithAckMessage(groupName));
+        if (message.TracingId != null)
+        {
+            MessageLog.StartToCheckIfGroupExists(Logger, message);
+        }
+        return WriteAckableMessageAsync(message, cancellationToken);
+    }
+
+    public Task SendStreamItemAsync<TItem>(string connectionId, string streamId, TItem item, CancellationToken cancellationToken = default)
+    {
+        if (IsInvalidArgument(connectionId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+        }
+
+        if (IsInvalidArgument(streamId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(streamId));
+        }
+
+        var message = AppendMessageTracingId(new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(new StreamItemMessage(streamId, item))));
+        if (message.TracingId != null)
+        {
+            MessageLog.StartToSendMessageToConnections(Logger, message);
+        }
+        return WriteAsync(message);
+    }
+
+    public Task SendStreamCompletionAsync(string connectionId, string streamId, string error, CancellationToken cancellationToken = default)
+    {
+        if (IsInvalidArgument(connectionId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+        }
+
+        if (IsInvalidArgument(streamId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(streamId));
+        }
+
+        var message = AppendMessageTracingId(new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(new CompletionMessage(streamId, error, null, false))));
+        if (message.TracingId != null)
+        {
+            MessageLog.StartToSendMessageToConnections(Logger, message);
+        }
+        return WriteAsync(message);
+    }
+
+    protected override T AppendMessageTracingId<T>(T message)
+    {
+        if (_serviceManagerOptions.Value.EnableMessageTracing)
+        {
+            message.TracingId = MessageWithTracingIdHelper.Generate();
+            return message;
+        }
+
+        return base.AppendMessageTracingId(message);
     }
 }
