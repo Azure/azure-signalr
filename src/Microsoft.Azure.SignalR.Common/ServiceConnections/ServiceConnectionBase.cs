@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -38,11 +38,11 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     private readonly HandshakeRequestMessage _handshakeRequest;
 
-    private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
+    private readonly SemaphoreSlim _writeLock = new(1, 1);
 
-    private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private readonly TaskCompletionSource<object> _serviceConnectionOfflineTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object> _serviceConnectionOfflineTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly ServiceConnectionType _connectionType;
 
@@ -52,7 +52,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     private readonly IClientConnectionManager _clientConnectionManager;
 
-    private readonly object _statusLock = new object();
+    private readonly object _statusLock = new();
 
     private readonly string _endpointName;
 
@@ -99,7 +99,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     public string ConnectionId { get; }
 
-    protected HubServiceEndpoint HubEndpoint { get; }
+    public HubServiceEndpoint HubEndpoint { get; }
 
     protected ILogger Logger { get; }
 
@@ -367,6 +367,10 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
         };
     }
 
+    /// <summary>
+    /// Looks like it is virtual for ut, pretty tricky, TODO: improve, could use configurable keepaliveticks options to disable the ping
+    /// </summary>
+    /// <returns></returns>
     protected virtual async ValueTask TrySendPingAsync()
     {
         if (!_writeLock.Wait(0))
@@ -428,7 +432,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     public abstract Task CloseClientConnections(CancellationToken token);
 
-    private async Task PauseClientConnectionAsync(IClientConnection clientConnection)
+    private static async Task PauseClientConnectionAsync(IClientConnection clientConnection)
     {
         await clientConnection.PauseAsync();
         await clientConnection.PauseAckAsync();
@@ -636,7 +640,6 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
             {
                 var result = await connection.Transport.Input.ReadAsync();
                 var buffer = result.Buffer;
-
                 try
                 {
                     if (result.IsCanceled)
@@ -652,7 +655,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
                         UpdateReceiveTimestamp();
 
                         // No matter what kind of message come in, trigger send ping check
-                        _ = TrySendPingAsync();
+                        await TrySendPingAsync();
 
                         while (ServiceProtocol.TryParseMessage(ref buffer, out var message))
                         {

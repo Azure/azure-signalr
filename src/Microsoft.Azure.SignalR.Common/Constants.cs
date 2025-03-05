@@ -33,7 +33,7 @@ internal static class Constants
 
         public const string AzureSignalREndpointsKey = $"{AzureSignalRSectionKey}:Endpoints";
 
-        public static readonly string ConnectionStringSecondaryKey =
+        public const string ConnectionStringSecondaryKey =
             $"ConnectionStrings:{ConnectionStringDefaultKey}";
     }
 
@@ -111,10 +111,6 @@ internal static class Constants
         public const string OriginalPath = "asrs.op";
 
         public const string ConnectionRequestId = "asrs_request_id";
-
-        public const string RequestCulture = "asrs_lang";
-
-        public const string RequestUICulture = "asrs_ui_lang";
     }
 
     public static class CustomizedPingTimer
@@ -135,11 +131,13 @@ internal static class Constants
 
     public static class Headers
     {
-        public const string AsrsHeaderPrefix = "X-ASRS-";
+        public const string AsrsHeaderPrefix = "ASRS-";
 
-        public const string AsrsServerId = AsrsHeaderPrefix + "Server-Id";
+        public const string AsrsInternalHeaderPrefix = "X-ASRS-";
 
-        public const string AsrsMessageTracingId = AsrsHeaderPrefix + "Message-Tracing-Id";
+        public const string AsrsServerId = AsrsInternalHeaderPrefix + "Server-Id";
+
+        public const string AsrsMessageTracingId = AsrsInternalHeaderPrefix + "Message-Tracing-Id";
 
         public const string MicrosoftErrorCode = "x-ms-error-code";
     }

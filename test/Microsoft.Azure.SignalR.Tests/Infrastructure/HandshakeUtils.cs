@@ -6,8 +6,9 @@ using System.IO;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Protocol;
 
+using Microsoft.Azure.SignalR.Protocol;
+#nullable enable
 namespace Microsoft.Azure.SignalR.Tests
 {
     public static class HandshakeUtils
@@ -17,56 +18,51 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public static async Task<HandshakeRequestMessage> ReceiveHandshakeRequestAsync(PipeReader input)
         {
-            using (var cts = new CancellationTokenSource(DefaultHandshakeTimeout))
+            using var cts = new CancellationTokenSource(DefaultHandshakeTimeout);
+            while (true)
             {
-                while (true)
+                var result = await input.ReadAsync(cts.Token);
+
+                var buffer = result.Buffer;
+                var consumed = buffer.Start;
+                var examined = buffer.End;
+
+                try
                 {
-                    var result = await input.ReadAsync(cts.Token);
-
-                    var buffer = result.Buffer;
-                    var consumed = buffer.Start;
-                    var examined = buffer.End;
-
-                    try
+                    if (!buffer.IsEmpty)
                     {
-                        if (!buffer.IsEmpty)
+                        if (ServiceProtocol.TryParseMessage(ref buffer, out var message))
                         {
-                            if (ServiceProtocol.TryParseMessage(ref buffer, out var message))
+                            consumed = buffer.Start;
+                            examined = consumed;
+
+                            if (message is not HandshakeRequestMessage handshakeRequest)
                             {
-                                consumed = buffer.Start;
-                                examined = consumed;
-
-                                if (!(message is HandshakeRequestMessage handshakeRequest))
-                                {
-                                    throw new InvalidDataException(
-                                        $"{message.GetType().Name} received when waiting for handshake request.");
-                                }
-
-                                if (handshakeRequest.Version != ServiceProtocol.Version)
-                                {
-                                    throw new InvalidDataException("Protocol version not supported.");
-                                }
-
-                                return handshakeRequest;
+                                throw new InvalidDataException(
+                                    $"{message!.GetType().Name} received when waiting for handshake request.");
                             }
-                        }
 
-                        if (result.IsCompleted)
-                        {
-                            // Not enough data, and we won't be getting any more data.
-                            throw new InvalidOperationException(
-                                "Service connectioned disconnected before sending a handshake request");
+                            return handshakeRequest.Version != ServiceProtocol.Version
+                                ? throw new InvalidDataException("Protocol version not supported.")
+                                : handshakeRequest;
                         }
                     }
-                    finally
+
+                    if (result.IsCompleted)
                     {
-                        input.AdvanceTo(consumed, examined);
+                        // Not enough data, and we won't be getting any more data.
+                        throw new InvalidOperationException(
+                            "Service connectioned disconnected before sending a handshake request");
                     }
+                }
+                finally
+                {
+                    input.AdvanceTo(consumed, examined);
                 }
             }
         }
 
-        public static Task SendHandshakeResponseAsync(PipeWriter output, HandshakeResponseMessage response = null)
+        public static Task SendHandshakeResponseAsync(PipeWriter output, HandshakeResponseMessage? response = null)
         {
             ServiceProtocol.WriteMessage(response ?? new HandshakeResponseMessage(), output);
             return output.FlushAsync().AsTask();

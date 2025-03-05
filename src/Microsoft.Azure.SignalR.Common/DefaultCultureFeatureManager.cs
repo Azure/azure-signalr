@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices.ComTypes;
+
 using Microsoft.AspNetCore.Localization;
 
 namespace Microsoft.Azure.SignalR;
@@ -35,6 +36,12 @@ internal class DefaultCultureFeatureManager : ICultureFeatureManager
         }
         feature = null;
         return false;
+    }
+
+    public bool IsDefaultFeature(IRequestCultureFeature feature)
+    {
+        // this is the default feature value in blazor when no culture feature is configured by app server
+        return feature.RequestCulture.Culture == CultureInfo.DefaultThreadCurrentCulture && feature.RequestCulture.UICulture == CultureInfo.DefaultThreadCurrentUICulture;
     }
 
     public void Cleanup()

@@ -4,7 +4,9 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.Azure.SignalR.Protocol;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Protocols.Tests.Models;

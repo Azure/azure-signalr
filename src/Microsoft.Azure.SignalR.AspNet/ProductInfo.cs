@@ -3,22 +3,23 @@
 
 using System.Reflection;
 
-namespace Microsoft.Azure.SignalR.AspNet
+namespace Microsoft.Azure.SignalR.AspNet;
+
+#nullable enable
+
+internal static class ProductInfo
 {
-    internal static class ProductInfo
+    /// <summary>
+    /// For .NET framework below netframework462, there are assembly binding issues when referencing netstandard assemblies, https://github.com/Azure/azure-signalr/issues/452
+    /// For now, disable usage of System.Runtime.InteropServices.RuntimeInformation
+    /// </summary>
+    /// <returns></returns>
+    public static string GetProductInfo()
     {
-        /// <summary>
-        /// For .NET framework below netframework462, there are assembly binding issues when referencing netstandard assemblies, https://github.com/Azure/azure-signalr/issues/452
-        /// For now, disable usage of System.Runtime.InteropServices.RuntimeInformation
-        /// </summary>
-        /// <returns></returns>
-        public static string GetProductInfo()
-        {
-            var assembly = Assembly.GetCallingAssembly();
-            var packageId = assembly.GetName().Name;
-            var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
-            
-            return $"{packageId}/{version}";
-        }
+        var assembly = Assembly.GetCallingAssembly();
+        var packageId = assembly.GetName().Name;
+        var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+
+        return $"{packageId}/{version}";
     }
 }

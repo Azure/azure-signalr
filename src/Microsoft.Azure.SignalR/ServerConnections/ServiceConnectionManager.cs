@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
@@ -12,7 +13,7 @@ namespace Microsoft.Azure.SignalR;
 
 internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionManager<THub> where THub : Hub
 {
-    private IServiceConnectionContainer _serviceConnection = null;
+    private IServiceConnectionContainer _serviceConnection;
 
     public void SetServiceConnection(IServiceConnectionContainer serviceConnection)
     {

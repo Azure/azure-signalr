@@ -1,14 +1,16 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -147,8 +149,9 @@ public class CustomizedTimerTests(ITestOutputHelper output) : VerifiableLoggedTe
         }
     }
 
-    private static ServiceConnectionContainerBase.CustomizedPingTimer CreatePingTimer(ILoggerFactory loggerFactory, Action counter) =>
-        CustomizedPingTimerFactory.CreateCustomizedPingTimer(loggerFactory.CreateLogger(
+    private static ServiceConnectionContainerBase.CustomizedPingTimer CreatePingTimer(ILoggerFactory loggerFactory, Action counter)
+    {
+        return CustomizedPingTimerFactory.CreateCustomizedPingTimer(loggerFactory.CreateLogger(
             nameof(BasicStartStopTest)), nameof(BasicStartStopTest),
             () =>
             {
@@ -156,14 +159,17 @@ public class CustomizedTimerTests(ITestOutputHelper output) : VerifiableLoggedTe
                 return Task.CompletedTask;
             },
             BaseTs, BaseTs);
+    }
 
-    private class CustomizedPingTimerFactory : ServiceConnectionContainerBase
+    private sealed class CustomizedPingTimerFactory : ServiceConnectionContainerBase
     {
-        private CustomizedPingTimerFactory(IServiceConnectionFactory serviceConnectionFactory, int minConnectionCount, HubServiceEndpoint endpoint, IReadOnlyList<IServiceConnection> initialConnections = null, ILogger logger = null, AckHandler ackHandler = null) : base(serviceConnectionFactory, minConnectionCount, endpoint, initialConnections, logger, ackHandler)
+        public CustomizedPingTimerFactory(IServiceConnectionFactory serviceConnectionFactory, int minConnectionCount, HubServiceEndpoint endpoint, IReadOnlyList<IServiceConnection> initialConnections = null, ILogger logger = null, AckHandler ackHandler = null) : base(serviceConnectionFactory, minConnectionCount, endpoint, initialConnections, logger, ackHandler)
         {
         }
 
-        internal static CustomizedPingTimer CreateCustomizedPingTimer(ILogger logger, string name, Func<Task> func, TimeSpan due, TimeSpan interval) =>
-            new CustomizedPingTimer(logger, name, func, due, interval);
+        internal static CustomizedPingTimer CreateCustomizedPingTimer(ILogger logger, string name, Func<Task> func, TimeSpan due, TimeSpan interval)
+        {
+            return new CustomizedPingTimer(logger, name, func, due, interval);
+        }
     }
 }

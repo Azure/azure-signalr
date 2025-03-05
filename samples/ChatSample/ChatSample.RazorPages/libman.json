@@ -1,0 +1,13 @@
+{
+  "version": "3.0",
+  "defaultProvider": "unpkg",
+  "libraries": [
+    {
+      "library": "@microsoft/signalr@8.0.7",
+      "destination": "wwwroot/js/signalr/8.0.7",
+      "files": [
+        "dist/browser/signalr.min.js"
+      ]
+    }
+  ]
+}

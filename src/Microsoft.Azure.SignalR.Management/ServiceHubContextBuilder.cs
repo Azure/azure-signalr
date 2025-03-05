@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 using (host)
                 {
-                    await host.StopAsync();
+                    await host.StopAsync(CancellationToken.None);
                 }
                 throw;
             }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests.Common;
@@ -106,6 +107,16 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
     }
 
     public Task CloseClientConnections(CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, CancellationToken token = default)
     {
         throw new NotImplementedException();
     }

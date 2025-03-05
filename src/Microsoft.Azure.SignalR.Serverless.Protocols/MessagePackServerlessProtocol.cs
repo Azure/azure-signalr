@@ -3,6 +3,7 @@
 #nullable enable
 
 using System.Buffers;
+
 using MessagePack;
 
 namespace Microsoft.Azure.SignalR.Serverless.Protocols;

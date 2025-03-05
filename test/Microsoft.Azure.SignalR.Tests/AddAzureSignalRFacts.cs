@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
@@ -17,8 +18,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -76,7 +79,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
             var config = new ConfigurationBuilder()
                 .Build();
             var serviceProvider = services.AddSignalR()
-                .AddAzureSignalR( o =>
+                .AddAzureSignalR(o =>
                 {
                     o.InitialHubServerConnectionCount = 15;
                     o.MaxHubServerConnectionCount = 3;
@@ -134,7 +137,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
-            Func<HttpContext, bool> diagnosticClientFilter = context => context.Request.Query["diag"][0] != null;
+            static bool diagnosticClientFilter(HttpContext context) => context.Request.Query["diag"][0] != null;
             var services = new ServiceCollection();
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = services.AddSignalR()
@@ -224,7 +227,6 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
         }
     }
 
-
     [Theory]
     [InlineData(null, ServerStickyMode.Disabled)]
     [InlineData("invalid", ServerStickyMode.Disabled)]
@@ -243,9 +245,9 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
                     {"Azure:SignalR:ServerStickyMode", modeFromConfig }
                 })
                 .Build();
-            ServerStickyMode capturedMode = ServerStickyMode.Disabled;
+            var capturedMode = ServerStickyMode.Disabled;
             var serviceProvider = services.AddSignalR()
-                .AddAzureSignalR(o => 
+                .AddAzureSignalR(o =>
                 {
                     capturedMode = o.ServerStickyMode;
                 })
@@ -337,7 +339,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
                 Assert.Single(options.Endpoints);
                 Assert.Equal(secondaryValue, options.Endpoints[0].ConnectionString);
             }
-            
+
             // Endpoints from Endpoints and ConnectionString config are merged inside the EndpointManager
             var endpoints = serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.Keys.ToArray();
             if (secondaryValue == null)
@@ -403,8 +405,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
             }
 
             // Endpoints from Endpoints and ConnectionString config are merged inside the EndpointManager
-            Assert.Throws<AzureSignalRNoPrimaryEndpointException>(() =>
-                serviceProvider.GetRequiredService<IServiceEndpointManager>());
+            Assert.Throws<AzureSignalRNoPrimaryEndpointException>(serviceProvider.GetRequiredService<IServiceEndpointManager>);
         }
     }
 
@@ -528,7 +529,6 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
             Assert.Equal($"Property '{propertyName}' value should be {validScope}.", e.Message);
         }
     }
-
 
     [Fact(Skip = "Manual run for CI stable")]
     public async Task AddAzureSignalRHotReloadConfigValue()

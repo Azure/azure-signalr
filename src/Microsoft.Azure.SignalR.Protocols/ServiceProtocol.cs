@@ -6,7 +6,9 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+
 using MessagePack;
+
 using Microsoft.Extensions.Primitives;
 
 using static Microsoft.Azure.SignalR.Protocol.MessagePackUtils;
@@ -971,7 +973,7 @@ public class ServiceProtocol : IServiceProtocol
     {
         var reason = ReadString(ref reader, "reason");
         var ackId = ReadInt32(ref reader, "ackId");
-        var excluded = ReadStringArray(ref reader, "excluded");
+        var excluded = ReadStringArrayExcludeNull(ref reader, "excluded");
 
         var result = new CloseConnectionsWithAckMessage(ackId)
         {
@@ -990,7 +992,7 @@ public class ServiceProtocol : IServiceProtocol
         var userId = ReadStringNotNull(ref reader, "userId");
         var reason = ReadString(ref reader, "reason");
         var ackId = ReadInt32(ref reader, "ackId");
-        var excluded = ReadStringArray(ref reader, "excluded");
+        var excluded = ReadStringArrayExcludeNull(ref reader, "excluded");
 
         var result = new CloseUserConnectionsWithAckMessage(userId, ackId)
         {
@@ -1009,7 +1011,7 @@ public class ServiceProtocol : IServiceProtocol
         var group = ReadStringNotNull(ref reader, "group");
         var reason = ReadString(ref reader, "reason");
         var ackId = ReadInt32(ref reader, "ackId");
-        var excluded = ReadStringArray(ref reader, "excluded");
+        var excluded = ReadStringArrayExcludeNull(ref reader, "excluded");
 
         var result = new CloseGroupConnectionsWithAckMessage(group, ackId)
         {
@@ -1047,7 +1049,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static MultiConnectionDataMessage CreateMultiConnectionDataMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionList = ReadStringArray(ref reader, "connectionList");
+        var connectionList = ReadStringArrayExcludeNull(ref reader, "connectionList");
         var payloads = ReadPayloads(ref reader);
 
         var result = new MultiConnectionDataMessage(connectionList, payloads);
@@ -1073,7 +1075,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static MultiUserDataMessage CreateMultiUserDataMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var userList = ReadStringArray(ref reader, "userList");
+        var userList = ReadStringArrayExcludeNull(ref reader, "userList");
         var payloads = ReadPayloads(ref reader);
 
         var result = new MultiUserDataMessage(userList, payloads);
@@ -1086,7 +1088,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static BroadcastDataMessage CreateBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var excludedList = ReadStringArray(ref reader, "excludedList");
+        var excludedList = ReadStringArrayExcludeNull(ref reader, "excludedList");
         var payloads = ReadPayloads(ref reader);
 
         var result = new BroadcastDataMessage(excludedList, payloads);
@@ -1174,7 +1176,7 @@ public class ServiceProtocol : IServiceProtocol
     private static GroupBroadcastDataMessage CreateGroupBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
     {
         var groupName = ReadStringNotNull(ref reader, "groupName");
-        var excludedList = ReadStringArray(ref reader, "excludedList");
+        var excludedList = ReadStringArrayExcludeNull(ref reader, "excludedList");
         var payloads = ReadPayloads(ref reader);
 
         var result = new GroupBroadcastDataMessage(groupName, excludedList, payloads);
@@ -1185,7 +1187,7 @@ public class ServiceProtocol : IServiceProtocol
 
         if (arrayLength >= 7)
         {
-            result.ExcludedUserList = ReadStringArray(ref reader, "excludedUserList");
+            result.ExcludedUserList = ReadStringArrayExcludeNull(ref reader, "excludedUserList");
             result.CallerUserId = ReadString(ref reader, "callerUserId");
         }
 
@@ -1194,7 +1196,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static MultiGroupBroadcastDataMessage CreateMultiGroupBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var groupList = ReadStringArray(ref reader, "groupList");
+        var groupList = ReadStringArrayExcludeNull(ref reader, "groupList");
         var payloads = ReadPayloads(ref reader);
 
         var result = new MultiGroupBroadcastDataMessage(groupList, payloads);

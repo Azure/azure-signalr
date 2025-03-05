@@ -9,10 +9,12 @@ using System.Net;
 using System.Reflection;
 using System.Security.Claims;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -24,7 +26,7 @@ public class ServiceContextFacts
     [Fact]
     public void ServiceConnectionContextWithEmptyClaimsIsUnauthenticated()
     {
-        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0]));
+        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", Array.Empty<Claim>()));
         Assert.NotNull(serviceConnectionContext.User.Identity);
         Assert.False(serviceConnectionContext.User.Identity.IsAuthenticated);
     }
@@ -96,7 +98,7 @@ public class ServiceContextFacts
     [Fact]
     public void ServiceConnectionContextWithEmptyHttpContextByDefault()
     {
-        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0]));
+        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", Array.Empty<Claim>()));
         Assert.NotNull(serviceConnectionContext.User.Identity);
         Assert.NotNull(serviceConnectionContext.HttpContext);
         Assert.Equal(serviceConnectionContext.User, serviceConnectionContext.HttpContext.User);
@@ -111,7 +113,7 @@ public class ServiceContextFacts
         const string key2 = "header-key-2";
         const string value1 = "header-value-1";
         var value2 = new[] { "header-value-2a", "header-value-2b" };
-        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0],
+        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", Array.Empty<Claim>(),
             new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
             {
                 {key1, value1},
@@ -133,7 +135,7 @@ public class ServiceContextFacts
     public void ServiceConnectionContextWithNonEmptyQueries()
     {
         const string queryString = "?query1=value1&query2=value2&query3=value3";
-        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
+        var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", Array.Empty<Claim>(), EmptyHeaders, queryString));
 
         Assert.NotNull(serviceConnectionContext.User.Identity);
         Assert.NotNull(serviceConnectionContext.HttpContext);
@@ -203,42 +205,6 @@ public class ServiceContextFacts
         }
     }
 
-    [Theory]
-    // For Linux and Mac, `CultureInfo` ctor doesn't treat invalid culture string as an invalid one. See https://github.com/dotnet/runtime/issues/11590
-    // If `CultureInfo` ctor treats the culture string as an invalid one, the default culture won't be changed and `parsedCulture` will be ignored.
-    // Culture / UICulture by default is same as OS, typically en-US. See https://learn.microsoft.com/en-us/dotnet/api/system.threading.thread.currentuiculture?view=net-8.0&redirectedfrom=MSDN#remarks
-    [InlineData("&asrs_lang=ar-SA", true, "ar-SA", false, null)]
-    [InlineData("&asrs_lang=zh-CN", true, "zh-CN", false, null)]
-    [InlineData("&asrs_ui_lang=ar-SA", false, null, true, "ar-SA")]
-    [InlineData("&asrs_ui_lang=zh-CN", false, null, true, "zh-CN")]
-    [InlineData("&asrs_lang=ar-SA&asrs_ui_lang=zh-CN", true, "ar-SA", true, "zh-CN")]
-    [InlineData("&asrs_lang=zh-CN&asrs_ui_lang=ar-SA", true, "zh-CN", true, "ar-SA")]
-#if OS_WINDOWS
-    [InlineData("", false, null, false, null)]
-    [InlineData("&arsa_lang=", false, null, false, null)]
-    [InlineData("&arsa_lang=123", false, null, false, null)]
-    [InlineData("&arsa_ui_lang=", false, null, false, null)]
-    [InlineData("&arsa_ui_lang=123", false, null, false, null)]
-    [InlineData("&asrs_lang=ar-SA&asrs_ui_lang=", true, "ar-SA", false, null)]
-    [InlineData("&asrs_lang=ar-SA&asrs_ui_lang=123", true, "ar-SA", false, null)]
-    [InlineData("&asrs_lang=&asrs_ui_lang=ar-SA", false, null, true, "ar-SA")]
-    [InlineData("&asrs_lang=123&asrs_ui_lang=ar-SA", false, null, true, "ar-SA")]
-#endif
-    public void ServiceConnectionContextCultureTest(string cultureQuery, bool isCultureValid, string parsedCulture, bool isUiCultureValid, string parsedUiCulture)
-    {
-        var queryString = $"?{cultureQuery}";
-        var originalCulture = CultureInfo.CurrentCulture.Name;
-        var originalUiCulture = CultureInfo.CurrentUICulture.Name;
-
-        _ = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
-
-        var expectedCulture = isCultureValid ? parsedCulture : originalCulture;
-        var expectedUiCulture = isUiCultureValid ? parsedUiCulture : originalUiCulture;
-
-        Assert.Equal(expectedCulture, CultureInfo.CurrentCulture.Name);
-        Assert.Equal(expectedUiCulture, CultureInfo.CurrentUICulture.Name);
-    }
-
     public static IEnumerable<object[]> TestCultures => new object[][]
     {
             new object[]
@@ -247,7 +213,7 @@ public class ServiceContextFacts
             },
             new object[]
             {
-                new CultureInfo("zh-CN") { DateTimeFormat = { ShortDatePattern = "MM#dd#yyyy" } }, 
+                new CultureInfo("zh-CN") { DateTimeFormat = { ShortDatePattern = "MM#dd#yyyy" } },
                 new CultureInfo("fr-CA") { DateTimeFormat = { ShortDatePattern = "yyyy|MM|dd" } }
             }
     };
@@ -256,12 +222,11 @@ public class ServiceContextFacts
     [MemberData(nameof(TestCultures))]
     public async Task ServiceConnectionContextCultureManagerTest(CultureInfo expectCulture, CultureInfo expectUICulture)
     {
-        var (originalCulture, originalUICulture) = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
+        var (_, _) = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
 
         var timeoutSeconds = 1;
         var cultureManager = new DefaultCultureFeatureManager(timeoutSeconds);
-
-        var requestIdProvider = new DefaultConnectionRequestIdProvider();
+        _ = new DefaultConnectionRequestIdProvider();
         var requestId1 = "1";
         var requestId2 = "2";
         var expectFeature = new RequestCultureFeature(new RequestCulture(expectCulture, expectUICulture), null);
@@ -272,7 +237,7 @@ public class ServiceContextFacts
         Assert.True(cultureManager.TryRemoveCultureFeature(requestId1, out var actualFeature));
         Assert.Equal(expectFeature, actualFeature);
 
-        await Task.Delay(timeoutSeconds * 1000 + 100);
+        await Task.Delay((timeoutSeconds * 1000) + 100);
         cultureManager.Cleanup();
         Assert.False(cultureManager.TryRemoveCultureFeature(requestId2, out var _));
     }

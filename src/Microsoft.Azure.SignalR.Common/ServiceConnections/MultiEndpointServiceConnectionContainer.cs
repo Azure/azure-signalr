@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -31,7 +32,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
 
     private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
 
-    private int _started = 0;
+    private int _started;
 
     public ServiceConnectionStatus Status => throw new NotSupportedException();
 
@@ -75,10 +76,14 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         ILoggerFactory loggerFactory,
         TimeSpan? scaleTimeout = null)
     {
+#if NET6_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(generator);
+#else
         if (generator == null)
         {
             throw new ArgumentNullException(nameof(generator));
         }
+#endif
 
         _hubName = hub;
         _router = router ?? throw new ArgumentNullException(nameof(router));
@@ -148,6 +153,13 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
     public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
     {
         return CreateMessageWriter(serviceMessage).WriteAckableMessageAsync(serviceMessage, cancellationToken);
+    }
+
+    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, CancellationToken token = default)
+    {
+        var targetEndpoints = _routerEndpoints.needRouter ? _router.GetEndpointsForGroup(groupName, _routerEndpoints.endpoints) : _routerEndpoints.endpoints;
+        var messageWriter = new MultiEndpointMessageWriter(targetEndpoints?.ToList(), _loggerFactory);
+        return messageWriter.ListConnectionsInGroupAsync(groupName, top, tracingId, token);
     }
 
     public Task StartGetServersPing()
@@ -437,76 +449,62 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         Log.TimeoutWaitingClientsDisconnect(_logger, endpoint.ToString(), (int)_scaleTimeout.TotalSeconds);
     }
 
-    private IEnumerable<ServiceEndpoint> SingleOrNotSupported(IEnumerable<ServiceEndpoint> endpoints, ServiceMessage message)
-    {
-        var endpointCnt = endpoints.ToList().Count;
-        if (endpointCnt == 1)
-        {
-            return endpoints;
-        }
-        if (endpointCnt == 0)
-        {
-            throw new ArgumentException("Client invocation is not sent because no endpoint is returned from the endpoint router.");
-        }
-        throw new NotSupportedException("Client invocation to wait for multiple endpoints' results is not supported yet.");
-    }
-
     internal static class Log
     {
-        private static readonly Action<ILogger, string, Exception> _startingConnection =
+        private static readonly Action<ILogger, string, Exception> StartingConnectionAction =
             LoggerMessage.Define<string>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Staring connections for endpoint {endpoint}.");
 
-        private static readonly Action<ILogger, string, Exception> _stoppingConnection =
+        private static readonly Action<ILogger, string, Exception> StoppingConnectionAction =
             LoggerMessage.Define<string>(LogLevel.Debug, new EventId(2, "StoppingConnection"), "Stopping connections for endpoint {endpoint}.");
 
-        private static readonly Action<ILogger, string, Exception> _endpointNotExists =
+        private static readonly Action<ILogger, string, Exception> EndpointNotExistsAction =
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "EndpointNotExists"), "Endpoint {endpoint} from the router does not exists.");
 
-        private static readonly Action<ILogger, string, Exception> _failedStartingConnectionForNewEndpoint =
+        private static readonly Action<ILogger, string, Exception> FailedStartingConnectionForNewEndpointAction =
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, "FailedStartingConnectionForNewEndpoint"), "Fail to create and start server connection for new endpoint {endpoint}.");
 
-        private static readonly Action<ILogger, string, int, Exception> _timeoutWaitingForAddingEndpoint =
+        private static readonly Action<ILogger, string, int, Exception> TimeoutWaitingForAddingEndpointAction =
             LoggerMessage.Define<string, int>(LogLevel.Error, new EventId(8, "TimeoutWaitingForAddingEndpoint"), "Timeout waiting for add a new endpoint {endpoint} in {timeoutSecond} seconds. Check if app configurations are consistant and restart app server.");
 
-        private static readonly Action<ILogger, string, int, Exception> _timeoutWaitingClientsDisconnect =
+        private static readonly Action<ILogger, string, int, Exception> TimeoutWaitingClientsDisconnectAction =
            LoggerMessage.Define<string, int>(LogLevel.Error, new EventId(9, "TimeoutWaitingClientsDisconnect"), "Timeout waiting for clients disconnect for {endpoint} in {timeoutSecond} seconds.");
 
-        private static readonly Action<ILogger, string, Exception> _failedRemovingConnectionForEndpoint =
+        private static readonly Action<ILogger, string, Exception> FailedRemovingConnectionForEndpointAction =
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(10, "FailedRemovingConnectionForEndpoint"), "Fail to stop server connections for endpoint {endpoint}.");
 
         public static void StartingConnection(ILogger logger, string endpoint)
         {
-            _startingConnection(logger, endpoint, null);
+            StartingConnectionAction(logger, endpoint, null);
         }
 
         public static void StoppingConnection(ILogger logger, string endpoint)
         {
-            _stoppingConnection(logger, endpoint, null);
+            StoppingConnectionAction(logger, endpoint, null);
         }
 
         public static void EndpointNotExists(ILogger logger, string endpoint)
         {
-            _endpointNotExists(logger, endpoint, null);
+            EndpointNotExistsAction(logger, endpoint, null);
         }
 
         public static void FailedStartingConnectionForNewEndpoint(ILogger logger, string endpoint, Exception ex)
         {
-            _failedStartingConnectionForNewEndpoint(logger, endpoint, ex);
+            FailedStartingConnectionForNewEndpointAction(logger, endpoint, ex);
         }
 
         public static void TimeoutWaitingForAddingEndpoint(ILogger logger, string endpoint, int timeoutSecond)
         {
-            _timeoutWaitingForAddingEndpoint(logger, endpoint, timeoutSecond, null);
+            TimeoutWaitingForAddingEndpointAction(logger, endpoint, timeoutSecond, null);
         }
 
         public static void TimeoutWaitingClientsDisconnect(ILogger logger, string endpoint, int timeoutSecond)
         {
-            _timeoutWaitingClientsDisconnect(logger, endpoint, timeoutSecond, null);
+            TimeoutWaitingClientsDisconnectAction(logger, endpoint, timeoutSecond, null);
         }
 
         public static void FailedRemovingConnectionForEndpoint(ILogger logger, string endpoint, Exception ex)
         {
-            _failedRemovingConnectionForEndpoint(logger, endpoint, ex);
+            FailedRemovingConnectionForEndpointAction(logger, endpoint, ex);
         }
     }
 }

@@ -1,15 +1,15 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -21,13 +21,9 @@ internal partial class ServiceConnection : ServiceConnectionBase
 {
     private const string ReconnectMessage = "asrs:reconnect";
 
-    private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string>
-        {{Constants.AsrsUserAgent, ProductInfo.GetProductInfo()}};
-
     private static readonly TimeSpan CloseApplicationTimeout = TimeSpan.FromSeconds(5);
 
-    private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections =
-        new ConcurrentDictionary<string, ClientConnectionContext>(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections = new(StringComparer.Ordinal);
 
     private readonly IConnectionFactory _connectionFactory;
 
@@ -56,8 +52,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
                connectionType,
                loggerFactory?.CreateLogger<ServiceConnection>())
     {
-        _connectionFactory = connectionFactory;
-        _clientConnectionManager = clientConnectionManager;
+        _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+        _clientConnectionManager = clientConnectionManager ?? throw new ArgumentNullException(nameof(clientConnectionManager));
         _ackHandler = ackHandler;
     }
 
@@ -75,10 +71,14 @@ internal partial class ServiceConnection : ServiceConnectionBase
         return r;
     }
 
+    public override Task CloseClientConnections(CancellationToken token)
+    {
+        throw new NotSupportedException();
+    }
+
     protected override Task<ConnectionContext> CreateConnection(string target = null)
     {
-        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target,
-            headers: CustomHeader);
+        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target);
     }
 
     protected override Task DisposeConnection(ConnectionContext connection)
@@ -95,11 +95,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
     {
         _ = CleanupConnectionsAsyncCore(fromInstanceId);
         return Task.CompletedTask;
-    }
-
-    public override Task CloseClientConnections(CancellationToken token)
-    {
-        throw new NotSupportedException();
     }
 
     protected override Task OnClientConnectedAsync(OpenConnectionMessage openConnectionMessage)
@@ -260,8 +255,9 @@ internal partial class ServiceConnection : ServiceConnectionBase
         var connectionId = message.ConnectionId;
         try
         {
-            clientContext.Transport = await _clientConnectionManager.CreateConnection(message);
             Log.ConnectedStarting(Logger, connectionId);
+            clientContext.Transport = await _clientConnectionManager.CreateConnection(message);
+            Log.ConnectedStarted(Logger, connectionId);
         }
         catch (Exception e)
         {
@@ -331,9 +327,9 @@ internal partial class ServiceConnection : ServiceConnectionBase
                 }
             }
         }
-        catch (OperationCanceledException e)
+        catch (OperationCanceledException)
         {
-            Log.SendLoopStopped(Logger, connectionId, e);
+            // Canceled
         }
         catch (Exception e)
         {

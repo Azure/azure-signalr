@@ -3,8 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Security.Claims;
+
 using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR;
@@ -14,8 +14,6 @@ namespace Microsoft.Azure.SignalR;
 internal static class AuthUtility
 {
     private const int MaxTokenLength = 4096;
-
-    private static readonly SignalRJwtSecurityTokenHandler JwtTokenHandler = new();
 
     public static string GenerateJwtToken(byte[] keyBytes,
                                           string? kid = null,
@@ -29,7 +27,7 @@ internal static class AuthUtility
     {
         var subject = claims == null ? null : new ClaimsIdentity(claims);
 
-        var token = JwtTokenHandler.CreateJwtSecurityToken(
+        var token = SignalRJwtSecurityTokenHandler.CreateJwtSecurityToken(
             expires: expires,
             issuedAt: issuedAt,
             issuer: issuer,
@@ -63,10 +61,5 @@ internal static class AuthUtility
         );
 
         return jwtToken.Length > MaxTokenLength ? throw new AzureSignalRAccessTokenTooLongException() : jwtToken;
-    }
-
-    public static string GenerateRequestId()
-    {
-        return Convert.ToBase64String(BitConverter.GetBytes(Stopwatch.GetTimestamp()));
     }
 }

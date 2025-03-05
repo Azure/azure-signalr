@@ -5,9 +5,11 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR.Internal;
@@ -18,8 +20,10 @@ using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 using Xunit.Abstractions;
+
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -138,11 +142,11 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
     private static readonly JoinGroupWithAckMessage DefaultGroupMessage = new("a", "a", -1);
 
-    private readonly string ConnectionString1 = string.Format(ConnectionStringFormatter, Url1);
+    private static readonly string ConnectionString1 = string.Format(CultureInfo.InvariantCulture, ConnectionStringFormatter, Url1);
 
-    private readonly string ConnectionString2 = string.Format(ConnectionStringFormatter, Url2);
+    private static readonly string ConnectionString2 = string.Format(CultureInfo.InvariantCulture, ConnectionStringFormatter, Url2);
 
-    private readonly string ConnectionString3 = string.Format(ConnectionStringFormatter, Url3);
+    private static readonly string ConnectionString3 = string.Format(CultureInfo.InvariantCulture, ConnectionStringFormatter, Url3);
 
     public MultiEndpointServiceConnectionContainerTests(ITestOutputHelper output) : base(output)
     {
@@ -472,55 +476,43 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
     [Fact]
     public async Task TestContainerWithTwoEndpointWithAllOfflineSucceedsWithWarning()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
-        {
-            var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
+        using var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning);
+        var sem = new TestServiceEndpointManager(
+            new ServiceEndpoint(ConnectionString1),
+            new ServiceEndpoint(ConnectionString2));
 
-            Assert.Single(warns);
-            Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
-            return true;
-        }))
-        {
-            var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1),
-                new ServiceEndpoint(ConnectionString2));
+        var router = new TestEndpointRouter();
+        var container = new TestMultiEndpointServiceConnectionContainer("hub",
+            e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+        }, e), sem, router, loggerFactory);
 
-            var router = new TestEndpointRouter();
-            var container = new TestMultiEndpointServiceConnectionContainer("hub",
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
-            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
-            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
-            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
-            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
-            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
-            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
-            new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
-            }, e), sem, router, loggerFactory);
+        // All the connections started
+        _ = container.StartAsync();
+        await container.ConnectionInitializedTask;
+        await container.WriteAckableMessageAsync(DefaultGroupMessage);
+        var warns = logCollector.ExpectsMany(s => s.Write.LogLevel == LogLevel.Warning);
 
-            // All the connections started
-            _ = container.StartAsync();
-            await container.ConnectionInitializedTask;
-            await container.WriteAckableMessageAsync(DefaultGroupMessage);
-        }
+        Assert.Single(warns);
+        Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
     }
 
     [Fact]
     public async Task TestContainerWithTwoOfflineEndpointWriteAckableMessageSucceedsWithWarning()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
-        {
-            var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
-            Assert.Single(warns);
-            Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
-            return true;
-        }))
-        {
-            var sem = new TestServiceEndpointManager(
-            new ServiceEndpoint(ConnectionString1),
-            new ServiceEndpoint(ConnectionString2));
+        using var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning);
+        var sem = new TestServiceEndpointManager(
+        new ServiceEndpoint(ConnectionString1),
+        new ServiceEndpoint(ConnectionString2));
 
-            var router = new TestEndpointRouter();
-            var container = new TestMultiEndpointServiceConnectionContainer("hub", e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+        var router = new TestEndpointRouter();
+        var container = new TestMultiEndpointServiceConnectionContainer("hub", e => new TestServiceConnectionContainer(new List<IServiceConnection> {
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -530,11 +522,13 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                 }, e), sem, router, loggerFactory);
 
-            _ = container.StartAsync();
-            await container.ConnectionInitializedTask;
+        _ = container.StartAsync();
+        await container.ConnectionInitializedTask;
 
-            await container.WriteAckableMessageAsync(DefaultGroupMessage);
-        }
+        await container.WriteAckableMessageAsync(DefaultGroupMessage);
+        var warns = logCollector.ExpectsMany(s => s.Write.LogLevel == LogLevel.Warning);
+        Assert.Single(warns);
+        Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
     }
 
     [Fact]
@@ -1632,9 +1626,9 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             var url1 = "http://url1";
             var url2 = "http://url2";
             var url22 = "http://url22";
-            var connectionString1 = string.Format(connectionStringFormatter, url1);
-            var connectionString2 = string.Format(connectionStringFormatter, url2);
-            var connectionString22 = string.Format(connectionStringFormatter, url22);
+            var connectionString1 = string.Format(CultureInfo.InvariantCulture, connectionStringFormatter, url1);
+            var connectionString2 = string.Format(CultureInfo.InvariantCulture, connectionStringFormatter, url2);
+            var connectionString22 = string.Format(CultureInfo.InvariantCulture, connectionStringFormatter, url22);
 
             var sem = new TestServiceEndpointManager(new ServiceEndpoint(connectionString1, EndpointType.Primary, "1"),
                                                      new ServiceEndpoint(connectionString2, EndpointType.Primary, "2"));
@@ -1653,7 +1647,8 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                                                     endpoints[0].ConnectionContainer as IServiceMessageHandler,
                                                     null,
                                                     clientInvocationManager,
-                                                    hubProtocolResolver);
+                                                    hubProtocolResolver,
+                                                    null);
 
             var connection2 = new ServiceConnection(protocol,
                                                     ccm,
@@ -1667,7 +1662,8 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                                                     endpoints[1].ConnectionContainer as IServiceMessageHandler,
                                                     null,
                                                     clientInvocationManager,
-                                                    hubProtocolResolver);
+                                                    hubProtocolResolver,
+                                                    null);
 
             var connection22 = new ServiceConnection(protocol,
                                                      ccm,
@@ -1681,7 +1677,8 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                                                      endpoints[1].ConnectionContainer as IServiceMessageHandler,
                                                      null,
                                                      clientInvocationManager,
-                                                     hubProtocolResolver);
+                                                     hubProtocolResolver,
+                                                     null);
 
             var router = new TestEndpointRouter();
 
@@ -1824,8 +1821,8 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var containers = container.GetTestOnlineContainers();
         var container1 = containers.Where(x => x.Endpoint.Name == "1").FirstOrDefault();
         var container2 = containers.Where(x => x.Endpoint.Name == "22").FirstOrDefault();
-        await Task.WhenAll(container1.MockReceivedStatusPing(true, c1));
-        await Task.WhenAll(container2.MockReceivedStatusPing(true, c2));
+        await container1.MockReceivedStatusPing(true, c1);
+        await container2.MockReceivedStatusPing(true, c2);
 
         Assert.Equal(c1, hubEndpoints[0].EndpointMetrics.ClientConnectionCount);
         Assert.Equal(c2, hubEndpoints[1].EndpointMetrics.ClientConnectionCount);
@@ -1856,7 +1853,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         await TestEndpointOfflineInner(manager, new TestEndpointRouter(), mode);
     }
 
-    private (PingConnectionHandler, ConnectionDelegate) GetConnectionDelegate()
+    private static (PingConnectionHandler, ConnectionDelegate) GetConnectionDelegate()
     {
         var services = new ServiceCollection();
         var connectionHandler = new PingConnectionHandler();
@@ -1866,7 +1863,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         return (connectionHandler, builder.Build());
     }
 
-    private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, GracefulShutdownMode mode)
+    private static async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, GracefulShutdownMode mode)
     {
         var containers = new List<TestServiceConnectionContainer>();
 
@@ -1897,10 +1894,10 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         }
     }
 
-    private TestMultiEndpointServiceConnectionContainer CreateMultiEndpointConnection(EndpointStatus[] status, TaskCompletionSource<object> writeTcs, ILoggerFactory loggerFactory)
+    private static TestMultiEndpointServiceConnectionContainer CreateMultiEndpointConnection(EndpointStatus[] status, TaskCompletionSource<object> writeTcs, ILoggerFactory loggerFactory)
     {
         var i = 0;
-        var endpoints = status.Select(s => new ServiceEndpoint(string.Format(ConnectionStringFormatter, $"https://{s}{++i}"), name: status.ToString())).ToArray();
+        var endpoints = status.Select(s => new ServiceEndpoint(string.Format(CultureInfo.InvariantCulture, ConnectionStringFormatter, $"https://{s}{++i}"), name: status.ToString())).ToArray();
         var sem = new TestServiceEndpointManager(endpoints);
         var router = new TestEndpointRouter();
 
@@ -1966,7 +1963,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         }
     }
 
-    private class NotExistEndpointRouter : EndpointRouterDecorator
+    private sealed class NotExistEndpointRouter : EndpointRouterDecorator
     {
         public override IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints)
         {
@@ -1986,7 +1983,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                                                       IServiceEndpointManager endpoint,
                                                       IEndpointRouter router,
                                                       ILoggerFactory loggerFactory,
-                                                      TimeSpan? scaleTimeout = null
+                                                      TimeSpan? _ = null
             ) : base(hub, generator, endpoint, router, loggerFactory)
         {
         }
@@ -2005,7 +2002,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         }
     }
 
-    private class TestServiceEndpointManager : ServiceEndpointManagerBase
+    private sealed class TestServiceEndpointManager : ServiceEndpointManagerBase
     {
         private readonly ServiceEndpoint[] _endpoints;
 
@@ -2025,7 +2022,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         }
     }
 
-    private class TestEndpointRouter : EndpointRouterDecorator
+    private sealed class TestEndpointRouter : EndpointRouterDecorator
     {
         private readonly Exception _ex;
 

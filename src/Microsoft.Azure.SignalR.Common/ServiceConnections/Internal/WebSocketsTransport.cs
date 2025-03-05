@@ -1,11 +1,15 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+#if !NETCOREAPP
 using System.Diagnostics;
+#endif
 using System.IO.Pipelines;
 using System.Net.WebSockets;
+#if !NETCOREAPP
 using System.Runtime.InteropServices;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -103,11 +107,14 @@ internal partial class WebSocketsTransport : IDuplexPipe
 
     public async Task StartAsync(Uri url, CancellationToken cancellationToken = default)
     {
+#if NET6_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(url);
+#else
         if (url == null)
         {
             throw new ArgumentNullException(nameof(url));
         }
-
+#endif
         var resolvedUrl = ResolveWebSocketsUrl(url);
 
         string accessToken = null;

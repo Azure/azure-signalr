@@ -5,6 +5,7 @@ using System;
 
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests;

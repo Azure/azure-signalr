@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -9,8 +9,10 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Azure.Core;
 using Azure.Identity;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
@@ -20,8 +22,10 @@ using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+
 using Xunit;
 using Xunit.Abstractions;
+
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -29,10 +33,6 @@ namespace Microsoft.Azure.SignalR.Tests;
 public class ServiceMessageTests : VerifiableLoggedTest
 {
     private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-    private const string MicrosoftEntraConnectionString = "endpoint=https://localhost;authType=aad;";
-
-    private static readonly Uri DefaultEndpoint = new("http://localhost");
 
     private const string DefaultAudience = "https://localhost";
 
@@ -268,7 +268,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
     [InlineData(121, false)] // becomes unavailable only after the key has expired.
     public async Task TestAccessKeyResponseMessageWithError(int minutesElapsed, bool expectAvailable)
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Error, expectedErrors: c => true))
+        using (StartVerifiableLog(out var loggerFactory, LogLevel.Error))
         {
             var endpoint = new TestHubServiceEndpoint(endpoint: new TestServiceEndpoint(new DefaultAzureCredential()));
             var key = Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
@@ -365,7 +365,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         };
     }
 
-    private class TestTokenCredential : TokenCredential
+    private sealed class TestTokenCredential : TokenCredential
     {
         public string Token { get; } = Guid.NewGuid().ToString();
 
@@ -388,7 +388,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
     private sealed class TestConnectionHandler : ConnectionHandler
     {
-        private readonly int _shutdownAfter = 0;
+        private readonly int _shutdownAfter;
 
         private readonly string _lastWords;
 
@@ -460,7 +460,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
         private readonly TaskCompletionSource _clientDisconnectedTcs = new();
 
-        private ReadOnlySequence<byte> _payload = new();
+        private ReadOnlySequence<byte> _payload;
 
         public TestClientConnectionManager ClientConnectionManager { get; }
 
@@ -476,7 +476,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
         public SignalRProtocol.IHubProtocol DefaultHubProtocol { get; } = new SignalRProtocol.JsonHubProtocol();
 
-        private TestConnection Connection => _container.Instance ?? throw new Exception("connection needs to be started");
+        private TestConnection Connection => _container.Instance ?? throw new InvalidOperationException("connection needs to be started");
 
         public TestServiceConnection(TestConnectionContainer container,
                                      IServiceProtocol serviceProtocol,
@@ -507,6 +507,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
                 serviceEventHandler,
                 clientInvocationManager,
                 hubProtocolResolver,
+                null,
                 connectionType: connectionType,
                 mode: mode)
         {

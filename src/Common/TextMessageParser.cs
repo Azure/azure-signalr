@@ -10,7 +10,7 @@ namespace Microsoft.Azure.SignalR
     /// </summary>
     internal static class TextMessageParser
     {
-        public static readonly byte RecordSeparator = 0x1e;
+        public const byte RecordSeparator = 0x1e;
 
         public static bool TryParseMessage(ref ReadOnlySequence<byte> buffer, out ReadOnlySequence<byte> payload)
         {

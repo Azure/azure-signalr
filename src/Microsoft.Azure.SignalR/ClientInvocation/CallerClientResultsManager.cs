@@ -2,15 +2,16 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #if NET7_0_OR_GREATER
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
-using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.AspNetCore.SignalR.Protocol;
+
 using Microsoft.AspNetCore.SignalR;
-using System.Linq;
+using Microsoft.AspNetCore.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly ConcurrentDictionary<string, PendingInvocation> _pendingInvocations = new();
         private readonly string _clientResultManagerId = Guid.NewGuid().ToString("N");
-        private long _lastInvocationId = 0;
+        private long _lastInvocationId;
 
         private readonly IHubProtocolResolver _hubProtocolResolver;
         private IEndpointRouter _endpointRouter { get; }

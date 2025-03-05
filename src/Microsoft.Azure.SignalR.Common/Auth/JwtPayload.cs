@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Text;
+
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR;
@@ -74,7 +75,7 @@ internal class JwtPayload : Dictionary<string, object>
     {
         if (claim == null)
         {
-            throw LogHelper.LogExceptionMessage(new ArgumentNullException("claim"));
+            throw LogHelper.LogExceptionMessage(new ArgumentNullException(nameof(claim)));
         }
 
         AddClaims(new Claim[1] { claim });

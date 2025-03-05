@@ -1,16 +1,17 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Tests.Common;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    internal class TestHub : Hub
+    internal sealed class TestHub : Hub
     {
-        private TestHubConnectionManager _testHubConnectionManager;
+        private readonly TestHubConnectionManager _testHubConnectionManager;
 
         public TestHub(TestHubConnectionManager testHubConnectionManager)
         {

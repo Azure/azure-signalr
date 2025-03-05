@@ -10,15 +10,19 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Primitives;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
+
+#nullable enable
 
 public class ServiceConnectionFacts
 {
@@ -555,8 +559,8 @@ public class ServiceConnectionFacts
 
         // Validate client1 is closed and client2 is still connected
         await disconnectTask.OrTimeout();
-        Assert.Single(proxy.ClientConnections);
-        Assert.Equal(connectionId2, proxy.ClientConnections.FirstOrDefault().ConnectionId);
+        var clientConnection = Assert.Single(proxy.ClientConnections);
+        Assert.Equal(connectionId2, clientConnection.ConnectionId);
     }
 
     /// <summary>
@@ -588,7 +592,7 @@ public class ServiceConnectionFacts
         Assert.False(Task.WaitAll(task, DefaultTimeoutInMilliSeconds));
     }
 
-    private class TestConnectionFactoryWithHandshakeError : TestConnectionFactory
+    private sealed class TestConnectionFactoryWithHandshakeError : TestConnectionFactory
     {
         public TestConnectionFactoryWithHandshakeError(Func<TestConnection, Task> callback) : base(callback)
         {
@@ -602,7 +606,7 @@ public class ServiceConnectionFacts
         }
     }
 
-    private class TestConnectionFactoryWithConnectivityFailure : TestConnectionFactory
+    private sealed class TestConnectionFactoryWithConnectivityFailure : TestConnectionFactory
     {
         private const int MaxErrorCount = 3;
 
@@ -618,14 +622,14 @@ public class ServiceConnectionFacts
             if (_connectCount < MaxErrorCount)
             {
                 _connectCount++;
-                throw new Exception("Connect error.");
+                throw new InvalidOperationException("Connect error.");
             }
 
             return Task.CompletedTask;
         }
     }
 
-    private class TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage : TestConnectionFactory
+    private sealed class TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage : TestConnectionFactory
     {
         private const int MaxErrorCount = 3;
 

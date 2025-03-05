@@ -1,17 +1,21 @@
-﻿using System;
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Azure.Core;
 using Azure.Identity;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth;
@@ -22,8 +26,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth;
 public class MicrosoftEntraAccessKeyTests
 {
     private const string DefaultSigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-    private const string DefaultToken = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     private const string DefaultAudience = "https://localhost";
 
@@ -112,7 +114,6 @@ public class MicrosoftEntraAccessKeyTests
         Assert.Contains("has expired.", exception.Message);
     }
 
-
     [Theory]
     [ClassData(typeof(NotAuthorizedTestData))]
     public async Task TestUpdateAccessKeyFailedThrowsNotAuthorizedException(AzureSignalRException e, string expectedErrorMessage)
@@ -142,7 +143,7 @@ public class MicrosoftEntraAccessKeyTests
     public async Task TestUpdateAccessKeySendRequest(string expectedKeyStr)
     {
         var expectedKid = "foo";
-        var text = "{" + string.Format("\"AccessKey\": \"{0}\", \"KeyId\": \"{1}\"", expectedKeyStr, expectedKid) + "}";
+        var text = $"{{\"AccessKey\": \"{expectedKeyStr}\", \"KeyId\": \"{expectedKid}\"}}";
         var httpClientFactory = new TestHttpClientFactory(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = TextHttpContent.From(text),
@@ -271,7 +272,7 @@ public class MicrosoftEntraAccessKeyTests
         UpdateAtField?.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(6));
         Assert.False(key.Available);
         Assert.True(key.NeedRefresh);
-        
+
         var task1 = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
         var task2 = key.GenerateAccessTokenAsync(DefaultAudience, [], TimeSpan.FromMinutes(1), AccessTokenAlgorithm.HS256);
         await Assert.ThrowsAsync<AzureSignalRAccessTokenNotAuthorizedException>(async () => await Task.WhenAll(task1, task2));
@@ -380,15 +381,18 @@ public class MicrosoftEntraAccessKeyTests
             var token1 = AuthUtility.GenerateJwtToken(accessKey.KeyBytes, issuer: Constants.AsrsTokenIssuer);
             var token2 = AuthUtility.GenerateJwtToken(accessKey.KeyBytes, issuer: "microsoft.com");
 
-            yield return [new AzureSignalRUnauthorizedException(null, new Exception(), token1), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
-            yield return [new AzureSignalRUnauthorizedException(null, new Exception(), token2), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
-            yield return [new AzureSignalRUnauthorizedException("https://request.uri", new Exception(), token2), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
-            yield return [new AzureSignalRRuntimeException(DefaultUri, new Exception(), HttpStatusCode.Forbidden, "nginx"), AzureSignalRRuntimeException.NetworkErrorMessage];
-            yield return [new AzureSignalRRuntimeException(DefaultUri, new Exception(), HttpStatusCode.Forbidden, "http-content"), "http-content"];
-            yield return [new AzureSignalRRuntimeException(DefaultUri, new Exception("inner-exception-message"), HttpStatusCode.NotFound, "http"), AzureSignalRRuntimeException.ErrorMessage];
+            yield return [new AzureSignalRUnauthorizedException(null, new InvalidOperationException(), token1), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
+            yield return [new AzureSignalRUnauthorizedException(null, new InvalidOperationException(), token2), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
+            yield return [new AzureSignalRUnauthorizedException("https://request.uri", new InvalidOperationException(), token2), AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra];
+            yield return [new AzureSignalRRuntimeException(DefaultUri, new InvalidOperationException(), HttpStatusCode.Forbidden, "nginx"), AzureSignalRRuntimeException.NetworkErrorMessage];
+            yield return [new AzureSignalRRuntimeException(DefaultUri, new InvalidOperationException(), HttpStatusCode.Forbidden, "http-content"), "http-content"];
+            yield return [new AzureSignalRRuntimeException(DefaultUri, new InvalidOperationException("inner-exception-message"), HttpStatusCode.NotFound, "http"), AzureSignalRRuntimeException.ErrorMessage];
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 
     private sealed class TestHttpClientFactory(HttpResponseMessage message) : IHttpClientFactory
@@ -417,7 +421,10 @@ public class MicrosoftEntraAccessKeyTests
             _content = content;
         }
 
-        internal static HttpContent From(string content) => new TextHttpContent(content);
+        internal static HttpContent From(string content)
+        {
+            return new TextHttpContent(content);
+        }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {

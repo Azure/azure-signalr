@@ -1,8 +1,12 @@
-﻿using System;
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
@@ -11,6 +15,7 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -18,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Tests;
 public class ServiceHubDispatcherTests
 {
     [Fact]
-    public async void TestShutdown()
+    public async Task TestShutdown()
     {
         var index = new StrongBox<int>();
         var clientManager = new TestClientConnectionManager(index);

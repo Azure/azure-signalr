@@ -6,26 +6,31 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
 using Azure.Core.Serialization;
+
 using MessagePack;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+
 using Moq;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
     public class WithHubProtocolFacts
     {
-        private static readonly JsonHubProtocol Json = new JsonHubProtocol(Options.Create(new JsonHubProtocolOptions()
+        private static readonly JsonHubProtocol Json = new(Options.Create(new JsonHubProtocolOptions()
         {
             PayloadSerializerOptions = new() { WriteIndented = true }
         }));
-        private static readonly MessagePackHubProtocol MessagePack = new MessagePackHubProtocol();
+        private static readonly MessagePackHubProtocol MessagePack = new();
         public static IEnumerable<object[]> AddProtocolTestData()
         {
             yield return new object[] { Json };

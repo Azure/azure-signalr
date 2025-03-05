@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+
 using Azure.Core;
 
 namespace Microsoft.Azure.SignalR.Tests.Common;
@@ -7,7 +11,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common;
 
 internal class TestServiceEndpoint : ServiceEndpoint
 {
-    private static Uri DefaultEndpoint = new Uri("https://localhost");
+    private static readonly Uri DefaultEndpoint = new("https://localhost");
 
     private const string DefaultConnectionString = "Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ;Version=1.0";
 

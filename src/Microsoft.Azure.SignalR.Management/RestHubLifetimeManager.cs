@@ -3,13 +3,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Primitives;
+
 using static Microsoft.Azure.SignalR.Constants;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -208,7 +211,7 @@ namespace Microsoft.Azure.SignalR.Management
             var api = await _restApiProvider.GetUserGroupManagementEndpointAsync(_appName, _hubName, userId, groupName);
             api.Query = new Dictionary<string, StringValues>
             {
-                ["ttl"] = ((int)ttl.TotalSeconds).ToString(),
+                ["ttl"] = ((int)ttl.TotalSeconds).ToString(CultureInfo.InvariantCulture),
             };
             await _restClient.SendWithRetryAsync(api, HttpMethod.Put, handleExpectedResponse: null, cancellationToken: cancellationToken);
         }

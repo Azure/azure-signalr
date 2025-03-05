@@ -3,6 +3,7 @@
 
 using System;
 using System.Net.Http;
+
 using Azure.Core.Serialization;
 using Microsoft.AspNetCore.SignalR.Protocol;
 

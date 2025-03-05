@@ -1,4 +1,7 @@
-﻿/*------------------------------------------------------------------------------
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+/*------------------------------------------------------------------------------
 * Copied From https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/ClaimTypeMapping.cs
 * Nothing changed for class `ClaimTypeMapping`
 ------------------------------------------------------------------------------*/

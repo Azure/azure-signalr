@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -9,11 +9,14 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
+
 using Xunit;
 using Xunit.Abstractions;
+
 using ServiceProtocol = Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -47,7 +50,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestForwardCloseMessage()
+    public async Task TestForwardCloseMessage()
     {
         using var serviceConnection = new TestServiceConnection();
 
@@ -88,7 +91,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestForwardInvocationMessage()
+    public async Task TestForwardInvocationMessage()
     {
         using var serviceConnection = new TestServiceConnection();
 
@@ -129,7 +132,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestForwardHandshakeResponse()
+    public async Task TestForwardHandshakeResponse()
     {
         using var serviceConnection = new TestServiceConnection();
 
@@ -167,7 +170,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestSkipHandshakeResponse()
+    public async Task TestSkipHandshakeResponse()
     {
         using var serviceConnection = new TestServiceConnection();
 
@@ -204,114 +207,106 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public async void TestPauseResume()
+    public async Task TestPauseResume()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Information, logChecker: records =>
+        using var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Information);
+        using var serviceConnection = new TestServiceConnection();
+
+        var pipeOptions = new PipeOptions();
+        var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+
+        var hubProtocol = new JsonHubProtocol();
+
+        var connectionId = "testConnectionId";
+
+        var connection = new ClientConnectionContext(new(connectionId, Array.Empty<Claim>())
         {
-            return records.Any(r => r.Write.EventId == 8) && 
-                   records.Single(r => r.Write.EventId == 9) != null;
-        }))
+            Protocol = hubProtocol.Name,
+        })
         {
-            using var serviceConnection = new TestServiceConnection();
+            Application = pair.Application,
+            ServiceConnection = serviceConnection,
+            Logger = loggerFactory.CreateLogger<ServiceConnection>(),
+        };
 
-            var pipeOptions = new PipeOptions();
-            var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+        var outgoingTask = connection.ProcessOutgoingMessagesAsync(hubProtocol);
 
-            var hubProtocol = new JsonHubProtocol();
+        // write handshake response
+        var response = HandshakeResponseMessage.Empty;
+        HandshakeProtocol.WriteResponseMessage(response, pair.Transport.Output);
+        await pair.Transport.Output.FlushAsync();
 
-            var connectionId = "testConnectionId";
+        await connection.HandshakeResponseTask.OrTimeout(); ;
+        await connection.PauseAsync();
 
-            var connection = new ClientConnectionContext(new(connectionId, Array.Empty<Claim>())
-            {
-                Protocol = hubProtocol.Name,
-            })
-            {
-                Application = pair.Application,
-                ServiceConnection = serviceConnection,
-                Logger = loggerFactory.CreateLogger<ServiceConnection>(),
-            };
+        var invocationId = "foo";
+        var expect = new CompletionMessage(invocationId, "no error", null, false);
+        hubProtocol.WriteMessage(expect, pair.Transport.Output);
+        await pair.Transport.Output.FlushAsync();
 
-            var outgoingTask = connection.ProcessOutgoingMessagesAsync(hubProtocol);
+        await Task.Delay(3000);
+        await connection.ResumeAsync();
 
-            // write handshake response
-            var response = HandshakeResponseMessage.Empty;
-            HandshakeProtocol.WriteResponseMessage(response, pair.Transport.Output);
-            await pair.Transport.Output.FlushAsync();
+        pair.Transport.Output.Complete();
+        await outgoingTask.OrTimeout();
+        await serviceConnection.CompleteAsync();
 
-            await connection.HandshakeResponseTask.OrTimeout(); ;
-            await connection.PauseAsync();
-
-            var invocationId = "foo";
-            var expect = new CompletionMessage(invocationId, "no error", null, false);
-            hubProtocol.WriteMessage(expect, pair.Transport.Output);
-            await pair.Transport.Output.FlushAsync();
-
-            await Task.Delay(3000);
-            await connection.ResumeAsync();
-
-            pair.Transport.Output.Complete();
-            await outgoingTask.OrTimeout();
-            await serviceConnection.CompleteAsync();
-
-            Assert.Equal(2, serviceConnection.Messages.Count);
-            Assert.IsType<ServiceProtocol.ConnectionDataMessage>(serviceConnection.Messages[0]);
-            var actual = Assert.IsType<ServiceProtocol.ConnectionDataMessage>(serviceConnection.Messages[1]);
-            Assert.Equal(connectionId, actual.ConnectionId);
-            Assert.Equal(hubProtocol.GetMessageBytes(expect).ToArray(), actual.Payload.ToArray());
-        }
+        Assert.Equal(2, serviceConnection.Messages.Count);
+        Assert.IsType<ServiceProtocol.ConnectionDataMessage>(serviceConnection.Messages[0]);
+        var actual = Assert.IsType<ServiceProtocol.ConnectionDataMessage>(serviceConnection.Messages[1]);
+        Assert.Equal(connectionId, actual.ConnectionId);
+        Assert.Equal(hubProtocol.GetMessageBytes(expect).ToArray(), actual.Payload.ToArray());
+        logCollector.Expects("OutgoingTaskPaused");
+        logCollector.Expects("OutgoingTaskResume");
     }
 
     [Fact]
-    public async void TestPauseAck()
+    public async Task TestPauseAck()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Information, logChecker: records =>
+        using var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Information);
+        using var serviceConnection = new TestServiceConnection();
+
+        var pipeOptions = new PipeOptions();
+        var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+
+        var hubProtocol = new JsonHubProtocol();
+
+        var connectionId = "testConnectionId";
+
+        var connection = new ClientConnectionContext(new(connectionId, Array.Empty<Claim>())
         {
-            return records.Single(r => r.Write.EventId == 10) != null;
-        }))
+            Protocol = hubProtocol.Name,
+        })
         {
-            using var serviceConnection = new TestServiceConnection();
+            Application = pair.Application,
+            ServiceConnection = serviceConnection,
+            Logger = loggerFactory.CreateLogger<ServiceConnection>(),
+        };
 
-            var pipeOptions = new PipeOptions();
-            var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+        var outgoingTask = connection.ProcessOutgoingMessagesAsync(hubProtocol);
 
-            var hubProtocol = new JsonHubProtocol();
+        // write handshake response
+        var response = HandshakeResponseMessage.Empty;
+        HandshakeProtocol.WriteResponseMessage(response, pair.Transport.Output);
+        await pair.Transport.Output.FlushAsync();
 
-            var connectionId = "testConnectionId";
+        await connection.HandshakeResponseTask.OrTimeout(); ;
 
-            var connection = new ClientConnectionContext(new(connectionId, Array.Empty<Claim>())
-            {
-                Protocol = hubProtocol.Name,
-            })
-            {
-                Application = pair.Application,
-                ServiceConnection = serviceConnection,
-                Logger = loggerFactory.CreateLogger<ServiceConnection>(),
-            };
+        await connection.PauseAsync();
+        await connection.PauseAckAsync();
+        await connection.PauseAckAsync(); // should receive exactly 1 ack
 
-            var outgoingTask = connection.ProcessOutgoingMessagesAsync(hubProtocol);
+        pair.Transport.Output.Complete();
+        await outgoingTask.OrTimeout();
+        await serviceConnection.CompleteAsync();
 
-            // write handshake response
-            var response = HandshakeResponseMessage.Empty;
-            HandshakeProtocol.WriteResponseMessage(response, pair.Transport.Output);
-            await pair.Transport.Output.FlushAsync();
-
-            await connection.HandshakeResponseTask.OrTimeout(); ;
-
-            await connection.PauseAsync();
-            await connection.PauseAckAsync();
-            await connection.PauseAckAsync(); // should receive exactly 1 ack
-
-            pair.Transport.Output.Complete();
-            await outgoingTask.OrTimeout();
-            await serviceConnection.CompleteAsync();
-
-            Assert.Equal(2, serviceConnection.Messages.Count);
-            Assert.IsType<ServiceProtocol.ConnectionDataMessage>(serviceConnection.Messages[0]);
-            var message = Assert.IsType<ServiceProtocol.ConnectionFlowControlMessage>(serviceConnection.Messages[1]);
-            Assert.Equal(connectionId, message.ConnectionId);
-            Assert.Equal(ServiceProtocol.ConnectionType.Client, message.ConnectionType);
-            Assert.Equal(ServiceProtocol.ConnectionFlowControlOperation.PauseAck, message.Operation);
-        }
+        Assert.Equal(2, serviceConnection.Messages.Count);
+        Assert.IsType<ServiceProtocol.ConnectionDataMessage>(serviceConnection.Messages[0]);
+        var message = Assert.IsType<ServiceProtocol.ConnectionFlowControlMessage>(serviceConnection.Messages[1]);
+        Assert.Equal(connectionId, message.ConnectionId);
+        Assert.Equal(ServiceProtocol.ConnectionType.Client, message.ConnectionType);
+        Assert.Equal(ServiceProtocol.ConnectionFlowControlOperation.PauseAck, message.Operation);
+        logCollector.Expects("OutgoingTaskPauseAck");
     }
 
     private sealed class TestServiceConnection : IServiceConnection, IDisposable

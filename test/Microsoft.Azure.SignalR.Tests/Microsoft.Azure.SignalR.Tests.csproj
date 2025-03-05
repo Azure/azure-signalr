@@ -1,11 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <DefineConstants>MULTIFRAMEWORK</DefineConstants>
     <IsPackable>false</IsPackable>
     <LangVersion>11</LangVersion>
     <TargetFramework>net8.0</TargetFramework>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">

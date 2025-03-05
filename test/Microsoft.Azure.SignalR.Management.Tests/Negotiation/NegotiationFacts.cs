@@ -3,9 +3,11 @@
 
 using System.Linq;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
+
 using Xunit;
 using Xunit.Abstractions;
 

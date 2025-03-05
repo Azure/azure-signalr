@@ -5,6 +5,7 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management;
@@ -13,7 +14,7 @@ namespace Microsoft.Azure.SignalR.Management;
 
 internal class TimeoutHttpMessageHandler : DelegatingHandler
 {
-    private readonly bool _enableTimeout = false;
+    private readonly bool _enableTimeout;
     private readonly TimeSpan _timeout;
     public TimeoutHttpMessageHandler(IOptions<ServiceManagerOptions> serviceManagerOptions)
     {

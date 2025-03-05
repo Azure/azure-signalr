@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -6,10 +6,12 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -29,7 +31,7 @@ public class HubMessageSerializerTests
         serializer.SerializeMessage("JsOn", message);
     }
 
-    private class IgnoreCaseJsonHubProtocol : IHubProtocol
+    private sealed class IgnoreCaseJsonHubProtocol : IHubProtocol
     {
         public string Name => "json";
 

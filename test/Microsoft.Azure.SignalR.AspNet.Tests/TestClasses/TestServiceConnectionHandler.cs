@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -6,27 +6,37 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
 internal sealed class TestServiceConnectionHandler : ServiceConnectionManager
 {
-    private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForTransportOutputMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
+    private readonly ILogger _logger;
+    private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForTransportOutputMessage = new();
 
-    public TestServiceConnectionHandler() : this(null, null)
+    public TestServiceConnectionHandler(ILoggerFactory loggerFactory) : this(loggerFactory, null, null)
     {
     }
 
-    public TestServiceConnectionHandler(string appName, IReadOnlyList<string> hubs) : base(appName, hubs)
+    public TestServiceConnectionHandler(ILoggerFactory loggerFactory, string appName, IReadOnlyList<string> hubs) : base(appName, hubs)
     {
+        _logger = loggerFactory.CreateLogger<TestServiceConnectionHandler>();
     }
 
     public override Task WriteAsync(ServiceMessage serviceMessage)
     {
         if (_waitForTransportOutputMessage.TryGetValue(serviceMessage.GetType(), out var tcs))
         {
+            _logger.LogInformation($"Set TCS for {serviceMessage.GetType().Name}");
             tcs.SetResult(serviceMessage);
+        }
+        else
+        {
+            _logger.LogInformation($"Set TCS for {serviceMessage.GetType().Name} failed");
+            throw new InvalidOperationException("Not expected to write before tcs is inited");
         }
 
         return Task.CompletedTask;
@@ -48,18 +58,22 @@ internal sealed class TestServiceConnectionHandler : ServiceConnectionManager
 
     public Task<ServiceMessage> WaitForTransportOutputMessageAsync(Type messageType)
     {
-        if (_waitForTransportOutputMessage.TryGetValue(messageType, out var tcs))
-        {
-            tcs.TrySetCanceled();
-        }
-
+        var toAdd = new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
         // re-init the tcs
-        tcs = _waitForTransportOutputMessage[messageType] = new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
-
+        var tcs = _waitForTransportOutputMessage.AddOrUpdate(messageType, t =>
+        {
+            _logger.LogInformation($"Add TCS for {messageType.Name}");
+            return toAdd;
+        }, (t, old) =>
+        {
+            _logger.LogInformation($"Update TCS for {messageType.Name}");
+            old.TrySetCanceled();
+            return toAdd;
+        });
         return tcs.Task;
     }
 
-    public void DisposeServiceConnection(IServiceConnection connection)
+    public void DisposeServiceConnection(IServiceConnection _)
     {
     }
 }

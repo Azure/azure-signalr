@@ -8,6 +8,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -15,6 +16,7 @@ using Microsoft.AspNet.SignalR.Json;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Owin;
+
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.AspNet;
@@ -229,7 +231,7 @@ internal class NegotiateMiddleware : OwinMiddleware
         // add OriginalPath and QueryString when the clients protocol is higher than 2.0, earlier ASP.NET SignalR clients does not support redirect URL with query parameters
         if (!string.IsNullOrEmpty(clientProtocol) && Version.TryParse(clientProtocol, out var version) && version >= ClientSupportQueryStringVersion)
         {
-            var clientRequestId = _connectionRequestIdProvider.GetRequestId();
+            var clientRequestId = _connectionRequestIdProvider.GetRequestId("");
             if (clientRequestId != null)
             {
                 // remove system preserved query strings

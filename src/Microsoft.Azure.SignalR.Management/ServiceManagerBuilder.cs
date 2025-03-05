@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -70,10 +71,14 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The <see cref="ServiceManagerBuilder"/> instance itself.</returns>
         public ServiceManagerBuilder WithNewtonsoftJson(Action<NewtonsoftServiceHubProtocolOptions> configure)
         {
+#if NET6_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(configure);
+#else
             if (configure is null)
             {
                 throw new ArgumentNullException(nameof(configure));
             }
+#endif
 
             _services.AddNewtonsoftHubProtocol(configure);
             return this;
@@ -96,10 +101,14 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The <see cref="ServiceHubContextBuilder"/> instance itself.</returns>
         public ServiceManagerBuilder WithHubProtocols(params IHubProtocol[] hubProtocols)
         {
+#if NET6_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(hubProtocols);
+#else
             if (hubProtocols == null)
             {
                 throw new ArgumentNullException(nameof(hubProtocols));
             }
+#endif
             // Allows the user to use MessagePack only.
             _services.RemoveAll<IHubProtocol>();
             foreach (var hubProtocol in hubProtocols)
@@ -116,10 +125,14 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The <see cref="ServiceHubContextBuilder"/> instance itself.</returns>
         public ServiceManagerBuilder AddHubProtocol(IHubProtocol hubProtocol)
         {
+#if NET6_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(hubProtocol);
+#else
             if (hubProtocol == null)
             {
                 throw new ArgumentNullException(nameof(hubProtocol));
             }
+#endif
             if (!hubProtocol.Name.Equals(Constants.Protocol.Json, StringComparison.OrdinalIgnoreCase) && !hubProtocol.Name.Equals(Constants.Protocol.MessagePack, StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentException($"The name '{hubProtocol.Name}' of the hub protocol is not supported. Only '{Constants.Protocol.Json}' or '{Constants.Protocol.MessagePack}' is allowed.");

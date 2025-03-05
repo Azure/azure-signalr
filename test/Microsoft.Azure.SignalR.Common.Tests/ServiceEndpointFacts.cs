@@ -4,7 +4,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+
 using Azure.Identity;
+
 using Xunit;
 
 #nullable enable
@@ -81,12 +83,12 @@ public class ServiceEndpointFacts
         var serverEndpoint = new Uri("http://serverEndpoint:123/path");
         var endpoint = "https://test.service.signalr.net";
         var serviceEndpoints = new ServiceEndpoint[]{
-            new ServiceEndpoint(new Uri(endpoint), new DefaultAzureCredential())
+            new(new Uri(endpoint), new DefaultAzureCredential())
             {
                 ClientEndpoint = clientEndpoint,
                 ServerEndpoint = serverEndpoint
             },
-            new ServiceEndpoint($"Endpoint={endpoint};AccessKey={DefaultKey}")
+            new($"Endpoint={endpoint};AccessKey={DefaultKey}")
             {
                 ClientEndpoint = clientEndpoint,
                 ServerEndpoint = serverEndpoint
@@ -385,7 +387,10 @@ public class ServiceEndpointFacts
             };
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 
     public class EndpointEndWithSlash : IEnumerable<object[]>
@@ -398,7 +403,10 @@ public class ServiceEndpointFacts
             yield return new object[] { $"endpoint={HttpsEndpoint}/;accesskey={DefaultKey}", HttpsEndpoint };
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 
     public class EndpointAndPortTestData : IEnumerable<object[]>
@@ -428,7 +436,10 @@ public class ServiceEndpointFacts
             yield return new object[] { $"ENDPOINT={HttpsEndpoint}:500;ACCESSKEY={DefaultKey};PORT=443", HttpsEndpoint + "/", HttpsEndpoint };
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 
     public class ClientEndpointTestData : IEnumerable<object[]>
@@ -441,6 +452,9 @@ public class ServiceEndpointFacts
             yield return new object[] { $"endpoint={HttpsEndpoint};authType=aad;clientEndpoint={HttpsClientEndpoint}:443", HttpsClientEndpoint + ":443" };
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.AspNetCore.Connections;
@@ -9,7 +9,9 @@ using Microsoft.Azure.SignalR.Emulator.Controllers;
 using Microsoft.Azure.SignalR.Emulator.HubEmulator;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+
 using Moq;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Emulator.Tests.Controllers

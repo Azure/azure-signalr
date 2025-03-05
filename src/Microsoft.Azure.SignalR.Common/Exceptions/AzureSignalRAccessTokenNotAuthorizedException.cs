@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Globalization;
+
 using Azure.Core;
 
 namespace Microsoft.Azure.SignalR.Common;
@@ -31,7 +33,7 @@ public class AzureSignalRAccessTokenNotAuthorizedException : AzureSignalRExcepti
     /// <param name="inner"></param>
     [Obsolete]
     public AzureSignalRAccessTokenNotAuthorizedException(string credentialName, Exception inner) :
-        base(string.Format(Template, credentialName, AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra), inner)
+        base(string.Format(CultureInfo.InvariantCulture, Template, credentialName, AzureSignalRUnauthorizedException.ErrorMessageMicrosoftEntra), inner)
     {
     }
 
@@ -39,7 +41,7 @@ public class AzureSignalRAccessTokenNotAuthorizedException : AzureSignalRExcepti
     /// Initializes a new instance of the <see cref="AzureSignalRAccessTokenNotAuthorizedException"/> class.
     /// </summary>
     internal AzureSignalRAccessTokenNotAuthorizedException(TokenCredential credential, string message, Exception? inner = null) :
-        base(string.Format(Template, credential.GetType().Name, message), inner)
+        base(string.Format(CultureInfo.InvariantCulture, Template, credential.GetType().Name, message), inner)
     {
     }
 }

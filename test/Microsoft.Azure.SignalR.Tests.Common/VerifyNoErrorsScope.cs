@@ -1,75 +1,100 @@
-﻿using System;
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Testing;
 
-namespace Microsoft.Azure.SignalR.Tests.Common
+using Xunit;
+
+namespace Microsoft.Azure.SignalR.Tests.Common;
+
+internal class VerifyLogScope : IVerifiableLog
 {
-    internal class VerifyLogScope : IDisposable
+    private readonly IDisposable _wrappedDisposable;
+    private readonly LogSinkProvider _sink;
+
+    private readonly List<Func<LogRecord, bool>> _expectedLogs = [];
+
+    public ILoggerFactory LoggerFactory { get; }
+
+    public VerifyLogScope(ILoggerFactory loggerFactory = null, IDisposable wrappedDisposable = null)
     {
-        private readonly IDisposable _wrappedDisposable;
-        private readonly Func<WriteContext, bool> _expectedErrors;
-        private readonly Func<IList<LogRecord>, bool> _logChecker;
-        private readonly LogSinkProvider _sink;
+        _wrappedDisposable = wrappedDisposable;
+        _sink = new LogSinkProvider();
 
-        public ILoggerFactory LoggerFactory { get; }
+        LoggerFactory = loggerFactory ?? new LoggerFactory();
+        LoggerFactory.AddProvider(_sink);
+    }
 
-        public VerifyLogScope(ILoggerFactory loggerFactory = null, IDisposable wrappedDisposable = null, Func<WriteContext, bool> expectedErrors = null, Func<IList<LogRecord>, bool> logChecker = null)
+    public LogRecord Expects(string logEventName)
+    {
+        return Expects(i => i.Write.EventId.Name == logEventName);
+    }
+
+    public LogRecord Expects(Func<LogRecord, bool> predicate)
+    {
+        var matches = ExpectsMany(predicate);
+        Assert.NotEmpty(matches);
+        return matches[0];
+    }
+
+    public IReadOnlyList<LogRecord> ExpectsMany(string logEventName)
+    {
+        return ExpectsMany(i => i.Write.EventId.Name == logEventName);
+    }
+
+    public IReadOnlyList<LogRecord> ExpectsMany(Func<LogRecord, bool> predicate)
+    {
+        _expectedLogs.Add(predicate);
+        return _sink.GetLogs().Where(predicate).ToArray();
+    }
+
+    public void Dispose()
+    {
+        _wrappedDisposable?.Dispose();
+        var results = _sink.GetLogs().Where(i =>
         {
-            _wrappedDisposable = wrappedDisposable;
-            _expectedErrors = expectedErrors;
-            _logChecker = logChecker;
-            _sink = new LogSinkProvider();
-
-            LoggerFactory = loggerFactory ?? new LoggerFactory();
-            LoggerFactory.AddProvider(_sink);
-        }
-
-        public void Dispose()
-        {
-            _wrappedDisposable?.Dispose();
-
-            var logs = _sink.GetLogs();
-            if (_logChecker?.Invoke(logs) == false)
+            // Only check unexpected error logs
+            if (i.Write.LogLevel < LogLevel.Error)
             {
-                throw new Exception("Failed checking log");
+                return false;
             }
 
-            var results = _sink.GetLogs().Where(w => w.Write.LogLevel >= LogLevel.Error).ToList();
-
-            if (_expectedErrors != null)
+            foreach (var filter in _expectedLogs)
             {
-                if (results.Any(w => !_expectedErrors(w.Write)))
+                if (filter(i))
                 {
-                    throw new Exception("Fail to match expected error(s).");
+                    return false;
                 }
-                results = results.Where(w => !_expectedErrors(w.Write)).ToList();
             }
 
-            if (results.Count > 0)
+            return true;
+        }).ToArray();
+        if (results.Length > 0)
+        {
+            var errorMessage = $"{results.Length} error(s) logged.";
+            errorMessage += Environment.NewLine;
+            errorMessage += string.Join(Environment.NewLine, results.Select(record =>
             {
-                string errorMessage = $"{results.Count} error(s) logged.";
-                errorMessage += Environment.NewLine;
-                errorMessage += string.Join(Environment.NewLine, results.Select(record =>
+                var r = record.Write;
+
+                var lineMessage = r.LoggerName + " - " + r.EventId.ToString() + " - " + r.Formatter(r.State, r.Exception);
+                if (r.Exception != null)
                 {
-                    var r = record.Write;
+                    lineMessage += Environment.NewLine;
+                    lineMessage += "===================";
+                    lineMessage += Environment.NewLine;
+                    lineMessage += r.Exception;
+                    lineMessage += Environment.NewLine;
+                    lineMessage += "===================";
+                }
+                return lineMessage;
+            }));
 
-                    string lineMessage = r.LoggerName + " - " + r.EventId.ToString() + " - " + r.Formatter(r.State, r.Exception);
-                    if (r.Exception != null)
-                    {
-                        lineMessage += Environment.NewLine;
-                        lineMessage += "===================";
-                        lineMessage += Environment.NewLine;
-                        lineMessage += r.Exception;
-                        lineMessage += Environment.NewLine;
-                        lineMessage += "===================";
-                    }
-                    return lineMessage;
-                }));
-
-                throw new Exception(errorMessage);
-            }
+            throw new InvalidOperationException(errorMessage);
         }
     }
 }

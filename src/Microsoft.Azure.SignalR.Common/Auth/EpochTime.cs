@@ -1,4 +1,7 @@
-﻿/*------------------------------------------------------------------------------
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+/*------------------------------------------------------------------------------
  * Copied from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/v6.33.0/src/Microsoft.IdentityModel.Tokens/EpochTime.cs
 ------------------------------------------------------------------------------*/
 

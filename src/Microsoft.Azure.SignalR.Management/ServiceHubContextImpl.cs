@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
@@ -67,10 +68,14 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override ServiceHubContext WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
+#if NET6_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(endpoints);
+#else
             if (endpoints is null)
             {
                 throw new ArgumentNullException(nameof(endpoints));
             }
+#endif
 
             var targetEndpoints = _endpointManager.GetEndpoints(_hubName).Intersect(endpoints, EqualityComparer<ServiceEndpoint>.Default).ToList();
             var container = new MessageWriterServiceContainerWrapper(targetEndpoints, ServiceProvider.GetRequiredService<ILoggerFactory>());

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -51,7 +52,7 @@ public class EndpointRouterTests
         var endpointA = GenerateServiceEndpoint(quotaOfScaleUpInstance, 0, 80, "a");
         var endpointB = GenerateServiceEndpoint(100, 0, 70, "b");
         var endpointC = GenerateServiceEndpoint(100, 0, 70, "c");
-        var el = new List<ServiceEndpoint>() {endpointA, endpointB, endpointC};
+        var el = new List<ServiceEndpoint>() { endpointA, endpointB, endpointC };
         context.BenchTest(loops, () =>
         {
             var ep = drt.GetNegotiateEndpoint(null, el);
@@ -84,10 +85,11 @@ public class EndpointRouterTests
             ServerConnectionCount = serverConnectionCount
         };
         return new ServiceEndpoint("Endpoint=https://url;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;",
-            EndpointType.Primary, name) { EndpointMetrics = endpointMetrics };
+            EndpointType.Primary, name)
+        { EndpointMetrics = endpointMetrics };
     }
 
-    private class RandomContext
+    private sealed class RandomContext
     {
         private readonly Dictionary<string, int> _counter = new();
 
@@ -96,18 +98,19 @@ public class EndpointRouterTests
             for (var i = 0; i < loops; i++)
             {
                 var name = func();
-                if (!_counter.ContainsKey(name))
+                if (!_counter.TryGetValue(name, out var value))
                 {
-                    _counter.Add(name, 0);
+                    value = 0;
+                    _counter.Add(name, value);
                 }
 
-                _counter[name]++;
+                _counter[name] = ++value;
             }
         }
 
         public int GetCount(string name)
         {
-            return _counter.ContainsKey(name) ? _counter[name] : 0;
+            return _counter.TryGetValue(name, out var value) ? value : 0;
         }
 
         public void Reset()
