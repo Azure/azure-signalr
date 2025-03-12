@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -65,8 +66,10 @@ internal sealed class TestServiceConnectionManager<THub> : IServiceConnectionMan
         return Task.CompletedTask;
     }
 
-    public Task CloseClientConnections(CancellationToken token)
+    public Task CloseClientConnections(CancellationToken token) => Task.CompletedTask;
+
+    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, CancellationToken token = default)
     {
-        return Task.CompletedTask;
+        throw new NotImplementedException();
     }
 }

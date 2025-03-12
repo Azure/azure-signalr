@@ -54,7 +54,6 @@ public class MicrosoftEntraApplicationTests
         {
             IssuerSigningKeys = keys,
             IssuerValidator = (string issuer, SecurityToken securityToken, TokenValidationParameters validationParameters) => issuer.StartsWith(IssuerEndpoint) ? IssuerEndpoint : throw new SecurityTokenInvalidIssuerException(),
-            ValidateAudience = false,
             ValidateIssuerSigningKey = true,
             ValidateLifetime = true,
         };

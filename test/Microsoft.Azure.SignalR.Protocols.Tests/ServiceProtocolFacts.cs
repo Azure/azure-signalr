@@ -344,6 +344,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new PingMessage { Messages = new string[] { "a", "b" } },
                 binary: "kwOhYaFi"),
             new ProtocolTestData(
+                name: "Ping+_Nullable",
+                message: new PingMessage { Messages = new string[] { "a", null } },
+                binary: "kwOhYcA="),
+            new ProtocolTestData(
                 name: "OpenConnection",
                 message: new OpenConnectionMessage("conn1", null),
                 binary: "lgSlY29ubjGAgKCA"),
@@ -409,6 +413,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 }),
                 binary: "lAeSpWNvbm42pWNvbm43gqRqc29uxAcCAwQFBgcBq21lc3NhZ2VwYWNrxAcDBAUGBwECgA=="),
             new ProtocolTestData(
+                name: "MultiConnectionData_Nullable",
+                message: new MultiConnectionDataMessage(new [] {"conn6", null}, new Dictionary<string, ReadOnlyMemory<byte>>
+                {
+                    ["json"] = new byte[] {2, 3, 4, 5, 6, 7, 1},
+                    ["messagepack"] = new byte[] {3, 4, 5, 6, 7, 1, 2}
+                }),
+                binary: "lAeSpWNvbm42wIKkanNvbsQHAgMEBQYHAattZXNzYWdlcGFja8QHAwQFBgcBAoA="),
+            new ProtocolTestData(
                 name: "UserData",
                 message: new UserDataMessage("user1",
                     new Dictionary<string, ReadOnlyMemory<byte>>
@@ -427,6 +439,15 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     }),
                 binary: "lAmSpXVzZXIxpXVzZXIygqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgA=="),
             new ProtocolTestData(
+                name: "MultiUserData_Nullable",
+                message: new MultiUserDataMessage(new [] {"user1", null},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "lAmSpXVzZXIxwIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoA="),
+            new ProtocolTestData(
                 name: "Broadcast",
                 message: new BroadcastDataMessage(new Dictionary<string, ReadOnlyMemory<byte>>
                 {
@@ -443,6 +464,15 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }),
                 binary: "lAqTpWNvbm43pWNvbm44pWNvbm45gqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgA=="),
+            new ProtocolTestData(
+                name: "BroadcastExcept_Nullable",
+                message: new BroadcastDataMessage(new[] {"conn7", null},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "lAqSpWNvbm43wIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoA="),
             new ProtocolTestData(
                 name: "JoinGroup",
                 message: new JoinGroupMessage("conn10", "group1"),
@@ -482,6 +512,15 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     }),
                 binary: "lw2mZ3JvdXAzkqZjb25uMTKmY29ubjEzgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgJDA"),
             new ProtocolTestData(
+                name: "GroupBroadcastExcept_Nullable",
+                message: new GroupBroadcastDataMessage("group3", new [] {"conn12", null},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "lw2mZ3JvdXAzkqZjb25uMTLAgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgJDA"),
+            new ProtocolTestData(
                 name: "GroupBroadcastExceptUser",
                 message: new GroupBroadcastDataMessage("group3", new [] {"conn12", "conn13"},
                     new Dictionary<string, ReadOnlyMemory<byte>>
@@ -494,6 +533,19 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     CallerUserId = "user3"
                 },
                 binary: "lw2mZ3JvdXAzkqZjb25uMTKmY29ubjEzgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgJKldXNlcjGldXNlcjKldXNlcjM="),
+            new ProtocolTestData(
+                name: "GroupBroadcastExceptUser_Nullable",
+                message: new GroupBroadcastDataMessage("group3", new [] {"conn12", null},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    })
+                {
+                    ExcludedUserList = new [] {"user1", null},
+                    CallerUserId = "user3"
+                },
+                binary: "lw2mZ3JvdXAzkqZjb25uMTLAgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgJKldXNlcjHApXVzZXIz"),
             new ProtocolTestData(
                 name: "GroupBroadcastWithTracingId",
                 message: new GroupBroadcastDataMessage("group3",
@@ -512,6 +564,15 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["messagepack"] = new byte[] {7, 8, 1, 2, 3, 4, 5, 6}
                     }),
                 binary: "lA6Spmdyb3VwNKZncm91cDWCpGpzb27ECAECAwQFBgcIq21lc3NhZ2VwYWNrxAgHCAECAwQFBoA="),
+            new ProtocolTestData(
+                name: "MultiGroupBroadcast_Nullable",
+                message: new MultiGroupBroadcastDataMessage(new [] {"group4", null},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {1, 2, 3, 4, 5, 6, 7, 8},
+                        ["messagepack"] = new byte[] {7, 8, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "lA6Spmdyb3VwNMCCpGpzb27ECAECAwQFBgcIq21lc3NhZ2VwYWNrxAgHCAECAwQFBoA="),
             new ProtocolTestData(
                 name: "ServiceError",
                 message: new ServiceErrorMessage("Maximum message count limit reached: 100000"),

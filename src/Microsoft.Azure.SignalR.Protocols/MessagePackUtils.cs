@@ -1,10 +1,11 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Claims;
 
 using MessagePack;
@@ -125,7 +126,7 @@ internal static class MessagePackUtils
 
     internal static string ReadStringNotNull(ref MessagePackReader reader, string field)
     {
-        string? result = null;
+        string? result;
         try
         {
             result = reader.ReadString();
@@ -156,21 +157,33 @@ internal static class MessagePackUtils
         }
     }
 
-    internal static string[] ReadStringArray(ref MessagePackReader reader, string field)
+    internal static string[] ReadStringArrayExcludeNull(ref MessagePackReader reader, string field)
     {
         var arrayLength = ReadArrayLength(ref reader, field);
         if (arrayLength > 0)
         {
             var array = new string[arrayLength];
+            var count = 0;
             for (int i = 0; i < arrayLength; i++)
             {
                 var fieldName = $"{field}[{i}]";
-                array[i] = ReadStringNotNull(ref reader, fieldName);
+                var val = ReadString(ref reader, fieldName);
+                if (val != null)
+                {
+                    array[count] = val;
+                    count++;
+                }
             }
 
-            return array;
+            if (arrayLength == count)
+            {
+                return array;
+            }
+            else
+            {
+                return array.Take(count).ToArray();
+            }
         }
-
         return [];
     }
 
@@ -222,7 +235,7 @@ internal static class MessagePackUtils
         }
     }
 
-    internal static long ReadArrayLength(ref MessagePackReader reader, string field)
+    internal static int ReadArrayLength(ref MessagePackReader reader, string field)
     {
         try
         {

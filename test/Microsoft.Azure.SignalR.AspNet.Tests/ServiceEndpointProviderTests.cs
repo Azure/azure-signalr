@@ -37,7 +37,7 @@ public class ServiceEndpointProviderTests
         var handler = new JwtSecurityTokenHandler();
         var principal = handler.ValidateToken(clientToken, new TokenValidationParameters
         {
-            ValidateIssuer = false,
+            ValidIssuer = Constants.AsrsTokenIssuer,
             IssuerSigningKey = SecurityKey,
             ValidAudience = expectedAudience
         }, out _);
