@@ -6,9 +6,9 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.SignalR.Management.HubContext;
+namespace Microsoft.Azure.SignalR.Management;
 
-internal abstract class StreamingManager : IStreamingManager
+public abstract class StreamingManager : IStreamingManager
 {
     public abstract Task SendStreamAsync<TItem>(string connectionId, string streamId, IAsyncEnumerable<TItem> items, CancellationToken cancellationToken);
 

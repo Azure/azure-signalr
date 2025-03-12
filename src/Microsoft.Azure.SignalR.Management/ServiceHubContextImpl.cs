@@ -33,14 +33,17 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override UserGroupManager UserGroups { get; }
 
+        public override StreamingManager Streaming { get; }
+
         public override ClientManager ClientManager { get; }
 
-        public ServiceHubContextImpl(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager)
+        public ServiceHubContextImpl(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager, ILogger<ServiceHubContext> logger)
         {
             _hubName = hubName;
             _hubContext = hubContext;
             Groups = new GroupManagerAdapter(lifetimeManager);
             UserGroups = new UserGroupsManagerAdapter(lifetimeManager);
+            Streaming = new StreamingManagerAdapter(lifetimeManager, logger);
             ClientManager = new ClientManagerAdapter(lifetimeManager);
             ServiceProvider = serviceProvider;
             _negotiateProcessor = negotiateProcessor;

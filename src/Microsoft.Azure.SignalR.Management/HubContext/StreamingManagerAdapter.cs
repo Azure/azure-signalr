@@ -6,21 +6,14 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-
-using Microsoft.Azure.SignalR.Management.HubContext;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Management;
 
-internal class StreamingManagerAdapter : StreamingManager
+internal class StreamingManagerAdapter(IStreamingHubLifetimeManager lifetimeManager, ILogger logger) : StreamingManager
 {
-    private readonly IStreamingHubLifetimeManager _lifetimeManager;
-    private readonly NegotiationOptions _negotiationOptions;
-
-    public StreamingManagerAdapter(IStreamingHubLifetimeManager lifetimeManager, NegotiationOptions negotiationOptions)
-    {
-        _lifetimeManager = lifetimeManager;
-        _negotiationOptions = negotiationOptions;
-    }
+    private readonly IStreamingHubLifetimeManager _lifetimeManager = lifetimeManager;
+    private readonly ILogger _logger = logger;
 
     public override async Task SendStreamAsync<TItem>(string connectionId, string streamId, IAsyncEnumerable<TItem> items, CancellationToken cancellationToken = default)
     {
@@ -77,7 +70,7 @@ internal class StreamingManagerAdapter : StreamingManager
 
     private async Task SendErrorAsync(string connectionId, string streamId, Exception ex, CancellationToken cancellationToken)
     {
-        var message = _negotiationOptions.EnableDetailedErrors ? ex.Message : "An error occurred.";
-        await _lifetimeManager.SendStreamCompletionAsync(connectionId, streamId, message, cancellationToken);
+        _logger.LogError(ex, "An error occurred while sending stream items.");
+        await _lifetimeManager.SendStreamCompletionAsync(connectionId, streamId, "An error occurred.", cancellationToken);
     }
 }

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Threading.Tasks;
@@ -16,6 +16,11 @@ namespace Microsoft.Azure.SignalR.Management
         /// Gets a user group manager instance which implements <see cref="IUserGroupManager"/> that can be used to add and remove users to named groups.
         /// </summary>
         IUserGroupManager UserGroups { get; }
+
+        /// <summary>
+        /// Gets a streaming manager instance which implements <see cref="IStreamingManager"/> that can be used to send streaming messages to clients.
+        /// </summary>
+        IStreamingManager Streaming { get; }
 
         /// <summary>
         /// Dispose instances of <see cref="IServiceHubContext"/> asynchronously. 

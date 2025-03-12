@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.Management;
 /// <summary>
 /// A streaming manager abstraction for sending stream response.
 /// </summary>
-internal interface IStreamingManager
+public interface IStreamingManager
 {
     /// <summary>
     /// Send stream items to a connection.

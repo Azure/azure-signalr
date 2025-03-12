@@ -86,6 +86,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ManagementPublisher", "samp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatSample.RazorPages", "samples\ChatSample\ChatSample.RazorPages\ChatSample.RazorPages.csproj", "{D7A38BB7-6416-4E15-AD87-D525F203F549}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatSample.Cli", "samples\ChatSample.Cli\ChatSample.Cli.csproj", "{45EFE0AE-DE2F-EED2-55FC-9213D2AB9F31}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -196,6 +198,10 @@ Global
 		{D7A38BB7-6416-4E15-AD87-D525F203F549}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D7A38BB7-6416-4E15-AD87-D525F203F549}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D7A38BB7-6416-4E15-AD87-D525F203F549}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45EFE0AE-DE2F-EED2-55FC-9213D2AB9F31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45EFE0AE-DE2F-EED2-55FC-9213D2AB9F31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45EFE0AE-DE2F-EED2-55FC-9213D2AB9F31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45EFE0AE-DE2F-EED2-55FC-9213D2AB9F31}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -229,6 +235,7 @@ Global
 		{82C1FF3D-EC6C-4B21-B6A4-E69E8D75D0D0} = {2429FBD8-1FCE-4C42-AA28-DF32F7249E77}
 		{0F32E624-7AC8-4CA7-8ED9-E1A877442020} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
 		{D7A38BB7-6416-4E15-AD87-D525F203F549} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
+		{45EFE0AE-DE2F-EED2-55FC-9213D2AB9F31} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7945A4E4-ACDB-4F6E-95CA-6AC6E7C2CD59}
