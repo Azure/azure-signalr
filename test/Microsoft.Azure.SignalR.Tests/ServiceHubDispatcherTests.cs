@@ -146,5 +146,10 @@ public class ServiceHubDispatcherTests
         {
             throw new NotImplementedException();
         }
+
+        public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, CancellationToken token = default)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
