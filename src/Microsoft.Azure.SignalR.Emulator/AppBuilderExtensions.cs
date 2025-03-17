@@ -38,7 +38,9 @@ namespace Microsoft.Azure.SignalR.Emulator
 
             return services;
         }
-#pragma warning disable SM04387
+// Suppress CodeQL scanning issues related to JWT token validations
+// because this emulator is not supposed to be used in production.
+#pragma warning disable SM04387,SM04284
         public static IServiceCollection AddJwtBearerAuth(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -69,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Emulator
 
             return services;
         }
-#pragma warning restore SM04387
+#pragma warning restore SM04387,SM04284
         public static IServiceCollection AddSignalREmulator(this IServiceCollection services)
         {
             services.AddSingleton(typeof(HubLifetimeManager<>), typeof(CachedHubLifetimeManager<>));

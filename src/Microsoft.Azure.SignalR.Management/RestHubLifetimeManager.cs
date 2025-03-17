@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
 
 using static Microsoft.Azure.SignalR.Constants;
@@ -351,4 +352,9 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
     private static bool FilterExpectedResponse(HttpResponseMessage response, string expectedErrorCode) =>
         response.IsSuccessStatusCode
         || (response.StatusCode == HttpStatusCode.NotFound && response.Headers.TryGetValues(Headers.MicrosoftErrorCode, out var errorCodes) && errorCodes.First().Equals(expectedErrorCode, StringComparison.OrdinalIgnoreCase));
+
+    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
 }

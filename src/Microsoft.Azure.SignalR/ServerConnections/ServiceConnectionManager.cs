@@ -1,7 +1,8 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -63,5 +64,10 @@ internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionM
     public void Dispose()
     {
         StopAsync().GetAwaiter().GetResult();
+    }
+
+    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, CancellationToken token = default)
+    {
+        return _serviceConnection.ListConnectionsInGroupAsync(groupName, top, tracingId, token);
     }
 }
