@@ -11,6 +11,7 @@ using System.Security.Claims;
 using Microsoft.Owin;
 
 namespace Microsoft.Azure.SignalR.AspNet;
+#nullable enable
 
 /// <summary>
 /// Configurable options when using Azure SignalR Service.
@@ -20,7 +21,7 @@ public class ServiceOptions : IServiceEndpointOptions
     public ServiceOptions()
     {
         var count = ConfigurationManager.ConnectionStrings.Count;
-        string connectionString = null;
+        string? connectionString = null;
         var endpoints = new List<ServiceEndpoint>();
         var connectionStringKeyPrefix = $"{Constants.Keys.ConnectionStringDefaultKey}:";
         for (var i = 0; i < count; i++)
@@ -82,7 +83,7 @@ public class ServiceOptions : IServiceEndpointOptions
     /// <summary>
     /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
     /// </summary>
-    public IWebProxy Proxy { get; set; }
+    public IWebProxy? Proxy { get; set; }
 
     /// <summary>
     /// Specifies the mode for server sticky, when client is always routed to the server which it first /negotiate with, we call it "server sticky mode".
@@ -96,7 +97,14 @@ public class ServiceOptions : IServiceEndpointOptions
     /// Gets or sets the func to generate claims from <see cref="IOwinContext" />.
     /// The claims will be included in the auto-generated token for clients.
     /// </summary>
-    public Func<IOwinContext, IEnumerable<Claim>> ClaimsProvider { get; set; } = null;
+    public Func<IOwinContext, IEnumerable<Claim>>? ClaimsProvider { get; set; }
+
+    /// <summary>
+    /// Provide the ability to configure the underlying ClientWebSocketOptions for the WebSocketClient used to establish the server connection to the service
+    /// For example, you could specify the inner buffer used for each WebSocketClient by setting:
+    /// <code>options.ConfigureServiceConnectionWebSocketOptions = o => o.SetBuffer(0x1000, 0x1000);</code>
+    /// </summary>
+    public Action<System.Net.WebSockets.ClientWebSocketOptions>? ConfigureServiceConnectionWebSocketOptions { get; set; }
 
     /// <summary>
     /// Gets or sets the initial number of connections per hub from SDK to Azure SignalR Service. Default value is 5.
@@ -114,12 +122,12 @@ public class ServiceOptions : IServiceEndpointOptions
     /// <summary>
     /// Gets or sets the connection string of Azure SignalR Service instance.
     /// </summary>
-    public string ConnectionString { get; set; }
+    public string? ConnectionString { get; set; }
     /// <summary>
     /// Gets or sets the func to set diagnostic client filter from <see cref="IOwinContext" />.
     /// The clients will be regarded as diagnostic client only if the function returns true.
     /// </summary>
-    public Func<IOwinContext, bool> DiagnosticClientFilter { get; set; } = null;
+    public Func<IOwinContext, bool>? DiagnosticClientFilter { get; set; } = null;
 
     /// <summary>
     /// Customize the multiple endpoints used
@@ -145,5 +153,5 @@ public class ServiceOptions : IServiceEndpointOptions
     /// <summary>
     /// Gets applicationName, which will be used as a prefix to apply to each hub name
     /// </summary>
-    internal string ApplicationName { get; set; }
+    internal string ApplicationName { get; set; } = string.Empty;
 }

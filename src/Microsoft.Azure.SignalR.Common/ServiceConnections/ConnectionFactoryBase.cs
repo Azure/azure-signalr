@@ -21,6 +21,8 @@ internal abstract class ConnectionFactoryBase : IConnectionFactory
 
     private readonly string _serverId;
 
+    public Action<System.Net.WebSockets.ClientWebSocketOptions>? ConfigureServiceConnectionWebSocketOptions { get; init; }
+
     public ConnectionFactoryBase(IServerNameProvider nameProvider,
                                  ILoggerFactory loggerFactory)
     {
@@ -44,6 +46,7 @@ internal abstract class ConnectionFactoryBase : IConnectionFactory
         {
             Headers = GetRequestHeaders(),
             Proxy = provider.Proxy,
+            WebSocketConfiguration = ConfigureServiceConnectionWebSocketOptions,
         };
         var connection = new WebSocketConnectionContext(connectionOptions, _loggerFactory, accessTokenProvider);
 
