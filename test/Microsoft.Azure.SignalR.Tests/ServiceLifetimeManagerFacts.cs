@@ -4,12 +4,14 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
+using Microsoft.Azure.SignalR.Internals;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
@@ -263,6 +265,83 @@ public class ServiceLifetimeManagerFacts
         Assert.Null(hubConnectionContext.Features.Get<ServiceUserIdFeature>());
     }
 
+    [Theory]
+    [InlineData("SendAllAsync", typeof(BroadcastDataMessage))]
+    [InlineData("SendAllExceptAsync", typeof(BroadcastDataMessage))]
+    [InlineData("SendConnectionAsync", typeof(MultiConnectionDataMessage))]
+    [InlineData("SendConnectionsAsync", typeof(MultiConnectionDataMessage))]
+    [InlineData("SendGroupAsync", typeof(GroupBroadcastDataMessage))]
+    [InlineData("SendGroupsAsync", typeof(MultiGroupBroadcastDataMessage))]
+    [InlineData("SendGroupExceptAsync", typeof(GroupBroadcastDataMessage))]
+    [InlineData("SendUserAsync", typeof(UserDataMessage))]
+    [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
+    public async Task ServiceLifetimeManagerTraceTest(string methodName, Type messageType)
+    {
+        var proxy = new ServiceConnectionProxy();
+        var blazorDetector = new DefaultBlazorDetector();
+
+        var serviceConnectionManager = new ServiceConnectionManager<TestHub>();
+        serviceConnectionManager.SetServiceConnection(proxy.ServiceConnectionContainer);
+        var clientInvocationManager = new DefaultClientInvocationManager();
+
+        var serverSource = SignalRServerActivitySource.Instance.ActivitySource;
+
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = activitySource => ReferenceEquals(activitySource, serverSource),
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+            ActivityStarted = _ => { }
+        };
+        ActivitySource.AddActivityListener(listener);
+
+        var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+            proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker, GlobalHubOptions, LocalHubOptions, blazorDetector, new DefaultServerNameProvider(), clientInvocationManager);
+
+        var serverTask = proxy.WaitForServerConnectionAsync(1);
+        _ = proxy.StartAsync();
+        await proxy.WaitForServerConnectionsInited().OrTimeout();
+        await serverTask.OrTimeout();
+
+        var task = proxy.WaitForApplicationMessageAsync(messageType);
+
+        var invokeTask = InvokeMethod(serviceLifetimeManager, methodName);
+
+        var message = await task.OrTimeout();
+
+        if (typeof(IAckableMessage).IsAssignableFrom(messageType))
+        {
+            var ackId = (message as IAckableMessage).AckId;
+            Assert.NotEqual(0, ackId);
+            await proxy.WriteMessageAsync(new AckMessage(ackId, (int)AckStatus.Ok));
+        }
+
+        // Need to return in time, or it indicate a timeout when sending ack-able messages.
+        await invokeTask.OrTimeout();
+
+        VerifyServiceMessage(methodName, message);
+
+        var multicastDataMessage = Assert.IsAssignableFrom<MulticastDataMessage>(message);
+        Assert.Equal(2, multicastDataMessage.Payloads.Count);
+
+        Assert.True(multicastDataMessage.Payloads.ContainsKey("json"));
+        ReadOnlySequence<byte> jsonPayload = new(multicastDataMessage.Payloads["json"]);
+        new SignalRProtocol.JsonHubProtocol().TryParseMessage(ref jsonPayload, new TestHubInvocationBinder(), out var jsonMessage);
+        var jsonInvocationMessage = Assert.IsAssignableFrom<SignalRProtocol.HubInvocationMessage>(jsonMessage);
+        Assert.NotEmpty(jsonInvocationMessage.Headers);
+        Assert.Contains(jsonInvocationMessage.Headers, h => h.Key == "traceparent");
+        Assert.NotEmpty(jsonInvocationMessage.Headers["traceparent"]);
+
+        Assert.True(multicastDataMessage.Payloads.ContainsKey("messagepack"));
+        ReadOnlySequence<byte> messagePackPayload = new(multicastDataMessage.Payloads["messagepack"]);
+        new SignalRProtocol.MessagePackHubProtocol().TryParseMessage(ref messagePackPayload, new TestHubInvocationBinder(), out var messagePackMessage);
+        var messagePackInvocationMessage = Assert.IsAssignableFrom<SignalRProtocol.HubInvocationMessage>(messagePackMessage);
+        Assert.NotEmpty(messagePackInvocationMessage.Headers);
+        Assert.Contains(messagePackInvocationMessage.Headers, h => h.Key == "traceparent");
+        Assert.NotEmpty(messagePackInvocationMessage.Headers["traceparent"]);
+
+        Assert.Equal(jsonInvocationMessage.Headers["traceparent"], messagePackInvocationMessage.Headers["traceparent"]);
+    }
+
     private static async Task InvokeMethod(HubLifetimeManager<TestHub> serviceLifetimeManager, string methodName)
     {
         switch (methodName)
@@ -421,5 +500,14 @@ public class ServiceLifetimeManagerFacts
         {
             throw new NotImplementedException();
         }
+    }
+
+    private sealed class TestHubInvocationBinder : IInvocationBinder
+    {
+        public IReadOnlyList<Type> GetParameterTypes(string methodName) => new[] { typeof(string) };
+
+        public Type GetReturnType(string invocationId) => typeof(void);
+
+        public Type GetStreamItemType(string streamId) => typeof(int);
     }
 }
