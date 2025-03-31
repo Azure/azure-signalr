@@ -24,7 +24,6 @@ namespace Microsoft.Azure.SignalR.Management
         /// Gets a streaming manager instance which implements <see cref="IStreamingManager"/> that can be used to send streaming messages to clients.
         /// </summary>
         public virtual StreamingManager Streaming => null;
-        IStreamingManager IServiceHubContext.Streaming => Streaming;
 
         public virtual IHubClients Clients => null;
 

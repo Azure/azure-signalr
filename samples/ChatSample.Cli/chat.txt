@@ -1,0 +1,2 @@
+define broadcastMessage(string,string)
+define echo(string,string)

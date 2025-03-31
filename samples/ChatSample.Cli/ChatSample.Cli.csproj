@@ -9,7 +9,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="chat.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="chat.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="8.0.8" />
   </ItemGroup>
 
   <ItemGroup>

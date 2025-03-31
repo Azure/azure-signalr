@@ -7,17 +7,24 @@ using System.Threading.Channels;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Management;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace ChatSample.Cli;
 
 internal static partial class Program
 {
     private sealed record TypeInfo(Type Type, Func<string, object> Parse);
 
+    [GeneratedRegex(@"^load\s+(.+)$", RegexOptions.IgnoreCase, "en-US")]
+    private static partial Regex LoadRegex();
+
     [GeneratedRegex(@"^connect\s+(.+?)\s+(\w+)(?:\s+(\-\-transient|\-t))?$", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex ConnectRegex();
     [GeneratedRegex(@"^define\s+(\w+)(?:\(((?:\s*\w+\s*,)*\s*\w+)?\s*\))?$", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex DefineRegex();
-    [GeneratedRegex(@"^^define\-stream\s+(\w+)(?:\(((?:\s*\w+\s*,)*\s*\w+)?\s*\))?\s*\:\s*(\w+)$", RegexOptions.IgnoreCase, "en-US")]
+    [GeneratedRegex(@"^define\-stream\s+(\w+)(?:\(((?:\s*\w+\s*,)*\s*\w+)?\s*\))?\s*\:\s*(\w+)$", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex DefineStreamRegex();
     [GeneratedRegex(@"^all\s*\.\s*(\w+)\s*(?:\((.+)\))?$", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex BroadcastRegex();
@@ -27,14 +34,14 @@ internal static partial class Program
     private static partial Regex UserRegex();
     [GeneratedRegex(@"^connection\s*\(\s*([\w_-]+)\s*\)\s*\.\s*(\w+)\s*(?:\((.+)\))?$", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex ConnectionRegex();
-    [GeneratedRegex(@"^open\-stream\s*\(\s*([\w_-]+)\s*,\s*(\w+)\s*\)\s*\:\s*(\w+)\s*$", RegexOptions.IgnoreCase, "en-US")]
-    private static partial Regex OpenStreamRegex();
+    [GeneratedRegex(@"^new\-stream\s*\(\s*([\w_-]+)\s*,\s*(\w+)\s*\)\s*\:\s*(\w+)\s*$", RegexOptions.IgnoreCase, "en-US")]
+    private static partial Regex NewStreamRegex();
     [GeneratedRegex(@"^close\-stream\s*\(\s*([\w_-]+)\s*,\s*(\w+)\s*\)\s*(.*?)\s*$", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex CloseStreamRegex();
     [GeneratedRegex(@"^stream\-item\s*\(\s*([\w_-]+)\s*,\s*(\w+)\s*\)\s*(\S.*?)\s*$", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex StreamItemRegex();
 
-    [GeneratedRegex(@"^client\s+(.+?)\s+(\w+)$", RegexOptions.IgnoreCase, "en-US")]
+    [GeneratedRegex(@"^client\s+(.+?)\s+(\w+)(?:\s+(\-\-messagepack|\-m))?$", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex ClientRegex();
     [GeneratedRegex(@"^send\s+(\w+)\s*(?:\((.+)\))?$", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex ClientSendRegex();
@@ -57,19 +64,70 @@ internal static partial class Program
 
     private static readonly Dictionary<(string ConnectionId, string StreamId), (TypeInfo TypeInfo, Channel<object> Channel)> StreamMap = [];
 
-    private static async Task Main()
+    private static Task Main(string[] args)
     {
+        if (args.Length == 0)
+        {
+            Console.WriteLine("Interactive mode, type 'help' for a list of available commands.");
+        }
+        return MainLoop(ReadLines(string.Join(" ", args)));
+    }
+
+    private static async IAsyncEnumerable<string> ReadLines(string? first)
+    {
+        if (!string.IsNullOrEmpty(first))
+        {
+            yield return first;
+        }
+        List<string> commandsInFile = [];
         while (true)
         {
-            var line = Console.ReadLine()?.Trim();
+            var line = (await Console.In.ReadLineAsync())?.Trim();
             if (line == null)
             {
-                return;
+                yield break;
             }
             if (line.Length == 0)
             {
                 continue;
             }
+            if (await Try(LoadRegex(), line, m => Load(m, commandsInFile)))
+            {
+                foreach (var command in commandsInFile)
+                {
+                    yield return command;
+                }
+                commandsInFile.Clear();
+            }
+            yield return line;
+        }
+    }
+
+    private static async Task Load(Match m, List<string> commandsInFile)
+    {
+        var fileName = m.Groups[1].Value;
+        if (!File.Exists(fileName))
+        {
+            Console.WriteLine($"File not found: {fileName}");
+            return;
+        }
+        using var reader = new StreamReader(fileName, new FileStreamOptions { Options = FileOptions.Asynchronous });
+        string? line;
+        while ((line = await reader.ReadLineAsync()) != null)
+        {
+            line = line.Trim();
+            if (line.Length == 0)
+            {
+                continue;
+            }
+            commandsInFile.Add(line);
+        }
+    }
+
+    private static async Task MainLoop(IAsyncEnumerable<string> commands)
+    {
+        await foreach (var line in commands)
+        {
             if (line.Equals("exit", StringComparison.OrdinalIgnoreCase))
             {
                 break;
@@ -91,10 +149,10 @@ internal static partial class Program
                 }
                 continue;
             }
-            if (await Try(ConnectRegex(), line, Connect) ||
-                await Try(ClientRegex(), line, RunAsClient))
+            if (await Try(ConnectRegex(), line, m => RunAsServer(m, commands)) ||
+                await Try(ClientRegex(), line, m => RunAsClient(m, commands)))
             {
-                continue;
+                return;
             }
 
             Console.WriteLine($"Unrecognized command: {line}");
@@ -113,56 +171,43 @@ internal static partial class Program
         return false;
     }
 
-    private static async Task Connect(Match match)
+    private static async Task RunAsServer(Match match, IAsyncEnumerable<string> commands)
     {
         var connectionString = match.Groups[1].Value;
         var hub = match.Groups[2].Value;
         var transportType = match.Groups[3].Value.Length > 0 ? ServiceTransportType.Transient : ServiceTransportType.Persistent;
         Console.WriteLine($"Connecting to {connectionString} for {hub} with transport type {transportType}");
-        await ConnectAsync(
-            connectionString,
-            hub,
-            transportType);
-    }
-
-    private static async Task ConnectAsync(string connectionString, string hub, ServiceTransportType transportType)
-    {
-        var serviceManager = new ServiceManagerBuilder().WithOptions(option =>
-        {
-            option.ConnectionString = connectionString;
-            option.ServiceTransportType = transportType;
-        }).BuildServiceManager();
+        using var serviceManager = new ServiceManagerBuilder()
+            .WithOptions(option =>
+            {
+                option.ConnectionString = connectionString;
+                option.ServiceTransportType = transportType;
+            })
+            .AddHubProtocol(new MessagePackHubProtocol())
+            .BuildServiceManager();
         var hubContext = await serviceManager.CreateHubContextAsync(hub, default);
         Console.WriteLine($"Connected to {connectionString} for {hub} with transport type {transportType}");
-        await CommandLoop(hubContext);
+        await ServerLoop(hubContext, commands);
     }
 
-    private static async Task CommandLoop(ServiceHubContext hubContext)
+    private static async Task ServerLoop(ServiceHubContext hubContext, IAsyncEnumerable<string> commands)
     {
-        while (true)
+        await foreach (var command in commands)
         {
-            var line = Console.ReadLine()?.Trim();
-            if (line == null)
-            {
-                return;
-            }
-            if (line.Length == 0)
-            {
-                continue;
-            }
-            if (line.Equals("exit", StringComparison.OrdinalIgnoreCase))
+            if (command.Equals("exit", StringComparison.OrdinalIgnoreCase))
             {
                 break;
             }
-            if (line.Equals("help", StringComparison.OrdinalIgnoreCase))
+            if (command.Equals("help", StringComparison.OrdinalIgnoreCase))
             {
                 Console.WriteLine("Available commands:");
+                Console.WriteLine("  load <file>");
                 Console.WriteLine("  define <target>[(<argType1>, <argType2>, ...)]");
                 Console.WriteLine("  all.<target> ([<arg1>, <arg2>, ...])");
                 Console.WriteLine("  group(<group>).<target> ([<arg1>, <arg2>, ...])");
                 Console.WriteLine("  user(<user>).<target> ([<arg1>, <arg2>, ...])");
                 Console.WriteLine("  connection(<connection-id>).<target> ([<arg1>, <arg2>, ...])");
-                Console.WriteLine("  open-stream(<connection-id>, <streamId>) : <type>");
+                Console.WriteLine("  new-stream(<connection-id>, <streamId>) : <type>");
                 Console.WriteLine("  close-stream(<connection-id>, <streamId>) [<error>]");
                 Console.WriteLine("  stream-item(<connection-id>, <streamId>) <item>");
                 Console.WriteLine("  list");
@@ -171,7 +216,7 @@ internal static partial class Program
                 Console.WriteLine("  exit");
                 continue;
             }
-            if ("list".Equals(line, StringComparison.OrdinalIgnoreCase))
+            if ("list".Equals(command, StringComparison.OrdinalIgnoreCase))
             {
                 foreach (var (m, p) in MethodDefineMap)
                 {
@@ -179,7 +224,7 @@ internal static partial class Program
                 }
                 continue;
             }
-            if ("list-stream".Equals(line, StringComparison.OrdinalIgnoreCase))
+            if ("list-stream".Equals(command, StringComparison.OrdinalIgnoreCase))
             {
                 foreach (var (k, v) in StreamMap)
                 {
@@ -187,20 +232,20 @@ internal static partial class Program
                 }
                 continue;
             }
-            if (await Try(DefineRegex(), line, Define) ||
-                await Try(BroadcastRegex(), line, m => Send(hubContext.Clients.All, m.Groups[1].Value, m.Groups[2].Value)) ||
-                await Try(GroupRegex(), line, m => Send(hubContext.Clients.Group(m.Groups[1].Value), m.Groups[2].Value, m.Groups[3].Value)) ||
-                await Try(UserRegex(), line, m => Send(hubContext.Clients.User(m.Groups[1].Value), m.Groups[2].Value, m.Groups[3].Value)) ||
-                await Try(ConnectionRegex(), line, m => Send(hubContext.Clients.Client(m.Groups[1].Value), m.Groups[2].Value, m.Groups[3].Value)) ||
-                await Try(OpenStreamRegex(), line, m => OpenStream(hubContext, m)) ||
-                await Try(CloseStreamRegex(), line, CloseStream) ||
-                await Try(StreamItemRegex(), line, StreamItem))
+            if (await Try(DefineRegex(), command, Define) ||
+                await Try(BroadcastRegex(), command, m => Send(hubContext.Clients.All, m.Groups[1].Value, m.Groups[2].Value)) ||
+                await Try(GroupRegex(), command, m => Send(hubContext.Clients.Group(m.Groups[1].Value), m.Groups[2].Value, m.Groups[3].Value)) ||
+                await Try(UserRegex(), command, m => Send(hubContext.Clients.User(m.Groups[1].Value), m.Groups[2].Value, m.Groups[3].Value)) ||
+                await Try(ConnectionRegex(), command, m => Send(hubContext.Clients.Client(m.Groups[1].Value), m.Groups[2].Value, m.Groups[3].Value)) ||
+                await Try(NewStreamRegex(), command, m => NewStream(hubContext, m)) ||
+                await Try(CloseStreamRegex(), command, CloseStream) ||
+                await Try(StreamItemRegex(), command, StreamItem))
             {
                 continue;
             }
             else
             {
-                Console.WriteLine($"Unrecognized command: {line}");
+                Console.WriteLine($"Unrecognized command: {command}");
                 Console.WriteLine("Type 'help' for a list of available commands.");
                 continue;
             }
@@ -210,7 +255,7 @@ internal static partial class Program
     private static Task Define(Match match)
     {
         var target = match.Groups[1].Value;
-        var paramTypes = match.Groups[2].Value.Split(',').Select(x => x.Trim()).ToList();
+        var paramTypes = match.Groups[2].Value.Length == 0 ? [] : match.Groups[2].Value.Split(',').Select(x => x.Trim()).ToList();
         if (!CheckParameter(paramTypes))
         {
             return Task.CompletedTask;
@@ -222,11 +267,9 @@ internal static partial class Program
     private static Task DefineStream(Match match)
     {
         var target = match.Groups[1].Value;
-        var paramTypes = match.Groups[2].Value.Split(',').Select(x => x.Trim()).ToList();
+        var paramTypes = match.Groups[2].Value.Length == 0 ? [] : match.Groups[2].Value.Split(',').Select(x => x.Trim()).ToList();
         if (!CheckParameter(paramTypes))
         {
-            Console.WriteLine($"Invalid argument types: ({string.Join(", ", paramTypes)})");
-            Console.WriteLine($"Supported argument types are: {string.Join(", ", TypeMap.Keys)}");
             return Task.CompletedTask;
         }
         var itemType = match.Groups[3].Value;
@@ -243,8 +286,7 @@ internal static partial class Program
     {
         if (!MethodDefineMap.TryGetValue(target, out var argTypes))
         {
-            Console.WriteLine($"Undefined target: {target}");
-            Console.WriteLine($"Please define the target first.");
+            Console.WriteLine($"Undefined target: {target}, please define it first, see define.");
             return;
         }
         var argStrings = args.Split(',').Select(x => x.Trim()).ToList();
@@ -276,7 +318,7 @@ internal static partial class Program
         await proxy.SendCoreAsync(target, argValues);
     }
 
-    private static Task OpenStream(ServiceHubContext hubContext, Match match)
+    private static Task NewStream(ServiceHubContext hubContext, Match match)
     {
         var connectionId = match.Groups[1].Value;
         var streamId = match.Groups[2].Value;
@@ -314,9 +356,7 @@ internal static partial class Program
         }
         else
         {
-#pragma warning disable CA2201 // Do not raise reserved exception types
-            pair.Channel.Writer.Complete(new Exception(error));
-#pragma warning restore CA2201 // Do not raise reserved exception types
+            pair.Channel.Writer.Complete(new InvalidDataException(error));
         }
         StreamMap.Remove((connectionId, streamId));
         return Task.CompletedTask;
@@ -346,10 +386,11 @@ internal static partial class Program
         return Task.CompletedTask;
     }
 
-    private static async Task RunAsClient(Match match)
+    private static async Task RunAsClient(Match match, IAsyncEnumerable<string> commands)
     {
         var connectionString = match.Groups[1].Value;
         var hub = match.Groups[2].Value;
+        var isMessagePack = match.Groups[3].Value.Length > 0;
 
         using var serviceManager = new ServiceManagerBuilder().WithOptions(option =>
         {
@@ -365,33 +406,26 @@ internal static partial class Program
                 options.AccessTokenProvider = () => Task.FromResult(negotiateResponse.AccessToken);
                 options.Transports = HttpTransportType.WebSockets;
             })
+            .When(isMessagePack, b => b.AddMessagePackProtocol())
             .Build();
         await conn.StartAsync();
         Console.WriteLine($"Client {conn.ConnectionId} connected.");
-        await ClientCommandLoop(conn);
+        await ClientLoop(conn, commands);
     }
 
-    private static async Task ClientCommandLoop(HubConnection conn)
+    private static async Task ClientLoop(HubConnection conn, IAsyncEnumerable<string> commands)
     {
         var invocationId = 0;
-        while (true)
+        await foreach (var command in commands)
         {
-            var line = Console.ReadLine()?.Trim();
-            if (line == null)
-            {
-                return;
-            }
-            if (line.Length == 0)
-            {
-                continue;
-            }
-            if (line.Equals("exit", StringComparison.OrdinalIgnoreCase))
+            if (command.Equals("exit", StringComparison.OrdinalIgnoreCase))
             {
                 break;
             }
-            if (line.Equals("help", StringComparison.OrdinalIgnoreCase))
+            if (command.Equals("help", StringComparison.OrdinalIgnoreCase))
             {
                 Console.WriteLine("Available commands:");
+                Console.WriteLine("  load <file>");
                 Console.WriteLine("  define <target>[(<argType1>, <argType2>, ...)]");
                 Console.WriteLine("  define-stream <target>[(<argType1>, <argType2>, ...)]:itemType");
                 Console.WriteLine("  send <target> ([<arg1>, <arg2>, ...])");
@@ -401,17 +435,17 @@ internal static partial class Program
                 Console.WriteLine("  exit");
                 continue;
             }
-            if (await Try(DefineRegex(), line, Define) ||
-                await Try(DefineStreamRegex(), line, DefineStream) ||
-                await Try(ClientSendRegex(), line, ClientSend) ||
-                await Try(ClientStreamRegex(), line, ClientStream) ||
-                await Try(ListenRegex(), line, ClientListen))
+            if (await Try(DefineRegex(), command, Define) ||
+                await Try(DefineStreamRegex(), command, DefineStream) ||
+                await Try(ClientSendRegex(), command, ClientSend) ||
+                await Try(ClientStreamRegex(), command, ClientStream) ||
+                await Try(ListenRegex(), command, ClientListen))
             {
                 continue;
             }
             else
             {
-                Console.WriteLine($"Unrecognized command: {line}");
+                Console.WriteLine($"Unrecognized command: {command}");
                 Console.WriteLine("Type 'help' for a list of available commands.");
                 continue;
             }
@@ -515,7 +549,7 @@ internal static partial class Program
         Task ClientListen(Match match)
         {
             var target = match.Groups[1].Value;
-            var paramTypes = match.Groups[2].Value.Split(',').Select(x => x.Trim()).ToList();
+            var paramTypes = match.Groups[2].Value.Length == 0 ? [] : match.Groups[2].Value.Split(',').Select(x => x.Trim()).ToList();
             if (!CheckParameter(paramTypes))
             {
                 return Task.CompletedTask;

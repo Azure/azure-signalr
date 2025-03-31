@@ -18,11 +18,6 @@ namespace Microsoft.Azure.SignalR.Management
         IUserGroupManager UserGroups { get; }
 
         /// <summary>
-        /// Gets a streaming manager instance which implements <see cref="IStreamingManager"/> that can be used to send streaming messages to clients.
-        /// </summary>
-        IStreamingManager Streaming { get; }
-
-        /// <summary>
         /// Dispose instances of <see cref="IServiceHubContext"/> asynchronously. 
         /// </summary>
         /// <returns></returns>
