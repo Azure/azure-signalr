@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+#if NET7_0_OR_GREATER
 using System.Diagnostics;
+#endif
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
