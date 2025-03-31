@@ -3,11 +3,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Internals;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,18 +18,25 @@ namespace Microsoft.Azure.SignalR;
 
 internal abstract class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<THub> where THub : Hub
 {
+    internal const string ActivityName = "Microsoft.Azure.SignalR.Client.InvocationOut";
+
     protected const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
     protected const string TtlOutOfRangeErrorMessage = "Ttl cannot be less than 0.";
     protected readonly IServiceConnectionManager<THub> ServiceConnectionContainer;
+
     protected ILogger Logger { get; set; }
 
     private readonly DefaultHubMessageSerializer _messageSerializer;
+    private readonly ActivitySource _activitySource;
+    private readonly string _serviceName;
 
     public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver, IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILogger logger)
     {
         Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         ServiceConnectionContainer = serviceConnectionManager;
         _messageSerializer = new DefaultHubMessageSerializer(protocolResolver, globalHubOptions.Value.SupportedProtocols, hubOptions.Value.SupportedProtocols);
+        _activitySource = SignalRClientActivitySource.Instance.ActivitySource;
+        _serviceName = typeof(THub).Name;
     }
 
     public override Task OnConnectedAsync(HubConnectionContext connection)
@@ -295,6 +304,12 @@ internal abstract class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<TH
         {
             message = new InvocationMessage(invocationId, method, args);
         }
+        var activity = CreateActivity(method);
+        if (activity is not null)
+        {
+            activity.Start();
+            InjectHeaders(activity, message);
+        }
         var serializedHubMessages = _messageSerializer.SerializeMessage(message);
         var payloads = new ArrayDictionary<string, ReadOnlyMemory<byte>>(serializedHubMessages.Count);
         foreach (var serializedMessage in serializedHubMessages)
@@ -302,6 +317,43 @@ internal abstract class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<TH
             payloads.Add(serializedMessage.ProtocolName, serializedMessage.Serialized);
         }
         return payloads;
+    }
+
+    private Activity CreateActivity(string methodName)
+    {
+        var activity = _activitySource.CreateActivity(ActivityName, ActivityKind.Client);
+        if (activity is null && Activity.Current is not null && Logger.IsEnabled(LogLevel.Critical))
+        {
+            activity = new Activity(ActivityName);
+        }
+
+        if (activity is not null)
+        {
+            if (!string.IsNullOrEmpty(_serviceName))
+            {
+                activity.DisplayName = $"{_serviceName}/{methodName}";
+                activity.SetTag("rpc.service", _serviceName);
+            }
+            else
+            {
+                activity.DisplayName = methodName;
+            }
+
+            activity.SetTag("rpc.system", "signalr");
+            activity.SetTag("rpc.method", methodName);
+        }
+
+        return activity;
+    }
+
+    private static void InjectHeaders(Activity activity, HubInvocationMessage invocationMessage)
+    {
+        DistributedContextPropagator.Current.Inject(activity, invocationMessage, static (carrier, key, value) =>
+        {
+            var invocationMessage = (HubInvocationMessage)carrier;
+            invocationMessage.Headers ??= new Dictionary<string, string>();
+            invocationMessage.Headers[key] = value;
+        });
     }
 
     protected IDictionary<string, ReadOnlyMemory<byte>> SerializeAllProtocols(HubMessage message)

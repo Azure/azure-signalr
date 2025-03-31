@@ -1,8 +1,9 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -136,11 +137,20 @@ namespace Microsoft.Azure.SignalR
             // Exception handling follows https://source.dot.net/#Microsoft.AspNetCore.SignalR.Core/DefaultHubLifetimeManager.cs,349
             try
             {
-                return await task;
+                var result = await task;
+                Activity.Current?.Stop();
+                return result;
             }
-            catch
+            catch (Exception ex)
             {
                 _clientInvocationManager.Caller.RemoveInvocation(invocationId);
+                var currentActivity = Activity.Current;
+                if (currentActivity is not null)
+                {
+                    currentActivity.SetStatus(ActivityStatusCode.Error);
+                    currentActivity.SetTag("error.type", ex.GetType().FullName);
+                    currentActivity.Stop();
+                }
                 throw;
             }
         }
