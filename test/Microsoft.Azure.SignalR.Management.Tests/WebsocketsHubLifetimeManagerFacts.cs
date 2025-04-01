@@ -23,6 +23,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private readonly Mock<IOptions<ServiceManagerOptions>> _serviceManagerOptionsMock;
         private readonly Mock<IClientInvocationManager> _clientInvocationManagerMock;
         private readonly Mock<IServerNameProvider> _serverNameProviderMock;
+        private readonly string _hubName = "TestHub";
 
         public WebsocketsHubLifetimeManagerFacts()
         {
@@ -54,7 +55,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 _loggerFactoryMock.Object,
                 _serviceManagerOptionsMock.Object,
                 _clientInvocationManagerMock.Object,
-                _serverNameProviderMock.Object
+                _serverNameProviderMock.Object,
+                _hubName
             );
 
             // Assert
@@ -75,7 +77,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 _loggerFactoryMock.Object,
                 _serviceManagerOptionsMock.Object,
                 _clientInvocationManagerMock.Object,
-                _serverNameProviderMock.Object
+                _serverNameProviderMock.Object,
+                _hubName
             );
 
             var connectionId = "test-connection-id";
@@ -111,7 +114,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 _loggerFactoryMock.Object,
                 _serviceManagerOptionsMock.Object,
                 _clientInvocationManagerMock.Object,
-                _serverNameProviderMock.Object
+                _serverNameProviderMock.Object,
+                _hubName
             );
 
             string invalidConnectionId = null!;
@@ -135,7 +139,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 _loggerFactoryMock.Object,
                 _serviceManagerOptionsMock.Object,
                 _clientInvocationManagerMock.Object,
-                _serverNameProviderMock.Object
+                _serverNameProviderMock.Object,
+                _hubName
             );
 
             var connectionId = "test-connection-id";

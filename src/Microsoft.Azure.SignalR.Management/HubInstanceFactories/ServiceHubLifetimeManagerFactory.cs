@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
                         var container = _serviceProvider.GetRequiredService<IServiceConnectionContainer>();
                         var connectionManager = new ServiceConnectionManager<THub>();
                         connectionManager.SetServiceConnection(container);
-                        return ActivatorUtilities.CreateInstance<WebSocketsHubLifetimeManager<THub>>(_serviceProvider, connectionManager);
+                        return ActivatorUtilities.CreateInstance<WebSocketsHubLifetimeManager<THub>>(_serviceProvider, connectionManager, hubName);
                     }
                 case ServiceTransportType.Transient:
                     {

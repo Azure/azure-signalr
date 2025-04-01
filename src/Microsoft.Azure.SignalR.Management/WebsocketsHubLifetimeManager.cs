@@ -26,13 +26,13 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
 
     public WebSocketsHubLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver,
         IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILoggerFactory loggerFactory, IOptions<ServiceManagerOptions> serviceManagerOptions,
-        IClientInvocationManager clientInvocationManager, IServerNameProvider serverNameProvider) :
+        IClientInvocationManager clientInvocationManager, IServerNameProvider serverNameProvider, string hubName) :
         base(serviceConnectionManager, protocolResolver, globalHubOptions, hubOptions, loggerFactory?.CreateLogger(nameof(WebSocketsHubLifetimeManager<Hub>)))
     {
         _serviceManagerOptions = serviceManagerOptions ?? throw new ArgumentNullException(nameof(serviceManagerOptions));
         _clientInvocationManager = clientInvocationManager;
         _callerId = serverNameProvider.GetName();
-        _hub = typeof(THub).Name;
+        _hub = hubName;
     }
 
     public Task RemoveFromAllGroupsAsync(string connectionId, CancellationToken cancellationToken = default)
