@@ -68,6 +68,7 @@ jobs:
           else
             echo "api-breaking-change-signoff label not found ❌"
             echo "HAS_SPECIAL_LABEL=false" >> $GITHUB_ENV
+          fi
         shell: bash
       - name: Determine merge eligibility
         run: |
