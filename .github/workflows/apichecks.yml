@@ -57,7 +57,7 @@ jobs:
       # Add check-label step after api-check
       - name: Check for special label
         id: check_label
-        if: failure()  # Run only if the api-check step failed
+        if: steps.api-check.outcome == 'failure'  # Run only if the api-check step failed
         run: |
           LABELS="${{ toJson(github.event.pull_request.labels) }}"
           echo "PR Labels: $LABELS"
