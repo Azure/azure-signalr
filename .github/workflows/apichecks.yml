@@ -57,18 +57,11 @@ jobs:
       # Add check-label step after api-check
       - name: Check for special label
         id: check_label
-        if: steps.api-check.outcome == 'failure'  # Run only if the api-check step failed
+        if: steps.api-check.outcome == 'failure' && contains(github.event.pull_request.labels.*.name, 'api-breaking-change-signoff') # Run only if the api-check step failed
         run: |
           LABELS="${{ toJson(github.event.pull_request.labels) }}"
           echo "PR Labels: $LABELS"
-          
-          if echo "$LABELS" | grep -q '"api-breaking-change-signoff"'; then
-            echo "api-breaking-change-signoff label found ✅"
-            echo "HAS_SPECIAL_LABEL=true" >> $GITHUB_ENV
-          else
-            echo "api-breaking-change-signoff label not found ❌"
-            echo "HAS_SPECIAL_LABEL=false" >> $GITHUB_ENV
-          fi
+          echo "HAS_SPECIAL_LABEL=true" >> $GITHUB_ENV
         shell: bash
       - name: Determine merge eligibility
         run: |
