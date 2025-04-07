@@ -313,6 +313,10 @@ internal abstract class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<TH
                 throw;
             }
         }
+        else
+        {
+            await WriteAsync(message);
+        }
     }
 
     protected Task WriteAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId =>
