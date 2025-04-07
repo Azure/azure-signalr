@@ -72,7 +72,7 @@ jobs:
             echo "Label api-breaking-change-signoff found, merge allowed ✅"
             exit 0
           else
-            echo "API breaking change detected, please ask for api-breaking-change-signoff "
+            echo "API breaking change detected, please ask for api-breaking-change-signoff"
             exit 1
           fi
         shell: bash
