@@ -10,17 +10,17 @@ using Microsoft.Azure.SignalR;
 
 namespace ChatSample;
 
-public class ChatHub(IHubContext<ChatHub> context) : Hub
+public class ChatHub(IHubContext<ChatHub> context) : Hub, IChatHub
 {
-    public void BroadcastMessage(string name, string message)
+    public async Task BroadcastMessage(string name, string message)
     {
-        Clients.All.SendAsync("broadcastMessage", name, message);
+        await Clients.All.SendAsync("broadcastMessage", name, message);
         Console.WriteLine("Broadcasting...");
     }
 
-    public void Echo(string name, string message)
+    public async Task Echo(string name, string message)
     {
-        Clients.Caller.SendAsync("echo", name,
+        await Clients.Caller.SendAsync("echo", name,
             $"{message} (echo from server, Client IP: {Context.GetHttpContext().Connection.RemoteIpAddress}");
         Console.WriteLine("Echo...");
     }
