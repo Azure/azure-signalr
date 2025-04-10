@@ -24,7 +24,7 @@ internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionM
 
     public Task StartAsync()
     {
-        return _serviceConnection?.StartAsync() ?? throw new ArgumentNullException(nameof(_serviceConnection));
+        return _serviceConnection?.StartAsync() ?? throw new InvalidOperationException();
     }
 
     public Task StopAsync()
