@@ -64,11 +64,16 @@ jobs:
       - name: Check if 'api/' folder has changes
         id: api-check
         run: |
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q '^api/'; then
+          changed_files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...${{ github.event.pull_request.head.sha }})
+
+          echo "Files changed in this PR:"
+          echo "$changed_files"
+
+          if echo "$changed_files" | grep -q '^api/'; then
             echo "Changes detected in the 'api/' folder. Marking the step as failure."
             exit 1
           else
-            git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^api/'
+            echo "No changes in the 'api/' folder."
           fi
         shell: bash
         continue-on-error: true
