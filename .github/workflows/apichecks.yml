@@ -47,14 +47,36 @@ jobs:
         with:
           name: export-api-log
           path: ./export-api.log
-      - name: Check for API Changes
-        id: api-check
+      - name: Diff API Changes
+        id: api-check-diff
         run: |
           git status
           git diff --exit-code api/
         shell: bash
         continue-on-error: true
-      # Add check-label step after api-check
+      - name: API changed
+        if: steps.api-check-diff.outcome == 'failure'
+        run: |
+          echo "API changes detected."
+          echo "Please run powershell -ExecutionPolicy Bypass -File .\eng\Export-API.ps1 to update the API files"
+          exit 1
+        shell: bash
+      - name: Check if 'api/' folder has changes
+        id: api-check
+        run: |
+          changed_files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...${{ github.event.pull_request.head.sha }})
+
+          echo "Files changed in this PR:"
+          echo "$changed_files"
+
+          if echo "$changed_files" | grep -q '^api/'; then
+            echo "Changes detected in the 'api/' folder. Marking the step as failure."
+            exit 1
+          else
+            echo "No changes in the 'api/' folder."
+          fi
+        shell: bash
+        continue-on-error: true
       - name: Check for special label
         id: check_label
         if: steps.api-check.outcome == 'failure' && contains(github.event.pull_request.labels.*.name, 'api-breaking-change-signoff') # Run only if the api-check step failed
