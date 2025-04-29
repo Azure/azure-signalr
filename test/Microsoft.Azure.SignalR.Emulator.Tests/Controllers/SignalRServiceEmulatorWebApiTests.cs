@@ -241,6 +241,25 @@ namespace Microsoft.Azure.SignalR.Emulator.Tests.Controllers
         }
 
         [Fact]
+        public void RemoveConnectionFromAllGroupsValidConnectionWithNoGroupReturnsOk()
+        {
+            // Arrange
+            var groupManager = new GroupManager();
+
+            var dynamicHubContextMock = new Mock<DynamicHubContext>();
+            dynamicHubContextMock.Setup(d => d.UserGroupManager).Returns(groupManager);
+
+            var dynamicHubContext = dynamicHubContextMock.Object;
+            _storeMock.Setup(s => s.TryGetLifetimeContext(It.IsAny<string>(), out dynamicHubContext)).Returns(true);
+
+            // Act
+            var result = _controller.RemoveConnectionFromAllGroups(TestHub, TestConnectionId, TestApplication);
+
+            // Assert
+            Assert.IsType<OkResult>(result);
+        }
+
+        [Fact]
         public void RemoveConnectionFromAllGroupsInvalidConnectionReturnsOk()
         {
             // arrange

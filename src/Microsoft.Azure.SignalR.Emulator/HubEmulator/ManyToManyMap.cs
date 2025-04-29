@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Buffers;
@@ -83,14 +83,29 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             }
         }
 
-        public void RemoveLeft(TLeft left)
+        public bool Contains(TLeft left, TRight right)
         {
-            _ltr.Remove(left, out var lefts);
+            if (_ltr.TryGetValue(left, out var rights))
+            {
+                return rights.Contains(right);
+            }
+
+            return false;
+        }
+
+        public bool RemoveLeft(TLeft left)
+        {
+            if (!_ltr.Remove(left, out var lefts))
+            {
+                return false;
+            }
 
             foreach (var right in lefts)
             {
                 RemoveLeftFromRight(left, right);
             }
+
+            return true;
         }
 
         public LeaseForArray<TRight> QueryByLeft(TLeft left)
