@@ -45,6 +45,8 @@ public class Startup
     {
         VisualStudio = 0,
 
+        VisualStudioCode,
+
         ApplicationWithCertificate,
 
         ApplicationWithClientSecret,
@@ -66,7 +68,8 @@ public class Startup
             {
                 TokenCredential credential = AuthType switch
                 {
-                    AuthTypes.VisualStudio => new VisualStudioCodeCredential(),
+                    AuthTypes.VisualStudio => new VisualStudioCredential(),
+                    AuthTypes.VisualStudioCode => new VisualStudioCodeCredential(),
                     AuthTypes.ApplicationWithCertificate => new ClientCertificateCredential(TenantId, AppClientId, "path-to-cert-file"),
                     AuthTypes.ApplicationWithClientSecret => new ClientSecretCredential(TenantId, AppClientId, "client-secret-value"),
                     AuthTypes.ApplicationWithFederatedIdentity => GetClientAssertionCredential(TenantId, AppClientId, MsiClientId),
