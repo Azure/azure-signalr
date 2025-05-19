@@ -34,7 +34,8 @@ namespace Microsoft.Azure.SignalR
         public const string StartToSendMessageToCheckConnectionTemplate = "Start to send message {tracingId} to check if connection {connectionId} exists.";
         public const string StartToSendMessageToCheckIfUserExistsTemplate = "Start to send message {tracingId} to check if user {userId} exists.";
         public const string StartToSendMessageToCheckIfGroupExistsTemplate = "Start to send message {tracingId} to check if group {group} exists.";
-        
+        public const string FailedToReadMessageFromSourceTemplate = "Failed to read message from source for connection {connectionId} stream {streamId}.";
+
         private static readonly Action<ILogger, ulong?, Exception> _startToBroadcastMessage =
             LoggerMessage.Define<ulong?>(
                 LogLevel.Information,
@@ -161,7 +162,7 @@ namespace Microsoft.Azure.SignalR
                     new EventId(140, "StartToCloseConnection"),
                     StartToSendMessageToCloseConnectionTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfConnectionExists = 
+        private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfConnectionExists =
                 LoggerMessage.Define<ulong?, string>(
                     LogLevel.Information,
                     new EventId(150, "StartToCheckIfConnectionExists"),
@@ -178,6 +179,12 @@ namespace Microsoft.Azure.SignalR
                     LogLevel.Information,
                     new EventId(170, "StartToCheckIfGroupExists"),
                     StartToSendMessageToCheckIfGroupExistsTemplate);
+
+        private static readonly Action<ILogger, string, string, Exception> _failedToReadMessageFromSource =
+                LoggerMessage.Define<string, string>(
+                    LogLevel.Error,
+                    new EventId(180, "FailedToReadMessageFromSource"),
+                    FailedToReadMessageFromSourceTemplate);
 
         public static void ReceiveMessageFromService(ILogger logger, ConnectionDataMessage message)
         {
@@ -338,6 +345,11 @@ namespace Microsoft.Azure.SignalR
             {
                 _startToRemoveConnectionFromGroup(logger, tracingId, connectionId, groupName, null);
             }
+        }
+
+        public static void FailedToReadMessageFromSource(ILogger logger, string connectionId, string streamId, Exception exception)
+        {
+            _failedToReadMessageFromSource(logger, connectionId, streamId, exception);
         }
     }
 }

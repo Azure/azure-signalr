@@ -70,7 +70,7 @@ internal class StreamingManagerAdapter(IStreamingHubLifetimeManager lifetimeMana
 
     private async Task SendErrorAsync(string connectionId, string streamId, Exception ex, CancellationToken cancellationToken)
     {
-        _logger.LogError(ex, "An error occurred while sending stream items.");
+        MessageLog.FailedToReadMessageFromSource(_logger, connectionId, streamId, ex);
         await _lifetimeManager.SendStreamCompletionAsync(connectionId, streamId, "An error occurred.", cancellationToken);
     }
 }
