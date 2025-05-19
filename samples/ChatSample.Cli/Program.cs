@@ -53,10 +53,21 @@ internal static partial class Program
     private static readonly Dictionary<string, TypeInfo> TypeMap = new(StringComparer.OrdinalIgnoreCase)
     {
         { "int", new(typeof(int), x => int.Parse(x, null)) },
-        { "string", new(typeof(string), x => x) },
+        { "string", new(typeof(string), Escape) },
         { "bool", new(typeof(bool), x => bool.Parse(x)) },
         { "double", new(typeof(double), x => double.Parse(x, null)) }
     };
+
+    private static string Escape(string x)
+    {
+        // remove leading and trailing quotes
+        if (x.Length > 1 && x[0] == '"' && x[^1] == '"')
+        {
+            x = x[1..^1];
+        }
+        // replace escaped characters
+        return x.Replace("\\\"", "\"").Replace("\\'", "'").Replace("\\r", "\r").Replace("\\n", "\n").Replace("\\t", "\t");
+    }
 
     private static readonly Dictionary<string, TypeInfo[]> MethodDefineMap = new(StringComparer.OrdinalIgnoreCase);
 
