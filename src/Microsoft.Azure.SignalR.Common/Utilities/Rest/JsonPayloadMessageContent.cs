@@ -17,7 +17,10 @@ namespace Microsoft.Azure.SignalR;
 
 internal class JsonPayloadMessageContent : HttpContent
 {
-    private static readonly MediaTypeHeaderValue ContentType = new("application/json");
+    private static readonly MediaTypeHeaderValue ContentType = new("application/json")
+    {
+        CharSet = "utf-8"
+    };
     private static readonly JsonWriterOptions JsonWriterOptions = new()
     {
         // We must skip validation because what we break the writing midway and write JSON in other ways.

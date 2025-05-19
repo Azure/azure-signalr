@@ -136,7 +136,7 @@ internal static partial class Program
             {
                 Console.WriteLine("Available commands:");
                 Console.WriteLine("  connect <connection-string> <hub> [--transient/-t]");
-                Console.WriteLine("  client <connection-string> <hub>");
+                Console.WriteLine("  client <connection-string> <hub> [--messagepack/-m]");
                 Console.WriteLine("  help");
                 Console.WriteLine("  exit");
                 continue;
