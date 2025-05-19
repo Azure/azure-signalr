@@ -760,7 +760,7 @@ public class ServiceProtocol : IServiceProtocol
 
     private static void WriteGroupMemberQueryMessage(ref MessagePackWriter writer, GroupMemberQueryMessage message)
     {
-        writer.WriteArrayHeader(6);
+        writer.WriteArrayHeader(7);
         writer.Write(ServiceProtocolConstants.GroupMemberQueryMessageType);
         message.WriteExtensionMembers(ref writer);
         writer.Write(message.GroupName);
@@ -774,6 +774,14 @@ public class ServiceProtocol : IServiceProtocol
             writer.WriteNil();
         }
         writer.Write(message.ContinuationToken);
+        if (message.MaxPageSize != null)
+        {
+            writer.Write(message.MaxPageSize.Value);
+        }
+        else
+        {
+            writer.WriteNil();
+        }
     }
 
     private static void WriteStringArray(ref MessagePackWriter writer, IReadOnlyList<string>? array)
@@ -1405,6 +1413,10 @@ public class ServiceProtocol : IServiceProtocol
         result.AckId = ReadInt32(ref reader, nameof(GroupMemberQueryMessage.AckId));
         result.Top = reader.TryReadNil() ? null : ReadInt32(ref reader, nameof(GroupMemberQueryMessage.Top));
         result.ContinuationToken = ReadString(ref reader, nameof(GroupMemberQueryMessage.ContinuationToken));
+        if (arrayLength >= 7)
+        {
+            result.MaxPageSize = reader.TryReadNil() ? null : ReadInt32(ref reader, nameof(GroupMemberQueryMessage.MaxPageSize));
+        }
         return result;
     }
 }

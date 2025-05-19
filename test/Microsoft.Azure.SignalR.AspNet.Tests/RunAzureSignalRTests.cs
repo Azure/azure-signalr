@@ -844,12 +844,23 @@ public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTe
         using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         using (new AppSettingsConfigScope(ConnectionString))
         {
+            var logger = loggerFactory.CreateLogger(nameof(TestRunAzureSignalStartsServerConnection));
             var hubConfig = Utility.GetTestHubConfig(loggerFactory);
             var hubName = "hub";
             var testHub = new TestHubManager(hubName);
             hubConfig.Resolver.Register(typeof(IHubManager), () => testHub);
+            var bufferSize = 0x100;
+            var bufferLog = $"Buffer set to {bufferSize}";
             using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig,
-                o => o.InitialHubServerConnectionCount = 1
+                o =>
+                {
+                    o.InitialHubServerConnectionCount = 1;
+                    o.ConfigureServiceConnectionWebSocketOptions = i =>
+                    {
+                        i.SetBuffer(bufferSize, bufferSize);
+                        logger.LogInformation(bufferLog);
+                    };
+                }
             )))
             {
                 var options = hubConfig.Resolver.Resolve<IServiceConnectionManager>();
@@ -863,6 +874,7 @@ public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTe
             logCollector.Expects("StartTransport");
             logCollector.Expects("TransportStopping");
             logCollector.Expects("FailedToConnect");
+            logCollector.Expects(i => i.Write.Message == bufferLog);
         }
     }
 

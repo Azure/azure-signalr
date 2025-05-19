@@ -110,6 +110,13 @@ public class ServiceLifetimeManagerFacts
         Assert.False(blazorDetector.IsBlazor(nameof(TestHub)));
     }
 
+    [Fact]
+    public async Task ServiceLifetimeManagerStopShouldNotThrow()
+    {
+        var serviceConnectionManager = new ServiceConnectionManager<TestHub>();
+        await serviceConnectionManager.StopAsync();
+    }
+
     [Theory]
     [InlineData("SendAllAsync", typeof(BroadcastDataMessage))]
     [InlineData("SendAllExceptAsync", typeof(BroadcastDataMessage))]

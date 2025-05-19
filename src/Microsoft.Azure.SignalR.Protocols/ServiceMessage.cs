@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #nullable enable
 
@@ -589,6 +589,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// The name of the group to list.
         /// </summary>
         public string GroupName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The max size of a page.
+        /// </summary>
+        public int? MaxPageSize { get; set; }
 
         /// <summary>
         /// The max count of connections to return.

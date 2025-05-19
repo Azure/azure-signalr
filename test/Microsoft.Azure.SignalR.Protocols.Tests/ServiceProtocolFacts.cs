@@ -284,6 +284,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }, tracingId: 1234L),
                 binary: "lQ2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoEBzQTS"),
+            new ProtocolTestData(
+                name: "GroupMemberQueryMessage",
+                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1 },
+                binary: "liiApWdyb3VwAcDA"),
+            new ProtocolTestData(
+                name: "GroupMemberQueryMessageWithOptionalFields",
+                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1, Top = 10, ContinuationToken = "token", TracingId = 1234UL },
+                binary: "liiBAc0E0qVncm91cAEKpXRva2Vu"),
         }.ToDictionary(t => t.Name);
 
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -767,11 +775,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             new ProtocolTestData(
                 name: "GroupMemberQueryMessage",
                 message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1 },
-                binary: "liiApWdyb3VwAcDA"),
+                binary: "lyiApWdyb3VwAcDAwA=="),
             new ProtocolTestData(
                 name: "GroupMemberQueryMessageWithOptionalFields",
-                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1, Top = 10, ContinuationToken = "token", TracingId = 1234UL },
-                binary: "liiBAc0E0qVncm91cAEKpXRva2Vu"),
+                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1, MaxPageSize = 5, Top = 10, ContinuationToken = "token", TracingId = 1234UL },
+                binary: "lyiBAc0E0qVncm91cAEKpXRva2VuBQ=="),
         }.ToDictionary(t => t.Name);
 
 #pragma warning restore CS0618 // Type or member is obsolete

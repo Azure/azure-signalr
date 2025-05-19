@@ -132,7 +132,10 @@ internal class DispatcherHelper
         var cf = configuration.Resolver.Resolve<IConnectionFactory>();
         if (cf == null)
         {
-            cf = new ConnectionFactory(serverNameProvider, loggerFactory);
+            cf = new ConnectionFactory(serverNameProvider, loggerFactory)
+            {
+                ConfigureServiceConnectionWebSocketOptions = options.ConfigureServiceConnectionWebSocketOptions
+            };
             configuration.Resolver.Register(typeof(IConnectionFactory), () => cf);
         }
 
