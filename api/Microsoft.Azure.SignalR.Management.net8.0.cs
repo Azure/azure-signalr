@@ -33,6 +33,11 @@ namespace Microsoft.Azure.SignalR.Management
         [System.ObsoleteAttribute("Use ServiceManagerBuilder.BuildServiceManager() instead.")]
         Microsoft.Azure.SignalR.Management.IServiceManager Build();
     }
+    public partial interface IStreamingManager
+    {
+        System.Threading.Tasks.Task SendStreamAsync<TItem>(string connectionId, string streamId, System.Collections.Generic.IAsyncEnumerable<TItem> items, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task SendStreamAsync<TItem>(string connectionId, string streamId, System.Threading.Channels.ChannelReader<TItem> items, System.Threading.CancellationToken cancellationToken);
+    }
     public partial interface IUserGroupManager
     {
         System.Threading.Tasks.Task AddToGroupAsync(string userId, string groupName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -70,6 +75,7 @@ namespace Microsoft.Azure.SignalR.Management
         public virtual Microsoft.Azure.SignalR.Management.GroupManager Groups { get { throw null; } }
         Microsoft.AspNetCore.SignalR.IGroupManager Microsoft.AspNetCore.SignalR.IHubContext<Microsoft.AspNetCore.SignalR.Hub>.Groups { get { throw null; } }
         Microsoft.Azure.SignalR.Management.IUserGroupManager Microsoft.Azure.SignalR.Management.IServiceHubContext.UserGroups { get { throw null; } }
+        public virtual Microsoft.Azure.SignalR.Management.StreamingManager Streaming { get { throw null; } }
         public virtual Microsoft.Azure.SignalR.Management.UserGroupManager UserGroups { get { throw null; } }
         public virtual void Dispose() { }
         public virtual System.Threading.Tasks.Task DisposeAsync() { throw null; }
@@ -157,6 +163,12 @@ namespace Microsoft.Azure.SignalR.Management
     {
         Transient = 0,
         Persistent = 1,
+    }
+    public abstract partial class StreamingManager : Microsoft.Azure.SignalR.Management.IStreamingManager
+    {
+        protected StreamingManager() { }
+        public abstract System.Threading.Tasks.Task SendStreamAsync<TItem>(string connectionId, string streamId, System.Collections.Generic.IAsyncEnumerable<TItem> items, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task SendStreamAsync<TItem>(string connectionId, string streamId, System.Threading.Channels.ChannelReader<TItem> items, System.Threading.CancellationToken cancellationToken);
     }
     public abstract partial class UserGroupManager : Microsoft.Azure.SignalR.Management.IUserGroupManager
     {
