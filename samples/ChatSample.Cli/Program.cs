@@ -15,7 +15,7 @@ namespace ChatSample.Cli;
 
 internal static partial class Program
 {
-    private sealed record TypeInfo(Type Type, Func<string, object> Parse);
+    private sealed record TypeInfo(Type Type, Func<string, object> Parse, Regex Regex);
 
     [GeneratedRegex(@"^load\s+(.+)$", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex LoadRegex();
@@ -50,12 +50,26 @@ internal static partial class Program
     [GeneratedRegex(@"^listen\s+(\w+)(?:\(((?:\s*\w+\s*,)*\s*\w+)?\s*\))?$", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex ListenRegex();
 
+    [GeneratedRegex("^-?\\d+")]
+    private static partial Regex IntegerRegex();
+    [GeneratedRegex(@"^\""(?:\\.|[^\\])*?\""")]
+    private static partial Regex StringRegex();
+    [GeneratedRegex("^true|false", RegexOptions.IgnoreCase)]
+    private static partial Regex BooleanRegex();
+    [GeneratedRegex("^-?(?:\\d+)?\\.?\\d+")]
+    private static partial Regex DoubleRegex();
+    [GeneratedRegex("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?")]
+    private static partial Regex BytesRegex();
+    [GeneratedRegex("^\\s*(?:,\\s*|$)")]
+    private static partial Regex ParameterEndRegex();
+
     private static readonly Dictionary<string, TypeInfo> TypeMap = new(StringComparer.OrdinalIgnoreCase)
     {
-        { "int", new(typeof(int), x => int.Parse(x, null)) },
-        { "string", new(typeof(string), Escape) },
-        { "bool", new(typeof(bool), x => bool.Parse(x)) },
-        { "double", new(typeof(double), x => double.Parse(x, null)) }
+        { "int", new(typeof(int), x => int.Parse(x, null), IntegerRegex()) },
+        { "string", new(typeof(string), Escape, StringRegex()) },
+        { "bool", new(typeof(bool), x => bool.Parse(x), BooleanRegex()) },
+        { "double", new(typeof(double), x => double.Parse(x, null), DoubleRegex()) },
+        { "binary", new(typeof(byte[]), Convert.FromBase64String, BytesRegex()) },
     };
 
     private static string Escape(string x)
@@ -66,7 +80,7 @@ internal static partial class Program
             x = x[1..^1];
         }
         // replace escaped characters
-        return x.Replace("\\\"", "\"").Replace("\\'", "'").Replace("\\r", "\r").Replace("\\n", "\n").Replace("\\t", "\t");
+        return x.Replace("\\\"", "\"").Replace("\\'", "'").Replace("\\r", "\r").Replace("\\n", "\n").Replace("\\t", "\t").Replace("\\\\", "\\");
     }
 
     private static readonly Dictionary<string, TypeInfo[]> MethodDefineMap = new(StringComparer.OrdinalIgnoreCase);
@@ -300,33 +314,53 @@ internal static partial class Program
             Console.WriteLine($"Undefined target: {target}, please define it first, see define.");
             return;
         }
-        var argStrings = args.Split(',').Select(x => x.Trim()).ToList();
-
-        if (argStrings.Count != argTypes.Length)
-        {
-            Console.WriteLine($"Invalid number of arguments for {target}: {argStrings.Count} != {argTypes.Length}");
-            return;
-        }
-        var argValues = new object[argTypes.Length];
-        var isValid = true;
-        for (var i = 0; i < argTypes.Length; i++)
-        {
-            try
-            {
-                argValues[i] = argTypes[i].Parse(argStrings[i]);
-            }
-            catch (Exception)
-            {
-                Console.WriteLine($"Invalid argument type for {target}: {argValues[i]}");
-                isValid = false;
-                break;
-            }
-        }
-        if (!isValid)
+        if (!ParseArguments(target, args, argTypes, out var argValues))
         {
             return;
         }
         await proxy.SendCoreAsync(target, argValues);
+    }
+
+    private static bool ParseArguments(string target, string args, TypeInfo[] argTypes, out object[] argValues)
+    {
+        argValues = new object[argTypes.Length];
+        var currentArgs = args.Trim();
+        for (var i = 0; i < argTypes.Length; i++)
+        {
+            if (string.IsNullOrEmpty(currentArgs))
+            {
+                Console.WriteLine($"Invalid number of arguments for {target}: {argTypes.Length} != {i}");
+                return false;
+            }
+            var match = argTypes[i].Regex.Match(currentArgs);
+            if (!match.Success)
+            {
+                Console.WriteLine($"Invalid argument type for {target}: {argTypes[i].Type.Name}");
+                return false;
+            }
+            currentArgs = currentArgs[match.Length..];
+            var end = ParameterEndRegex().Match(currentArgs);
+            if (end.Success)
+            {
+                currentArgs = currentArgs[end.Length..];
+            }
+            else
+            {
+                Console.WriteLine($"Invalid argument type for {target}: {argTypes[i].Type.Name}");
+                return false;
+            }
+            try
+            {
+                argValues[i] = argTypes[i].Parse(match.Value);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"Invalid argument type for {target}: {argValues[i]}");
+                break;
+            }
+        }
+
+        return true;
     }
 
     private static Task NewStream(ServiceHubContext hubContext, Match match)
@@ -472,28 +506,7 @@ internal static partial class Program
                 Console.WriteLine($"Please define the target first.");
                 return;
             }
-            var argStrings = args.Split(',').Select(x => x.Trim()).ToList();
-            if (argStrings.Count != argTypes.Length)
-            {
-                Console.WriteLine($"Invalid number of arguments for {target}: {argStrings.Count} != {argTypes.Length}");
-                return;
-            }
-            var argValues = new object[argTypes.Length];
-            var isValid = true;
-            for (var i = 0; i < argTypes.Length; i++)
-            {
-                try
-                {
-                    argValues[i] = argTypes[i].Parse(argStrings[i]);
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine($"Invalid argument type for {target}: {argValues[i]}");
-                    isValid = false;
-                    break;
-                }
-            }
-            if (!isValid)
+            if (!ParseArguments(target, args, argTypes, out var argValues))
             {
                 return;
             }
@@ -512,28 +525,7 @@ internal static partial class Program
                 Console.WriteLine($"Please define the target first.");
                 return;
             }
-            var argStrings = args.Split(',').Select(x => x.Trim()).ToList();
-            if (argStrings.Count != sig.Params.Length)
-            {
-                Console.WriteLine($"Invalid number of arguments for {target}: {argStrings.Count} != {sig.Params.Length}");
-                return;
-            }
-            var argValues = new object[sig.Params.Length];
-            var isValid = true;
-            for (var i = 0; i < sig.Params.Length; i++)
-            {
-                try
-                {
-                    argValues[i] = sig.Params[i].Parse(argStrings[i]);
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine($"Invalid argument type for {target}: {argValues[i]}");
-                    isValid = false;
-                    break;
-                }
-            }
-            if (!isValid)
+            if (!ParseArguments(target, args, sig.Params, out var argValues))
             {
                 return;
             }
