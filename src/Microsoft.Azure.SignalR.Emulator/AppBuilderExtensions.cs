@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text;
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.SignalR.Emulator
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = false,
-                    ValidateAudience = false,
+                    ValidateAudience = false, // CodeQL [SM04387] emulator code is not intended for production use, local only
                     ValidateLifetime = false,
                     ValidateIssuerSigningKey = false,
                     IssuerSigningKeyResolver = (t, s, k, v) => ValidKeys,
