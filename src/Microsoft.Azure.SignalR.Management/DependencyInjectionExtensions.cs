@@ -52,6 +52,15 @@ internal static class DependencyInjectionExtensions
     public static IServiceCollection AddHub<THub>(this IServiceCollection services, string hubName)
         where THub : Hub
     {
+#if NET6_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(hubName);
+#else
+        if (hubName is null)
+        {
+            throw new ArgumentNullException(nameof(hubName));
+        }
+#endif
+
         //for persistent 
         //use TryAdd to avoid overriding the test implementation added before.
         services.TryAddSingleton<IServiceConnectionContainer>(sp => sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().Create(hubName));
