@@ -438,6 +438,13 @@ public class DependencyInjectionExtensionFacts
         await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://abc"));
     }
 
+    [Fact]
+    public void AddHub_HubNameNull_Throw()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new ServiceCollection().AddHub<Hub>(null));
+    }
+
     private sealed class WaitInfinitelyHandler : DelegatingHandler
     {
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
