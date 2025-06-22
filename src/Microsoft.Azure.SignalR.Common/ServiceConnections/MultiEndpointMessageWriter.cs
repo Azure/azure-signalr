@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -21,11 +22,13 @@ namespace Microsoft.Azure.SignalR;
 internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceManager
 {
     private readonly ILogger _logger;
+    private readonly IClientInvocationManager _clientInvocationManager;
 
     internal HubServiceEndpoint[] TargetEndpoints { get; }
 
-    public MultiEndpointMessageWriter(IReadOnlyCollection<ServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
+    public MultiEndpointMessageWriter(IReadOnlyCollection<ServiceEndpoint> targetEndpoints, IClientInvocationManager invocationManager, ILoggerFactory loggerFactory)
     {
+        _clientInvocationManager = invocationManager;
         _logger = loggerFactory.CreateLogger<MultiEndpointMessageWriter>();
         var normalized = new List<HubServiceEndpoint>();
         if (targetEndpoints != null)
@@ -52,6 +55,19 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceMana
 
     public Task WriteAsync(ServiceMessage serviceMessage)
     {
+        if (serviceMessage is ClientInvocationMessage invocationMessage)
+        {
+            // Accroding to target endpoints in method `WriteMultiEndpointMessageAsync`
+            _clientInvocationManager.Caller.SetAckNumber(invocationMessage.InvocationId, TargetEndpoints.Length);
+            if (TargetEndpoints.Length == 0)
+            {
+                _clientInvocationManager.Caller.TryCompleteResult(
+                    invocationMessage.ConnectionId,
+                    CompletionMessage.WithError(invocationMessage.InvocationId, "No available endpoint to send invocation message.")
+                );
+            }
+        }
+
         return WriteMultiEndpointMessageAsync(serviceMessage, connection => connection.WriteAsync(serviceMessage));
     }
 

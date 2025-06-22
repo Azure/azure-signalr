@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if NET7_0_OR_GREATER
@@ -35,14 +35,20 @@ public class ClientInvocationManagerTests
     private static readonly List<string> TestInstanceIds = new() { "instance0", "instance1" };
     private static readonly List<string> TestServerIds = new() { "server1", "server2" };
     private const string SuccessCompleteResult = "success-result";
-    private const string ErrorCompleteResult = "error-result";
+    private const string CommonErrorCompleteResult = "error-result";
+    private const string NoEndpointErrorCompleteResult = "No available endpoint to send invocation message.";
 
-    private static ClientInvocationManager GetTestClientInvocationManager(int endpointCount = 1)
+    private static ClientInvocationManager GetTestClientInvocationManager(int endpointCount = 1, int badEndpointsCount = 0)
     {
         var services = new ServiceCollection();
         var endpoints = Enumerable.Range(0, endpointCount)
             .Select(i => new ServiceEndpoint($"Endpoint=https://test{i}connectionstring;AccessKey=1"))
             .ToArray();
+
+        for (var i = 0; i < badEndpointsCount && i < endpointCount; i++)
+        {
+            endpoints[i].Online = false;
+        }
 
         var config = new ConfigurationBuilder().Build();
 
@@ -78,6 +84,7 @@ public class ClientInvocationManagerTests
         var cancellationToken = new CancellationToken();
         // Server A knows the InstanceId of Client 2, so `instaceId` in `AddInvocation` is `targetClientInstanceId` 
         var task = clientInvocationManager.Caller.AddInvocation<string>("TestHub", connectionId, invocationId, cancellationToken);
+        clientInvocationManager.Caller.SetAckNumber(invocationId, 1);
 
         var ret = clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out var t);
 
@@ -86,7 +93,7 @@ public class ClientInvocationManagerTests
 
         var completionMessage = isCompletionWithResult
             ? CompletionMessage.WithResult(invocationId, SuccessCompleteResult)
-            : CompletionMessage.WithError(invocationId, ErrorCompleteResult);
+            : CompletionMessage.WithError(invocationId, CommonErrorCompleteResult);
 
         ret = clientInvocationManager.Caller.TryCompleteResult(connectionId, completionMessage);
         Assert.True(ret);
@@ -100,7 +107,7 @@ public class ClientInvocationManagerTests
         catch (Exception e)
         {
             Assert.False(isCompletionWithResult);
-            Assert.Equal(ErrorCompleteResult, e.Message);
+            Assert.Equal(CommonErrorCompleteResult, e.Message);
         }
     }
 
@@ -127,12 +134,14 @@ public class ClientInvocationManagerTests
         var cancellationToken = new CancellationToken();
         // Server 1 doesn't know the InstanceId of Client 2, so `instaceId` is null for `AddInvocation`
         var task = ciManagers[0].Caller.AddInvocation<string>("TestHub", TestConnectionIds[0], invocationId, cancellationToken);
+        ciManagers[0].Caller.SetAckNumber(invocationId, 1);
         ciManagers[0].Caller.AddServiceMapping(new ServiceMappingMessage(invocationId, TestConnectionIds[1], TestInstanceIds[1]));
+
         ciManagers[1].Router.AddInvocation(TestConnectionIds[1], invocationId, serverIds[0], new CancellationToken());
 
         var completionMessage = isCompletionWithResult
                             ? CompletionMessage.WithResult(invocationId, SuccessCompleteResult)
-                            : CompletionMessage.WithError(invocationId, ErrorCompleteResult);
+                            : CompletionMessage.WithError(invocationId, CommonErrorCompleteResult);
 
         var ret = ciManagers[1].Router.TryCompleteResult(TestConnectionIds[1], completionMessage);
         Assert.True(ret);
@@ -152,17 +161,18 @@ public class ClientInvocationManagerTests
         catch (Exception e)
         {
             Assert.False(isCompletionWithResult);
-            Assert.Equal(ErrorCompleteResult, e.Message);
+            Assert.Equal(CommonErrorCompleteResult, e.Message);
         }
     }
 
     [Fact]
     public void TestCallerManagerCancellation()
     {
-        var clientInvocationManager = GetTestClientInvocationManager();
+        var clientInvocationManager = GetTestClientInvocationManager(1);
         var invocationId = clientInvocationManager.Caller.GenerateInvocationId(TestConnectionIds[0]);
         var cts = new CancellationTokenSource();
         var task = clientInvocationManager.Caller.AddInvocation<string>("TestHub", TestConnectionIds[0], invocationId, cts.Token);
+        clientInvocationManager.Caller.SetAckNumber(invocationId, 1);
 
         // Check if the invocation is existing
         Assert.True(clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out _));
@@ -176,21 +186,26 @@ public class ClientInvocationManagerTests
     }
 
     [Theory]
-    [InlineData(true, 2)]
-    [InlineData(false, 2)]
-    [InlineData(true, 3)]
-    [InlineData(false, 3)]
+    [InlineData(true, 2, 0)]
+    [InlineData(true, 2, 1)]
+    [InlineData(false, 2, 0)]
+    [InlineData(false, 2, 1)]
+    [InlineData(false, 2, 2)]
+    [InlineData(true, 3, 0)]
+    [InlineData(false, 3, 0)]
     // isCompletionWithResult: the invocation is completed with result or error 
-    public async Task TestCompleteWithMultiEndpointAtLast(bool isCompletionWithResult, int endpointsCount)
+    public async Task TestCompleteWithMultiEndpointAtLast(bool isCompletionWithResult, int endpointsCount, int badEndpointsCount)
     {
-        Assert.True(endpointsCount > 1);
-        var clientInvocationManager = GetTestClientInvocationManager(endpointsCount);
+        var availableEndpointsCount = endpointsCount - badEndpointsCount;
+        Assert.True(endpointsCount > 0 && availableEndpointsCount >= 0);
+        var clientInvocationManager = GetTestClientInvocationManager(endpointsCount, badEndpointsCount);
         var connectionId = TestConnectionIds[0];
         var invocationId = clientInvocationManager.Caller.GenerateInvocationId(connectionId);
 
         var cancellationToken = new CancellationToken();
         // Server A knows the InstanceId of Client 2, so `instaceId` in `AddInvocation` is `targetClientInstanceId` 
         var task = clientInvocationManager.Caller.AddInvocation<string>("TestHub", connectionId, invocationId, cancellationToken);
+        clientInvocationManager.Caller.SetAckNumber(invocationId, endpointsCount - badEndpointsCount);
 
         var ret = clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out var t);
 
@@ -198,18 +213,17 @@ public class ClientInvocationManagerTests
         Assert.Equal(typeof(string), t);
 
         var completionMessage = CompletionMessage.WithResult(invocationId, SuccessCompleteResult);
-        var errorCompletionMessage = CompletionMessage.WithError(invocationId, ErrorCompleteResult);
+        var errorCompletionMessage = CompletionMessage.WithError(invocationId, availableEndpointsCount > 0 ?  CommonErrorCompleteResult : NoEndpointErrorCompleteResult);
 
         // The first `endpointsCount - 1` CompletionMessage complete the invocation with error
         // The last one completes the invocation according to `isCompletionWithResult`
         // The invocation should be uncompleted until the last one CompletionMessage
-        for (var i = 0; i < endpointsCount - 1; i++)
+        for (var i = 0; i < availableEndpointsCount - 1; i++)
         {
             var currentCompletionMessage = errorCompletionMessage;
             ret = clientInvocationManager.Caller.TryCompleteResult(connectionId, currentCompletionMessage);
             Assert.False(ret);
         }
-
         ret = clientInvocationManager.Caller.TryCompleteResult(connectionId, isCompletionWithResult ? completionMessage : errorCompletionMessage);
         Assert.True(ret);
 
@@ -217,12 +231,12 @@ public class ClientInvocationManagerTests
         {
             var result = await task;
             Assert.True(isCompletionWithResult);
-            Assert.Equal(SuccessCompleteResult, result);
+            Assert.Equal(completionMessage.Result, result);
         }
         catch (Exception e)
         {
             Assert.False(isCompletionWithResult);
-            Assert.Equal(ErrorCompleteResult, e.Message);
+            Assert.Equal(errorCompletionMessage.Error, e.Message);
         }
     }
 
@@ -239,6 +253,7 @@ public class ClientInvocationManagerTests
         var cancellationToken = new CancellationToken();
         // Server A knows the InstanceId of Client 2, so `instaceId` in `AddInvocation` is `targetClientInstanceId` 
         var task = clientInvocationManager.Caller.AddInvocation<string>("TestHub", connectionId, invocationId, cancellationToken);
+        clientInvocationManager.Caller.SetAckNumber(invocationId, endpointsCount);
 
         var ret = clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out var t);
 
@@ -246,7 +261,7 @@ public class ClientInvocationManagerTests
         Assert.Equal(typeof(string), t);
 
         var successCompletionMessage = CompletionMessage.WithResult(invocationId, SuccessCompleteResult);
-        var errorCompletionMessage = CompletionMessage.WithError(invocationId, ErrorCompleteResult);
+        var errorCompletionMessage = CompletionMessage.WithError(invocationId, CommonErrorCompleteResult);
 
         // The first `endpointsCount - 2` CompletionMessage complete the invocation with error
         // The next one completes the invocation with result

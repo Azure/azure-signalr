@@ -195,6 +195,7 @@ internal class ServiceHubDispatcher<THub> where THub : Hub
                 _serviceEndpointManager,
                 _router,
                 _options,
+                _clientInvocationManager,
                 _loggerFactory
             );
         }

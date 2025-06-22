@@ -32,5 +32,7 @@ namespace Microsoft.Azure.SignalR
         bool TryCompleteResult(string connectionId, ErrorCompletionMessage message);
 
         void RemoveInvocation(string invocationId);
+
+        void SetAckNumber(string invocationId, int ackNumber);
     }
 }

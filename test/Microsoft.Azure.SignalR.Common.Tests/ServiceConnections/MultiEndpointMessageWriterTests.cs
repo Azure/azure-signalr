@@ -40,7 +40,7 @@ public class MultiEndpointMessageWriterTests
             endpoint.ConnectionContainer = containerMock.Object;
             targetEndpoints.Add(endpoint);
         }
-        var multiEndpointWriter = new MultiEndpointMessageWriter(targetEndpoints, Mock.Of<ILoggerFactory>());
+        var multiEndpointWriter = new MultiEndpointMessageWriter(targetEndpoints, null, Mock.Of<ILoggerFactory>());
         var resultMembers = new List<GroupMember>();
         await foreach (var member in multiEndpointWriter.ListConnectionsInGroupAsync("group", top))
         {

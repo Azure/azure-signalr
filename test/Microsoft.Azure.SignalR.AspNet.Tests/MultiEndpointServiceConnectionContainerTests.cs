@@ -486,7 +486,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                                                            Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
                                                            IServiceEndpointManager endpoint,
                                                            IEndpointRouter router,
-                                                           ILoggerFactory loggerFactory) : base(hub, generator, endpoint, router, loggerFactory)
+                                                           ILoggerFactory loggerFactory) : base(hub, generator, endpoint, router, null, loggerFactory)
         {
         }
     }

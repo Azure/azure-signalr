@@ -100,7 +100,7 @@ namespace Microsoft.Azure.SignalR.Management
         private sealed class MessageWriterServiceContainerWrapper : MultiEndpointMessageWriter, IServiceConnectionContainer
         {
             public MessageWriterServiceContainerWrapper(IReadOnlyCollection<ServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
-            : base(targetEndpoints, loggerFactory) { }
+            : base(targetEndpoints, null, loggerFactory) { }
 
             public Task StartAsync() => Task.CompletedTask;
 

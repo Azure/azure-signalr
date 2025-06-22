@@ -13,14 +13,16 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IServiceEndpointManager _endpointManager;
         private readonly int _connectionCount;
         private readonly IEndpointRouter _router;
+        private readonly IClientInvocationManager _clientInvocationManager;
 
-        public MultiEndpointConnectionContainerFactory(IServiceConnectionFactory connectionFactory, ILoggerFactory loggerFactory, IServiceEndpointManager serviceEndpointManager, IOptions<ServiceManagerOptions> options, IEndpointRouter router = null)
+        public MultiEndpointConnectionContainerFactory(IServiceConnectionFactory connectionFactory, ILoggerFactory loggerFactory, IServiceEndpointManager serviceEndpointManager, IOptions<ServiceManagerOptions> options, IEndpointRouter router = null, IClientInvocationManager clientInvocationManager = null)
         {
             _connectionFactory = connectionFactory;
             _loggerFactory = loggerFactory;
             _endpointManager = serviceEndpointManager;
             _connectionCount = options.Value.ConnectionCount;
             _router = router;
+            _clientInvocationManager = clientInvocationManager;
         }
 
         public MultiEndpointServiceConnectionContainer Create(string hubName)
@@ -30,6 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
                 endpoint => new WeakServiceConnectionContainer(_connectionFactory, _connectionCount, endpoint, _loggerFactory.CreateLogger<WeakServiceConnectionContainer>()),
                 _endpointManager,
                 _router,
+                _clientInvocationManager,
                 _loggerFactory);
             return container;
         }

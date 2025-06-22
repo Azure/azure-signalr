@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #if NET7_0_OR_GREATER
 using System;
@@ -44,12 +44,7 @@ namespace Microsoft.Azure.SignalR
                 cancellationToken,
                 () => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
 
-            var serviceEndpoints = _serviceEndpointManager.GetEndpoints(hub);
-            var ackNumber = _endpointRouter.GetEndpointsForConnection(connectionId, serviceEndpoints).Count();
-
             var multiAck = _ackHandler.CreateMultiAck(out var ackId);
-
-            _ackHandler.SetExpectedCount(ackId, ackNumber);
 
             // When the caller server is also the client router, Azure SignalR service won't send a ServiceMappingMessage to server.
             // To handle this condition, CallerClientResultsManager itself should record this mapping information rather than waiting for a ServiceMappingMessage sent by service. Only in this condition, this method is called with instanceId != null.
@@ -205,6 +200,14 @@ namespace Microsoft.Azure.SignalR
         public void RemoveInvocation(string invocationId)
         {
             _pendingInvocations.TryRemove(invocationId, out _);
+        }
+
+        public void SetAckNumber(string invocationId, int ackNumber)
+        {
+            if (_pendingInvocations.TryGetValue(invocationId, out var item))
+            {
+                _ackHandler.SetExpectedCount(item.AckId, ackNumber);
+            }
         }
 
         // Unused, here to honor the IInvocationBinder interface but should never be called

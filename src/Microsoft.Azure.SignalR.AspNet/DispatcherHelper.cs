@@ -146,7 +146,7 @@ internal class DispatcherHelper
             configuration.Resolver.Register(typeof(IServiceConnectionFactory), () => scf);
         }
 
-        var sccf = new ServiceConnectionContainerFactory(scf, endpoint, router, options, loggerFactory);
+        var sccf = new ServiceConnectionContainerFactory(scf, endpoint, router, options, null, loggerFactory);
 
         if (hubs?.Count > 0)
         {
