@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR.Emulator
                 {
                     ValidateIssuer = false,
                     ValidateAudience = false, // CodeQL [SM04387] emulator code is not intended for production use, local only
-                    ValidateLifetime = false,
+                    ValidateLifetime = false, // CodeQL [SM04284] emulator code is not intended for production use, local only
                     ValidateIssuerSigningKey = false,
                     IssuerSigningKeyResolver = (t, s, k, v) => ValidKeys,
                 };

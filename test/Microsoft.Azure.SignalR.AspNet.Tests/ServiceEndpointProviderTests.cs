@@ -95,7 +95,7 @@ public class ServiceEndpointProviderTests
         var handler = new JwtSecurityTokenHandler();
         var principal = handler.ValidateToken(serverToken, new TokenValidationParameters
         {
-            ValidateIssuer = false,
+            ValidateIssuer = false, // CodeQL [SM04284] test code is not intended for production use
             IssuerSigningKey = SecurityKey,
             ValidAudience = expectedAudience
         }, out _);
