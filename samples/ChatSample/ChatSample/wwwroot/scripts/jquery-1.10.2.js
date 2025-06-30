@@ -580,7 +580,7 @@ jQuery.extend({
 					.replace( rvalidtokens, "]" )
 					.replace( rvalidbraces, "")) ) {
 
-					return ( new Function( "return " + data ) )();
+					return ( new Function( "return " + data ) )(); // CodeQL [SM04509] sample code is not intended for production use
 				}
 			}
 		}

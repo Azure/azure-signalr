@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Emulator
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = false,
+                    ValidateIssuer = false, // CodeQL [SM03926] emulator code is not intended for production use, local only
                     ValidateAudience = false, // CodeQL [SM04387] emulator code is not intended for production use, local only
                     ValidateLifetime = false, // CodeQL [SM04284] emulator code is not intended for production use, local only
                     ValidateIssuerSigningKey = false,
