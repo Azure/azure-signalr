@@ -1,13 +1,16 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Azure;
 
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Management;
+
+#nullable enable
 
 internal interface IServiceHubLifetimeManager : IHubLifetimeManager, IUserGroupHubLifetimeManager, IStreamingHubLifetimeManager
 {
@@ -19,5 +22,5 @@ internal interface IServiceHubLifetimeManager : IHubLifetimeManager, IUserGroupH
 
     Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken);
 
-    IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, CancellationToken token = default);
+    AsyncPageable<GroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default);
 }

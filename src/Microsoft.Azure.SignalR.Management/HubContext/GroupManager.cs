@@ -2,9 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Azure;
 
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
@@ -49,6 +50,6 @@ namespace Microsoft.Azure.SignalR.Management
         /// <param name="top">The maximum number of connections to return.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>An asynchronous enumerable of group members.</returns>
-        internal virtual IAsyncEnumerable<GroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        internal virtual AsyncPageable<GroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     }
 }

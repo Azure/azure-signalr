@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Azure;
+
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -250,7 +252,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         return AckHandler.HandleAckStatus(ackableMessage, status);
     }
 
-    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
+    public async IAsyncEnumerable<Page<GroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(groupName))
         {
@@ -260,14 +262,19 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         {
             throw new ArgumentException($"'{nameof(top)}' must be greater than 0.", nameof(top));
         }
-        var message = new GroupMemberQueryMessage() { GroupName = groupName, Top = top, TracingId = tracingId };
+        var message = new GroupMemberQueryMessage()
+        {
+            GroupName = groupName,
+            Top = top,
+            MaxPageSize = maxPageSize,
+            ContinuationToken = continuationToken,
+            TracingId = tracingId
+        };
         do
         {
             var response = await InvokeAsync<GroupMemberQueryResponse>(message, token);
-            foreach (var member in response.Members)
-            {
-                yield return member;
-            }
+            yield return new GroupMemberQueryResultPage(response.Members.ToList(), response.ContinuationToken);
+
             if (response.ContinuationToken == null)
             {
                 yield break;
