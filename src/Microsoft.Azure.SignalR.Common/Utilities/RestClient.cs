@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -77,6 +77,17 @@ internal class RestClient
         CancellationToken cancellationToken = default)
     {
         return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, AsAsync(handleExpectedResponse), cancellationToken);
+    }
+
+    public Task SendMessageWithRetryAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        string methodName,
+        object?[] args,
+        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, handleExpectedResponseAsync, cancellationToken);
     }
 
     public Task SendStreamMessageWithRetryAsync(
@@ -184,7 +195,6 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
 
     private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
     {
-        var payload = httpMethod == HttpMethod.Post ? body : null;
         return GenerateHttpRequest(api.Audience, api.Query, httpMethod, body, typeHint, api.Token);
     }
 

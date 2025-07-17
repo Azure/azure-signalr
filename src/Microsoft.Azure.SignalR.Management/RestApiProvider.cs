@@ -109,6 +109,11 @@ internal class RestApiProvider
         return GenerateRestApiEndpointAsync(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}/streams/{Uri.EscapeDataString(streamId)}/:complete");
     }
 
+    public Task<RestApiEndpoint> SendClientInvocationAsync(string appName, string hubName, string connectionId, TimeSpan? lifetime = null)
+    {
+        return GenerateRestApiEndpointAsync(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}/:invoke", lifetime);
+    }
+
     private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
     {
         var requestPrefixWithHub = $"{_serverEndpoint}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";

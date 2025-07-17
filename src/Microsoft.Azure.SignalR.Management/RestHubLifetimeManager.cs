@@ -7,10 +7,17 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+#if NET7_0_OR_GREATER
+using System.Text.Json;
+using System.Text.Json.Nodes;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.SignalR;
+#if NET7_0_OR_GREATER
+using Microsoft.AspNetCore.SignalR.Protocol;
+#endif
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
 
@@ -348,6 +355,68 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         }
         await _restClient.SendWithRetryAsync(api, HttpMethod.Post, cancellationToken: cancellationToken);
     }
+
+#if NET7_0_OR_GREATER
+#nullable enable
+    public override async Task<T> InvokeConnectionAsync<T>(string connectionId, string methodName, object?[] args, CancellationToken cancellationToken = default)
+    {
+        // Validate input parameters
+        if (string.IsNullOrEmpty(methodName))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
+        }
+        if (string.IsNullOrEmpty(connectionId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+        }
+
+        // Get API endpoint and prepare for the request
+        var api = await _restApiProvider.SendClientInvocationAsync(_appName, _hubName, connectionId);
+        string? responseContent = null;
+        var isSuccessStatusCode = false;
+        // Send request and capture the response
+        await _restClient.SendMessageWithRetryAsync(
+            api,
+            HttpMethod.Post,
+            methodName,
+            args,
+            async response =>
+            {
+                responseContent = await response.Content.ReadAsStringAsync();
+                isSuccessStatusCode = response.IsSuccessStatusCode;
+                return true;
+            },
+            cancellationToken: cancellationToken);
+
+        // Ensure we have a response
+        if (string.IsNullOrWhiteSpace(responseContent))
+        {
+            throw new HubException("Response content is null or empty");
+        }
+
+        var root = JsonNode.Parse(responseContent)
+            ?? throw new HubException("Failed to parse response as JSON");
+
+        if (!isSuccessStatusCode)
+        {
+            var message = root["message"]?.GetValue<string>() ?? "Unknown error";
+            throw new HubException(message);
+        }
+
+        var resultNode = root["jsonObject"]?["result"]
+            ?? throw new HubException("Result not found in JSON response");
+
+        return resultNode.Deserialize<T>()
+            ?? throw new HubException("Failed to deserialize result");
+    }
+
+    public override Task SetConnectionResultAsync(string connectionId, CompletionMessage result)
+    {
+        // This method won't get trigger because in transient we will wait for the returned completion message.
+        // this is to honor the interface
+        throw new NotImplementedException();
+    }
+#endif
 
     private static bool FilterExpectedResponse(HttpResponseMessage response, string expectedErrorCode) =>
         response.IsSuccessStatusCode

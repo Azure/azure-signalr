@@ -58,5 +58,6 @@ public class RestApiProviderFacts
         yield return new object[] { RestApiProvider.GetUserGroupManagementEndpointAsync(context.appName, context.hubName, context.userId, context.groupName), $"{commonEndpoint}/users/{Uri.EscapeDataString(context.userId)}/groups/{Uri.EscapeDataString(context.groupName)}?{commonQueryString}" };
         yield return new object[] { RestApiProvider.GetSendToConnectionEndpointAsync(context.appName, context.hubName, context.connectionId), $"{commonEndpoint}/connections/{Uri.EscapeDataString(context.connectionId)}/:send?{commonQueryString}" };
         yield return new object[] { RestApiProvider.GetConnectionGroupManagementEndpointAsync(context.appName, context.hubName, context.connectionId, context.groupName), $"{commonEndpoint}/groups/{Uri.EscapeDataString(context.groupName)}/connections/{Uri.EscapeDataString(context.connectionId)}?{commonQueryString}" };
+        yield return new object[] { RestApiProvider.SendClientInvocationAsync(context.appName, context.hubName, context.connectionId), $"{commonEndpoint}/connections/{Uri.EscapeDataString(context.connectionId)}/:invoke?{commonQueryString}" };
     }
 }
