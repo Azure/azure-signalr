@@ -22,6 +22,7 @@ internal class GroupMemberQueryResultPage : Page<GroupMember>
         _value = value;
         _continuationToken = continuationToken;
     }
+
     public override IReadOnlyList<GroupMember> Values => _value;
 
     public override string? ContinuationToken => _continuationToken;
