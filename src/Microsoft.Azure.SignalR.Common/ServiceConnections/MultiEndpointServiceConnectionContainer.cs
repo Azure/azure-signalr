@@ -161,7 +161,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
     {
         var targetEndpoints = _routerEndpoints.needRouter ? _router.GetEndpointsForGroup(groupName, _routerEndpoints.endpoints) : _routerEndpoints.endpoints;
         var messageWriter = new MultiEndpointMessageWriter(targetEndpoints?.ToList(), _loggerFactory);
-        return messageWriter.ListConnectionsInGroupAsync(groupName, top,maxPageSize, continuationToken, tracingId, token);
+        return messageWriter.ListConnectionsInGroupAsync(groupName, top, maxPageSize, continuationToken, tracingId, token);
     }
 
     public Task StartGetServersPing()

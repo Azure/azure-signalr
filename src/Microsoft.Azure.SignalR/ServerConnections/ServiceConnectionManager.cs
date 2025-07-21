@@ -76,6 +76,6 @@ internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionM
             throw new AzureSignalRNotConnectedException();
         }
 
-        return _serviceConnection.ListConnectionsInGroupAsync(groupName, top,maxPageSize, continuationToken, tracingId, token);
+        return _serviceConnection.ListConnectionsInGroupAsync(groupName, top, maxPageSize, continuationToken, tracingId, token);
     }
 }

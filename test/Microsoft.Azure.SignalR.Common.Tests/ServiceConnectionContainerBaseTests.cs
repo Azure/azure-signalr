@@ -144,7 +144,7 @@ public class ServiceConnectionContainerBaseTests(ITestOutputHelper output) : Ver
             .ReturnsAsync(new GroupMemberQueryResponse() { ContinuationToken = "abc", Members = [new() { ConnectionId = "1" }, new() { ConnectionId = "2" }] })
             .ReturnsAsync(new GroupMemberQueryResponse() { ContinuationToken = null, Members = [new() { ConnectionId = "3" }] });
         var enumerator = connectionContainerMock.Object
-            .ListConnectionsInGroupAsync(groupName, top, null,null,tracingId)
+            .ListConnectionsInGroupAsync(groupName, top, null, null, tracingId)
             .GetAsyncEnumerator();
         Assert.True(await enumerator.MoveNextAsync());
         Assert.Equal("1", enumerator.Current.Values[0].ConnectionId);
