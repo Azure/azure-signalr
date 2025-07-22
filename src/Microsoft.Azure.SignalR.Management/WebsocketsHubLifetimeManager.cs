@@ -2,9 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #nullable enable
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Azure;
 
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
@@ -309,7 +310,7 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
         return base.AppendMessageTracingId(message);
     }
 
-    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, CancellationToken token = default)
+    public AsyncPageable<GroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default)
     {
         if (string.IsNullOrEmpty(groupName))
         {
@@ -322,6 +323,6 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
         }
 
         ulong? tracingId = _serviceManagerOptions.Value.EnableMessageTracing ? MessageWithTracingIdHelper.Generate() : null;
-        return ServiceConnectionContainer.ListConnectionsInGroupAsync(groupName, top, tracingId, token);
+        return new PagenableGroupMember((string? continuationToken, int? pageSize) => ServiceConnectionContainer.ListConnectionsInGroupAsync(groupName, top, pageSize, continuationToken, tracingId, token), token);
     }
 }

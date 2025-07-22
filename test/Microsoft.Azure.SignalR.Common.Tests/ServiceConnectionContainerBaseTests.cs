@@ -144,16 +144,16 @@ public class ServiceConnectionContainerBaseTests(ITestOutputHelper output) : Ver
             .ReturnsAsync(new GroupMemberQueryResponse() { ContinuationToken = "abc", Members = [new() { ConnectionId = "1" }, new() { ConnectionId = "2" }] })
             .ReturnsAsync(new GroupMemberQueryResponse() { ContinuationToken = null, Members = [new() { ConnectionId = "3" }] });
         var enumerator = connectionContainerMock.Object
-            .ListConnectionsInGroupAsync(groupName, top, tracingId)
+            .ListConnectionsInGroupAsync(groupName, top, null, null, tracingId)
             .GetAsyncEnumerator();
         Assert.True(await enumerator.MoveNextAsync());
-        Assert.Equal("1", enumerator.Current.ConnectionId);
+        Assert.Equal("1", enumerator.Current.Values[0].ConnectionId);
+        Assert.Equal("2", enumerator.Current.Values[1].ConnectionId);
         connectionContainerMock.Verify(c => c.InvokeAsync<GroupMemberQueryResponse>(
             It.Is<GroupMemberQueryMessage>(m => m.GroupName == groupName && m.Top == 3 && m.TracingId == tracingId), It.IsAny<CancellationToken>()), Times.Once);
         connectionContainerMock.Invocations.Clear();
         Assert.True(await enumerator.MoveNextAsync());
-        Assert.True(await enumerator.MoveNextAsync());
-        Assert.Equal("3", enumerator.Current.ConnectionId);
+        Assert.Equal("3", enumerator.Current.Values[0].ConnectionId);
         connectionContainerMock.Verify(c => c.InvokeAsync<GroupMemberQueryResponse>(
     It.Is<GroupMemberQueryMessage>(m => m.GroupName == groupName && m.Top == 1 && m.TracingId == tracingId && m.ContinuationToken == "abc"), It.IsAny<CancellationToken>()), Times.Once);
         Assert.False(await enumerator.MoveNextAsync());

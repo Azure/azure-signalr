@@ -14,6 +14,8 @@ using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Azure;
+
 using Microsoft.AspNetCore.SignalR;
 #if NET7_0_OR_GREATER
 using Microsoft.AspNetCore.SignalR.Protocol;
@@ -422,7 +424,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         response.IsSuccessStatusCode
         || (response.StatusCode == HttpStatusCode.NotFound && response.Headers.TryGetValues(Headers.MicrosoftErrorCode, out var errorCodes) && errorCodes.First().Equals(expectedErrorCode, StringComparison.OrdinalIgnoreCase));
 
-    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, CancellationToken token = default)
+    public AsyncPageable<GroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default)
     {
         throw new NotImplementedException();
     }

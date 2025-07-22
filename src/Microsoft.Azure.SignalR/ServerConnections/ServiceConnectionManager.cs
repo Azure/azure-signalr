@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Azure;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
@@ -67,13 +69,13 @@ internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionM
         StopAsync().GetAwaiter().GetResult();
     }
 
-    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, CancellationToken token = default)
+    public IAsyncEnumerable<Page<GroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string? continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
     {
         if (_serviceConnection == null)
         {
             throw new AzureSignalRNotConnectedException();
         }
 
-        return _serviceConnection.ListConnectionsInGroupAsync(groupName, top, tracingId, token);
+        return _serviceConnection.ListConnectionsInGroupAsync(groupName, top, maxPageSize, continuationToken, tracingId, token);
     }
 }

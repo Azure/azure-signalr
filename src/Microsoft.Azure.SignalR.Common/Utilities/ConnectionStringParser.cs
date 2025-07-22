@@ -139,7 +139,7 @@ internal static class ConnectionStringParser
 #pragma warning disable CS0612 // Type or member is obsolete
             TypeAzureAD => BuildAzureTokenCredential(dict),
 #pragma warning restore CS0612 // Type or member is obsolete
-            _ => new DefaultAzureCredential(),
+            _ => new DefaultAzureCredential(), // // CodeQL [SM05137] Client code and only use DefaultAzureCredential when no auth type is specified
         };
 
         dict.TryGetValue(AccessKeyProperty, out var accessKey);
