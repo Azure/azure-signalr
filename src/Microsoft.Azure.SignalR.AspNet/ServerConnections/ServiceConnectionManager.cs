@@ -7,6 +7,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Azure;
+
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.AspNet;
@@ -141,6 +143,11 @@ internal class ServiceConnectionManager : IServiceConnectionManager
         return Task.WhenAll(GetConnections().Select(s => s.StopGetServersPing()));
     }
 
+    public IAsyncEnumerable<Page<GroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
     public void Dispose()
     {
         StopAsync().GetAwaiter().GetResult();
@@ -167,10 +174,5 @@ internal class ServiceConnectionManager : IServiceConnectionManager
                 yield return conn.Value;
             }
         }
-    }
-
-    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, CancellationToken token = default)
-    {
-        throw new NotImplementedException();
     }
 }

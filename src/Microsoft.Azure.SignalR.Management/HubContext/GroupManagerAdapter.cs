@@ -2,9 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Azure;
 
 using Microsoft.Azure.SignalR.Protocol;
 
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override Task RemoveFromAllGroupsAsync(string connectionId, CancellationToken cancellationToken = default) => _lifetimeManager.RemoveFromAllGroupsAsync(connectionId, cancellationToken);
 
-        internal override IAsyncEnumerable<GroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken cancellationToken = default)
+        internal override AsyncPageable<GroupMember> ListConnectionsInGroup(string groupName, int? top = null,  CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(groupName))
             {
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException($"'{nameof(top)}' must be greater than 0.", nameof(top));
             }
 
-            return _lifetimeManager.ListConnectionsInGroupAsync(groupName, top, cancellationToken);
+            return _lifetimeManager.ListConnectionsInGroup(groupName, top, cancellationToken);
         }
     }
 }

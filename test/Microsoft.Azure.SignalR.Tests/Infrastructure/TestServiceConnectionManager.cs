@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Azure;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 
@@ -68,7 +70,7 @@ internal sealed class TestServiceConnectionManager<THub> : IServiceConnectionMan
 
     public Task CloseClientConnections(CancellationToken token) => Task.CompletedTask;
 
-    public IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, CancellationToken token = default)
+    public IAsyncEnumerable<Page<GroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
     {
         throw new NotImplementedException();
     }

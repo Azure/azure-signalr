@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Azure;
+
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -18,7 +20,7 @@ namespace Microsoft.Azure.SignalR;
 /// <summary>
 /// A service connection container which sends message to multiple service endpoints.
 /// </summary>
-internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceManager
+internal class MultiEndpointMessageWriter : IServiceMessageWriter
 {
     private readonly ILogger _logger;
 
@@ -174,7 +176,7 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceMana
         }
     }
 
-    public async IAsyncEnumerable<GroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
+    public async IAsyncEnumerable<Page<GroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
     {
         if (TargetEndpoints.Length == 0)
         {
@@ -187,27 +189,33 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter, IPresenceMana
         }
         foreach (var endpoint in TargetEndpoints)
         {
-            IAsyncEnumerable<GroupMember> enumerable;
-            try
+            var enumerable = endpoint.ConnectionContainer.ListConnectionsInGroupAsync(groupName, top, maxPageSize, continuationToken, tracingId, token).GetAsyncEnumerator(token);
+            var hasNext = false;
+            do
             {
-                enumerable = endpoint.ConnectionContainer.ListConnectionsInGroupAsync(groupName, top, tracingId, token);
-            }
-            catch (ServiceConnectionNotActiveException)
-            {
-                Log.FailedWritingMessageToEndpoint(_logger, nameof(GroupMemberQueryMessage), null, endpoint.ToString());
-                continue;
-            }
-            await foreach (var member in enumerable)
-            {
-                yield return member;
-                if (top.HasValue)
+                try
                 {
-                    top--;
-                    if (top == 0)
-                    {
-                        yield break;
-                    }
+                    hasNext = await enumerable.MoveNextAsync();
                 }
+                catch (ServiceConnectionNotActiveException)
+                {
+                    Log.FailedWritingMessageToEndpoint(_logger, nameof(GroupMemberQueryMessage), null, endpoint.ToString());
+                    break;
+                    // If one endpoint is not active, we just skip it and continue to the next endpoint.
+                }
+                if (hasNext)
+                {
+                    if (top != null)
+                    {
+                        top -= enumerable.Current.Values.Count;
+                    }
+                    yield return enumerable.Current;
+                }
+            } while (hasNext && (top > 0 || top == null));
+            if (top <= 0)
+            {
+                // If we have reached the top limit, we stop iterating through other endpoints.
+                break;
             }
         }
     }
