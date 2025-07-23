@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var mockEndpoint = new ServiceEndpoint($"Endpoint=https://test.service.signalr.net;AccessKey={key};Version=1.0;");
             mockServiceEndpointManager.Setup(manager => manager.Endpoints).Returns(new Dictionary<ServiceEndpoint, ServiceEndpoint> { { mockEndpoint, mockEndpoint } });
 
-            var handler = new AccessTokenHttpMessageHandler(mockServiceEndpointManager.Object)
+            var handler = new AccessTokenHttpMessageHandler(mockServiceEndpointManager.Object, Mock.Of<IServerNameProvider>(p=>p.GetName()=="servername"))
             {
                 InnerHandler = new TestRootHandler(HttpStatusCode.OK)
             };
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ValidIssuer = Constants.AsrsTokenIssuer, // Replace with the expected issuer
 
                 ValidateAudience = true,
-                ValidAudience = "https://abc/api/test",
+                ValidAudience = "https://test.service.signalr.net/api/test",
 
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             };
 
             var principal = jwtHandler.ValidateToken(request.Headers.Authorization.Parameter, validationParameters, out var validatedToken);
-            Assert.Contains(principal.Claims, c => c.Type == ClaimTypes.NameIdentifier && c.Value == AccessTokenHttpMessageHandler.ServerName);
+            Assert.Contains(principal.Claims, c => c.Type == ClaimTypes.NameIdentifier && c.Value == "servername");
         }
     }
 }

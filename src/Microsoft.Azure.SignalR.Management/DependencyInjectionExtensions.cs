@@ -183,11 +183,14 @@ internal static class DependencyInjectionExtensions
 
     private static IServiceCollection AddSignalRRestClient(this IServiceCollection services)
     {
+        services.AddTransient<AccessTokenHttpMessageHandler>()
+                .AddTransient<TimeoutHttpMessageHandler>();
+
         // For internal health check. Not impacted by user set timeout.
         services
             .AddHttpClient(Constants.HttpClientNames.InternalDefault, ConfigureProduceInfo)
             .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
-            .AddHttpMessageHandler(sp=> ActivatorUtilities.CreateInstance<AccessTokenHttpMessageHandler>(sp));
+            .AddHttpMessageHandler<AccessTokenHttpMessageHandler>();
 
         // Used by user. Impacted by user set timeout.
         services.AddSingleton(sp => sp.GetRequiredService<PayloadBuilderResolver>().GetPayloadContentBuilder())
@@ -211,7 +214,7 @@ internal static class DependencyInjectionExtensions
                 ConfigureUserTimeout(sp, client);
                 ConfigureProduceInfo(sp, client);
             })
-            .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<AccessTokenHttpMessageHandler>(sp))
+            .AddHttpMessageHandler<AccessTokenHttpMessageHandler>()
             .ConfigurePrimaryHttpMessageHandler(ConfigureProxy);
 
         services
@@ -233,8 +236,8 @@ internal static class DependencyInjectionExtensions
             .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
             // The first HttpMessageHandler executes first.
             .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorForNonMessageApi(code)))
-            .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<TimeoutHttpMessageHandler>(sp))
-            .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<AccessTokenHttpMessageHandler>(sp));
+            .AddHttpMessageHandler<TimeoutHttpMessageHandler>()
+            .AddHttpMessageHandler<AccessTokenHttpMessageHandler>();
 
         services
             .AddHttpClient(Constants.HttpClientNames.MessageResilient, (sp, client) =>
@@ -245,7 +248,7 @@ internal static class DependencyInjectionExtensions
             })
             .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
             .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorAndIdempotentForMessageApi(code)))
-            .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<AccessTokenHttpMessageHandler>(sp));
+            .AddHttpMessageHandler<AccessTokenHttpMessageHandler>();
 
         return services;
 
