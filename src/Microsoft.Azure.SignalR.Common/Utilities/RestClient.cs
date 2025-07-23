@@ -1,11 +1,10 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,7 +30,7 @@ internal class RestClient
         _httpClientFactory = httpClientFactory;
         _payloadContentBuilder = contentBuilder;
     }
-
+    
     // TODO: Test only, will remove later
     internal RestClient(IHttpClientFactory httpClientFactory) : this(httpClientFactory, new JsonPayloadContentBuilder(new JsonObjectSerializer()))
     {
@@ -184,14 +183,12 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
 
     private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
     {
-        var payload = httpMethod == HttpMethod.Post ? body : null;
-        return GenerateHttpRequest(api.Audience, api.Query, httpMethod, body, typeHint, api.Token);
+        return GenerateHttpRequest(api.Audience, api.Query, httpMethod, body, typeHint);
     }
 
-    private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, HubMessage? body, Type? typeHint, string tokenString)
+    private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
     {
         var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
         request.Content = _payloadContentBuilder.Build(body, typeHint);
         return request;
     }

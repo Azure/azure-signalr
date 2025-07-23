@@ -117,29 +117,29 @@ internal static class DependencyInjectionExtensions
                 :
                 new JsonHubProtocol();
 #pragma warning restore CS0618 // Type or member is obsolete
-            }));
-            //add dependencies for persistent mode only
-            services
-                .AddSingleton<ConnectionFactory>()
-                .AddSingleton<IConnectionFactory, ManagementConnectionFactory>()
-                .AddSingleton<ConnectionDelegate>((connectionContext) => Task.CompletedTask)
-                .AddSingleton<IServiceConnectionFactory, ServiceConnectionFactory>()
-                .AddSingleton<MultiEndpointConnectionContainerFactory>()
-                .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
+        }));
+        //add dependencies for persistent mode only
+        services
+            .AddSingleton<ConnectionFactory>()
+            .AddSingleton<IConnectionFactory, ManagementConnectionFactory>()
+            .AddSingleton<ConnectionDelegate>((connectionContext) => Task.CompletedTask)
+            .AddSingleton<IServiceConnectionFactory, ServiceConnectionFactory>()
+            .AddSingleton<MultiEndpointConnectionContainerFactory>()
+            .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
 
-            //add dependencies for transient mode only
-            services.AddSingleton<PayloadBuilderResolver>();
+        //add dependencies for transient mode only
+        services.AddSingleton<PayloadBuilderResolver>();
 
-            services.AddRestClient();
-            services.AddSingleton<NegotiateProcessor>();
+        services.AddSignalRRestClient();
+        services.AddSingleton<NegotiateProcessor>();
 #if NET7_0_OR_GREATER
             services.AddSingleton<IClientInvocationManager, WeakClientInvocationManager>();
 #else
-            services.AddSingleton<IClientInvocationManager, DummyClientInvocationManager>();
+        services.AddSingleton<IClientInvocationManager, DummyClientInvocationManager>();
 #endif
 
-            return services.TrySetProductInfo();
-        }
+        return services.TrySetProductInfo();
+    }
 
     /// <summary>
     /// Adds product info to <see cref="ServiceManagerOptions"/>
@@ -181,12 +181,13 @@ internal static class DependencyInjectionExtensions
         return services.Configure<ServiceManagerOptions>(o => o.ProductInfo ??= productInfo);
     }
 
-    private static IServiceCollection AddRestClient(this IServiceCollection services)
+    private static IServiceCollection AddSignalRRestClient(this IServiceCollection services)
     {
         // For internal health check. Not impacted by user set timeout.
         services
             .AddHttpClient(Constants.HttpClientNames.InternalDefault, ConfigureProduceInfo)
-            .ConfigurePrimaryHttpMessageHandler(ConfigureProxy);
+            .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
+            .AddHttpMessageHandler(sp=> ActivatorUtilities.CreateInstance<AccessTokenHttpMessageHandler>(sp));
 
         // Used by user. Impacted by user set timeout.
         services.AddSingleton(sp => sp.GetRequiredService<PayloadBuilderResolver>().GetPayloadContentBuilder())
@@ -210,6 +211,7 @@ internal static class DependencyInjectionExtensions
                 ConfigureUserTimeout(sp, client);
                 ConfigureProduceInfo(sp, client);
             })
+            .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<AccessTokenHttpMessageHandler>(sp))
             .ConfigurePrimaryHttpMessageHandler(ConfigureProxy);
 
         services
@@ -229,8 +231,10 @@ internal static class DependencyInjectionExtensions
                 ConfigureMessageTracingId(sp, client);
             })
             .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
+            // The first HttpMessageHandler executes first.
             .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorForNonMessageApi(code)))
-            .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<TimeoutHttpMessageHandler>(sp));
+            .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<TimeoutHttpMessageHandler>(sp))
+            .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<AccessTokenHttpMessageHandler>(sp));
 
         services
             .AddHttpClient(Constants.HttpClientNames.MessageResilient, (sp, client) =>
@@ -240,7 +244,8 @@ internal static class DependencyInjectionExtensions
                 ConfigureMessageTracingId(sp, client);
             })
             .ConfigurePrimaryHttpMessageHandler(ConfigureProxy)
-            .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorAndIdempotentForMessageApi(code)));
+            .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<RetryHttpMessageHandler>(sp, (HttpStatusCode code) => IsTransientErrorAndIdempotentForMessageApi(code)))
+            .AddHttpMessageHandler(sp => ActivatorUtilities.CreateInstance<AccessTokenHttpMessageHandler>(sp));
 
         return services;
 

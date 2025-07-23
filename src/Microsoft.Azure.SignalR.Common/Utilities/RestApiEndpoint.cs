@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -11,14 +11,11 @@ namespace Microsoft.Azure.SignalR
     {
         public string Audience { get; }
 
-        public string Token { get; }
-
         public IDictionary<string, StringValues> Query { get; set; }
 
-        public RestApiEndpoint(string endpoint, string token)
+        public RestApiEndpoint(string endpoint)
         {
             Audience = endpoint;
-            Token = token;
         }
     }
 }
