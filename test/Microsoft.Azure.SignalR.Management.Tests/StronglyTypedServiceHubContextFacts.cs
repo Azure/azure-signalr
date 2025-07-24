@@ -114,7 +114,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var groupName = "groupName";
             void assertion(HttpRequestMessage request, CancellationToken t)
             {
-                Assert.EndsWith($"/groups/{groupName}/connections/{connectionId}?api-version=2022-06-01", request.RequestUri.AbsoluteUri);
+                Assert.EndsWith($"/groups/{groupName}/connections/{connectionId}?api-version={RestApiProvider.Version}", request.RequestUri.AbsoluteUri);
             }
             var services = new ServiceCollection()
                 .AddSignalRServiceManager()
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var groupName = "groupName";
             void assertion(HttpRequestMessage request, CancellationToken t)
             {
-                Assert.EndsWith($"/users/{userId}/groups/{groupName}?api-version=2022-06-01", request.RequestUri.AbsoluteUri);
+                Assert.EndsWith($"/users/{userId}/groups/{groupName}?api-version={RestApiProvider.Version}", request.RequestUri.AbsoluteUri);
             }
             var services = new ServiceCollection()
                 .AddSignalRServiceManager()
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var connectionId = "connectionId";
             void assertion(HttpRequestMessage request, CancellationToken t)
             {
-                Assert.EndsWith($"/connections/{connectionId}?api-version=2022-06-01", request.RequestUri.AbsoluteUri);
+                Assert.EndsWith($"/connections/{connectionId}?api-version={RestApiProvider.Version}", request.RequestUri.AbsoluteUri);
                 Assert.Equal(HttpMethod.Delete, request.Method);
             }
             var services = new ServiceCollection()

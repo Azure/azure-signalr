@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.Management;
 
 internal class RestApiProvider
 {
-    private const string Version = "2024-12-01";
+    internal const string Version = "2024-12-01";
     public const string HealthApiPath = $"api/health?api-version={Version}";
 
     private readonly string _serverEndpoint;
