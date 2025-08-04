@@ -18,12 +18,6 @@
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubPackageVersion)" PrivateAssets="All" />
     <PackageReference Condition="'$(GenerateAPIListing)' == 'true'" Include="Microsoft.DotNet.GenAPI" Version="5.0.0-beta.19552.1" PrivateAssets="All" />
   </ItemGroup>
-  <ItemGroup>
-      <!-- Adding the assemblies to sign -->
-      <FilesToSign Include="$(OutDir)\$(RootNamespace)*.nupkg">
-        <Authenticode>NuGet</Authenticode>
-      </FilesToSign>
-  </ItemGroup>
 
   <ItemGroup Condition=" '$(IsSignalRLibrary)' != '' ">
     <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionHttpVersion)" />
