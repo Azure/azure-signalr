@@ -457,8 +457,12 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
     {
         if (disposing)
         {
+            // We shouldn't dispose the global one, which may be used by other instances.
+            if (_ackHandler != AckHandler.Singleton)
+            {
             _ackHandler.Dispose();
         }
+    }
     }
 
     protected virtual ServiceConnectionStatus GetStatus()
