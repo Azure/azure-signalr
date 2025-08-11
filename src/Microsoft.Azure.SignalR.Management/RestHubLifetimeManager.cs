@@ -396,16 +396,15 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new HubException("Response content is null or empty");
         }
 
+        if (!isSuccessStatusCode)
+        {
+            throw new HubException(responseContent);
+        }
+
         var root = JsonNode.Parse(responseContent)
             ?? throw new HubException("Failed to parse response as JSON");
 
-        if (!isSuccessStatusCode)
-        {
-            var message = root["message"]?.GetValue<string>() ?? "Unknown error";
-            throw new HubException(message);
-        }
-
-        var resultNode = root["jsonObject"]?["result"]
+        var resultNode = root["result"]
             ?? throw new HubException("Result not found in JSON response");
 
         return resultNode.Deserialize<T>()

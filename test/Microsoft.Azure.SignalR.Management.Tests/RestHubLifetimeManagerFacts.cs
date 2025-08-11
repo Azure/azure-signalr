@@ -94,7 +94,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var args = new object?[] { 42, "test-param", true };
             var expectedResult = "John Doe";
 
-            var jsonResponse = $"{{\"jsonObject\":{{\"result\":\"{expectedResult}\"}}}}";
+            var jsonResponse = $"{{\"result\":\"{expectedResult}\"}}";
 
             _httpMessageHandlerMock
                 .Protected()
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var methodName = "getUserProfile";
             var args = new object?[] { "userId123", new { filter = "personal" } };
 
-            var jsonResponse = @"{""jsonObject"":{""result"":{""id"":123,""name"":""Jane Doe"",""active"":true,""roles"":[""user"",""admin""]}}}";
+            var jsonResponse = @"{""result"":{""id"":123,""name"":""Jane Doe"",""active"":true,""roles"":[""user"",""admin""]}}";
 
             _httpMessageHandlerMock
                 .Protected()
@@ -158,8 +158,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var args = Array.Empty<object>();
             var errorMessage = "Connection does not exist";
 
-            var errorJsonResponse = $"{{\"message\":\"{errorMessage}\"}}";
-
             _httpMessageHandlerMock
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
@@ -169,7 +167,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 )
                 .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.NotFound)
                 {
-                    Content = new StringContent(errorJsonResponse)
+                    Content = new StringContent(errorMessage)
                 });
 
             // Act & Assert
