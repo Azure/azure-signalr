@@ -15,10 +15,4 @@
         </PackageReference>
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubPackageVersion)" PrivateAssets="All" />
     </ItemGroup>
-    <ItemGroup>
-        <!-- Adding the assemblies to sign -->
-        <FilesToSign Include="$(OutDir)\$(RootNamespace)*.nupkg">
-            <Authenticode>NuGet</Authenticode>
-        </FilesToSign>
-    </ItemGroup>
 </Project>

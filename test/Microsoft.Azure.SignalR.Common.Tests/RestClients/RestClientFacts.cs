@@ -23,7 +23,7 @@ public class RestClientFacts
             .AddHttpClient(Constants.HttpClientNames.UserDefault).ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(HttpStatusCode.InsufficientStorage)).Services
             .BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
         var client = new RestClient(httpClientFactory);
-        var apiEndpoint = new RestApiEndpoint("https://localhost.test.com", "token");
+        var apiEndpoint = new RestApiEndpoint("https://localhost.test.com");
         var exception = await Assert.ThrowsAsync<AzureSignalRRuntimeException>(() =>
         {
             return client.SendAsync(apiEndpoint, HttpMethod.Get);

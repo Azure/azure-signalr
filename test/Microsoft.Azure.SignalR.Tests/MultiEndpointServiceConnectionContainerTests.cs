@@ -277,7 +277,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             e => new TestServiceConnectionContainer(new List<IServiceConnection> {
             new TestSimpleServiceConnection(),
             new TestSimpleServiceConnection(),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        }, e, new AckHandler()), sem, router, NullLoggerFactory.Instance);
 
         var containerEndpoints = container.GetOnlineEndpoints();
         Assert.Equal(2, containerEndpoints.Count());
@@ -302,7 +302,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             e => new TestServiceConnectionContainer(new List<IServiceConnection> {
             new TestSimpleServiceConnection(),
             new TestSimpleServiceConnection(),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        }, e, new AckHandler()), sem, router, NullLoggerFactory.Instance);
 
         // All the connections started
         _ = container.StartAsync();
@@ -346,7 +346,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        }, e, new AckHandler()), sem, router, NullLoggerFactory.Instance);
 
         // All the connections started
         _ = container.StartAsync();
@@ -376,7 +376,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                 new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
-            }, e), sem, router, loggerFactory);
+            }, e, new AckHandler()), sem, router, loggerFactory);
 
             // All the connections started
             _ = container.StartAsync();
@@ -403,7 +403,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
             new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
             new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        }, e, new AckHandler()), sem, router, NullLoggerFactory.Instance);
 
         // All the connections started
         _ = container.StartAsync();
@@ -461,7 +461,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-        }, e), sem, router, NullLoggerFactory.Instance);
+        }, e, new AckHandler()), sem, router, NullLoggerFactory.Instance);
 
         // All the connections started
         _ = container.StartAsync();
@@ -555,7 +555,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
-                    }, e);
+                    }, e, new AckHandler());
                 }
                 return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
@@ -565,7 +565,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    }, e);
+                    }, e, new AckHandler());
             }, sem, router, loggerFactory);
 
             _ = container.StartAsync();
@@ -598,7 +598,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
-                }, e);
+                }, e, new AckHandler());
             }
             return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
@@ -608,7 +608,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                }, e);
+                }, e, new AckHandler());
         }, sem, router, NullLoggerFactory.Instance);
 
         _ = container.StartAsync();
@@ -916,7 +916,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
-        }, e), sem, router, NullLoggerFactory.Instance);
+        }, e, new AckHandler()), sem, router, NullLoggerFactory.Instance);
 
         // All the connections started
         _ = container.StartAsync();
@@ -984,7 +984,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
-        }, e), sem, router, NullLoggerFactory.Instance);
+        }, e, new AckHandler()), sem, router, NullLoggerFactory.Instance);
 
         // All the connections started
         _ = container.StartAsync();
@@ -1099,7 +1099,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
-        }, e), sem, router, NullLoggerFactory.Instance, TimeSpan.FromSeconds(10));
+        }, e, new AckHandler()), sem, router, NullLoggerFactory.Instance, TimeSpan.FromSeconds(10));
 
         var endpoints = sem.GetEndpoints("hub").ToArray();
         Assert.Single(endpoints);
@@ -1477,7 +1477,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
             new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
-        }, e), sem, router, NullLoggerFactory.Instance, TimeSpan.FromSeconds(10));
+        }, e, new AckHandler()), sem, router, NullLoggerFactory.Instance, TimeSpan.FromSeconds(10));
 
         var endpoints = sem.GetEndpoints("hub").ToArray();
         Assert.Single(endpoints);

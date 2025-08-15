@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -195,13 +194,12 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
 
     private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
     {
-        return GenerateHttpRequest(api.Audience, api.Query, httpMethod, body, typeHint, api.Token);
+        return GenerateHttpRequest(api.Audience, api.Query, httpMethod, body, typeHint);
     }
 
-    private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, HubMessage? body, Type? typeHint, string tokenString)
+    private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
     {
         var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
         request.Content = _payloadContentBuilder.Build(body, typeHint);
         return request;
     }

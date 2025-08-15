@@ -4,7 +4,7 @@
   <PropertyGroup Label="RestoreSources">
     <RestoreSources>
       $(DotNetRestoreSources);
-      https://www.myget.org/F/azure-signalr-test-packages/api/v3/index.json;
+      $(MSBuildThisFileDirectory)packages;
       https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json;
     </RestoreSources>
     <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
@@ -16,6 +16,7 @@
       https://api.nuget.org/v3/index.json;
     </RestoreSources>
     <RestoreSources Condition="'$(AzureSignalRSDKE2ETest)' == 'true'">
+      $(MSBuildThisFileDirectory)packages;
       https://www.myget.org/F/azure-signalr-dev/api/v3/index.json;
       https://api.nuget.org/v3/index.json;
     </RestoreSources>

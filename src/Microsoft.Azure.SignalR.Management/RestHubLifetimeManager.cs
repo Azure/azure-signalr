@@ -57,7 +57,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
         }
 
-        var api = await _restApiProvider.GetConnectionGroupManagementEndpointAsync(_appName, _hubName, connectionId, groupName);
+        var api = _restApiProvider.GetConnectionGroupManagementEndpoint(_appName, _hubName, connectionId, groupName);
         await _restClient.SendWithRetryAsync(api, HttpMethod.Put, handleExpectedResponse: static response => FilterExpectedResponse(response, ErrorCodes.ErrorConnectionNotExisted), cancellationToken: cancellationToken);
     }
 
@@ -83,7 +83,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
         }
 
-        var api = await _restApiProvider.GetConnectionGroupManagementEndpointAsync(_appName, _hubName, connectionId, groupName);
+        var api = _restApiProvider.GetConnectionGroupManagementEndpoint(_appName, _hubName, connectionId, groupName);
         await _restClient.SendWithRetryAsync(api, HttpMethod.Delete, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
@@ -94,7 +94,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
         }
 
-        var api = await _restApiProvider.GetRemoveConnectionFromAllGroupsAsync(_appName, _hubName, connectionId);
+        var api = _restApiProvider.GetRemoveConnectionFromAllGroupsEndpoint(_appName, _hubName, connectionId);
         await _restClient.SendWithRetryAsync(api, HttpMethod.Delete, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
@@ -110,7 +110,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
         }
 
-        var api = await _restApiProvider.GetBroadcastEndpointAsync(_appName, _hubName, excluded: excludedConnectionIds);
+        var api = _restApiProvider.GetBroadcastEndpoint(_appName, _hubName, excluded: excludedConnectionIds);
         await _restClient.SendMessageWithRetryAsync(api, HttpMethod.Post, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
@@ -126,7 +126,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
         }
 
-        var api = await _restApiProvider.GetSendToConnectionEndpointAsync(_appName, _hubName, connectionId);
+        var api = _restApiProvider.GetSendToConnectionEndpoint(_appName, _hubName, connectionId);
         await _restClient.SendMessageWithRetryAsync(api, HttpMethod.Post, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
@@ -152,7 +152,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
         }
 
-        var api = await _restApiProvider.GetSendToGroupEndpointAsync(_appName, _hubName, groupName, excluded: excludedConnectionIds);
+        var api = _restApiProvider.GetSendToGroupEndpoint(_appName, _hubName, groupName, excluded: excludedConnectionIds);
         await _restClient.SendMessageWithRetryAsync(api, HttpMethod.Post, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
@@ -183,7 +183,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
         }
 
-        var api = await _restApiProvider.GetSendToUserEndpointAsync(_appName, _hubName, userId);
+        var api = _restApiProvider.GetSendToUserEndpoint(_appName, _hubName, userId);
         await _restClient.SendMessageWithRetryAsync(api, HttpMethod.Post, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
@@ -206,7 +206,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
     {
         ValidateUserIdAndGroupName(userId, groupName);
 
-        var api = await _restApiProvider.GetUserGroupManagementEndpointAsync(_appName, _hubName, userId, groupName);
+        var api = _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, userId, groupName);
         await _restClient.SendWithRetryAsync(api, HttpMethod.Put, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
@@ -218,7 +218,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         {
             throw new ArgumentOutOfRangeException(nameof(ttl), TtlOutOfRangeErrorMessage);
         }
-        var api = await _restApiProvider.GetUserGroupManagementEndpointAsync(_appName, _hubName, userId, groupName);
+        var api = _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, userId, groupName);
         api.Query = new Dictionary<string, StringValues>
         {
             ["ttl"] = ((int)ttl.TotalSeconds).ToString(CultureInfo.InvariantCulture),
@@ -230,20 +230,20 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
     {
         ValidateUserIdAndGroupName(userId, groupName);
 
-        var api = await _restApiProvider.GetUserGroupManagementEndpointAsync(_appName, _hubName, userId, groupName);
+        var api = _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, userId, groupName);
         await _restClient.SendWithRetryAsync(api, HttpMethod.Delete, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
     public async Task UserRemoveFromAllGroupsAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var api = await _restApiProvider.GetRemoveUserFromAllGroupsAsync(_appName, _hubName, userId);
+        var api = _restApiProvider.GetRemoveUserFromAllGroupsEndpoint(_appName, _hubName, userId);
         await _restClient.SendWithRetryAsync(api, HttpMethod.Delete, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
     public async Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default)
     {
         var isUserInGroup = false;
-        var api = await _restApiProvider.GetUserGroupManagementEndpointAsync(_appName, _hubName, userId, groupName);
+        var api = _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, userId, groupName);
         await _restClient.SendWithRetryAsync(api, HttpMethod.Get, handleExpectedResponse: response =>
             {
                 isUserInGroup = response.StatusCode == HttpStatusCode.OK;
@@ -258,7 +258,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         {
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
         }
-        var api = await _restApiProvider.GetCloseConnectionEndpointAsync(_appName, _hubName, connectionId, reason);
+        var api = _restApiProvider.GetCloseConnectionEndpoint(_appName, _hubName, connectionId, reason);
         await _restClient.SendWithRetryAsync(api, HttpMethod.Delete, handleExpectedResponse: static response => FilterExpectedResponse(response, ErrorCodes.WarningConnectionNotExisted), cancellationToken: cancellationToken);
     }
 
@@ -282,7 +282,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
         }
         var exists = false;
-        var api = await _restApiProvider.GetCheckConnectionExistsEndpointAsync(_appName, _hubName, connectionId);
+        var api = _restApiProvider.GetCheckConnectionExistsEndpoint(_appName, _hubName, connectionId);
         await _restClient.SendWithRetryAsync(api, HttpMethod.Head, handleExpectedResponse: response =>
         {
             exists = response.StatusCode == HttpStatusCode.OK;
@@ -298,7 +298,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
         }
         var exists = false;
-        var api = await _restApiProvider.GetCheckUserExistsEndpointAsync(_appName, _hubName, userId);
+        var api = _restApiProvider.GetCheckUserExistsEndpoint(_appName, _hubName, userId);
         await _restClient.SendWithRetryAsync(api, HttpMethod.Head, handleExpectedResponse: response =>
         {
             exists = response.StatusCode == HttpStatusCode.OK;
@@ -314,7 +314,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
         }
         var exists = false;
-        var api = await _restApiProvider.GetCheckGroupExistsEndpointAsync(_appName, _hubName, groupName);
+        var api = _restApiProvider.GetCheckGroupExistsEndpoint(_appName, _hubName, groupName);
         await _restClient.SendWithRetryAsync(api, HttpMethod.Head, handleExpectedResponse: response =>
         {
             exists = response.StatusCode == HttpStatusCode.OK;
@@ -333,7 +333,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         {
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(streamId));
         }
-        var api = await _restApiProvider.SendStreamItemAsync(_appName, _hubName, connectionId, streamId);
+        var api = _restApiProvider.GetSendStreamItemEndpoint(_appName, _hubName, connectionId, streamId);
         await _restClient.SendStreamMessageWithRetryAsync(api, HttpMethod.Post, streamId, item, typeof(TItem), cancellationToken: cancellationToken);
     }
 
@@ -347,7 +347,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         {
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(streamId));
         }
-        var api = await _restApiProvider.SendStreamCompletionAsync(_appName, _hubName, connectionId, streamId);
+        var api = _restApiProvider.GetSendStreamCompletionEndpoint(_appName, _hubName, connectionId, streamId);
         if (!string.IsNullOrEmpty(error))
         {
             api.Query = new Dictionary<string, StringValues>
@@ -373,7 +373,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         }
 
         // Get API endpoint and prepare for the request
-        var api = await _restApiProvider.SendClientInvocationAsync(_appName, _hubName, connectionId);
+        var api = _restApiProvider.SendClientInvocation(_appName, _hubName, connectionId);
         string? responseContent = null;
         var isSuccessStatusCode = false;
         // Send request and capture the response

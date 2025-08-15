@@ -40,7 +40,7 @@ internal sealed class AckHandler : IDisposable
         id = NextId();
         if (_disposed)
         {
-            return Task.FromResult(AckStatus.Ok);
+            throw new InvalidOperationException($"AckHandler is disposed.");
         }
         var info = (IAckInfo<AckStatus>)_acks.GetOrAdd(id, _ => new SingleStatusAck(ackTimeout ?? _defaultAckTimeout));
         if (info is MultiAckWithStatusInfo)
@@ -56,7 +56,7 @@ internal sealed class AckHandler : IDisposable
         id = NextId();
         if (_disposed)
         {
-            return Task.FromResult(new T());
+            throw new InvalidOperationException($"AckHandler is disposed.");
         }
         var info = (SinglePayloadAck<T>)_acks.GetOrAdd(id, _ => new SinglePayloadAck<T>(ackTimeout ?? _defaultAckTimeout));
         cancellationToken.Register(info.Cancel);
@@ -79,7 +79,7 @@ internal sealed class AckHandler : IDisposable
         id = NextId();
         if (_disposed)
         {
-            return Task.FromResult(AckStatus.Ok);
+            throw new InvalidOperationException($"AckHandler is disposed.");
         }
         var info = (IAckInfo<AckStatus>)_acks.GetOrAdd(id, _ => new MultiAckWithStatusInfo(ackTimeout ?? _defaultAckTimeout));
         if (info is SingleAckInfo<AckStatus>)
@@ -101,7 +101,7 @@ internal sealed class AckHandler : IDisposable
     {
         if (_disposed)
         {
-            return;
+            throw new InvalidOperationException($"AckHandler is disposed.");
         }
 
         if (_acks.TryGetValue(id, out var info))
@@ -121,7 +121,7 @@ internal sealed class AckHandler : IDisposable
     {
         if (_disposed)
         {
-            return;
+            throw new InvalidOperationException($"AckHandler is disposed.");
         }
 
         var utcNow = DateTime.UtcNow;

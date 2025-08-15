@@ -445,6 +445,33 @@ public class DependencyInjectionExtensionFacts
             () => new ServiceCollection().AddHub<Hub>(null));
     }
 
+    [Theory]
+    [InlineData(Constants.HttpClientNames.InternalDefault)]
+    [InlineData(Constants.HttpClientNames.UserDefault)]
+    [InlineData(Constants.HttpClientNames.MessageResilient)]
+    [InlineData(Constants.HttpClientNames.Resilient)]
+    public async Task AccessTokenHttpMessageHandlerAdded(string httpClientName)
+    {
+        var serviceProvider = new ServiceCollection()
+            .AddSignalRServiceManager()
+            .Configure<ServiceManagerOptions>(o =>
+            {
+                o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
+            })
+            .AddHttpClient(httpClientName)
+            .ConfigurePrimaryHttpMessageHandler(sp=>new TestRootHandler((message, cancellationToken) =>
+            {
+                Assert.NotNull(message.Headers.Authorization);
+            } ))
+            .Services
+            .BuildServiceProvider();
+        var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+        var client = httpClientFactory.CreateClient(httpClientName);
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://abc/api/test?key=value");
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     private sealed class WaitInfinitelyHandler : DelegatingHandler
     {
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

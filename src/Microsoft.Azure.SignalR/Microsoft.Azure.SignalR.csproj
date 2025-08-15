@@ -3,11 +3,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Description>.NET Standard SDK for Azure SignalR.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <LangVersion>11</LangVersion>
     <RootNamespace>Microsoft.Azure.SignalR</RootNamespace>
   </PropertyGroup>
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
