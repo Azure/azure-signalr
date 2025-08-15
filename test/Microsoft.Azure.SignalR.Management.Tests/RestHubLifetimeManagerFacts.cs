@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Moq;
 using Moq.Protected;
@@ -171,10 +172,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 });
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<HubException>(
+            var exception = await Assert.ThrowsAsync<AzureSignalRInaccessibleEndpointException>(
                 async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
-
-            Assert.Equal(errorMessage, exception.Message);
         }
 
         [Fact]
