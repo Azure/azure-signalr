@@ -386,7 +386,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             {
                 responseContent = await response.Content.ReadAsStringAsync();
                 isSuccessStatusCode = response.IsSuccessStatusCode;
-                return true;
+                return response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.BadRequest;
             },
             cancellationToken: cancellationToken);
 
