@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Core.Serialization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private readonly string _hubName = "TestHub";
         private readonly string _appName = "TestApp";
         private readonly RestHubLifetimeManager<TestHub> _manager;
+        private readonly ObjectSerializer _objectSerializer = new JsonObjectSerializer();
 
         private readonly Mock<HttpMessageHandler> _httpMessageHandlerMock;
 
@@ -46,7 +48,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 _hubName,
                 new(FakeEndpointUtils.GetFakeConnectionString(1).First()),
                 _appName,
-                restClient
+                restClient,
+                _objectSerializer
             );
         }
 
@@ -203,7 +206,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var exception = await Assert.ThrowsAsync<HubException>(
                 async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
 
-            Assert.Contains("Result not found in JSON response", exception.Message);
+            Assert.Contains("Result not found in response", exception.Message);
         }
 
         [Fact]
@@ -233,7 +236,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var exception = await Assert.ThrowsAsync<HubException>(
                 async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
 
-            Assert.Contains("Result not found in JSON response", exception.Message);
+            Assert.Contains("Result not found in response", exception.Message);
         }
 #endif
 

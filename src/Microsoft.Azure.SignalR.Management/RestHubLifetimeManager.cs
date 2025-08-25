@@ -8,17 +8,17 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 #if NET7_0_OR_GREATER
-using System.Text.Json;
-using System.Text.Json.Nodes;
+using System.IO;
 #endif
 using System.Threading;
 using System.Threading.Tasks;
 
 using Azure;
-
+using Azure.Core.Serialization;
 using Microsoft.AspNetCore.SignalR;
 #if NET7_0_OR_GREATER
 using Microsoft.AspNetCore.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Management.ClientInvocation;
 #endif
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
@@ -36,13 +36,15 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
     private readonly RestApiProvider _restApiProvider;
     private readonly string _hubName;
     private readonly string _appName;
+    private readonly ObjectSerializer _objectSerializer;
 
-    public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string appName, RestClient restClient)
+    public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string appName, RestClient restClient, ObjectSerializer objectSerializer)
     {
         _restApiProvider = new RestApiProvider(endpoint);
         _appName = appName;
         _hubName = hubName;
         _restClient = restClient;
+        _objectSerializer = objectSerializer;
     }
 
     public override async Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -384,14 +386,14 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             args,
             async response =>
             {
-                responseContent = await response.Content.ReadAsStringAsync();
+                responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 isSuccessStatusCode = response.IsSuccessStatusCode;
                 return response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.BadRequest;
             },
             cancellationToken: cancellationToken);
 
         // Ensure we have a response
-        if (string.IsNullOrWhiteSpace(responseContent))
+        if (responseContent is null)
         {
             throw new HubException("Response content is null or empty");
         }
@@ -401,14 +403,17 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new HubException(responseContent);
         }
 
-        var root = JsonNode.Parse(responseContent)
-            ?? throw new HubException("Failed to parse response as JSON");
+        using var contentStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(responseContent));
 
-        var resultNode = root["result"]
-            ?? throw new HubException("Result not found in JSON response");
+        var wrapperObj = await _objectSerializer.DeserializeAsync(
+            contentStream,
+            typeof(InvocationResponse<T>),
+            cancellationToken);
 
-        return resultNode.Deserialize<T>()
-            ?? throw new HubException("Failed to deserialize result");
+        var wrapper = wrapperObj as InvocationResponse<T>
+            ?? throw new HubException("Failed to deserialize response");
+
+        return wrapper.Result ?? throw new HubException("Result not found in response");
     }
 
     public override Task SetConnectionResultAsync(string connectionId, CompletionMessage result)

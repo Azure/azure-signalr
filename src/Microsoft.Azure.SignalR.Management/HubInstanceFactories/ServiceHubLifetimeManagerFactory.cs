@@ -5,7 +5,7 @@ using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
-
+using Azure.Core.Serialization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -40,7 +40,8 @@ namespace Microsoft.Azure.SignalR.Management
                         var httpClientFactory = _serviceProvider.GetRequiredService<IHttpClientFactory>();
                         var serviceEndpoint = _serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.First().Key;
                         var restClient = new RestClient(httpClientFactory, payloadBuilderResolver.GetPayloadContentBuilder());
-                        return new RestHubLifetimeManager<THub>(hubName, serviceEndpoint, _options.ApplicationName, restClient);
+                        var objectSerializer = _serviceProvider.GetRequiredService<ServiceManagerOptions>().ObjectSerializer ?? new JsonObjectSerializer();
+                        return new RestHubLifetimeManager<THub>(hubName, serviceEndpoint, _options.ApplicationName, restClient, objectSerializer);
                     }
                 default: throw new InvalidEnumArgumentException(nameof(ServiceManagerOptions.ServiceTransportType), (int)_options.ServiceTransportType, typeof(ServiceTransportType));
             }
