@@ -101,6 +101,12 @@ internal class RestClient
         return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new StreamItemMessage(streamId, arg), typeHint, AsAsync(handleExpectedResponse), cancellationToken);
     }
 
+    public ObjectSerializer ObjectSerializer => _payloadContentBuilder switch
+    {
+        JsonPayloadContentBuilder jsonBuilder => jsonBuilder.ObjectSerializer,
+        _ => throw new NotSupportedException("Only JsonPayloadContentBuilder is supported to get the ObjectSerializer.")
+    };
+
     private static Uri GetUri(string url, IDictionary<string, StringValues>? query)
     {
         if (query == null || query.Count == 0)

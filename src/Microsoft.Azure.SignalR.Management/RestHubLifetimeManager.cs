@@ -14,7 +14,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Azure;
-using Azure.Core.Serialization;
 using Microsoft.AspNetCore.SignalR;
 #if NET7_0_OR_GREATER
 using Microsoft.AspNetCore.SignalR.Protocol;
@@ -36,15 +35,13 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
     private readonly RestApiProvider _restApiProvider;
     private readonly string _hubName;
     private readonly string _appName;
-    private readonly ObjectSerializer _objectSerializer;
 
-    public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string appName, RestClient restClient, ObjectSerializer objectSerializer)
+    public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string appName, RestClient restClient)
     {
         _restApiProvider = new RestApiProvider(endpoint);
         _appName = appName;
         _hubName = hubName;
         _restClient = restClient;
-        _objectSerializer = objectSerializer;
     }
 
     public override async Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -376,8 +373,9 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
         // Get API endpoint and prepare for the request
         var api = _restApiProvider.SendClientInvocation(_appName, _hubName, connectionId);
-        string? responseContent = null;
-        var isSuccessStatusCode = false;
+        InvocationResponse<T>? wrapper = null;
+        string? errorContent = null;
+        bool isSuccess = false;
         // Send request and capture the response
         await _restClient.SendMessageWithRetryAsync(
             api,
@@ -386,34 +384,36 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             args,
             async response =>
             {
-                responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                isSuccessStatusCode = response.IsSuccessStatusCode;
-                return response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.BadRequest;
+                isSuccess = response.IsSuccessStatusCode;
+
+                if (isSuccess)
+                {
+                    await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+
+                    var deserialized = await _restClient.ObjectSerializer.DeserializeAsync(
+                        contentStream,
+                        typeof(InvocationResponse<T>),
+                        cancellationToken);
+
+                    wrapper = deserialized as InvocationResponse<T>
+                        ?? throw new HubException("Failed to deserialize response");
+                }
+                else
+                {
+                    errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                }
+
+                return isSuccess || response.StatusCode == HttpStatusCode.BadRequest;
             },
-            cancellationToken: cancellationToken);
-
-        // Ensure we have a response
-        if (responseContent is null)
-        {
-            throw new HubException("Response content is null or empty");
-        }
-
-        if (!isSuccessStatusCode)
-        {
-            throw new HubException(responseContent);
-        }
-
-        using var contentStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(responseContent));
-
-        var wrapperObj = await _objectSerializer.DeserializeAsync(
-            contentStream,
-            typeof(InvocationResponse<T>),
             cancellationToken);
 
-        var wrapper = wrapperObj as InvocationResponse<T>
-            ?? throw new HubException("Failed to deserialize response");
+        // Ensure we have a response
+        if (!isSuccess)
+        {
+            throw new HubException(errorContent ?? "Unknown error in response");
+        }
 
-        return wrapper.Result ?? throw new HubException("Result not found in response");
+        return wrapper != null && wrapper.Result != null ? wrapper.Result : throw new HubException("Result not found in response");
     }
 
     public override Task SetConnectionResultAsync(string connectionId, CompletionMessage result)
