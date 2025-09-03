@@ -81,7 +81,9 @@ internal class AzureTransport : IServiceTransport
             var message = CreateConnectionDataMessage(ConnectionId, value, _serviceProtocol, _serializer, _pool);
             return clientConnection.ServiceConnection.WriteAsync(message);
         }
-        throw new InvalidOperationException("No service connection found when sending message");
+
+        // There is no need to throw when the connection is closed.
+        return Task.CompletedTask;
     }
 
     public void OnReceived(string value)
