@@ -15,6 +15,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Ensure full history for diff comparison
+          ref: dev
       - uses: dorny/paths-filter@v2
         id: filter
         with:
