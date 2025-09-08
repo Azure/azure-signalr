@@ -60,12 +60,12 @@ internal class GroupMemberQueryResultPageConverter : JsonConverter<GroupMemberQu
             string propertyName = reader.GetString()!;
             reader.Read();
 
-            switch (propertyName)
+            switch (propertyName.ToLowerInvariant())
             {
                 case "value":
                     values = JsonSerializer.Deserialize<List<SignalRGroupConnection>>(ref reader, options);
                     break;
-                case "nextLink":
+                case "nextlink":
                     continuationToken = JsonSerializer.Deserialize<string>(ref reader, options);
                     break;
                 default:
