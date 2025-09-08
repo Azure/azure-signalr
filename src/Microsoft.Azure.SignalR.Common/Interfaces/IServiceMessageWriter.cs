@@ -19,5 +19,5 @@ internal interface IServiceMessageWriter
 
     Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default);
 
-    IAsyncEnumerable<Page<GroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string? continuationToken = null, ulong? tracingId = null, CancellationToken token = default);
+    IAsyncEnumerable<Page<SignalRGroupConnection>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string? continuationToken = null, ulong? tracingId = null, CancellationToken token = default);
 }

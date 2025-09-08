@@ -7,23 +7,21 @@ using System.Threading;
 
 using Azure;
 
-using Microsoft.Azure.SignalR.Protocol;
-
 namespace Microsoft.Azure.SignalR;
 
 #nullable enable
 
-internal class PagenableGroupMember : AsyncPageable<GroupMember>
+internal class PageableGroupMember : AsyncPageable<SignalRGroupConnection>
 {
     // (string? continuationToken, int? pageSizeHint) => IAsyncEnumerable<Page<GroupMember>>
-    private readonly Func<string?, int?, IAsyncEnumerable<Page<GroupMember>>> _fetchPages;
+    private readonly Func<string?, int?, IAsyncEnumerable<Page<SignalRGroupConnection>>> _fetchPages;
 
-    public PagenableGroupMember(Func<string?, int?, IAsyncEnumerable<Page<GroupMember>>> fetchPages, CancellationToken cancellationToken = default): base(cancellationToken)
+    public PageableGroupMember(Func<string?, int?, IAsyncEnumerable<Page<SignalRGroupConnection>>> fetchPages, CancellationToken cancellationToken = default) : base(cancellationToken)
     {
         _fetchPages = fetchPages;
     }
 
-    public override IAsyncEnumerable<Page<GroupMember>> AsPages(string? continuationToken = null, int? pageSizeHint = null)
+    public override IAsyncEnumerable<Page<SignalRGroupConnection>> AsPages(string? continuationToken = null, int? pageSizeHint = null)
     {
         return _fetchPages(continuationToken, pageSizeHint);
     }

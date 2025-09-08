@@ -69,7 +69,7 @@ internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionM
         StopAsync().GetAwaiter().GetResult();
     }
 
-    public IAsyncEnumerable<Page<GroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string? continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
+    public IAsyncEnumerable<Page<SignalRGroupConnection>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string? continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
     {
         if (_serviceConnection == null)
         {

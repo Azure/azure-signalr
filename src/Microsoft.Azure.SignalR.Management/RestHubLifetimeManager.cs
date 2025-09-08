@@ -355,7 +355,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         response.IsSuccessStatusCode
         || (response.StatusCode == HttpStatusCode.NotFound && response.Headers.TryGetValues(Headers.MicrosoftErrorCode, out var errorCodes) && errorCodes.First().Equals(expectedErrorCode, StringComparison.OrdinalIgnoreCase));
 
-    public AsyncPageable<GroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default)
+    public AsyncPageable<SignalRGroupConnection> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default)
     {
         throw new NotImplementedException();
     }

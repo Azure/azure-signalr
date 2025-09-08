@@ -176,7 +176,7 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter
         }
     }
 
-    public async IAsyncEnumerable<Page<GroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
+    public async IAsyncEnumerable<Page<SignalRGroupConnection>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
     {
         if (TargetEndpoints.Length == 0)
         {

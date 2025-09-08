@@ -273,7 +273,7 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
 
         using var cts = new CancellationTokenSource(DefaultInvocationTimeoutTimespan);
         var cancellationTokenInUse = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken).Token;
-           
+
         var invocationId = _clientInvocationManager.Caller.GenerateInvocationId(connectionId);
         var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, invocationId)));
         await WriteAsync(message);
@@ -310,7 +310,7 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
         return base.AppendMessageTracingId(message);
     }
 
-    public AsyncPageable<GroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default)
+    public AsyncPageable<SignalRGroupConnection> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default)
     {
         if (string.IsNullOrEmpty(groupName))
         {
@@ -323,6 +323,6 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
         }
 
         ulong? tracingId = _serviceManagerOptions.Value.EnableMessageTracing ? MessageWithTracingIdHelper.Generate() : null;
-        return new PagenableGroupMember((string? continuationToken, int? pageSize) => ServiceConnectionContainer.ListConnectionsInGroupAsync(groupName, top, pageSize, continuationToken, tracingId, token), token);
+        return new PageableGroupMember((string? continuationToken, int? pageSize) => ServiceConnectionContainer.ListConnectionsInGroupAsync(groupName, top, pageSize, continuationToken, tracingId, token), token);
     }
 }

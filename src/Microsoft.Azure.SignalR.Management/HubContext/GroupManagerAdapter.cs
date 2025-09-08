@@ -7,8 +7,6 @@ using System.Threading.Tasks;
 
 using Azure;
 
-using Microsoft.Azure.SignalR.Protocol;
-
 namespace Microsoft.Azure.SignalR.Management
 {
     internal class GroupManagerAdapter : GroupManager
@@ -26,7 +24,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override Task RemoveFromAllGroupsAsync(string connectionId, CancellationToken cancellationToken = default) => _lifetimeManager.RemoveFromAllGroupsAsync(connectionId, cancellationToken);
 
-        internal override AsyncPageable<GroupMember> ListConnectionsInGroup(string groupName, int? top = null,  CancellationToken cancellationToken = default)
+        internal override AsyncPageable<SignalRGroupConnection> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(groupName))
             {

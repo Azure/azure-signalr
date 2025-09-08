@@ -252,7 +252,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         return AckHandler.HandleAckStatus(ackableMessage, status);
     }
 
-    public async IAsyncEnumerable<Page<GroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
+    public async IAsyncEnumerable<Page<SignalRGroupConnection>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(groupName))
         {
@@ -273,7 +273,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         do
         {
             var response = await InvokeAsync<GroupMemberQueryResponse>(message, token);
-            yield return new GroupMemberQueryResultPage(response.Members.ToList(), response.ContinuationToken);
+            yield return new GroupMemberQueryResultPage([.. response.Members.Select(m => new SignalRGroupConnection(m.ConnectionId, m.UserId))], response.ContinuationToken);
 
             if (response.ContinuationToken == null)
             {
@@ -282,6 +282,10 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
             if (message.Top != null)
             {
                 message.Top -= response.Members.Count;
+                if (message.Top <= 0)
+                {
+                    yield break;
+                }
             }
             message.ContinuationToken = response.ContinuationToken;
         } while (true);

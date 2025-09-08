@@ -22,5 +22,5 @@ internal interface IServiceHubLifetimeManager : IHubLifetimeManager, IUserGroupH
 
     Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken);
 
-    AsyncPageable<GroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default);
+    AsyncPageable<SignalRGroupConnection> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default);
 }
