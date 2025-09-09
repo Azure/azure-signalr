@@ -5,17 +5,18 @@ using System.Collections.Generic;
 
 using Microsoft.Extensions.Primitives;
 
-namespace Microsoft.Azure.SignalR
+#nullable enable
+
+namespace Microsoft.Azure.SignalR;
+
+internal class RestApiEndpoint
 {
-    internal class RestApiEndpoint
+    public string Audience { get; }
+
+    public IDictionary<string, StringValues>? Query { get; set; }
+
+    public RestApiEndpoint(string endpoint)
     {
-        public string Audience { get; }
-
-        public IDictionary<string, StringValues> Query { get; set; }
-
-        public RestApiEndpoint(string endpoint)
-        {
-            Audience = endpoint;
-        }
+        Audience = endpoint;
     }
 }
