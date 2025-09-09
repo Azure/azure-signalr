@@ -5,7 +5,6 @@ using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
-
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;

@@ -108,4 +108,9 @@ internal class RestApiProvider
             : $"{pathAfterHub}?application={Uri.EscapeDataString(appName.ToLowerInvariant())}&api-version={Version}";
         return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}") { Query = queries };
     }
+
+     public RestApiEndpoint SendClientInvocation(string appName, string hubName, string connectionId)
+    {
+        return GenerateRestApiEndpoint(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}/:invoke");
+    }
 }

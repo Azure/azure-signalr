@@ -7,12 +7,18 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+#if NET7_0_OR_GREATER
+using System.IO;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 
 using Azure;
-
 using Microsoft.AspNetCore.SignalR;
+#if NET7_0_OR_GREATER
+using Microsoft.AspNetCore.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Management.ClientInvocation;
+#endif
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
 
@@ -350,6 +356,73 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         }
         await _restClient.SendWithRetryAsync(api, HttpMethod.Post, cancellationToken: cancellationToken);
     }
+
+#if NET7_0_OR_GREATER
+#nullable enable
+    public override async Task<T> InvokeConnectionAsync<T>(string connectionId, string methodName, object?[] args, CancellationToken cancellationToken = default)
+    {
+        // Validate input parameters
+        if (string.IsNullOrEmpty(methodName))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
+        }
+        if (string.IsNullOrEmpty(connectionId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+        }
+
+        // Get API endpoint and prepare for the request
+        var api = _restApiProvider.SendClientInvocation(_appName, _hubName, connectionId);
+        InvocationResponse<T>? wrapper = null;
+        string? errorContent = null;
+        bool isSuccess = false;
+        // Send request and capture the response
+        await _restClient.SendMessageWithRetryAsync(
+            api,
+            HttpMethod.Post,
+            methodName,
+            args,
+            async response =>
+            {
+                isSuccess = response.IsSuccessStatusCode;
+
+                if (isSuccess)
+                {
+                    await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+
+                    var deserialized = await _restClient.ObjectSerializer.DeserializeAsync(
+                        contentStream,
+                        typeof(InvocationResponse<T>),
+                        cancellationToken);
+
+                    wrapper = deserialized as InvocationResponse<T>
+                        ?? throw new HubException("Failed to deserialize response");
+                }
+                else
+                {
+                    errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                }
+
+                return isSuccess || response.StatusCode == HttpStatusCode.BadRequest;
+            },
+            cancellationToken);
+
+        // Ensure we have a response
+        if (!isSuccess)
+        {
+            throw new HubException(errorContent ?? "Unknown error in response");
+        }
+
+        return wrapper != null && wrapper.Result != null ? wrapper.Result : throw new HubException("Result not found in response");
+    }
+
+    public override Task SetConnectionResultAsync(string connectionId, CompletionMessage result)
+    {
+        // This method won't get trigger because in transient we will wait for the returned completion message.
+        // this is to honor the interface
+        throw new NotImplementedException();
+    }
+#endif
 
     private static bool FilterExpectedResponse(HttpResponseMessage response, string expectedErrorCode) =>
         response.IsSuccessStatusCode

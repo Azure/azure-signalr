@@ -30,7 +30,7 @@ internal class RestClient
         _httpClientFactory = httpClientFactory;
         _payloadContentBuilder = contentBuilder;
     }
-    
+
     // TODO: Test only, will remove later
     internal RestClient(IHttpClientFactory httpClientFactory) : this(httpClientFactory, new JsonPayloadContentBuilder(new JsonObjectSerializer()))
     {
@@ -78,6 +78,17 @@ internal class RestClient
         return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, AsAsync(handleExpectedResponse), cancellationToken);
     }
 
+    public Task SendMessageWithRetryAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        string methodName,
+        object?[] args,
+        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, handleExpectedResponseAsync, cancellationToken);
+    }
+
     public Task SendStreamMessageWithRetryAsync(
         RestApiEndpoint api,
         HttpMethod httpMethod,
@@ -89,6 +100,12 @@ internal class RestClient
     {
         return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new StreamItemMessage(streamId, arg), typeHint, AsAsync(handleExpectedResponse), cancellationToken);
     }
+
+    public ObjectSerializer ObjectSerializer => _payloadContentBuilder switch
+    {
+        JsonPayloadContentBuilder jsonBuilder => jsonBuilder.ObjectSerializer,
+        _ => throw new NotSupportedException("Only JsonPayloadContentBuilder is supported to get the ObjectSerializer.")
+    };
 
     private static Uri GetUri(string url, IDictionary<string, StringValues>? query)
     {
