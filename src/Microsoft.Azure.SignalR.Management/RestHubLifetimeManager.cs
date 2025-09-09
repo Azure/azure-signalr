@@ -424,8 +424,8 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
                 {
                     return false;
                 }
-                var contentStream = await response.Content.ReadAsStringAsync();
-                page = JsonSerializer.Deserialize<GroupMemberQueryResultPage>(contentStream);
+                var contentStream = await response.Content.ReadAsStreamAsync();
+                page = await JsonSerializer.DeserializeAsync<GroupMemberQueryResultPage>(contentStream, cancellationToken: token);
                 return true;
             }, cancellationToken: token);
             return page!;

@@ -64,7 +64,7 @@ internal class RestClient
         Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, null, AsAsync(handleExpectedResponse), cancellationToken);
+        return SendWithRetryAsync(api, httpMethod, AsAsync(handleExpectedResponse), cancellationToken);
     }
 
     public Task SendWithRetryAsync(
