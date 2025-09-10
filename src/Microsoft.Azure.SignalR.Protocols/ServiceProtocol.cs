@@ -1316,7 +1316,7 @@ public class ServiceProtocol : IServiceProtocol
         }
         if (arrayLength >= 6)
         {
-            result.Payload = ReadByteSequence(ref reader, "payload");
+            result.Payload = new ReadOnlySequence<byte>(ReadBytes(ref reader, "payload"));
         }
         return result;
     }

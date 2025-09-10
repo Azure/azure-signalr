@@ -211,18 +211,6 @@ internal static class MessagePackUtils
         }
     }
 
-    internal static ReadOnlySequence<byte>? ReadByteSequence(ref MessagePackReader reader, string field)
-    {
-        try
-        {
-            return reader.ReadBytes();
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidDataException($"Reading binary sequence for '{field}' failed.", ex);
-        }
-    }
-
     internal static long ReadMapLength(ref MessagePackReader reader, string field)
     {
         try
