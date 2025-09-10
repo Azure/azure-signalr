@@ -76,7 +76,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
             var hubContext = await serviceManager.CreateHubContextAsync(HubName) as ServiceHubContextImpl;
             var connectionCount = 3;
             var tcsDict = new ConcurrentDictionary<string, TaskCompletionSource>();
-            logger.LogInformation($"Message is {msg}");
+            TestOutputHelper.WriteLine($"Message is {msg}");
             var connections = await Task.WhenAll(Enumerable.Range(0, connectionCount).Select(async _ =>
              {
                  var negotiationResponse = await hubContext.NegotiateAsync(null, default);
@@ -86,7 +86,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
                  tcsDict.TryAdd(connection.ConnectionId, src);
                  connection.On(method, (string receivedMsg) =>
                  {
-                     logger.LogInformation($"Connection {connection.ConnectionId} received msg : {receivedMsg}");
+                     TestOutputHelper.WriteLine($"Connection {connection.ConnectionId} received msg : {receivedMsg}");
                      if (receivedMsg == msg)
                      {
                          src.SetResult();
@@ -206,7 +206,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
             var hubContext = await serviceManager.CreateHubContextAsync(HubName) as ServiceHubContextImpl;
             var connectionCount = 3;
             var tcsDict = new ConcurrentDictionary<string, TaskCompletionSource>();
-            logger.LogInformation($"Message is {msg}");
+            TestOutputHelper.WriteLine($"Message is {msg}");
             var connections = await Task.WhenAll(Enumerable.Range(0, connectionCount).Select(async _ =>
             {
                 var negotiationResponse = await hubContext.NegotiateAsync(null, default);
@@ -216,7 +216,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
                 tcsDict.TryAdd(connection.ConnectionId, src);
                 connection.On(method, (string receivedMsg) =>
                 {
-                    logger.LogInformation($"Connection {connection.ConnectionId} received msg : {receivedMsg}");
+                    TestOutputHelper.WriteLine($"Connection {connection.ConnectionId} received msg : {receivedMsg}");
                     if (receivedMsg == msg)
                     {
                         src.SetResult();
@@ -910,6 +910,65 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }).BuildServiceManager();
         using var context = await serviceManager.CreateHubContextAsync(HubName, default);
         await context.UserGroups.RemoveFromAllGroupsAsync(Guid.NewGuid().ToString());
+    }
+
+    private static readonly IEnumerable<object[]> ListConnectionsInGroupTestData =
+    [
+        [6, 6, null, 6, 1],
+        [6, 3, null, 3, 1],
+        [6, null, 2, 6, 3],
+        [6, 5, 2, 5, 3],
+    ];
+    public static readonly IEnumerable<object[]> ListConnectionsInGroupTestDataWithTransport =
+        from serviceTransportType in ServiceTransportType
+        from data in ListConnectionsInGroupTestData
+        select new object[] { serviceTransportType, data[0], data[1], data[2], data[3], data[4] };
+
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [MemberData(nameof(ListConnectionsInGroupTestDataWithTransport))]
+    public async Task ListConnectionsInGroupTest(ServiceTransportType serviceTransportType, int totalConnectionCount, int? maxCountToList, int? maxPageSize, int expectedTotalCount, int expectedPageCount)
+    {
+        using var logger = StartLog(out var loggerFactory, nameof(ListConnectionsInGroupTest));
+        using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+        {
+            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+            o.ServiceTransportType = serviceTransportType;
+            o.HttpClientTimeout = TimeSpan.FromHours(1);
+        })
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+        var groupName = nameof(ListConnectionsInGroupTest) + Guid.NewGuid().ToString();
+        var negotationResponse = await hubContext.NegotiateAsync();
+        var clientConnections = await CreateAndStartClientConnections(negotationResponse.Url, Enumerable.Repeat(negotationResponse.AccessToken, totalConnectionCount));
+        foreach (var connection in clientConnections)
+        {
+            await hubContext.Groups.AddToGroupAsync(connection.ConnectionId, groupName);
+            TestOutputHelper.WriteLine("Created connection: " + connection.ConnectionId);
+        }
+
+        var actualPageCount = 0;
+        var actualConnectionCount = 0;
+
+        await foreach (var page in hubContext.Groups.ListConnectionsInGroup(groupName, maxCountToList).AsPages(null, maxPageSize))
+        {
+            //actualPageCount++;
+            actualConnectionCount += page.Values.Count;
+            actualPageCount++;
+            TestOutputHelper.WriteLine($"The {actualPageCount} page:");
+            foreach (var connection in page.Values)
+            {
+                TestOutputHelper.WriteLine($"Listed connection: {connection.ConnectionId}");
+            }
+        }
+
+        Assert.Equal(expectedPageCount, actualPageCount);
+        Assert.Equal(expectedTotalCount, actualConnectionCount);
+        foreach (var connection in clientConnections)
+        {
+            await connection.StopAsync();
+        }
     }
 
     private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)

@@ -7,18 +7,20 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Azure;
 
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
 
 using static Microsoft.Azure.SignalR.Constants;
 
 namespace Microsoft.Azure.SignalR.Management;
+
+#nullable enable
 
 internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IServiceHubLifetimeManager<THub> where THub : Hub
 {
@@ -91,12 +93,12 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         await _restClient.SendWithRetryAsync(api, HttpMethod.Delete, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
-    public override Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
+    public override Task SendAllAsync(string methodName, object?[] args, CancellationToken cancellationToken = default)
     {
         return SendAllExceptAsync(methodName, args, null, cancellationToken);
     }
 
-    public override async Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
+    public override async Task SendAllExceptAsync(string methodName, object?[] args, IReadOnlyList<string>? excludedConnectionIds, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(methodName))
         {
@@ -107,7 +109,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         await _restClient.SendMessageWithRetryAsync(api, HttpMethod.Post, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
-    public override async Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
+    public override async Task SendConnectionAsync(string connectionId, string methodName, object?[] args, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(methodName))
         {
@@ -123,17 +125,17 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         await _restClient.SendMessageWithRetryAsync(api, HttpMethod.Post, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
-    public override async Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
+    public override async Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object?[] args, CancellationToken cancellationToken = default)
     {
         await Task.WhenAll(connectionIds.Select(id => SendConnectionAsync(id, methodName, args, cancellationToken)));
     }
 
-    public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
+    public override Task SendGroupAsync(string groupName, string methodName, object?[] args, CancellationToken cancellationToken = default)
     {
         return SendGroupExceptAsync(groupName, methodName, args, null, cancellationToken);
     }
 
-    public override async Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
+    public override async Task SendGroupExceptAsync(string groupName, string methodName, object?[] args, IReadOnlyList<string>? excludedConnectionIds, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(methodName))
         {
@@ -149,9 +151,9 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         await _restClient.SendMessageWithRetryAsync(api, HttpMethod.Post, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
-    public override async Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
+    public override async Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object?[] args, CancellationToken cancellationToken = default)
     {
-        Task all = null;
+        Task? all = null;
 
         try
         {
@@ -160,11 +162,11 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         }
         catch
         {
-            throw all.Exception;
+            throw all!.Exception!;
         }
     }
 
-    public override async Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
+    public override async Task SendUserAsync(string userId, string methodName, object?[] args, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(methodName))
         {
@@ -180,9 +182,9 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         await _restClient.SendMessageWithRetryAsync(api, HttpMethod.Post, methodName, args, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
-    public override async Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args, CancellationToken cancellationToken = default)
+    public override async Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object?[] args, CancellationToken cancellationToken = default)
     {
-        Task all = null;
+        Task? all = null;
 
         try
         {
@@ -191,7 +193,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         }
         catch
         {
-            throw all.Exception;
+            throw all!.Exception!;
         }
     }
 
@@ -348,7 +350,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
                 ["error"] = error,
             };
         }
-        await _restClient.SendWithRetryAsync(api, HttpMethod.Post, cancellationToken: cancellationToken);
+        await _restClient.SendWithRetryAsync(api, HttpMethod.Post, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
 
     private static bool FilterExpectedResponse(HttpResponseMessage response, string expectedErrorCode) =>
@@ -357,6 +359,76 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
     public AsyncPageable<SignalRGroupConnection> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrWhiteSpace(groupName))
+        {
+            throw new ArgumentException($"'{nameof(groupName)}' cannot be null or whitespace.", nameof(groupName));
+        }
+
+        if (top < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(top), "The value must be greater than or equal to 0.");
+        }
+
+        return new PageableGroupMember(FetchPages, token);
+
+        async IAsyncEnumerable<Page<SignalRGroupConnection>> FetchPages(string? continuationToken, int? pageSizeHint)
+        {
+            // Calculate the api for the first page
+            var api = _restApiProvider.GetListConnectionsInGroupEndpoint(_appName, _hubName, groupName);
+            if (top.HasValue)
+            {
+                api.Query = new Dictionary<string, StringValues>
+                {
+                    ["top"] = top.Value.ToString(CultureInfo.InvariantCulture),
+                };
+            }
+            if (pageSizeHint.HasValue)
+            {
+                api.Query ??= new Dictionary<string, StringValues>();
+                api.Query["maxPageSize"] = pageSizeHint.Value.ToString(CultureInfo.InvariantCulture);
+            }
+            if (!string.IsNullOrEmpty(continuationToken))
+            {
+                api.Query ??= new Dictionary<string, StringValues>();
+                api.Query["continuationToken"] = continuationToken;
+            }
+            do
+            {
+                var page = await FetchSinglePage(api, token);
+                continuationToken = page.ContinuationToken;
+                yield return page;
+                if (page.ContinuationToken == null)
+                {
+                    yield break;
+                }
+                if (top != null)
+                {
+                    top -= page.Values.Count;
+                    if (top <= 0)
+                    {
+                        yield break;
+                    }
+                }
+                // Actually it's the next link
+                api = new RestApiEndpoint(page.ContinuationToken);
+            } while (true);
+        }
+
+        async Task<Page<SignalRGroupConnection>> FetchSinglePage(RestApiEndpoint api, CancellationToken cancellationToken = default)
+        {
+            var page = default(Page<SignalRGroupConnection>);
+
+            await _restClient.SendWithRetryAsync(api, HttpMethod.Get, async response =>
+            {
+                if (!response.IsSuccessStatusCode)
+                {
+                    return false;
+                }
+                var contentStream = await response.Content.ReadAsStreamAsync();
+                page = await JsonSerializer.DeserializeAsync<GroupMemberQueryResultPage>(contentStream, cancellationToken: token);
+                return true;
+            }, cancellationToken: token);
+            return page!;
+        }
     }
 }

@@ -30,7 +30,7 @@ internal class RestClient
         _httpClientFactory = httpClientFactory;
         _payloadContentBuilder = contentBuilder;
     }
-    
+
     // TODO: Test only, will remove later
     internal RestClient(IHttpClientFactory httpClientFactory) : this(httpClientFactory, new JsonPayloadContentBuilder(new JsonObjectSerializer()))
     {
@@ -64,7 +64,16 @@ internal class RestClient
         Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, null, AsAsync(handleExpectedResponse), cancellationToken);
+        return SendWithRetryAsync(api, httpMethod, AsAsync(handleExpectedResponse), cancellationToken);
+    }
+
+    public Task SendWithRetryAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, null, handleExpectedResponseAsync, cancellationToken);
     }
 
     public Task SendMessageWithRetryAsync(
@@ -186,7 +195,7 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
         return GenerateHttpRequest(api.Audience, api.Query, httpMethod, body, typeHint);
     }
 
-    private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
+    private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues>? query, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
     {
         var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
         request.Content = _payloadContentBuilder.Build(body, typeHint);
