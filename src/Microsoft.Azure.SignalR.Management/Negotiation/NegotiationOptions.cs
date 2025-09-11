@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -48,4 +48,9 @@ public class NegotiationOptions
     /// Gets or sets the flag indicates that whether the connection should be closed when the authentication token expires. The lifetime of the token is determined by <see cref="TokenLifetime"/>. By default it is false.
     /// </summary>
     public bool CloseOnAuthenticationExpiration { get; set; }
+
+    /// <summary>
+    /// Gets or sets a bitmask combining one or more <see cref="HttpTransportType"/> values that specify what transports the server should use to receive HTTP requests.
+    /// </summary>
+    public HttpTransportType? Transports { get; set; }
 }

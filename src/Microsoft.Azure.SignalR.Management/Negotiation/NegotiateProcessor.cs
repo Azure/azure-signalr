@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR.Management
                 }
                 var closeOnAuthenticationExpiration = negotiationOptions.CloseOnAuthenticationExpiration;
                 var authenticationExpiresOn = closeOnAuthenticationExpiration ? DateTimeOffset.UtcNow.Add(negotiationOptions.TokenLifetime) : default(DateTimeOffset?);
-                var claimsWithUserId = ClaimsUtility.BuildJwtClaims(httpContext?.User, userId: userId, claimProvider, enableDetailedErrors: enableDetailedErrors, isDiagnosticClient: isDiagnosticClient, closeOnAuthenticationExpiration: closeOnAuthenticationExpiration, authenticationExpiresOn: authenticationExpiresOn);
+                var claimsWithUserId = ClaimsUtility.BuildJwtClaims(httpContext?.User, userId: userId, claimProvider, enableDetailedErrors: enableDetailedErrors, isDiagnosticClient: isDiagnosticClient, closeOnAuthenticationExpiration: closeOnAuthenticationExpiration, authenticationExpiresOn: authenticationExpiresOn, httpTransportType: negotiationOptions.Transports);
 
                 var tokenTask = provider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifetime);
                 await tokenTask.OrTimeout(cancellationToken, Timeout, GeneratingTokenTaskDescription);

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -126,6 +126,31 @@ public class NegotiateProcessorFacts
         Assert.True(
             (hasClaims && token.Claims.Any(c => c.Type == "a" && c.Value == "1")) ||
             (!hasClaims && !token.Claims.Any(c => c.Type == "a")));
+    }
+
+    [Theory]
+    [InlineData(ServiceTransportType.Persistent)]
+    [InlineData(ServiceTransportType.Transient)]
+    public async Task NegotiateWithHttpTransportType(ServiceTransportType serviceTransportType)
+    {
+        var endpoints = FakeEndpointUtils.GetFakeEndpoint(1).ToArray();
+        var provider = new ServiceCollection().AddSignalRServiceManager()
+        .Configure<ServiceManagerOptions>(o =>
+        {
+            o.ServiceEndpoints = endpoints;
+            o.ServiceTransportType = serviceTransportType;
+        }).BuildServiceProvider();
+        var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
+        var negotiationResponse = await negotiateProcessor.NegotiateAsync(
+            HubName,
+            new NegotiationOptions
+            {
+                Transports = AspNetCore.Http.Connections.HttpTransportType.LongPolling | AspNetCore.Http.Connections.HttpTransportType.ServerSentEvents
+            });
+        var tokenString = negotiationResponse.AccessToken;
+        var handler = new JwtSecurityTokenHandler();
+        var token = handler.ReadJwtToken(tokenString);
+        Assert.Equal("6", token.Claims.Single(c => c.Type == Constants.ClaimType.HttpTransportType).Value);
     }
 
     [Fact]
