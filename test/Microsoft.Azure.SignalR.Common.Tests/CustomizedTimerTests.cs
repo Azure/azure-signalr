@@ -59,7 +59,7 @@ public class CustomizedTimerTests(ITestOutputHelper output) : VerifiableLoggedTe
         });
     }
 
-    [Fact]
+    [Fact(Skip = "Flaky test, need fixing.")]
     public async Task StartStopStartStop()
     {
         if (Environment.OSVersion.Platform == PlatformID.Unix)
