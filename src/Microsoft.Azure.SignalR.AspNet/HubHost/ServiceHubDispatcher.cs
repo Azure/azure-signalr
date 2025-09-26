@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -46,12 +46,12 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private static class Log
         {
-            private static readonly Action<ILogger, string, int, int, Exception> _startingConnection =
+            private static readonly Action<ILogger, string, int, int, Exception> StartingConnectionAction =
                 LoggerMessage.Define<string, int, int>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Starting {name} with {hubCount} hubs and {connectionCount} per hub connections...");
 
             public static void StartingConnection(ILogger logger, string name, int connectionCount, int hubCount)
             {
-                _startingConnection(logger, name, connectionCount, hubCount, null);
+                StartingConnectionAction(logger, name, connectionCount, hubCount, null);
             }
         }
     }

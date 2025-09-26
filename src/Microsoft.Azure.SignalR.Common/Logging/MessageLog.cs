@@ -36,151 +36,151 @@ namespace Microsoft.Azure.SignalR
         public const string StartToSendMessageToCheckIfGroupExistsTemplate = "Start to send message {tracingId} to check if group {group} exists.";
         public const string FailedToReadMessageFromSourceTemplate = "Failed to read message from source for connection {connectionId} stream {streamId}.";
 
-        private static readonly Action<ILogger, ulong?, Exception> _startToBroadcastMessage =
+        private static readonly Action<ILogger, ulong?, Exception> StartToBroadcastMessageAction =
             LoggerMessage.Define<ulong?>(
                 LogLevel.Information,
                 new EventId(0, "StartToBroadcastMessage"),
                 StartToBroadcastMessageTemplate);
 
-        private static readonly Action<ILogger, ulong?, int, string, Exception> _startToBroadcastMessageWithExcludedConnection =
+        private static readonly Action<ILogger, ulong?, int, string, Exception> StartToBroadcastMessageWithExcludedConnectionAction =
             LoggerMessage.Define<ulong?, int, string>(
                 LogLevel.Information,
                 new EventId(1, "StartToBroadcastMessageWithExcludedConnection"),
                 StartToBroadcastMessageWithExcludedConnectionTemplate);
 
-        private static readonly Action<ILogger, ulong?, int, string, Exception> _startToSendMessageToConnections =
+        private static readonly Action<ILogger, ulong?, int, string, Exception> StartToSendMessageToConnectionsAction =
             LoggerMessage.Define<ulong?, int, string>(
                 LogLevel.Information,
                 new EventId(10, "StartToSendMessageToConnections"),
                 StartToSendMessageToConnectionsTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, Exception> _startToSendMessageToConnection =
+        private static readonly Action<ILogger, ulong?, string, Exception> StartToSendMessageToConnectionAction =
             LoggerMessage.Define<ulong?, string>(
                 LogLevel.Information,
                 new EventId(11, "StartToSendMessageToConnection"),
                 StartToSendMessageToConnectionTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, Exception> _startToBroadcastMessageToGroup =
+        private static readonly Action<ILogger, ulong?, string, Exception> StartToBroadcastMessageToGroupAction =
             LoggerMessage.Define<ulong?, string>(
                 LogLevel.Information,
                 new EventId(20, "StartToBroadcastMessageToGroup"),
                 StartToBroadcastMessageToGroupTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, int, string, Exception> _startToBroadcastMessageToGroupWithExcludedConnections =
+        private static readonly Action<ILogger, ulong?, string, int, string, Exception> StartToBroadcastMessageToGroupWithExcludedConnectionsAction =
             LoggerMessage.Define<ulong?, string, int, string>(
                 LogLevel.Information,
                 new EventId(21, "StartToBroadcastMessageToGroupWithExcludedConnections"),
                 StartToBroadcastMessageToGroupWithExcludedConnectionsTemplate);
 
-        private static readonly Action<ILogger, ulong?, int, string, Exception> _startToBroadcastMessageToGroups =
+        private static readonly Action<ILogger, ulong?, int, string, Exception> StartToBroadcastMessageToGroupsAction =
             LoggerMessage.Define<ulong?, int, string>(
                 LogLevel.Information,
                 new EventId(30, "StartToBroadcastMessageToGroups"),
                 StartToBroadcastMessageToGroupsTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, Exception> _startToSendMessageToUser =
+        private static readonly Action<ILogger, ulong?, string, Exception> StartToSendMessageToUserAction =
             LoggerMessage.Define<ulong?, string>(
                 LogLevel.Information,
                 new EventId(40, "StartToSendMessageToUser"),
                 StartToSendMessageToUserTemplate);
 
-        private static readonly Action<ILogger, ulong?, int, string, Exception> _startToSendMessageToUsers =
+        private static readonly Action<ILogger, ulong?, int, string, Exception> StartToSendMessageToUsersAction =
             LoggerMessage.Define<ulong?, int, string>(
                 LogLevel.Information,
                 new EventId(50, "StartToSendMessageToUsers"),
                 StartToSendMessageToUsersTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, string, Exception> _startToAddConnectionToGroup =
+        private static readonly Action<ILogger, ulong?, string, string, Exception> StartToAddConnectionToGroupAction =
             LoggerMessage.Define<ulong?, string, string>(
                 LogLevel.Information,
                 new EventId(60, "StartToAddConnectionToGroup"),
                 StartToAddConnectionToGroupTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, string, Exception> _startToRemoveConnectionFromGroup =
+        private static readonly Action<ILogger, ulong?, string, string, Exception> StartToRemoveConnectionFromGroupAction =
             LoggerMessage.Define<ulong?, string, string>(
                 LogLevel.Information,
                 new EventId(70, "StartToRemoveConnectionFromGroup"),
                 StartToRemoveConnectionFromGroupTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, string, Exception> _startToAddUserToGroup =
+        private static readonly Action<ILogger, ulong?, string, string, Exception> StartToAddUserToGroupAction =
             LoggerMessage.Define<ulong?, string, string>(
                 LogLevel.Information,
                 new EventId(80, "StartToAddUserToGroup"),
                 StartToAddUserToGroupTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, string, int?, Exception> _startToAddUserToGroupWithTtl =
+        private static readonly Action<ILogger, ulong?, string, string, int?, Exception> StartToAddUserToGroupWithTtlAction =
             LoggerMessage.Define<ulong?, string, string, int?>(
                 LogLevel.Information,
                 new EventId(81, "StartToAddUserToGroupWithTtl"),
                 StartToAddUserToGroupWithTtlTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, string, Exception> _startToRemoveUserFromGroup =
+        private static readonly Action<ILogger, ulong?, string, string, Exception> StartToRemoveUserFromGroupAction =
             LoggerMessage.Define<ulong?, string, string>(
                 LogLevel.Information,
                 new EventId(90, "StartToRemoveUserFromGroup"),
                 StartToRemoveUserFromGroupTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, Exception> _startToRemoveUserFromAllGroups =
+        private static readonly Action<ILogger, ulong?, string, Exception> StartToRemoveUserFromAllGroupsAction =
             LoggerMessage.Define<ulong?, string>(
                 LogLevel.Information,
                 new EventId(91, "StartToRemoveUserFromAllGroups"),
                 StartToRemoveUserFromAllGroupsTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, Exception> _startToRemoveConnectionFromAllGroups =
+        private static readonly Action<ILogger, ulong?, string, Exception> StartToRemoveConnectionFromAllGroupsAction =
             LoggerMessage.Define<ulong?, string>(
                 LogLevel.Information,
                 new EventId(92, "StartToRemoveConnectionFromAllGroups"),
                 StartToRemoveConnectionFromAllGroupsTemplate);
 
-        private static readonly Action<ILogger, ulong?, Exception> _failedToSendMessage =
+        private static readonly Action<ILogger, ulong?, Exception> FailedToSendMessageAction =
             LoggerMessage.Define<ulong?>(
                 LogLevel.Warning,
                 new EventId(100, "FailedToSendMessage"),
                 FailedToSendMessageTemplate);
 
-        private static readonly Action<ILogger, ulong?, Exception> _succeededToSendMessage =
+        private static readonly Action<ILogger, ulong?, Exception> SucceededToSendMessageAction =
             LoggerMessage.Define<ulong?>(
                 LogLevel.Information,
                 new EventId(110, "SucceededToSendMessage"),
                 SucceededToSendMessageTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, Exception> _receivedMessageFromService =
+        private static readonly Action<ILogger, ulong?, string, Exception> ReceivedMessageFromServiceAction =
                 LoggerMessage.Define<ulong?, string>(
                     LogLevel.Information,
                     new EventId(120, "RecieveMessageFromService"),
                     ReceivedMessageFromClientConnectionTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, string, Exception> _startToCheckIfUserInGroup =
+        private static readonly Action<ILogger, ulong?, string, string, Exception> StartToCheckIfUserInGroupAction =
                 LoggerMessage.Define<ulong?, string, string>(
                     LogLevel.Information,
                 new EventId(130, "StartToCheckIfUserInGroup"),
                 StartToCheckIfUserInGroupTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, string, Exception> _startToCloseConnection =
+        private static readonly Action<ILogger, ulong?, string, string, Exception> StartToCloseConnectionAction =
                 LoggerMessage.Define<ulong?, string, string>(
                     LogLevel.Information,
                     new EventId(140, "StartToCloseConnection"),
                     StartToSendMessageToCloseConnectionTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfConnectionExists =
+        private static readonly Action<ILogger, ulong?, string, Exception> StartToCheckIfConnectionExistsAction =
                 LoggerMessage.Define<ulong?, string>(
                     LogLevel.Information,
                     new EventId(150, "StartToCheckIfConnectionExists"),
                     StartToSendMessageToCheckConnectionTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfUserExists =
+        private static readonly Action<ILogger, ulong?, string, Exception> StartToCheckIfUserExistsAction =
                 LoggerMessage.Define<ulong?, string>(
                     LogLevel.Information,
                     new EventId(160, "StartToCheckIfUserExists"),
                     StartToSendMessageToCheckIfUserExistsTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfGroupExists =
+        private static readonly Action<ILogger, ulong?, string, Exception> StartToCheckIfGroupExistsAction =
                 LoggerMessage.Define<ulong?, string>(
                     LogLevel.Information,
                     new EventId(170, "StartToCheckIfGroupExists"),
                     StartToSendMessageToCheckIfGroupExistsTemplate);
 
-        private static readonly Action<ILogger, string, string, Exception> _failedToReadMessageFromSource =
+        private static readonly Action<ILogger, string, string, Exception> FailedToReadMessageFromSourceAction =
                 LoggerMessage.Define<string, string>(
                     LogLevel.Error,
                     new EventId(180, "FailedToReadMessageFromSource"),
@@ -188,77 +188,77 @@ namespace Microsoft.Azure.SignalR
 
         public static void ReceiveMessageFromService(ILogger logger, ConnectionDataMessage message)
         {
-            _receivedMessageFromService(logger, message.TracingId, message.ConnectionId, null);
+            ReceivedMessageFromServiceAction(logger, message.TracingId, message.ConnectionId, null);
         }
 
         public static void SucceededToSendMessage(ILogger logger, IMessageWithTracingId message)
         {
-            _succeededToSendMessage(logger, message.TracingId, null);
+            SucceededToSendMessageAction(logger, message.TracingId, null);
         }
 
         public static void FailedToSendMessage(ILogger logger, IMessageWithTracingId message, Exception ex)
         {
-            _failedToSendMessage(logger, message.TracingId, ex);
+            FailedToSendMessageAction(logger, message.TracingId, ex);
         }
 
         public static void StartToBroadcastMessage(ILogger logger, BroadcastDataMessage message)
         {
             if (message.ExcludedList == null || message.ExcludedList.Count == 0)
             {
-                _startToBroadcastMessage(logger, message.TracingId, null);
+                StartToBroadcastMessageAction(logger, message.TracingId, null);
             }
             else
             {
                 // todo: ? should we hide some by "..." if the excluded list is too long (max count: 20) - e.g. "excecpt for <list count> connections: connId1, connId2, ..."
                 var excludedConnections = string.Join(", ", message.ExcludedList);
-                _startToBroadcastMessageWithExcludedConnection(logger, message.TracingId, message.ExcludedList.Count, excludedConnections, null);
+                StartToBroadcastMessageWithExcludedConnectionAction(logger, message.TracingId, message.ExcludedList.Count, excludedConnections, null);
             }
         }
 
         public static void StartToSendMessageToConnections(ILogger logger, MultiConnectionDataMessage message)
         {
             var connections = string.Join(", ", message.ConnectionList);
-            _startToSendMessageToConnections(logger, message.TracingId, message.ConnectionList.Count, connections, null);
+            StartToSendMessageToConnectionsAction(logger, message.TracingId, message.ConnectionList.Count, connections, null);
         }
 
         public static void StartToSendMessageToConnection(ILogger logger, ConnectionDataMessage message)
         {
-            _startToSendMessageToConnection(logger, message.TracingId, message.ConnectionId, null);
+            StartToSendMessageToConnectionAction(logger, message.TracingId, message.ConnectionId, null);
         }
 
         public static void StartToBroadcastMessageToGroup(ILogger logger, GroupBroadcastDataMessage message)
         {
             if (message.ExcludedList == null || message.ExcludedList.Count == 0)
             {
-                _startToBroadcastMessageToGroup(logger, message.TracingId, message.GroupName, null);
+                StartToBroadcastMessageToGroupAction(logger, message.TracingId, message.GroupName, null);
             }
             else
             {
                 var connections = string.Join(", ", message.ExcludedList);
-                _startToBroadcastMessageToGroupWithExcludedConnections(logger, message.TracingId, message.GroupName, message.ExcludedList.Count, connections, null);
+                StartToBroadcastMessageToGroupWithExcludedConnectionsAction(logger, message.TracingId, message.GroupName, message.ExcludedList.Count, connections, null);
             }
         }
 
         public static void StartToBroadcastMessageToGroups(ILogger logger, MultiGroupBroadcastDataMessage message)
         {
             var groups = string.Join(", ", message.GroupList);
-            _startToBroadcastMessageToGroups(logger, message.TracingId, message.GroupList.Count, groups, null);
+            StartToBroadcastMessageToGroupsAction(logger, message.TracingId, message.GroupList.Count, groups, null);
         }
 
         public static void StartToSendMessageToUser(ILogger logger, UserDataMessage message)
         {
-            _startToSendMessageToUser(logger, message.TracingId, message.UserId, null);
+            StartToSendMessageToUserAction(logger, message.TracingId, message.UserId, null);
         }
 
         public static void StartToSendMessageToUsers(ILogger logger, MultiUserDataMessage message)
         {
             var users = string.Join(", ", message.UserList);
-            _startToSendMessageToUsers(logger, message.TracingId, message.UserList.Count, users, null);
+            StartToSendMessageToUsersAction(logger, message.TracingId, message.UserList.Count, users, null);
         }
 
         public static void StartToAddConnectionToGroup(ILogger logger, JoinGroupWithAckMessage message)
         {
-            _startToAddConnectionToGroup(logger, message.TracingId, message.ConnectionId, message.GroupName, null);
+            StartToAddConnectionToGroupAction(logger, message.TracingId, message.ConnectionId, message.GroupName, null);
         }
 
         public static void StartToRemoveConnectionFromGroup(ILogger logger, LeaveGroupWithAckMessage message)
@@ -288,38 +288,38 @@ namespace Microsoft.Azure.SignalR
 
         public static void StartToCheckIfUserInGroup(ILogger logger, CheckUserInGroupWithAckMessage message)
         {
-            _startToCheckIfUserInGroup(logger, message.TracingId, message.UserId, message.GroupName, null);
+            StartToCheckIfUserInGroupAction(logger, message.TracingId, message.UserId, message.GroupName, null);
         }
 
         public static void StartToCloseConnection(ILogger logger, CloseConnectionMessage message)
         {
-            _startToCloseConnection(logger, message.TracingId, message.ConnectionId, message.ErrorMessage, null);
+            StartToCloseConnectionAction(logger, message.TracingId, message.ConnectionId, message.ErrorMessage, null);
         }
 
         public static void StartToCheckIfConnectionExists(ILogger logger, CheckConnectionExistenceWithAckMessage message)
         {
-            _startToCheckIfConnectionExists(logger, message.TracingId, message.ConnectionId, null);
+            StartToCheckIfConnectionExistsAction(logger, message.TracingId, message.ConnectionId, null);
         }
 
         public static void StartToCheckIfUserExists(ILogger logger, CheckUserExistenceWithAckMessage message)
         {
-            _startToCheckIfUserExists(logger, message.TracingId, message.UserId, null);
+            StartToCheckIfUserExistsAction(logger, message.TracingId, message.UserId, null);
         }
 
         public static void StartToCheckIfGroupExists(ILogger logger, CheckGroupExistenceWithAckMessage message)
         {
-            _startToCheckIfGroupExists(logger, message.TracingId, message.GroupName, null);
+            StartToCheckIfGroupExistsAction(logger, message.TracingId, message.GroupName, null);
         }
 
         private static void StartToAddUserToGroupCore(ILogger logger, ulong? tracingId, string groupName, string userId, int? ttl)
         {
             if (ttl == null)
             {
-                _startToAddUserToGroup(logger, tracingId, userId, groupName, null);
+                StartToAddUserToGroupAction(logger, tracingId, userId, groupName, null);
             }
             else
             {
-                _startToAddUserToGroupWithTtl(logger, tracingId, userId, groupName, ttl, null);
+                StartToAddUserToGroupWithTtlAction(logger, tracingId, userId, groupName, ttl, null);
             }
         }
 
@@ -327,11 +327,11 @@ namespace Microsoft.Azure.SignalR
         {
             if (groupName == null)
             {
-                _startToRemoveUserFromAllGroups(logger, tracingId, userId, null);
+                StartToRemoveUserFromAllGroupsAction(logger, tracingId, userId, null);
             }
             else
             {
-                _startToRemoveUserFromGroup(logger, tracingId, userId, groupName, null);
+                StartToRemoveUserFromGroupAction(logger, tracingId, userId, groupName, null);
             }
         }
 
@@ -339,17 +339,17 @@ namespace Microsoft.Azure.SignalR
         {
             if (groupName == null)
             {
-                _startToRemoveConnectionFromAllGroups(logger, tracingId, connectionId, null);
+                StartToRemoveConnectionFromAllGroupsAction(logger, tracingId, connectionId, null);
             }
             else
             {
-                _startToRemoveConnectionFromGroup(logger, tracingId, connectionId, groupName, null);
+                StartToRemoveConnectionFromGroupAction(logger, tracingId, connectionId, groupName, null);
             }
         }
 
         public static void FailedToReadMessageFromSource(ILogger logger, string connectionId, string streamId, Exception exception)
         {
-            _failedToReadMessageFromSource(logger, connectionId, streamId, exception);
+            FailedToReadMessageFromSourceAction(logger, connectionId, streamId, exception);
         }
     }
 }
