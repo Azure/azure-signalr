@@ -318,7 +318,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
     public virtual Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
     {
         _terminated = true;
-        return Task.WhenAll(ServiceConnections.Select(c => RemoveConnectionAsync(c, mode, token)));
+        return Task.WhenAll(ServiceConnections.Select(c => RemoveConnectionFromServiceAsync(c, mode, token)));
     }
 
     public virtual Task CloseClientConnections(CancellationToken token)
@@ -476,8 +476,23 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
             : ServiceConnectionStatus.Disconnected;
     }
 
-    protected async Task RemoveConnectionAsync(IServiceConnection c, GracefulShutdownMode mode, CancellationToken token)
+    /// <summary>
+    /// TODO: this logic sounds more fit into the serviceConnection class
+    /// </summary>
+    /// <param name="c">The service connection instance</param>
+    /// <param name="mode">The graceful shutdown mode</param>
+    /// <param name="token">The cancellation token</param>
+    /// <returns></returns>
+    protected async Task RemoveConnectionFromServiceAsync(IServiceConnection c, GracefulShutdownMode mode, CancellationToken token)
     {
+        if (c.Status != ServiceConnectionStatus.Connected)
+        {
+            // if the connection is not yet connected
+            // we stop the connection in case it is connecting
+            // otherwise ConnectionOfflineTask should be set
+            await c.StopAsync();
+            return;
+        }
         var retry = 0;
         while (retry < MaxRetryRemoveSeverConnection && !token.IsCancellationRequested)
         {

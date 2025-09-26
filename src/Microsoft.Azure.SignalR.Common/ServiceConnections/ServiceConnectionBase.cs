@@ -44,6 +44,8 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     private readonly TaskCompletionSource<object> _serviceConnectionOfflineTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+    private readonly CancellationTokenSource _connectionStartCts = new();
+
     private readonly ServiceConnectionType _connectionType;
 
     private readonly IServiceMessageHandler _serviceMessageHandler;
@@ -157,63 +159,66 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
         }
 
         Status = ServiceConnectionStatus.Connecting;
-
-        var connection = await EstablishConnectionAsync(target);
-        if (connection != null)
+        try
         {
-            _connectionContext = connection;
-            Status = ServiceConnectionStatus.Connected;
-            _serviceConnectionStartTcs.TrySetResult(true);
-            try
+            var connection = await EstablishConnectionAsync(target, _connectionStartCts.Token);
+            if (connection != null)
             {
-                TimerAwaitable syncTimer = null;
+                _connectionContext = connection;
+                Status = ServiceConnectionStatus.Connected;
+                _serviceConnectionStartTcs.TrySetResult(true);
                 try
                 {
-                    if (HubEndpoint != null && HubEndpoint.AccessKey is MicrosoftEntraAccessKey key)
+                    TimerAwaitable syncTimer = null;
+                    try
                     {
-                        syncTimer = new TimerAwaitable(TimeSpan.Zero, DefaultSyncAzureIdentityInterval);
-                        _ = UpdateAzureIdentityAsync(key, syncTimer);
+                        if (HubEndpoint != null && HubEndpoint.AccessKey is MicrosoftEntraAccessKey key)
+                        {
+                            syncTimer = new TimerAwaitable(TimeSpan.Zero, DefaultSyncAzureIdentityInterval);
+                            _ = UpdateAzureIdentityAsync(key, syncTimer);
+                        }
+                        await ProcessIncomingAsync(connection);
                     }
-                    await ProcessIncomingAsync(connection);
+                    finally
+                    {
+                        // mark the status as Disconnected so that no one will write to this connection anymore
+                        Status = ServiceConnectionStatus.Disconnected;
+                        syncTimer?.Stop();
+
+                        // when ProcessIncoming completes, clean up the connection
+
+                        // TODO: Never cleanup connections unless Service asks us to do that
+                        // Current implementation is based on assumption that Service will drop clients
+                        // if server connection fails.
+                        await CleanupClientConnections();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.ConnectionDropped(Logger, _endpointName, ConnectionId, ex);
                 }
                 finally
                 {
-                    // mark the status as Disconnected so that no one will write to this connection anymore
-                    Status = ServiceConnectionStatus.Disconnected;
-                    syncTimer?.Stop();
-
-                    // when ProcessIncoming completes, clean up the connection
-
-                    // TODO: Never cleanup connections unless Service asks us to do that
-                    // Current implementation is based on assumption that Service will drop clients
-                    // if server connection fails.
-                    await CleanupClientConnections();
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.ConnectionDropped(Logger, _endpointName, ConnectionId, ex);
-            }
-            finally
-            {
-                // wait until all the connections are cleaned up to close the outgoing pipe
-                // Don't allow write anymore when the connection is disconnected
-                await _writeLock.WaitAsync();
-                try
-                {
-                    // close the underlying connection
-                    await DisposeConnection(connection);
-                }
-                finally
-                {
-                    _writeLock.Release();
+                    // wait until all the connections are cleaned up to close the outgoing pipe
+                    // Don't allow write anymore when the connection is disconnected
+                    await _writeLock.WaitAsync();
+                    try
+                    {
+                        // close the underlying connection
+                        await DisposeConnection(connection);
+                    }
+                    finally
+                    {
+                        _writeLock.Release();
+                    }
                 }
             }
         }
-        else
+        finally
         {
             Status = ServiceConnectionStatus.Disconnected;
             _serviceConnectionStartTcs.TrySetResult(false);
+            _serviceConnectionOfflineTcs.TrySetResult(false);
         }
     }
 
@@ -221,6 +226,8 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
     {
         try
         {
+            // to avoid the connection hung in connecting state
+            _connectionStartCts.Cancel();
             _connectionContext?.Transport.Input.CancelPendingRead();
         }
         catch (Exception ex)
@@ -277,7 +284,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     public abstract bool TryRemoveClientConnection(string connectionId, out IClientConnection connection);
 
-    protected abstract Task<ConnectionContext> CreateConnection(string target = null);
+    protected abstract Task<ConnectionContext> CreateConnection(string target = null, CancellationToken cancellationToken = default);
 
     protected abstract Task DisposeConnection(ConnectionContext connection);
 
@@ -492,11 +499,11 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
         throw new NotImplementedException($"Unsupported connection type: {flowControlMessage.ConnectionType}");
     }
 
-    private async Task<ConnectionContext> EstablishConnectionAsync(string target)
+    private async Task<ConnectionContext> EstablishConnectionAsync(string target, CancellationToken cancellationToken)
     {
         try
         {
-            var connectionContext = await CreateConnection(target);
+            var connectionContext = await CreateConnection(target, cancellationToken);
             try
             {
                 if (await HandshakeAsync(connectionContext))

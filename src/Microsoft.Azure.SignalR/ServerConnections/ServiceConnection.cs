@@ -129,9 +129,9 @@ internal partial class ServiceConnection : ServiceConnectionBase
         }
     }
 
-    protected override Task<ConnectionContext> CreateConnection(string target = null)
+    protected override Task<ConnectionContext> CreateConnection(string target = null, CancellationToken cancellationToken = default)
     {
-        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target);
+        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target, cancellationToken);
     }
 
     protected override Task DisposeConnection(ConnectionContext connection)

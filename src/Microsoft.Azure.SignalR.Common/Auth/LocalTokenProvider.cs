@@ -1,9 +1,10 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR;
@@ -34,5 +35,5 @@ internal class LocalTokenProvider : IAccessTokenProvider
         _tokenLifetime = tokenLifetime ?? Constants.Periods.DefaultAccessTokenLifetime;
     }
 
-    public Task<string> ProvideAsync() => _accessKey.GenerateAccessTokenAsync(_audience, _claims, _tokenLifetime, _algorithm);
+    public Task<string> ProvideAsync(CancellationToken cancellationToken) => _accessKey.GenerateAccessTokenAsync(_audience, _claims, _tokenLifetime, _algorithm, cancellationToken);
 }

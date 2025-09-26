@@ -121,7 +121,7 @@ internal partial class WebSocketsTransport : IDuplexPipe
         // We don't need to capture to a local because we never change this delegate.
         if (_accessTokenProvider != null)
         {
-            accessToken = await _accessTokenProvider.ProvideAsync();
+            accessToken = await _accessTokenProvider.ProvideAsync(cancellationToken);
             if (!string.IsNullOrEmpty(accessToken))
             {
                 _webSocket.Options.SetRequestHeader("Authorization", $"Bearer {accessToken}");

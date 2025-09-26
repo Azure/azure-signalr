@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
@@ -83,7 +84,7 @@ internal class TestServiceConnectionProxy(IClientConnectionManagerAspNet clientC
         return result;
     }
 
-    protected override async Task<ConnectionContext> CreateConnection(string target = null)
+    protected override async Task<ConnectionContext> CreateConnection(string target = null, CancellationToken cancellationToken = default)
     {
         TestConnectionContext = await base.CreateConnection() as TestConnectionContext;
 
