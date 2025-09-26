@@ -257,6 +257,7 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
 
         public Task StopAsync()
         {
+            _offline.TrySetResult(true);
             return Task.CompletedTask;
         }
 
@@ -264,11 +265,11 @@ public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
         {
             if (RuntimeServicePingMessage.IsFin(serviceMessage))
             {
-                _offline.SetResult(true);
+                _offline.TrySetResult(true);
             }
             if (RuntimeServicePingMessage.IsGetServers(serviceMessage))
             {
-                _serversPing.SetResult(true);
+                _serversPing.TrySetResult(true);
             }
             return Task.CompletedTask;
         }
