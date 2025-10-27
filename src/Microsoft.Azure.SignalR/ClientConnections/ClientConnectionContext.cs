@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -261,7 +261,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     public Task PauseAckAsync()
     {
-        if (_pauseHandler.ShouldReplyAck)
+        if (_pauseHandler.ShouldReplyAck())
         {
             Log.OutgoingTaskPauseAck(Logger, ConnectionId);
             var message = new ConnectionFlowControlMessage(ConnectionId, ConnectionFlowControlOperation.PauseAck);
@@ -334,18 +334,26 @@ internal partial class ClientConnectionContext : ConnectionContext,
                     if (HandshakeResponseTask.IsCompleted)
                     {
                         var next = buffer;
-                        while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
-                        {
-                            // we still want messages to successfully going out when application completes
-                            if (!await _pauseHandler.WaitAsync(StaticRandom.Next(500, 1500), OutgoingAborted))
-                            {
-                                Log.OutgoingTaskPaused(Logger, ConnectionId);
-                                buffer = buffer.Slice(0);
-                                break;
-                            }
 
-                            try
+                        // we still want messages to successfully going out when application completes
+                        int waitTime = 0;
+                        while (!await _pauseHandler.TryAcquire(1000))
+                        {
+                            Log.OutgoingTaskPaused(Logger, ConnectionId);
+                            if (OutgoingAborted.IsCancellationRequested)
                             {
+                                waitTime++;
+                                if (waitTime > 5)
+                                {
+                                    OutgoingAborted.ThrowIfCancellationRequested();
+                                }
+                            }
+                        }
+                        try
+                        {
+                            while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
+                            {
+
                                 var messageType = message switch
                                 {
                                     SignalRProtocol.HubInvocationMessage => DataMessageType.Invocation,
@@ -363,10 +371,10 @@ internal partial class ClientConnectionContext : ConnectionContext,
                                     _ => next,
                                 };
                             }
-                            finally
-                            {
-                                _pauseHandler.Release();
-                            }
+                        }
+                        finally
+                        {
+                            _pauseHandler.Release();
                         }
                     }
                 }

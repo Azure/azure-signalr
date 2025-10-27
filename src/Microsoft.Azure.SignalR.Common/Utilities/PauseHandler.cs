@@ -1,10 +1,12 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR;
+
+#nullable enable
 
 internal class PauseHandler
 {
@@ -14,9 +16,9 @@ internal class PauseHandler
 
     private volatile int _pauseAcked = 1;
 
-    public bool ShouldReplyAck => Interlocked.CompareExchange(ref _pauseAcked, 1, 0) == 0;
+    public bool ShouldReplyAck() => Interlocked.CompareExchange(ref _pauseAcked, 1, 0) == 0;
 
-    public async Task<bool> WaitAsync(int ms, CancellationToken ctoken) => _pauseSemaphore.Wait(0, ctoken) || await _pauseSemaphore.WaitAsync(ms, ctoken);
+    public Task<bool> TryAcquire(int millisecondsTimeout) => _pauseSemaphore.WaitAsync(millisecondsTimeout);
 
     public void Release() => _pauseSemaphore.Release();
 
