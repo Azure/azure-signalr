@@ -284,6 +284,10 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
     public abstract bool TryRemoveClientConnection(string connectionId, out IClientConnection connection);
 
+    protected virtual void AttachClientConnection(IClientConnection connection) { }
+
+    protected virtual void DetachClientConnection(IClientConnection connection) { }
+
     protected abstract Task<ConnectionContext> CreateConnection(string target = null, CancellationToken cancellationToken = default);
 
     protected abstract Task DisposeConnection(ConnectionContext connection);
@@ -454,14 +458,11 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
 
         if (clientConnection.ServiceConnection is ServiceConnectionBase serviceConnection)
         {
-            serviceConnection.TryRemoveClientConnection(clientConnection.ConnectionId, out _);
+            serviceConnection.DetachClientConnection(clientConnection);
         }
-        if (TryAddClientConnection(clientConnection))
-        {
-            clientConnection.ServiceConnection = this;
-            return clientConnection.ResumeAsync();
-        }
-        return Task.CompletedTask;
+        clientConnection.ServiceConnection = this;
+        AttachClientConnection(clientConnection);
+        return clientConnection.ResumeAsync();
     }
 
     private Task OnFlowControlMessageAsync(ConnectionFlowControlMessage flowControlMessage)

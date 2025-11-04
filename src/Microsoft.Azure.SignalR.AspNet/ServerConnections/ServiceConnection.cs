@@ -71,6 +71,16 @@ internal partial class ServiceConnection : ServiceConnectionBase
         return r;
     }
 
+    protected override void AttachClientConnection(IClientConnection connection)
+    {
+        _clientConnections.TryAdd(connection.ConnectionId, (ClientConnectionContext)connection);
+    }
+
+    protected override void DetachClientConnection(IClientConnection connection)
+    {
+        _clientConnections.TryRemove(connection.ConnectionId, out _);
+    }
+
     public override Task CloseClientConnections(CancellationToken token)
     {
         throw new NotSupportedException();

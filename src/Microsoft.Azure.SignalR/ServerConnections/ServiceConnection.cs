@@ -104,6 +104,16 @@ internal partial class ServiceConnection : ServiceConnectionBase
         return r;
     }
 
+    protected override void AttachClientConnection(IClientConnection connection)
+    {
+        _connectionIds.TryAdd(connection.ConnectionId, connection.InstanceId);
+    }
+
+    protected override void DetachClientConnection(IClientConnection connection)
+    {
+        _connectionIds.TryRemove(connection.ConnectionId, out _);
+    }
+
     public override async Task CloseClientConnections(CancellationToken token)
     {
         var tasks = new List<Task>();
