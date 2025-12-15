@@ -200,10 +200,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 });
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<HubException>(
-                async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
+            var response = await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args);
 
-            Assert.Contains("Result not found in response", exception.Message);
+            Assert.Null(response);
         }
 
         [Fact]
@@ -230,21 +229,21 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 });
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<HubException>(
-                async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
+            var response = await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args);
 
-            Assert.Contains("Result not found in response", exception.Message);
+            Assert.Null(response);
         }
 
         [Fact]
-        public async Task InvokeConnectionAsync_NullResponse_ReturnsWithoutException()
+        public async Task InvokeConnectionAsync_WithNullResultNode_ThrowsHubException()
         {
             // Arrange
             var connectionId = "connection1";
-            var methodName = "getUsername";
-            var args = new object?[] { 42, "test-param", true };
+            var methodName = "getIncompleteData";
+            var args = Array.Empty<object>();
 
-            var jsonResponse = $"{{\"result\": null}}";
+            // JSON with null result node
+            var incompleteJsonResponse = "{\"jsonObject\":{\"result\":null}}";
 
             _httpMessageHandlerMock
                 .Protected()
@@ -255,14 +254,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 )
                 .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = new StringContent(jsonResponse)
+                    Content = new StringContent(incompleteJsonResponse)
                 });
 
-            // Act
-            var result = await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args);
+            // Act & Assert
+            var response = await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args);
 
-            // Assert
-            Assert.Null(result);
+            Assert.Null(response);
         }
 #endif
 
