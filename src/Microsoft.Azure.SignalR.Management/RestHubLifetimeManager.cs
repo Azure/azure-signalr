@@ -16,6 +16,7 @@ using Azure;
 using Microsoft.AspNetCore.SignalR;
 #if NET7_0_OR_GREATER
 using Microsoft.AspNetCore.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Management.ClientInvocation;
 #endif
 using Microsoft.Extensions.Primitives;
@@ -396,7 +397,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
                         cancellationToken);
 
                     wrapper = deserialized as InvocationResponse<T>
-                        ?? throw new HubException("Failed to deserialize response");
+                        ?? throw new AzureSignalRException("Failed to deserialize response");
                 }
                 else
                 {
@@ -410,10 +411,15 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         // Ensure we have a response
         if (!isSuccess)
         {
-            throw new HubException(errorContent ?? "Unknown error in response");
+            throw new AzureSignalRException(errorContent ?? "Unknown error in response");
         }
 
-        return wrapper != null && wrapper.Result != null ? wrapper.Result : throw new HubException("Result not found in response");
+        if (wrapper == null)
+        {
+            throw new AzureSignalRException("Response wrapper is null");
+        }
+
+        return wrapper.Result ?? default!;
     }
 
     public override Task SetConnectionResultAsync(string connectionId, CompletionMessage result)

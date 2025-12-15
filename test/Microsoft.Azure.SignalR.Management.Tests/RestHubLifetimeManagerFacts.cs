@@ -235,6 +235,35 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             Assert.Contains("Result not found in response", exception.Message);
         }
+
+        [Fact]
+        public async Task InvokeConnectionAsync_NullResponse_ReturnsWithoutException()
+        {
+            // Arrange
+            var connectionId = "connection1";
+            var methodName = "getUsername";
+            var args = new object?[] { 42, "test-param", true };
+
+            var jsonResponse = $"{{\"result\": null}}";
+
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(jsonResponse)
+                });
+
+            // Act
+            var result = await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args);
+
+            // Assert
+            Assert.Null(result);
+        }
 #endif
 
         public class TestHub : Hub { }
