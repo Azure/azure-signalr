@@ -971,6 +971,51 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [MemberData(nameof(TestData))]
+    public async Task ClientInvocationTest(ServiceTransportType serviceTransportType, string appName)
+    {
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest));
+        using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+        {
+            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+            o.ServiceTransportType = serviceTransportType;
+            o.ApplicationName = appName;
+        })
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+        var negotationResponse = await hubContext.NegotiateAsync();
+        var clientConnections = await CreateAndStartClientConnections(negotationResponse.Url, Enumerable.Repeat(negotationResponse.AccessToken, 1));
+
+        string expectedStringMessage = "Method Invoked";
+
+        clientConnections[0].On("Invoke", (string message) =>
+        {
+            if (message == "String Response")
+            {
+                return expectedStringMessage;
+            }
+            if (message == "Null Response")
+            {
+                return null;
+            }
+            return "";
+        });
+
+        var response_string = await hubContext.Clients.Client(clientConnections[0].ConnectionId).InvokeAsync<object>("Invoke", "String Response", default);
+        var response_null = await hubContext.Clients.Client(clientConnections[0].ConnectionId).InvokeAsync<object>("Invoke", "Null Response", default);
+
+        Assert.Equal(response_string.ToString(), expectedStringMessage);
+        Assert.Null(response_null);
+
+        foreach (var connection in clientConnections)
+        {
+            await connection.StopAsync();
+        }
+    }
+
     private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)
     {
         return (from i in Enumerable.Range(0, userNames.Count)
