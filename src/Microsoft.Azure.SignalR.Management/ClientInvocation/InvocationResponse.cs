@@ -4,9 +4,9 @@
 using System.Text.Json.Serialization;
 
 namespace Microsoft.Azure.SignalR.Management.ClientInvocation;
-#nullable enable
+
 sealed class InvocationResponse<T>
 {
     [JsonPropertyName("result")]
-    public T? Result { get; set; }
+    public T Result { get; set; }
 }

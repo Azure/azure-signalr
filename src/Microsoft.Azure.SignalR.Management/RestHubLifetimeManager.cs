@@ -359,7 +359,6 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
     }
 
 #if NET7_0_OR_GREATER
-#nullable enable
     public override async Task<T> InvokeConnectionAsync<T>(string connectionId, string methodName, object?[] args, CancellationToken cancellationToken = default)
     {
         // Validate input parameters
@@ -414,12 +413,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new AzureSignalRException(errorContent ?? "Unknown error in response");
         }
 
-        if (wrapper == null)
-        {
-            throw new AzureSignalRException("Response wrapper is null");
-        }
-
-        return wrapper.Result ?? default!;
+        return wrapper!.Result;
     }
 
     public override Task SetConnectionResultAsync(string connectionId, CompletionMessage result)
