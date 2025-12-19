@@ -25,6 +25,8 @@ internal class RestClient
 
     private readonly IPayloadContentBuilder _payloadContentBuilder;
 
+    private static readonly ObjectSerializer DefaultObjectSerializer = new JsonObjectSerializer();
+
     public RestClient(IHttpClientFactory httpClientFactory, IPayloadContentBuilder contentBuilder)
     {
         _httpClientFactory = httpClientFactory;
@@ -113,7 +115,7 @@ internal class RestClient
     public ObjectSerializer ObjectSerializer => _payloadContentBuilder switch
     {
         JsonPayloadContentBuilder jsonBuilder => jsonBuilder.ObjectSerializer,
-        _ => throw new NotSupportedException("Only JsonPayloadContentBuilder is supported to get the ObjectSerializer.")
+        _ => DefaultObjectSerializer,
     };
 
     private static Uri GetUri(string url, IDictionary<string, StringValues>? query)
