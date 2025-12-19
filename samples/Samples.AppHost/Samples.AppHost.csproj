@@ -15,9 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AspNet.ChatSample\AspNet.ChatSample.CSharpClient\AspNet.ChatSample.CSharpClient.csproj" />
-    <ProjectReference Include="..\AspNet.ChatSample\AspNet.ChatSample.JavaScriptClient\AspNet.ChatSample.JavaScriptClient.csproj" />
-    <ProjectReference Include="..\AspNet.ChatSample\AspNet.ChatSample.SelfHostServer\AspNet.ChatSample.SelfHostServer.csproj" />
     <ProjectReference Include="..\BlazorAppSample\BlazorAppSample.csproj" />
     <ProjectReference Include="..\ChatSample\ChatSample.CSharpClient\ChatSample.CSharpClient.csproj" />
     <ProjectReference Include="..\ChatSample\ChatSample\ChatSample.csproj" />
