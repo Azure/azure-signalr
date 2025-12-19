@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAspireHost>true</IsAspireHost>
+    <UserSecretsId>1d977abc-8856-44ed-a28a-f31caa2e7174</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="$(AspireHostingAppHostPackageVersion)" />
+    <PackageReference Include="Aspire.Hosting.Azure.SignalR" Version="$(AspireHostingAzureSignalRPackageVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AspNet.ChatSample\AspNet.ChatSample.CSharpClient\AspNet.ChatSample.CSharpClient.csproj" />
+    <ProjectReference Include="..\AspNet.ChatSample\AspNet.ChatSample.JavaScriptClient\AspNet.ChatSample.JavaScriptClient.csproj" />
+    <ProjectReference Include="..\AspNet.ChatSample\AspNet.ChatSample.SelfHostServer\AspNet.ChatSample.SelfHostServer.csproj" />
+    <ProjectReference Include="..\BlazorAppSample\BlazorAppSample.csproj" />
+    <ProjectReference Include="..\ChatSample\ChatSample.CSharpClient\ChatSample.CSharpClient.csproj" />
+    <ProjectReference Include="..\ChatSample\ChatSample\ChatSample.csproj" />
+  </ItemGroup>
+
+</Project>

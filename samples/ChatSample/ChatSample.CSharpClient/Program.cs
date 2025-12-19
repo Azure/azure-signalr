@@ -16,33 +16,46 @@ namespace ChatSample.CSharpClient
     {
         static async Task Main(string[] args)
         {
-            var url = "http://localhost:5050";
+            var url = Environment.GetEnvironmentVariable("ServerEndpoint") ?? "http://localhost:5050";
+            Enum.TryParse<Mode>(Environment.GetEnvironmentVariable("MODE"), out var mode);
             var proxy = await ConnectAsync(url + "/chat", Console.Out).ConfigureAwait(false);
             var currentUser = Guid.NewGuid().ToString("N");
 
-            Mode mode = Mode.Broadcast;
             if (args.Length > 0)
             {
                 Enum.TryParse(args[0], true, out mode);
             }
 
             Console.WriteLine($"Logged in as user {currentUser}");
-            var input = Console.ReadLine();
-            while (!string.IsNullOrEmpty(input))
+            if (mode == Mode.Auto)
             {
-                switch (mode)
+                // auto mode
+                while (true)
                 {
-                    case Mode.Broadcast:
-                        await proxy.InvokeAsync("BroadcastMessage", currentUser, input).ConfigureAwait(false);
-                        break;
-                    case Mode.Echo:
-                        await proxy.InvokeAsync("echo", input).ConfigureAwait(false);
-                        break;
-                    default:
-                        break;
+                    Console.WriteLine("Broadcasting...");
+                    await proxy.InvokeAsync("BroadcastMessage", currentUser, $"Current time: {DateTime.Now}").ConfigureAwait(false);
+                    await Task.Delay(5000).ConfigureAwait(false);
                 }
+            }
+            else
+            {
+                var input = Console.ReadLine();
+                while (!string.IsNullOrEmpty(input))
+                {
+                    switch (mode)
+                    {
+                        case Mode.Broadcast:
+                            await proxy.InvokeAsync("BroadcastMessage", currentUser, input).ConfigureAwait(false);
+                            break;
+                        case Mode.Echo:
+                            await proxy.InvokeAsync("echo", input).ConfigureAwait(false);
+                            break;
+                        default:
+                            break;
+                    }
 
-                input = Console.ReadLine();
+                    input = Console.ReadLine();
+                }
             }
         }
         private static async Task<HubConnection> ConnectAsync(string url, TextWriter output, CancellationToken cancellationToken = default)
@@ -105,6 +118,7 @@ namespace ChatSample.CSharpClient
         {
             Broadcast,
             Echo,
+            Auto
         }
     }
 }
