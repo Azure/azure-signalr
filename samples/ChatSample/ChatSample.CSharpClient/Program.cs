@@ -17,7 +17,15 @@ namespace ChatSample.CSharpClient
         static async Task Main(string[] args)
         {
             var url = Environment.GetEnvironmentVariable("ServerEndpoint") ?? "http://localhost:5050";
-            Enum.TryParse<Mode>(Environment.GetEnvironmentVariable("MODE"), out var mode);
+            var mode = Mode.Broadcast;
+            
+            // Try to parse mode from environment variable
+            var modeEnv = Environment.GetEnvironmentVariable("MODE");
+            if (!string.IsNullOrEmpty(modeEnv))
+            {
+                Enum.TryParse<Mode>(modeEnv, true, out mode);
+            }
+            
             var proxy = await ConnectAsync(url + "/chat", Console.Out).ConfigureAwait(false);
             var currentUser = Guid.NewGuid().ToString("N");
 
@@ -29,12 +37,26 @@ namespace ChatSample.CSharpClient
             Console.WriteLine($"Logged in as user {currentUser}");
             if (mode == Mode.Auto)
             {
-                // auto mode
-                while (true)
+                // auto mode - runs until process is terminated
+                using var cts = new CancellationTokenSource();
+                Console.CancelKeyPress += (s, e) => 
                 {
-                    Console.WriteLine("Broadcasting...");
-                    await proxy.InvokeAsync("BroadcastMessage", currentUser, $"Current time: {DateTime.Now}").ConfigureAwait(false);
-                    await Task.Delay(5000).ConfigureAwait(false);
+                    e.Cancel = true;
+                    cts.Cancel();
+                };
+                
+                try
+                {
+                    while (!cts.Token.IsCancellationRequested)
+                    {
+                        Console.WriteLine("Broadcasting...");
+                        await proxy.InvokeAsync("BroadcastMessage", currentUser, $"Current time: {DateTime.Now}").ConfigureAwait(false);
+                        await Task.Delay(5000, cts.Token).ConfigureAwait(false);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    Console.WriteLine("Auto mode cancelled.");
                 }
             }
             else
