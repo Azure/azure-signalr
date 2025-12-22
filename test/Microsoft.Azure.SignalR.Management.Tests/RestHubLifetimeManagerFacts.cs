@@ -206,7 +206,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task InvokeConnectionAsync_WithMissingJsonObjectNode_ThrowsHubException()
+        public async Task InvokeConnectionAsync_WithMissingJsonObjectNode_NoExceptionThrown()
         {
             // Arrange
             var connectionId = "connection1";
@@ -229,9 +229,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 });
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<HubException>(
-                async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
-            Assert.Contains("Result not found in response", exception.Message);
+            var response = await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args);
+
+            Assert.Null(response);
         }
 
         [Fact]
