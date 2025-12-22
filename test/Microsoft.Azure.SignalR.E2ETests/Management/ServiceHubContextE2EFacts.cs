@@ -1001,11 +1001,24 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
             {
                 return null;
             }
+            if (message == "Exception Test")
+            {
+                throw new InvalidOperationException("Test exception");
+            }
             return "";
         });
 
         var response_string = await hubContext.Clients.Client(clientConnections[0].ConnectionId).InvokeAsync<object>("Invoke", "String Response", default);
         var response_null = await hubContext.Clients.Client(clientConnections[0].ConnectionId).InvokeAsync<object>("Invoke", "Null Response", default);
+
+        try
+        {
+            var response_exception = await hubContext.Clients.Client(clientConnections[0].ConnectionId).InvokeAsync<object>("Invoke", "Exception Test", default);
+        }
+        catch (HubException ex)
+        {
+            Assert.Contains("Test exception", ex.Message);
+        }
 
         Assert.Equal(response_string.ToString(), expectedStringMessage);
         Assert.Null(response_null);

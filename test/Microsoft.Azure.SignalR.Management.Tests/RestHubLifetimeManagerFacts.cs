@@ -229,13 +229,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 });
 
             // Act & Assert
-            var response = await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args);
-
-            Assert.Null(response);
+            var exception = await Assert.ThrowsAsync<HubException>(
+                async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
+            Assert.Contains("Result not found in response", exception.Message);
         }
 
         [Fact]
-        public async Task InvokeConnectionAsync_WithNullResultNode_ThrowsHubException()
+        public async Task InvokeConnectionAsync_WithNullResultNode_NoExceptionThrown()
         {
             // Arrange
             var connectionId = "connection1";

@@ -396,7 +396,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
                         cancellationToken);
 
                     wrapper = deserialized as InvocationResponse<T>
-                        ?? throw new AzureSignalRException("Failed to deserialize response");
+                        ?? throw new HubException("Failed to deserialize response");
                 }
                 else
                 {
@@ -410,7 +410,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         // Ensure we have a response
         if (!isSuccess)
         {
-            throw new AzureSignalRException(errorContent ?? "Unknown error in response");
+            throw new HubException(errorContent ?? "Unknown error in response");
         }
 
         return wrapper!.Result;
