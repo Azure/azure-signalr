@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #nullable enable
@@ -88,8 +88,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage message)
         {
-            //We don't need reading message with this protocol.
-            throw new NotSupportedException();
+            return new JsonHubProtocol().TryParseMessage(ref input, binder, out message!);
         }
 
         /// <inheritdoc />

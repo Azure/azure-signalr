@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
@@ -971,31 +972,147 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
+    public static readonly IEnumerable<object[]> serviceTransportTypeTestData =
+        from serviceTransportType in ServiceTransportType
+        select new object[] { serviceTransportType};
+
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
-    [MemberData(nameof(TestData))]
-    public async Task ClientInvocationTest(ServiceTransportType serviceTransportType, string appName)
+    [MemberData(nameof(serviceTransportTypeTestData))]
+    public async Task ClientInvocationTest_Default(ServiceTransportType serviceTransportType)
     {
-        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest));
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_Default));
         using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
         {
             o.ConnectionString = TestConfiguration.Instance.ConnectionString;
             o.ServiceTransportType = serviceTransportType;
-            o.ApplicationName = appName;
         })
             .WithLoggerFactory(loggerFactory)
             .BuildServiceManager();
         using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
-        var negotationResponse = await hubContext.NegotiateAsync();
-        var clientConnections = await CreateAndStartClientConnections(negotationResponse.Url, Enumerable.Repeat(negotationResponse.AccessToken, 1));
 
-        string expectedStringMessage = "Method Invoked";
+        await TestClientInvocationAsync(hubContext, "json");
+        if (serviceTransportType == Management.ServiceTransportType.Transient)
+        {
+            // Only in Transient mode, We will try to convert JSON messages to MessagePack for backward compatibility
+            await TestClientInvocationAsync(hubContext, "messagepack");
+        }
+    }
 
-        clientConnections[0].On("Invoke", (string message) =>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [MemberData(nameof(serviceTransportTypeTestData))]
+    public async Task ClientInvocationTest_WithMessagePack(ServiceTransportType serviceTransportType)
+    {
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithMessagePack));
+        using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+        {
+            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+            o.ServiceTransportType = serviceTransportType;
+        })
+            .WithHubProtocols(new MessagePackHubProtocol())
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        await TestClientInvocationAsync(hubContext, "messagepack");
+    }
+
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [MemberData(nameof(serviceTransportTypeTestData))]
+    public async Task ClientInvocationTest_WithJson(ServiceTransportType serviceTransportType)
+    {
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithJson));
+        using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+        {
+            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+            o.ServiceTransportType = serviceTransportType;
+        })
+            .WithHubProtocols(new JsonHubProtocol())
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        await TestClientInvocationAsync(hubContext, "json");
+    }
+
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [MemberData(nameof(serviceTransportTypeTestData))]
+    public async Task ClientInvocationTest_WithMessagePackWithNewtonSoft(ServiceTransportType serviceTransportType)
+    {
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithMessagePackWithNewtonSoft));
+        using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+        {
+            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+            o.ServiceTransportType = serviceTransportType;
+        })
+            .WithHubProtocols(new MessagePackHubProtocol())
+            .WithNewtonsoftJson()
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        //if (serviceTransportType == Management.ServiceTransportType.Transient)
+        //{
+            await TestClientInvocationAsync(hubContext, "json");
+        //}
+        await TestClientInvocationAsync(hubContext, "messagepack");
+    }
+
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [MemberData(nameof(serviceTransportTypeTestData))]
+    public async Task ClientInvocationTest_WithMultipleProtocols(ServiceTransportType serviceTransportType)
+    {
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithMultipleProtocols));
+        using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+        {
+            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+            o.ServiceTransportType = serviceTransportType;
+        })
+            .WithHubProtocols(new MessagePackHubProtocol(), new JsonHubProtocol())
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        await TestClientInvocationAsync(hubContext, "json");
+        await TestClientInvocationAsync(hubContext, "messagepack");
+    }
+
+    private static async Task<HubConnection> CreateAndStartClientConnectionWithProtocolAsync(string endpoint, string accessToken, string protocol = "json")
+    {
+        var connectionBuilder = new HubConnectionBuilder()
+            .WithUrl(endpoint, option =>
+            {
+                option.AccessTokenProvider = () =>
+                {
+                    return Task.FromResult(accessToken);
+                };
+            })
+            .WithAutomaticReconnect();
+
+        switch(protocol.ToLower())
+        {
+            case "json":
+                connectionBuilder.AddJsonProtocol();
+                break;
+            case "messagepack":
+                connectionBuilder.AddMessagePackProtocol();
+                break;
+            default:
+                throw new ArgumentException($"The protocol '{protocol}' is not supported.");
+        }
+        var connection = connectionBuilder.Build();
+
+        await connection.StartAsync();
+
+        connection.On("Invoke", (string message) =>
         {
             if (message == "String Response")
             {
-                return expectedStringMessage;
+                return "Method Invoked";
             }
             if (message == "Null Response")
             {
@@ -1008,12 +1125,22 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
             return "";
         });
 
-        var response_string = await hubContext.Clients.Client(clientConnections[0].ConnectionId).InvokeAsync<object>("Invoke", "String Response", default);
-        var response_null = await hubContext.Clients.Client(clientConnections[0].ConnectionId).InvokeAsync<object>("Invoke", "Null Response", default);
+        return connection;
+    }
+
+    private static async Task TestClientInvocationAsync(ServiceHubContext context, string protocol)
+    {
+        var negotationResponse = await context.NegotiateAsync();
+
+        string expectedStringMessage = "Method Invoked";
+
+        var clientConnection = await CreateAndStartClientConnectionWithProtocolAsync(negotationResponse.Url, negotationResponse.AccessToken, protocol);
+        var response_string = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<object>("Invoke", "String Response", default).OrTimeout();
+        var response_null = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<object>("Invoke", "Null Response", default).OrTimeout();
 
         try
         {
-            var response_exception = await hubContext.Clients.Client(clientConnections[0].ConnectionId).InvokeAsync<object>("Invoke", "Exception Test", default);
+            var response_exception = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<object>("Invoke", "Exception Test", default).OrTimeout();
         }
         catch (HubException ex)
         {
@@ -1023,10 +1150,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         Assert.Equal(response_string.ToString(), expectedStringMessage);
         Assert.Null(response_null);
 
-        foreach (var connection in clientConnections)
-        {
-            await connection.StopAsync();
-        }
+        await clientConnection.StopAsync();
     }
 
     private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)

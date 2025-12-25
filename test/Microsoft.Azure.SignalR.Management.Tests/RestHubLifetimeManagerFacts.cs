@@ -2,12 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Moq;
@@ -46,7 +48,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 _hubName,
                 new(FakeEndpointUtils.GetFakeConnectionString(1).First()),
                 _appName,
-                restClient
+                restClient,
+                new DefaultHubProtocolResolver()
             );
         }
 
@@ -177,7 +180,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task InvokeConnectionAsync_WithMissingResultNode_ThrowsHubException()
+        public async Task InvokeConnectionAsync_WithMissingResultNode_NoExceptionThrown()
         {
             // Arrange
             var connectionId = "connection1";
@@ -272,6 +275,16 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             public string name { get; set; } = string.Empty;
             public bool active { get; set; }
             public string[] roles { get; set; } = Array.Empty<string>();
+        }
+
+        private class DefaultHubProtocolResolver : IHubProtocolResolver
+        {
+            public IReadOnlyList<IHubProtocol> AllProtocols => [new JsonHubProtocol()];
+
+            public IHubProtocol? GetProtocol(string protocolName, IReadOnlyList<string>? supportedProtocols)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }
