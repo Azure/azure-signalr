@@ -277,9 +277,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             public string[] roles { get; set; } = Array.Empty<string>();
         }
 
-        private class DefaultHubProtocolResolver : IHubProtocolResolver
+        private sealed class DefaultHubProtocolResolver : IHubProtocolResolver
         {
-            public IReadOnlyList<IHubProtocol> AllProtocols => [new JsonHubProtocol()];
+            public IReadOnlyList<IHubProtocol> AllProtocols => new List<IHubProtocol>
+            {
+                new JsonHubProtocol(),
+                new MessagePackHubProtocol()
+            };
 
             public IHubProtocol? GetProtocol(string protocolName, IReadOnlyList<string>? supportedProtocols)
             {
