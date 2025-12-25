@@ -83,21 +83,10 @@ internal class RestClient
         HttpMethod httpMethod,
         string methodName,
         object?[] args,
-        Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
+        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponse = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, AsAsync(handleExpectedResponse), cancellationToken);
-    }
-
-    public Task SendMessageWithRetryAsync(
-        RestApiEndpoint api,
-        HttpMethod httpMethod,
-        string methodName,
-        object?[] args,
-        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
-        CancellationToken cancellationToken = default)
-    {
-        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, handleExpectedResponseAsync, cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, handleExpectedResponse, cancellationToken);
     }
 
     public Task SendStreamMessageWithRetryAsync(
@@ -112,11 +101,7 @@ internal class RestClient
         return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new StreamItemMessage(streamId, arg), typeHint, AsAsync(handleExpectedResponse), cancellationToken);
     }
 
-    public ObjectSerializer ObjectSerializer => _payloadContentBuilder switch
-    {
-        JsonPayloadContentBuilder jsonBuilder => jsonBuilder.ObjectSerializer,
-        _ => DefaultObjectSerializer,
-    };
+    public ObjectSerializer ObjectSerializer => _payloadContentBuilder.ObjectSerializer ?? DefaultObjectSerializer;
 
     private static Uri GetUri(string url, IDictionary<string, StringValues>? query)
     {

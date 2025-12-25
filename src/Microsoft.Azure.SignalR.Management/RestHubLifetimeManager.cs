@@ -16,7 +16,6 @@ using Azure;
 using Microsoft.AspNetCore.SignalR;
 #if NET7_0_OR_GREATER
 using Microsoft.AspNetCore.SignalR.Protocol;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Management.ClientInvocation;
 #endif
 using Microsoft.Extensions.Primitives;
@@ -36,13 +35,15 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
     private readonly RestApiProvider _restApiProvider;
     private readonly string _hubName;
     private readonly string _appName;
+    private readonly IHubProtocolResolver _protocolResolver;
 
-    public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string appName, RestClient restClient)
+    public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string appName, RestClient restClient, IHubProtocolResolver protocolResolver)
     {
         _restApiProvider = new RestApiProvider(endpoint);
         _appName = appName;
         _hubName = hubName;
         _restClient = restClient;
+        _protocolResolver = protocolResolver;
     }
 
     public override async Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -370,6 +371,10 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         {
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
         }
+        if (!_protocolResolver.AllProtocols.All(IsInvocationSupported))
+        {
+            throw new NotSupportedException("Non supported protocol for client invocation.");
+        }
 
         // Get API endpoint and prepare for the request
         var api = _restApiProvider.SendClientInvocation(_appName, _hubName, connectionId);
@@ -422,6 +427,20 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         // this is to honor the interface
         throw new NotImplementedException();
     }
+
+    private static bool IsInvocationSupported(IHubProtocol protocol)
+    {
+        // Use protocol.Name to check for supported protocols
+        switch (protocol.Name)
+        {
+            case "json":
+            case "messagepack":
+                return true;
+            default:
+                return false;
+        }
+    }
+
 #endif
 
     private static bool FilterExpectedResponse(HttpResponseMessage response, string expectedErrorCode) =>
