@@ -22,12 +22,14 @@ internal abstract class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<TH
     protected ILogger Logger { get; set; }
 
     private readonly DefaultHubMessageSerializer _messageSerializer;
+    private readonly IHubProtocolResolver _protocolResolver;
 
     public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver, IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILogger logger)
     {
         Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         ServiceConnectionContainer = serviceConnectionManager;
         _messageSerializer = new DefaultHubMessageSerializer(protocolResolver, globalHubOptions.Value.SupportedProtocols, hubOptions.Value.SupportedProtocols);
+        _protocolResolver = protocolResolver;
     }
 
     public override Task OnConnectedAsync(HubConnectionContext connection)
@@ -325,6 +327,8 @@ internal abstract class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<TH
     {
         return message.WithTracingId();
     }
+
+    protected IHubProtocolResolver ProtocolResolver => _protocolResolver;
 
     private async Task WriteCoreAsync<T>(T message, Func<T, Task> task) where T : ServiceMessage, IMessageWithTracingId
     {
