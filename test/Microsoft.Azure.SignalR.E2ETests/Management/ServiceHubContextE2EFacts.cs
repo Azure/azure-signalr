@@ -1138,14 +1138,10 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         var response_string = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<object>("Invoke", "String Response", default).OrTimeout();
         var response_null = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<object>("Invoke", "Null Response", default).OrTimeout();
 
-        try
-        {
-            var response_exception = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<object>("Invoke", "Exception Test", default).OrTimeout();
-        }
-        catch (HubException ex)
-        {
-            Assert.Contains("Test exception", ex.Message);
-        }
+        var ex = await Assert.ThrowsAsync<HubException>(async () =>
+            await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<object>("Invoke", "Exception Test", default).OrTimeout());
+
+        Assert.Contains("Test exception", ex.Message);
 
         Assert.Equal(response_string.ToString(), expectedStringMessage);
         Assert.Null(response_null);
