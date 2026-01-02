@@ -725,7 +725,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
         await container.StartedAsync();
 
-        // connection add should success
+        // connection add should succeed
         var message = Activator.CreateInstance(messageType, arguments) as ServiceMessage;
         var task = container.WriteAckableMessageAsync(message);
         await writeTcs.Task.OrTimeout();
@@ -744,7 +744,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
         await container.StartedAsync();
 
-        // connection add should success
+        // connection add should succeed
         var message = Activator.CreateInstance(messageType, arguments) as ServiceMessage;
         var task = container.WriteAckableMessageAsync(message);
         await writeTcs.Task.OrTimeout();
@@ -765,7 +765,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
         await container.StartedAsync();
 
-        // connection add should success
+        // connection add should succeed
         var message = Activator.CreateInstance(messageType, arguments) as ServiceMessage;
         var task = container.WriteAckableMessageAsync(message);
         await writeTcs.Task.OrTimeout();
