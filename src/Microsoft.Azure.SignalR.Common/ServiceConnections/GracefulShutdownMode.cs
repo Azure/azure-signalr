@@ -37,7 +37,7 @@ public enum GracefulShutdownMode
     /// 
     /// This mode always works well with context-free scenarios.
     /// Since the `connectionId` will not change before-and-after migration, 
-    /// you may also benifit from this feature by using a distributed storage even if your scenario is not context-free.
+    /// you may also benefit from this feature by using a distributed storage even if your scenario is not context-free.
     /// </summary>
     MigrateClients = 2,
 }
