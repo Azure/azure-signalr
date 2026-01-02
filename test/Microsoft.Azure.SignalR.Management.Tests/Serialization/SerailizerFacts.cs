@@ -26,7 +26,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
-    public class SerailizerFacts
+    public class SerializerFacts
     {
         public static IEnumerable<object[]> IgnoreNullObjectSerializers
         {
@@ -43,10 +43,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         };
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
-        public SerailizerFacts(ITestOutputHelper testOutput)
+        public SerializerFacts(ITestOutputHelper testOutput)
         {
             _loggerFactory = new LoggerFactory().AddXunit(testOutput);
-            _logger = _loggerFactory.CreateLogger<SerailizerFacts>();
+            _logger = _loggerFactory.CreateLogger<SerializerFacts>();
         }
 
         #region transient mode
