@@ -40,7 +40,7 @@ internal partial class ClientConnectionContext
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(9, "OutgoingTaskResume"), "Outgoing messages for connection {connectionId} are now resumed.");
 
         private static readonly Action<ILogger, string, Exception> _outgoingTaskPauseAck =
-            LoggerMessage.Define<string>(LogLevel.Information, new EventId(10, "OutgoingTaskPauseAck"), "Acknowlege the pause request for connection {connectionId}.");
+            LoggerMessage.Define<string>(LogLevel.Information, new EventId(10, "OutgoingTaskPauseAck"), "Acknowledge the pause request for connection {connectionId}.");
 
         public static void WriteMessageToApplication(ILogger<ServiceConnection> logger, long count, string connectionId)
         {

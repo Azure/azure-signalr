@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         /// <summary>
         /// Reply from the app server to ASRS.
-        /// Ackknowledge that the message sending towards ASRS has been pasued.
+        /// Acknowledge that the message sending towards ASRS has been pasued.
         /// </summary>
         PauseAck = 2,
 
@@ -602,7 +602,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         /// <summary>
         /// A token to indiate the start point of results.
-        /// This parameter is provided by the service in the response of a previous request when there are additional results to be fetched. 
+        /// This parameter is provided by the service in the response of a previous request when there are additional results to be fetched.
         /// Clients should include the continuationToken in the next request to receive the subsequent page of data. If this parameter is omitted, the server will return the first page of results.
         /// </summary>
         public string? ContinuationToken { get; set; }
