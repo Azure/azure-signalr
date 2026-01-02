@@ -50,9 +50,9 @@ namespace Microsoft.Azure.SignalR.Management.E2ETests
             //reduce the effect of randomness
             for (int i = 0; i < 5; i++)
             {
-                var clientEndoint = await (hubContext as ServiceHubContext).NegotiateAsync();
+                var clientEndpoint = await (hubContext as ServiceHubContext).NegotiateAsync();
                 var expectedUrl = ClientEndpointUtils.GetExpectedClientEndpoint(hubName, null, realEndpoint);
-                Assert.Equal(expectedUrl, clientEndoint.Url);
+                Assert.Equal(expectedUrl, clientEndpoint.Url);
             }
         }
     }
