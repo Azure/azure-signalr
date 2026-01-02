@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         /// <summary>
         /// Reply from the app server to ASRS.
-        /// Acknowledge that the message sending towards ASRS has been pasued.
+        /// Acknowledge that the message sending towards ASRS has been paused.
         /// </summary>
         PauseAck = 2,
 
