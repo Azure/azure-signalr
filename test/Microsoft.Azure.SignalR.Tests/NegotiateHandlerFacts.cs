@@ -202,8 +202,8 @@ public class NegotiateHandlerFacts
     [Theory]
     [InlineData("/user/path/negotiate", "", "", "asrs.op=%2Fuser%2Fpath&asrs_request_id=")]
     [InlineData("/user/path/negotiate/", "", "a", "asrs.op=%2Fuser%2Fpath&asrs_request_id=a")]
-    [InlineData("", "?customKey=customeValue", "?a=c", "customKey=customeValue&asrs_request_id=%3Fa%3Dc")]
-    [InlineData("/user/path/negotiate", "?customKey=customeValue", "&", "asrs.op=%2Fuser%2Fpath&customKey=customeValue&asrs_request_id=%26")]
+    [InlineData("", "?customKey=customValue", "?a=c", "customKey=customValue&asrs_request_id=%3Fa%3Dc")]
+    [InlineData("/user/path/negotiate", "?customKey=customValue", "&", "asrs.op=%2Fuser%2Fpath&customKey=customValue&asrs_request_id=%26")]
     public async Task GenerateNegotiateResponseWithPathAndQuery(string path, string queryString, string id, string expectedQueryString)
     {
         var requestIdProvider = new TestRequestIdProvider(id);

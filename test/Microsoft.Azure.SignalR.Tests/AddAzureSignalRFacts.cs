@@ -556,13 +556,13 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
             Assert.Equal(3, manager.Endpoints.Count);
 
             // Update config file to add a new endpoint ConnectionString	
-            var customeCS = "Endpoint=https://customconnectionstring;AccessKey=1";
+            var customCS = "Endpoint=https://customconnectionstring;AccessKey=1";
             var text = File.ReadAllText(ConfigFile);
             var jsonObj = JsonConvert.DeserializeObject<JObject>(text);
             var endpoints = (JArray)jsonObj["Azure"]["SignalR"]["ConnectionString"];
             var newEndpoint = new JObject()
             {
-                { "EP3:Primary", customeCS }
+                { "EP3:Primary", customCS }
             };
 
             endpoints.Add(newEndpoint);
@@ -574,7 +574,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
 
             // Reload includes all endpoints
             Assert.Equal(4, manager.Endpoints.Count);
-            Assert.Single(manager.Endpoints.Where(x => x.Value.ConnectionString == customeCS));
+            Assert.Single(manager.Endpoints.Where(x => x.Value.ConnectionString == customCS));
         }
     }
 

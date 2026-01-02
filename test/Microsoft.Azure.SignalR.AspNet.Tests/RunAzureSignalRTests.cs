@@ -432,7 +432,7 @@ public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTe
                 var responseObject = JsonConvert.DeserializeObject<ResponseMessage>(message);
                 Assert.Equal("2.0", responseObject.ProtocolVersion);
 
-                // with custome router, always goes to connection string 3 as passed into the router
+                // with custom router, always goes to connection string 3 as passed into the router
                 Assert.Equal("http://localhost3/aspnetclient", responseObject.RedirectUrl);
 
                 // Invalid request
@@ -503,7 +503,7 @@ public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTe
     [InlineData("/user/path/negotiate", "?clientProtocol=1.0", "a", "")]
     [InlineData("/user/path/negotiate", "?clientProtocol=2.1", "a", "?asrs_request_id=a&asrs.op=%2Fuser%2Fpath")]
     [InlineData("/negotiate", "?%3DKey=%3Fa%3Dc&clientProtocol=2.1", "?a=c", "?%3DKey=%3Fa%3Dc&asrs_request_id=%3Fa%3Dc")]
-    [InlineData("/user/negotiate", "?clientProtocol=2.2&customKey=customeValue", "&", "?customKey=customeValue&asrs_request_id=%26&asrs.op=%2Fuser")]
+    [InlineData("/user/negotiate", "?clientProtocol=2.2&customKey=customValue", "&", "?customKey=customValue&asrs_request_id=%26&asrs.op=%2Fuser")]
     public async Task TestNegotiateRedirectUrl(string path, string query, string id, string expectedQuery)
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
@@ -535,7 +535,7 @@ public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTe
     [InlineData("/user/path/negotiate", "?clientProtocol=1.0", "a", "")]
     [InlineData("/user/path/negotiate", "?clientProtocol=2.1", "a", "?asrs_request_id=a&asrs.op=%2Fuser%2Fpath")]
     [InlineData("/negotiate", "?%3DKey=%3Fa%3Dc&clientProtocol=2.1", "?a=c", "?%3DKey=%3Fa%3Dc&asrs_request_id=%3Fa%3Dc")]
-    [InlineData("/user/negotiate", "?clientProtocol=2.2&customKey=customeValue", "&", "?customKey=customeValue&asrs_request_id=%26&asrs.op=%2Fuser")]
+    [InlineData("/user/negotiate", "?clientProtocol=2.2&customKey=customValue", "&", "?customKey=customValue&asrs_request_id=%26&asrs.op=%2Fuser")]
     public async Task TestNegotiateRedirectUrlWithClientEndpoint(string path, string query, string id, string expectedQuery)
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
