@@ -46,7 +46,7 @@ public class CheckUserInGroupWithAckMessage : CheckWithAckMessage, IPartitionabl
     /// Initializes a new instance of the <see cref="CheckUserInGroupWithAckMessage"/> class.
     /// </summary>
     /// <param name="userId">The user ID.</param>
-    /// <param name="groupName">The group name to check whether the user is in or not.</param>
+    /// <param name="groupName">The group name to check the user for membership.</param>
     /// <param name="ackId">The ack ID.</param>
     /// <param name="tracingId">The tracing ID of the message.</param>
     public CheckUserInGroupWithAckMessage(string userId, string groupName, int ackId = 0, ulong? tracingId = null) : base(ackId, tracingId)
