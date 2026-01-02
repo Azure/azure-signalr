@@ -234,7 +234,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
     [InlineData("preferred", ServerStickyMode.Preferred)]
     [InlineData("Preferred", ServerStickyMode.Preferred)]
     [InlineData("required", ServerStickyMode.Required)]
-    public void AddAzureReadsSickyServerModeFromConfigurationFirst(string modeFromConfig, ServerStickyMode expected)
+    public void AddAzureReadsStickyServerModeFromConfigurationFirst(string modeFromConfig, ServerStickyMode expected)
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
@@ -555,7 +555,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
             // All EPs including code and config with total 3
             Assert.Equal(3, manager.Endpoints.Count);
 
-            // Update config file to add a new endpoint ConnectionString	
+            // Update config file to add a new endpoint ConnectionString
             var customCS = "Endpoint=https://customconnectionstring;AccessKey=1";
             var text = File.ReadAllText(ConfigFile);
             var jsonObj = JsonConvert.DeserializeObject<JObject>(text);
@@ -569,7 +569,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
             var output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented);
             File.WriteAllText(ConfigFile, output);
 
-            // give a few delay for change detected	
+            // give a few delay for change detected
             await Task.Delay(1000);
 
             // Reload includes all endpoints
