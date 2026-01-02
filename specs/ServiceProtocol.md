@@ -149,7 +149,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [2, ErrorMessage, ExtensionMembers?, ConnectionId?]
 ```
 - 2 - Message Type, indicating this is a `HandshakeResponse` message.
-- ErrorMessage - A `String` encoding error message. Null means handshake success, otherwise it means there is error.
+- ErrorMessage - A `String` encoding error message. Null means handshake success; otherwise, it means there is error.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 - ConnectionId (Optional) - A `String` for the connection id of current server connection.
 

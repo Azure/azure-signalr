@@ -568,7 +568,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         else
         {
             // if it is not in scope
-            // if message is partitionable, use the container's partition cache, otherwise use a random connection
+            // if message is partitionable, use the container's partition cache; otherwise, use a random connection
             if (message is IPartitionableMessage partitionable)
             {
                 var box = _partitionedCache[partitionable.PartitionKey];
