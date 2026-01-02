@@ -196,7 +196,7 @@ public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest
     }
 
     // To avoid very repetitive code we parametrize a generic test
-    // with different inputs and different expNextIntected results
+    // with different inputs and different expected results
     public class ProbeParam
     {
         // delay before calling the probe (to control the order of calls)
