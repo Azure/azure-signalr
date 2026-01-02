@@ -243,7 +243,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string? Token { get; set; }
 
         /// <summary>
-        /// Gets or sets the key Id.
+        /// Gets or sets the key ID.
         /// <c>null</c>
         /// </summary>
         public string? Kid { get; set; }
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class AccessKeyResponseMessage : ExtensibleServiceMessage
     {
         /// <summary>
-        /// Gets or sets the key Id.
+        /// Gets or sets the key ID.
         /// </summary>
         public string? Kid { get; set; }
 
@@ -520,7 +520,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="AckMessage"/> class.
         /// </summary>
-        /// <param name="ackId">The ack Id</param>
+        /// <param name="ackId">The ack ID</param>
         /// <param name="status">The status code</param>
         public AckMessage(int ackId, int status) : this(ackId, status, string.Empty)
         {
@@ -529,7 +529,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="AckMessage"/> class.
         /// </summary>
-        /// <param name="ackId">The ack Id</param>
+        /// <param name="ackId">The ack ID</param>
         /// <param name="status">The status code</param>
         /// <param name="message">The ack message</param>
         public AckMessage(int ackId, int status, string? message)
@@ -546,26 +546,26 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class ServiceMappingMessage : ExtensibleServiceMessage
     {
         /// <summary>
-        /// Gets or sets the invocation Id.
+        /// Gets or sets the invocation ID.
         /// </summary>
         public string InvocationId { get; set; }
 
         /// <summary>
-        /// Gets or sets the connection Id.
+        /// Gets or sets the connection ID.
         /// </summary>
         public string ConnectionId { get; set; }
 
         /// <summary>
-        /// Gets or set the service instance Id.
+        /// Gets or set the service instance ID.
         /// </summary>
         public string InstanceId { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceMappingMessage"/> class.
         /// </summary>
-        /// <param name="invocationId">The invocation Id.</param>
-        /// <param name="connectionId">The connection Id.</param>
-        /// <param name="instanceId">The service instance Id.</param>
+        /// <param name="invocationId">The invocation ID.</param>
+        /// <param name="connectionId">The connection ID.</param>
+        /// <param name="instanceId">The service instance ID.</param>
         public ServiceMappingMessage(string invocationId, string connectionId, string instanceId)
         {
             InvocationId = invocationId;

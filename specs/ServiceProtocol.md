@@ -57,7 +57,7 @@ ServiceMappingMessage | Service | Sent from Service to aware client invocation m
 
 ## Communication Model
 
-This protocol will be used between Service and Server. There will be one or a few physical connections between Service and Server. Data from/to multiple client connections will be multiplexed within these physical connections. Each client connection will be identified by a unique connection Id.
+This protocol will be used between Service and Server. There will be one or a few physical connections between Service and Server. Data from/to multiple client connections will be multiplexed within these physical connections. Each client connection will be identified by a unique connection ID.
 
 The number of client connections will be far more (over 100 times) than the number of physical connections between Service and Server.
 
@@ -112,7 +112,7 @@ EMPTY | EMPTY | Both | Keep server connection alive ping
 `offline` | `fin:0` | Server -> Service | Request to drop clients for non-migratable server connections
 `offline` | `fin:1` | Server -> Service | Request to migrate client connections
 `offline` | `finack` | Service -> Server | Response of received `offline` request
-`servers` | EMPTY | Server -> Service | Request to get all server ids connect to the service 
+`servers` | EMPTY | Server -> Service | Request to get all server ids connect to the service
 `servers` | `<timestamp>:<server1>;<server2>` | Service -> Server | Response of `servers` ping of all server ids
 `echo` | `<identify>` | Service <-> Server | Identify the latency of server connection, available from SDK 1.21.6.
 
@@ -139,7 +139,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 	- 1, ShutdownOnly, a client connection can be migrated only if the matched server was shutdown gracefully.
 	- 2, Any, a client connection can be migrated even if the matched server connection was dropped accidentally. (may cause data loss)
 - ExtensibleMembers (Optional) - A MessagePack Map indicates the extensible members.
-- AllowStatefulReconnects (Optional) - A `Boolean` indicates the app server allows stateful reconnects or not. 
+- AllowStatefulReconnects (Optional) - A `Boolean` indicates the app server allows stateful reconnects or not.
 
 #### Example: TODO
 
@@ -171,7 +171,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [4, ConnectionId, Claims, Headers?, ExtensionMembers?]
 ```
 - 4 - Message Type, indicating this is a `OpenConnection` message.
-- ConnectionId - A `String` encoding unique Id for the connection.
+- ConnectionId - A `String` encoding unique ID for the connection.
 - Claims - A MessagePack Map containing all claims of this client.
 - Headers (Optional) - A MessagePack Map containing all headers of this client.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
@@ -184,7 +184,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [5, ConnectionId, ErrorMessage, Headers?, ExtensionMembers?]
 ```
 - 5 - Message Type, indicating this is a `CloseConnection` message.
-- ConnectionId - A `String` encoding unique Id of the connection.
+- ConnectionId - A `String` encoding unique ID of the connection.
 - ErrorMessage - A `String` encoding error message.
 - Headers (Optional) - A MessagePack Map containing all headers of this client.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
@@ -197,7 +197,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [6, ConnectionId, Payload, ExtensionMembers?]
 ```
 - 6 - Message Type, indicating this is a `ConnectionData` message.
-- ConnectionId - A `String` encoding unique Id for the connection.
+- ConnectionId - A `String` encoding unique ID for the connection.
 - Payload - `Binary` encoding of the raw bytes from/to the connection.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
@@ -221,7 +221,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [8, UserId, Payloads, ExtensionMembers?]
 ```
 - 8 - Message Type, indicating this is a `UserData` message.
-- UserId - A `String` encoding unique Id for the user.
+- UserId - A `String` encoding unique ID for the user.
 - Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
@@ -257,7 +257,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [11, ConnectionId, GroupName, ExtensionMembers?]
 ```
 - 11 - Message Type, indicating this is a `JoinGroup` message.
-- ConnectionId - A `String` encoding unique Id for the connection.
+- ConnectionId - A `String` encoding unique ID for the connection.
 - GroupName - A `String` encoding group name, which the connection will join.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
@@ -269,7 +269,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [12, ConnectionId, GroupName, ExtensionMembers?]
 ```
 - 12 - Message Type, indicating this is a `LeaveGroup` message.
-- ConnectionId - A `String` encoding unique Id for the connection.
+- ConnectionId - A `String` encoding unique ID for the connection.
 - GroupName - A `String` encoding group name, which the connection will leave.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
@@ -308,7 +308,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [16, UserId, GroupName, ExtensionMembers?]
 ```
 - 16 - Message Type, indicating this is a `UserJoinGroup` message.
-- UserId - A `String` encoding unique Id for the user.
+- UserId - A `String` encoding unique ID for the user.
 - GroupName - A `String` encoding group name, which the user will join.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
@@ -320,7 +320,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [17, UserId, GroupName, ExtensionMembers?]
 ```
 - 17 - Message Type, indicating this is a `UserLeaveGroup` message.
-- UserId - A `String` encoding unique Id for the user.
+- UserId - A `String` encoding unique ID for the user.
 - GroupName - A `String` encoding group name, which the user will leave.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
@@ -332,9 +332,9 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [18, ConnectionId, GroupName, AckId, ExtensionMembers?]
 ```
 - 18 - Message Type, indicating this is a `JoinGroupWithAck` message.
-- ConnectionId - A `String` encoding unique Id for the connection.
+- ConnectionId - A `String` encoding unique ID for the connection.
 - GroupName - A `String` encoding group name, which the connection will join.
-- AckId - An `Int32` encoding Id number to identify the corresponding ack message.
+- AckId - An `Int32` encoding ID number to identify the corresponding ack message.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
@@ -345,9 +345,9 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [19, ConnectionId, GroupName, AckId, ExtensionMembers?]
 ```
 - 19 - Message Type, indicating this is a `LeaveGroupWithAck` message.
-- ConnectionId - A `String` encoding unique Id for the connection.
+- ConnectionId - A `String` encoding unique ID for the connection.
 - GroupName - A `String` encoding group name, which the connection will leave.
-- AckId - An `Int32` encoding Id number to identify the corresponding ack message.
+- AckId - An `Int32` encoding ID number to identify the corresponding ack message.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
@@ -358,7 +358,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [20, AckId, Status, Message, ExtensionMembers?, Payload?]
 ```
 - 20 - Message Type, indicating this is an `Ack` message.
-- AckId - A `Int32` encoding Id number to associate the corresponding message.
+- AckId - A `Int32` encoding ID number to associate the corresponding message.
 - Status - A `Int32` encoding status code to indicate the operation result.
 - Message -  A `String` encoding ack message to explain status details.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
@@ -372,9 +372,9 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [21, UserId, GroupName, AckId, ExtensionMembers?]
 ```
 - 21 - Message Type, indicating this is a `CheckUserInGroupWithAck` message.
-- UserId - A `String` encoding unique Id for the user.
+- UserId - A `String` encoding unique ID for the user.
 - GroupName - A `String` encoding group name.
-- AckId - An `Int32` encoding Id number to associate the corresponding message.
+- AckId - An `Int32` encoding ID number to associate the corresponding message.
 - ExtensionMembers (Optional) - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
@@ -638,7 +638,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - 40 - Message Type, indicating this is a `GroupMemberQuery` message.
 - ExtensionMembers - A MessagePack Map indicates the extensible members.
 - GroupName - A `String` indicating the name of the group.
-- AckId - An `Int32` encoding Id number to identify the corresponding ack message.
+- AckId - An `Int32` encoding ID number to identify the corresponding ack message.
 - Max - An `Int32` indicating the max count of results.
 - ContinuationToken - A `String` indicating the continuation token of query.
 

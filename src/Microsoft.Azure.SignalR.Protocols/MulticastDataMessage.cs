@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public IDictionary<string, ReadOnlyMemory<byte>> Payloads { get; set; }
 
         /// <summary>
-        /// Gets or sets the tracing Id
+        /// Gets or sets the tracing ID
         /// </summary>
         public ulong? TracingId { get; set; }
     }
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <param name="connectionList">The list of connection Ids.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public MultiConnectionDataMessage(IReadOnlyList<string> connectionList,
             IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class UserDataMessage : MulticastDataMessage, IPartitionableMessage
     {
         /// <summary>
-        /// Gets or sets the user Id.
+        /// Gets or sets the user ID.
         /// </summary>
         public string UserId { get; set; }
 
@@ -86,9 +86,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="UserDataMessage"/> class.
         /// </summary>
-        /// <param name="userId">The user Id.</param>
+        /// <param name="userId">The user ID.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public UserDataMessage(string userId, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             UserId = userId;
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <param name="userList">The list of user Ids.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public MultiUserDataMessage(IReadOnlyList<string> userList, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             UserList = userList;
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Initializes a new instance of the <see cref="BroadcastDataMessage"/> class.
         /// </summary>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public BroadcastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : this(null, payloads, tracingId)
         {
         }
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <param name="excludedList">The list of excluded connection Ids.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public BroadcastDataMessage(IReadOnlyList<string>? excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             ExcludedList = excludedList ?? [];
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <param name="groupName">The group name.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public GroupBroadcastDataMessage(string groupName, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null)
             : this(groupName, null, payloads, tracingId)
         {
@@ -198,7 +198,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="groupName">The group name.</param>
         /// <param name="excludedList">The list of excluded connection Ids.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public GroupBroadcastDataMessage(string groupName, IReadOnlyList<string>? excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null)
             : base(payloads, tracingId)
         {
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <param name="groupList">The list of group names.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public MultiGroupBroadcastDataMessage(IReadOnlyList<string> groupList, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null) : base(payloads, tracingId)
         {
             GroupList = groupList;
@@ -241,11 +241,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initialize a new instance of <see cref="ClientInvocationMessage"/> class.
         /// </summary>
-        /// <param name="invocationId">The Id of the client invocation request.</param>
-        /// <param name="connectionId">The client connection Id.</param>
+        /// <param name="invocationId">The ID of the client invocation request.</param>
+        /// <param name="connectionId">The client connection ID.</param>
         /// <param name="callerServerId">The serverId that init the client invocation.</param>
         /// <param name="payloads">The payload of the message.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public ClientInvocationMessage(string invocationId, string connectionId, string callerServerId, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null)
             : base(payloads, tracingId)
         {
@@ -255,17 +255,17 @@ namespace Microsoft.Azure.SignalR.Protocol
         }
 
         /// <summary>
-        /// Gets or sets the Id of the client invocation request.
+        /// Gets or sets the ID of the client invocation request.
         /// </summary>
         public string InvocationId { get; set; }
 
         /// <summary>
-        /// Gets or sets the client connection Id.
+        /// Gets or sets the client connection ID.
         /// </summary>
         public string ConnectionId { get; set; }
 
         /// <summary>
-        /// Gets or sets the caller server Id that init the client invocation.
+        /// Gets or sets the caller server ID that init the client invocation.
         /// </summary>
         public string CallerServerId { get; set; }
 

@@ -16,9 +16,9 @@ We assume that you are familiar with the usage of `ServiceManagerBuilder` and th
 
 
 ## Migration Benefits
-* The new APIs provide more functionalities to manage your clients and groups, such as closing a connection by connection id, checking if a connection exists, if a user exists, if a group exists. 
+* The new APIs provide more functionalities to manage your clients and groups, such as closing a connection by connection id, checking if a connection exists, if a user exists, if a group exists.
 * The new APIs provide more options for negotiation, such as whether the client is a diagnostic client.
-* The new APIs are more friendly for negotiation with multiple SignalR Service instances. `IServiceManager.GetClientEndpoint` and `IServiceManager.GenerateClientAccessToken` are combined into one method to make sure the client endpoint and the access token come from the same SignalR Service endpoint. An `HttpContext` instance is passed into the endpoint router to provide more information for the routing. 
+* The new APIs are more friendly for negotiation with multiple SignalR Service instances. `IServiceManager.GetClientEndpoint` and `IServiceManager.GenerateClientAccessToken` are combined into one method to make sure the client endpoint and the access token come from the same SignalR Service endpoint. An `HttpContext` instance is passed into the endpoint router to provide more information for the routing.
 <!--Todo Add link about sharding doc-->
 
 ## Change Overview
@@ -66,7 +66,7 @@ var accessToken = serviceManager.GenerateClientAccessToken("<Your Hub Name>", "<
 
 **New APIs**
 ```cs
-var negotiationResponse = await serviceHubContext.NegotiateAsync(new NegotiationOptions(){UserId = "<Your User Id>"});
+var negotiationResponse = await serviceHubContext.NegotiateAsync(new NegotiationOptions(){UserId = "<Your User ID>"});
 var clientEndpoint = negotiationResponse.Url;
 var accessToken = negotiationResponse.AccessToken;
 ```
@@ -83,9 +83,9 @@ try
 {
     // Broadcast
     await hubContext.Clients.All.SendAsync(callbackName, obj1, obj2, ...);
-    
+
     //...
-    
+
     // add user to group
     await hubContext.UserGroups.AddToGroupAsync(userId, groupName);
 }

@@ -208,7 +208,7 @@
           {
             "in": "path",
             "name": "connectionId",
-            "description": "The connection Id.",
+            "description": "The connection ID.",
             "required": true,
             "type": "string"
           },
@@ -273,7 +273,7 @@
           {
             "in": "path",
             "name": "connectionId",
-            "description": "The connection Id.",
+            "description": "The connection ID.",
             "required": true,
             "type": "string"
           },
@@ -338,7 +338,7 @@
           {
             "in": "path",
             "name": "connectionId",
-            "description": "The connection Id.",
+            "description": "The connection ID.",
             "required": true,
             "type": "string"
           },
@@ -413,7 +413,7 @@
           {
             "in": "path",
             "name": "connectionId",
-            "description": "Target connection Id",
+            "description": "Target connection ID",
             "required": true,
             "type": "string",
             "minLength": 1
@@ -722,7 +722,7 @@
           {
             "in": "path",
             "name": "connectionId",
-            "description": "Target connection Id",
+            "description": "Target connection ID",
             "required": true,
             "type": "string",
             "minLength": 1
@@ -800,7 +800,7 @@
           {
             "in": "path",
             "name": "connectionId",
-            "description": "Target connection Id",
+            "description": "Target connection ID",
             "required": true,
             "type": "string"
           },
@@ -864,7 +864,7 @@
           {
             "in": "path",
             "name": "user",
-            "description": "The user Id.",
+            "description": "The user ID.",
             "required": true,
             "type": "string"
           },
@@ -925,7 +925,7 @@
           {
             "in": "path",
             "name": "user",
-            "description": "The user Id.",
+            "description": "The user ID.",
             "required": true,
             "type": "string",
             "maxLength": 1024,
@@ -1011,7 +1011,7 @@
           {
             "in": "path",
             "name": "user",
-            "description": "The user Id.",
+            "description": "The user ID.",
             "required": true,
             "type": "string"
           },
@@ -1084,7 +1084,7 @@
           {
             "in": "path",
             "name": "user",
-            "description": "Target user Id",
+            "description": "Target user ID",
             "required": true,
             "type": "string"
           },
@@ -1155,7 +1155,7 @@
           {
             "in": "path",
             "name": "user",
-            "description": "Target user Id",
+            "description": "Target user ID",
             "required": true,
             "type": "string"
           },
@@ -1221,7 +1221,7 @@
           {
             "in": "path",
             "name": "user",
-            "description": "Target user Id",
+            "description": "Target user ID",
             "required": true,
             "type": "string"
           },
@@ -1292,7 +1292,7 @@
           {
             "in": "path",
             "name": "user",
-            "description": "Target user Id",
+            "description": "Target user ID",
             "required": true,
             "type": "string"
           },

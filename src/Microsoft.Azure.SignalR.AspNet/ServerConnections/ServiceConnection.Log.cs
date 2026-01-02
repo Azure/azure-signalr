@@ -31,7 +31,7 @@ internal partial class ServiceConnection
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(5, "ConnectedStartingFailed"), "Connection {TransportConnectionId} failed to start.");
 
         private static readonly Action<ILogger, string, Exception> _duplicateConnectionId =
-            LoggerMessage.Define<string>(LogLevel.Warning, new EventId(6, "DuplicateConnectionId"), "Duplicate OpenConnectionMessage for connection Id {TransportConnectionId}, ignored.");
+            LoggerMessage.Define<string>(LogLevel.Warning, new EventId(6, "DuplicateConnectionId"), "Duplicate OpenConnectionMessage for connection ID {TransportConnectionId}, ignored.");
 
         private static readonly Action<ILogger, string, Exception> _connectedEnding =
             LoggerMessage.Define<string>(LogLevel.Debug, new EventId(7, "ConnectedEnding"), "Connection {TransportConnectionId} ended.");

@@ -149,7 +149,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
     /// Start a service connection without the lifetime management.
     /// To get full lifetime management including dispose or restart, use <see cref="ServiceConnectionContainerBase"/>
     /// </summary>
-    /// <param name="target">The target instance Id</param>
+    /// <param name="target">The target instance ID</param>
     /// <returns>The task of StartAsync</returns>
     public async Task StartAsync(string target = null)
     {

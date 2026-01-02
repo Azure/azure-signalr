@@ -10,7 +10,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class JoinGroupMessage : ExtensibleServiceMessage, IMessageWithTracingId, IPartitionableMessage
     {
         /// <summary>
-        /// Gets or sets the connection Id.
+        /// Gets or sets the connection ID.
         /// </summary>
         public string ConnectionId { get; set; }
 
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string GroupName { get; set; }
 
         /// <summary>
-        /// Gets or sets the tracing Id
+        /// Gets or sets the tracing ID
         /// </summary>
         public ulong? TracingId { get; set; }
 
@@ -29,9 +29,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinGroupMessage"/> class.
         /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="groupName">The group name, to which the connection will join.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public JoinGroupMessage(string connectionId, string groupName, ulong? tracingId = null)
         {
             ConnectionId = connectionId;
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class LeaveGroupMessage : ExtensibleServiceMessage, IMessageWithTracingId, IPartitionableMessage
     {
         /// <summary>
-        /// Gets or sets the connection Id.
+        /// Gets or sets the connection ID.
         /// </summary>
         public string ConnectionId { get; set; }
 
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string? GroupName { get; set; }
 
         /// <summary>
-        /// Gets or sets the tracing Id
+        /// Gets or sets the tracing ID
         /// </summary>
         public ulong? TracingId { get; set; }
 
@@ -65,9 +65,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="LeaveGroupMessage"/> class.
         /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="groupName">The group name, from which the connection will leave.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public LeaveGroupMessage(string connectionId, string? groupName, ulong? tracingId = null)
         {
             ConnectionId = connectionId;
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class UserJoinGroupMessage : ExtensibleServiceMessage, IMessageWithTracingId, IHasTtl, IPartitionableMessage
     {
         /// <summary>
-        /// Gets or sets the user Id.
+        /// Gets or sets the user ID.
         /// </summary>
         public string UserId { get; set; }
 
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string GroupName { get; set; }
 
         /// <summary>
-        /// Gets or sets the tracing Id
+        /// Gets or sets the tracing ID
         /// </summary>
         public ulong? TracingId { get; set; }
 
@@ -106,9 +106,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="UserJoinGroupMessage"/> class.
         /// </summary>
-        /// <param name="userId">The user Id.</param>
+        /// <param name="userId">The user ID.</param>
         /// <param name="groupName">The group name, to which the user will join.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public UserJoinGroupMessage(string userId, string groupName, ulong? tracingId = null)
         {
             UserId = userId;
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class UserLeaveGroupMessage : ExtensibleServiceMessage, IMessageWithTracingId, IPartitionableMessage
     {
         /// <summary>
-        /// Gets or sets the user Id.
+        /// Gets or sets the user ID.
         /// </summary>
         public string UserId { get; set; }
 
@@ -131,9 +131,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the group name.
         /// </summary>
         public string? GroupName { get; set; }
-        
+
         /// <summary>
-        /// Gets or sets the tracing Id
+        /// Gets or sets the tracing ID
         /// </summary>
         public ulong? TracingId { get; set; }
 
@@ -142,9 +142,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="UserLeaveGroupMessage"/> class.
         /// </summary>
-        /// <param name="userId">The user Id.</param>
+        /// <param name="userId">The user ID.</param>
         /// <param name="groupName">The group name, from which the user will leave.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public UserLeaveGroupMessage(string userId, string? groupName, ulong? tracingId = null)
         {
             UserId = userId;
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class UserJoinGroupWithAckMessage : ExtensibleServiceMessage, IMessageWithTracingId, IHasTtl, IAckableMessage, IPartitionableMessage
     {
         /// <summary>
-        /// Gets or sets the user Id.
+        /// Gets or sets the user ID.
         /// </summary>
         public string UserId { get; set; }
 
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string GroupName { get; set; }
 
         /// <summary>
-        /// Gets or sets the tracing Id
+        /// Gets or sets the tracing ID
         /// </summary>
         public ulong? TracingId { get; set; }
 
@@ -188,11 +188,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="UserJoinGroupMessage"/> class.
         /// </summary>
-        /// <param name="userId">The user Id.</param>
+        /// <param name="userId">The user ID.</param>
         /// <param name="groupName">The group name, to which the user will join.</param>
-        /// <param name="ackId">The ack Id.</param>
+        /// <param name="ackId">The ack ID.</param>
         /// <param name="ttl">Time to live for the user in the group.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public UserJoinGroupWithAckMessage(string userId, string groupName, int ackId, int? ttl = null, ulong? tracingId = null)
         {
             UserId = userId;
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class UserLeaveGroupWithAckMessage : ExtensibleServiceMessage, IMessageWithTracingId, IAckableMessage, IPartitionableMessage
     {
         /// <summary>
-        /// Gets or sets the user Id.
+        /// Gets or sets the user ID.
         /// </summary>
         public string UserId { get; set; }
 
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string? GroupName { get; set; }
 
         /// <summary>
-        /// Gets or sets the tracing Id
+        /// Gets or sets the tracing ID
         /// </summary>
         public ulong? TracingId { get; set; }
 
@@ -233,10 +233,10 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="UserLeaveGroupMessage"/> class.
         /// </summary>
-        /// <param name="userId">The user Id.</param>
+        /// <param name="userId">The user ID.</param>
         /// <param name="groupName">The group name, from which the user will leave.</param>
-        /// <param name="ackId">The ack Id.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="ackId">The ack ID.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public UserLeaveGroupWithAckMessage(string userId, string? groupName, int ackId, ulong? tracingId = null)
         {
             UserId = userId;
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class JoinGroupWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId, IPartitionableMessage
     {
         /// <summary>
-        /// Gets or sets the connection Id.
+        /// Gets or sets the connection ID.
         /// </summary>
         public string ConnectionId { get; set; }
 
@@ -267,7 +267,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public int AckId { get; set; }
 
         /// <summary>
-        /// Gets or sets the tracing Id
+        /// Gets or sets the tracing ID
         /// </summary>
         public ulong? TracingId { get; set; }
 
@@ -276,9 +276,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinGroupWithAckMessage"/> class.
         /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="groupName">The group name, to which the connection will join.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public JoinGroupWithAckMessage(string connectionId, string groupName, ulong? tracingId = null): this(connectionId, groupName, 0, tracingId)
         {
         }
@@ -286,10 +286,10 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinGroupWithAckMessage"/> class.
         /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="groupName">The group name, to which the connection will join.</param>
-        /// <param name="ackId">The ack Id</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="ackId">The ack ID</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public JoinGroupWithAckMessage(string connectionId, string groupName, int ackId, ulong? tracingId = null)
         {
             ConnectionId = connectionId;
@@ -305,7 +305,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class LeaveGroupWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId, IPartitionableMessage
     {
         /// <summary>
-        /// Gets or sets the connection Id.
+        /// Gets or sets the connection ID.
         /// </summary>
         public string ConnectionId { get; set; }
 
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public int AckId { get; set; }
 
         /// <summary>
-        /// Gets or sets the tracing Id
+        /// Gets or sets the tracing ID
         /// </summary>
         public ulong? TracingId { get; set; }
 
@@ -329,9 +329,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="LeaveGroupWithAckMessage"/> class.
         /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="groupName">The group name, from which the connection will leave.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public LeaveGroupWithAckMessage(string connectionId, string? groupName, ulong? tracingId = null): this(connectionId, groupName, 0, tracingId)
         {
         }
@@ -339,10 +339,10 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="LeaveGroupWithAckMessage"/> class.
         /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="groupName">The group name, from which the connection will leave.</param>
-        /// <param name="ackId">The ack Id</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="ackId">The ack ID</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public LeaveGroupWithAckMessage(string connectionId, string? groupName, int ackId, ulong? tracingId = null)
         {
             ConnectionId = connectionId;

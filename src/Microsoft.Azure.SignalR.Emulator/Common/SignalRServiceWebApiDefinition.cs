@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
             string hub,
             [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)]
             [Required(ErrorMessage = ErrorMessages.Validation.MessageRequired)]
-            PayloadMessage message, 
+            PayloadMessage message,
             [FromQuery(Name = "excluded")] IReadOnlyList<string> excluded,
             [RegularExpression(ParameterValidator.HubNamePattern, ErrorMessage = ErrorMessages.Validation.InvalidApplicationName)]
             string application = null);
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// Broadcast a message to all clients belong to the target user.
         /// </summary>
         /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
-        /// <param name="user">The user Id.</param>
+        /// <param name="user">The user ID.</param>
         /// <param name="message">The message body.</param>
         /// <param name="application">Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <returns></returns>
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// Send message to the specific connection.
         /// </summary>
         /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="message">The message body.</param>
         /// <param name="application">Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <returns></returns>
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// Close connections for the specific user.
         /// </summary>
         /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
-        /// <param name="user">The user Id.</param>
+        /// <param name="user">The user ID.</param>
         /// <param name="application">Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <param name="excluded">Exclude these connectionIds when closing the connections in the hub.</param>
         /// <param name="reason">The reason closing the client connections.</param>
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// Remove a connection from all groups
         /// </summary>
         /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
-        /// <param name="connectionId">Target connection Id</param>
+        /// <param name="connectionId">Target connection ID</param>
         /// <param name="application">Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <returns></returns>
         [HttpDelete("hubs/{hub}/connections/{connectionId}/groups")]
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// Check if the connection with the given connectionId exists
         /// </summary>
         /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="application">Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <returns></returns>
         [Route("hubs/{hub}/connections/{connectionId}")]
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// Check if there are any client connections connected for the given user
         /// </summary>
         /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
-        /// <param name="user">The user Id.</param>
+        /// <param name="user">The user ID.</param>
         /// <param name="application">Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <returns></returns>
         [Route("hubs/{hub}/users/{user}")]
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// Close the client connection
         /// </summary>
         /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="reason">The reason of the connection close.</param>
         /// <param name="application">Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <returns></returns>
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// </summary>
         /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <param name="group">Target group name, which length should be greater than 0 and less than 1025.</param>
-        /// <param name="connectionId">Target connection Id</param>
+        /// <param name="connectionId">Target connection ID</param>
         /// <param name="application">Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <returns></returns>
         [HttpPut("hubs/{hub}/groups/{group}/connections/{connectionId}")]
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// </summary>
         /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <param name="group">Target group name, which length should be greater than 0 and less than 1025.</param>
-        /// <param name="connectionId">Target connection Id</param>
+        /// <param name="connectionId">Target connection ID</param>
         /// <param name="application">Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <returns></returns>
         [HttpDelete("hubs/{hub}/groups/{group}/connections/{connectionId}")]
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// </summary>
         /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <param name="group">Target group name, which length should be greater than 0 and less than 1025.</param>
-        /// <param name="user">Target user Id</param>
+        /// <param name="user">Target user ID</param>
         /// <param name="application">Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <returns></returns>
         [Route("hubs/{hub}/groups/{group}/users/{user}")]
@@ -374,7 +374,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// </summary>
         /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <param name="group">Target group name, which length should be greater than 0 and less than 1025.</param>
-        /// <param name="user">Target user Id</param>
+        /// <param name="user">Target user ID</param>
         /// <param name="ttl">Specifies the seconds that the user exists in the group. If not set, the user lives in the group forever.</param>
         /// <param name="application">Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <returns></returns>
@@ -397,7 +397,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// </summary>
         /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <param name="group">Target group name, which length should be greater than 0 and less than 1025.</param>
-        /// <param name="user">Target user Id</param>
+        /// <param name="user">Target user ID</param>
         /// <param name="application">Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <returns></returns>
         [HttpDelete("hubs/{hub}/groups/{group}/users/{user}")]
@@ -417,7 +417,7 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         /// Remove a user from all groups.
         /// </summary>
         /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
-        /// <param name="user">Target user Id</param>
+        /// <param name="user">Target user ID</param>
         /// <param name="application">Target application name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
         /// <returns></returns>
         /// <response code="200">The user is deleted</response>
