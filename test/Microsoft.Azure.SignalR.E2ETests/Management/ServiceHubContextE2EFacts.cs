@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests;
 
 public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 {
-    private const string HubName = "ManagemnetTestHub";
+    private const string HubName = "ManagementTestHub";
     private const string MethodName = "SendMessage";
     private const string Message = "Hello client, have a nice day!";
     private const int ClientConnectionCount = 4;
