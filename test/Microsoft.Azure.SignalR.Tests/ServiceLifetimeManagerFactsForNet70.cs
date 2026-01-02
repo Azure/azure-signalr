@@ -47,7 +47,7 @@ public class ServiceLifetimeManagerFactsForNet70 : ServiceLifetimeManagerFacts
         // Check if the caller server added the invocation
         Assert.True(clientInvocationManager.Caller.TryGetInvocationReturnType(invocation.InvocationId, out _));
 
-        // Complete the invocation by SerivceLifetimeManager
+        // Complete the invocation by ServiceLifetimeManager
         var completionMessage = isCompletionWithResult
             ? CompletionMessage.WithResult(invocation.InvocationId, invocationResult)
             : CompletionMessage.WithError(invocation.InvocationId, invocationResult);
