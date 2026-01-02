@@ -48,7 +48,7 @@ public class NegotiateHandlerFacts
 
     private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new();
 
-    public static IEnumerable<object[]> GetHttpContxtWithoutSuccessfulAuthExp()
+    public static IEnumerable<object[]> GetHttpContextWithoutSuccessfulAuthExp()
     {
         yield return new object[] { new DefaultHttpContext() };
 
@@ -605,7 +605,7 @@ public class NegotiateHandlerFacts
     }
 
     [Theory]
-    [MemberData(nameof(GetHttpContxtWithoutSuccessfulAuthExp))]
+    [MemberData(nameof(GetHttpContextWithoutSuccessfulAuthExp))]
     public async Task TestNegotiateHandlerNotReturnCloseOnAuthExpClaimsWithoutAuthExp(HttpContext httpContext)
     {
         using var app = await CreateSignalRServerAppWithCloseOnAuthExpAsync(true);
