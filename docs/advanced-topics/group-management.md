@@ -1,10 +1,10 @@
 # Group Management  <!-- omit in toc -->
 
-A group is a collection of connections/users associated with a name. Messages can be sent to all connections/users in a group. Groups are the recommended way to send to a connection/user or multiple connections/users because the groups are managed by the service. A connection/user can be a member of multiple groups. 
+A group is a collection of connections/users associated with a name. Messages can be sent to all connections/users in a group. Groups are the recommended way to send to a connection/user or multiple connections/users because the groups are managed by the service. A connection/user can be a member of multiple groups.
 
 > User ID: can be used for multiple connections
 >
-> Connection ID: unique, one ID can be used for only one connection 
+> Connection ID: unique, one ID can be used for only one connection
 
 ## Content  <!-- omit in toc -->
 
@@ -51,7 +51,7 @@ At the momment, Azure SignalR Service doesn't provide any methods to check conne
 
 ## Group management for user ID
 
-To add or remove user IDs from a group, you call the add or remove methods, and pass in the user ID and group's name as parameters. Unlike connection ID, User-group membership **IS** preserved when a connection of the user ID disconnects by default. For how to manipulate user-group membership 
+To add or remove user IDs from a group, you call the add or remove methods, and pass in the user ID and group's name as parameters. Unlike connection ID, User-group membership **IS** preserved when a connection of the user ID disconnects by default. For how to manipulate user-group membership
 
 Note that user ID can be viewed as a **tag** to one or more connections. If you add a new tag to a group, that means you notify the group that all the group messages should be sent to the connection with the tag. It is your responsibility to update the tags (user IDs) in a group.
 
@@ -61,10 +61,10 @@ We provides 2 options to clear tags in groups: [Removing user IDs](#removing-use
 
 TTL determines whether the **future** connections with the user ID is added to the group. To remove the already existing connections with the user ID from a group explicitly, you can call `remove a user ID from a group` API. To remove the already existing connections with the user ID from all groups explicitly, please see [Remove user from all groups](#remove-user-from-all-groups) section.
 
-Once TTL is set to a user-group pair, newly connected connections with this user ID will be added to the group automatically on or before the expiration time (update time + TTL); otherwise, the connection will not added to the group. Once it is connected, the group membership to the connection will **NOT** change no matter how TTL changes, unless the membership is mamually remove by `remove a user ID from a group` or `remove a user ID from all groups` API.
+Once TTL is set to a user-group pair, newly connected connections with this user ID will be added to the group automatically on or before the expiration time (update time + TTL); otherwise, the connection will not added to the group. Once it is connected, the group membership to the connection will **NOT** change no matter how TTL changes, unless the membership is manually remove by `remove a user ID from a group` or `remove a user ID from all groups` API.
 
 > Note
-> 
+>
 > 1. If the TTL is **always** set to 0, the current connection will be added to the group, while the newly connections never be added to the group. This is useful when you want to avoid preserving any user-group membership when a connection ends.
 >
 > 2. If you `add a user ID to a group` API multiple times, the TTL for the user-group pair will be updated to the latest one.
