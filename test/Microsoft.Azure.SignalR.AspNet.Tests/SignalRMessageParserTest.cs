@@ -250,7 +250,7 @@ public class SignalRMessageParserTest
     }
 
     [Fact]
-    public void TestHubUserMessageWithMultiplePossiblities()
+    public void TestHubUserMessageWithMultiplePossibilities()
     {
         var hubs = new List<string> { "hub", "hub.hub1", "hub.hub1.h.hub2", ".", "......" };
         var parser = new SignalRMessageParser(hubs, _resolver, NullLogger<SignalRMessageParser>.Instance);
