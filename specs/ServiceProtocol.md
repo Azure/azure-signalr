@@ -78,7 +78,7 @@ When a new client is migrated from another server, a `OpenConnection` message wi
 ### Client Disconnect
 
 - When a client is disconnected from Service, a `CloseConnection` message will be sent by Service to Server.
-- When Server wants to disconnect a client, a `CloseConnection` message will be sent by Server to Service. Then Service will disconnect the phyical connection with the target client.
+- When Server wants to disconnect a client, a `CloseConnection` message will be sent by Server to Service. Then Service will disconnect the physical connection with the target client.
 
 #### Client migrate-out to another server
 
