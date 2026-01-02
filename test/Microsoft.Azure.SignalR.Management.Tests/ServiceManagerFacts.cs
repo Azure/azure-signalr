@@ -151,7 +151,7 @@ public class ServiceManagerFacts
 
     [Theory(Skip = "Reenable when it is ready")]
     [MemberData(nameof(TestServiceManagerOptionData))]
-    internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFacory, string appName, int connectionCount)
+    internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFactory, string appName, int connectionCount)
     {
         var builder = new ServiceManagerBuilder()
             .WithOptions(o =>
@@ -163,7 +163,7 @@ public class ServiceManagerFacts
             });
         var serviceManager = builder.Build();
 
-        using var loggerFactory = useLoggerFacory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance;
+        using var loggerFactory = useLoggerFactory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance;
         var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
     }
 
