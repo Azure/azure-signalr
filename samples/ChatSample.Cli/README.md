@@ -28,7 +28,7 @@ dotnet run
 ## Commands
 
 ### Run as Server
-``` 
+```
 connect <connection-string> <hub> [--transient/-t]
 ```
 
@@ -59,7 +59,7 @@ This allows you to send messages or commands directly to the server or client.
 
 #### Define a method
 
-Before sending messages, you need to define the method and the paramters.
+Before sending messages, you need to define the method and the parameters.
 
 ```
 define <method>(<paramType1>, <paramType2>, ... <paramTypeN>)
@@ -80,7 +80,7 @@ all.Hello("Hello Everyone!")
 group("GroupName").Hello("Hello Group!")
 user("UserId").Hello("Hello User!")
 connection("ConnectionId").Hello("Hello Connection!")
-``` 
+```
 
 These commands send a message to clients using the `Hello` method defined earlier.
 
