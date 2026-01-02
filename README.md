@@ -40,7 +40,7 @@ There are [samples on how to use Azure SignalR Service](https://github.com/aspne
 
 > Note
 >
-> There're two versions of SignalR: [ASP.NET SignalR](https://github.com/SignalR/SignalR) and [ASP.NET Core SignalR](https://github.com/aspnet/SignalR). The ASP.NET Core version is not a simple .NET Core port of the original SignalR, but a [rewrite](https://blogs.msdn.microsoft.com/webdev/2017/09/14/announcing-signalr-for-asp-net-core-2-0/) of the original version. As a result, [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) is not backward compatible with [ASP.NET SignalR](https://github.com/SignalR/SignalR) (API interfaces and behaviors are different). If it is the first time you try SignalR, we recommend you to use the [ASP.NET Core SignalR](https://github.com/aspnet/SignalR), it is **simpler, more reliable, and easier to use**.
+> There are two versions of SignalR: [ASP.NET SignalR](https://github.com/SignalR/SignalR) and [ASP.NET Core SignalR](https://github.com/aspnet/SignalR). The ASP.NET Core version is not a simple .NET Core port of the original SignalR, but a [rewrite](https://blogs.msdn.microsoft.com/webdev/2017/09/14/announcing-signalr-for-asp-net-core-2-0/) of the original version. As a result, [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) is not backward compatible with [ASP.NET SignalR](https://github.com/SignalR/SignalR) (API interfaces and behaviors are different). If it is the first time you try SignalR, we recommend you to use the [ASP.NET Core SignalR](https://github.com/aspnet/SignalR), it is **simpler, more reliable, and easier to use**.
 
 ### ASP.NET SignalR
 

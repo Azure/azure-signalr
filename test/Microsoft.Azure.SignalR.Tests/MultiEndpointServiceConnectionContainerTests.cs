@@ -1128,7 +1128,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var ngoEps = sem.GetEndpoints("hub").ToArray();
         Assert.Single(ngoEps);
 
-        // Mock there're 3 servers SA,SB connected to EP1 and EP2
+        // Mock there are 3 servers SA,SB connected to EP1 and EP2
         var containers = container.GetTestOnlineContainers();
         var serversTag = "Server1;Server2;Server3";
         await Task.WhenAll(containers.Select(c => c.MockReceivedServersPing(serversTag)));
@@ -1507,7 +1507,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var ngoEps = sem.GetEndpoints("hub").ToArray();
         Assert.Single(ngoEps);
 
-        // Mock there're 3 servers SA,SB connected to EP1 and EP2
+        // Mock there are 3 servers SA,SB connected to EP1 and EP2
         var containers = container.GetTestOnlineContainers();
         var serversTag = "Server1;Server2;Server3";
         await Task.WhenAll(containers.Select(c => c.MockReceivedServersPing(serversTag)));
