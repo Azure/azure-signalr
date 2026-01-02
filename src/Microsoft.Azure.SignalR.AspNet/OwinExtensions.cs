@@ -128,7 +128,7 @@ namespace Owin
         }
 
         /// <summary>
-        /// Adds Azure SignalR hubs to the app builder pipeline at "/signalr" using the connection string specified in web.config 
+        /// Adds Azure SignalR hubs to the app builder pipeline at "/signalr" using the connection string specified in web.config
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
         /// <param name="applicationName">The name of your app, it is case-insensitive.</param>
@@ -178,7 +178,7 @@ namespace Owin
 
         private static void RunAzureSignalRCore(IAppBuilder builder, string applicationName, HubConfiguration configuration, ServiceOptions options)
         {
-            // applicationName is case insensitive, it will be lower cased in the service side
+            // applicationName is case-insensitive, it will be lower cased in the service side
             if (string.IsNullOrEmpty(applicationName))
             {
                 throw new ArgumentException("Empty application name is not allowed.", nameof(applicationName));
@@ -204,7 +204,7 @@ namespace Owin
             var dispatcher = DispatcherHelper.PrepareAndGetDispatcher(builder, configuration, options, applicationName, loggerFactory);
             if (dispatcher != null)
             {
-                // Start the server->service connection asynchronously 
+                // Start the server->service connection asynchronously
                 Task.Run(() => dispatcher.StartAsync());
             }
         }
