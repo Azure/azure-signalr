@@ -749,7 +749,7 @@ public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTe
     }
 
     [Fact]
-    public async Task TestRunAzureSignalRWithAnonymousUserOnAuthrizedHubReturnFail()
+    public async Task TestRunAzureSignalRWithAnonymousUserOnAuthorizedHubReturnFail()
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
