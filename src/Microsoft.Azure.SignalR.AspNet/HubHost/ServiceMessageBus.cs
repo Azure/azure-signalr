@@ -27,7 +27,7 @@ internal class ServiceMessageBus : MessageBus
 
     public ServiceMessageBus(IDependencyResolver resolver, ILogger<ServiceMessageBus> logger) : base(resolver)
     {
-        // TODO: find a more decent way instead of DI, it can be easily overriden
+        // TODO: find a more decent way instead of DI, it can be easily overridden
         _serviceConnectionManager = resolver.Resolve<IServiceConnectionManager>() ?? throw new ArgumentNullException(nameof(IServiceConnectionManager));
         _clientConnectionManager = resolver.Resolve<IClientConnectionManagerAspNet>() ?? throw new ArgumentNullException(nameof(IClientConnectionManagerAspNet));
         _parser = resolver.Resolve<IMessageParser>() ?? throw new ArgumentNullException(nameof(IMessageParser));
