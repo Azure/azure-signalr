@@ -288,7 +288,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
             var message = new AccessKeyResponseMessage()
             {
                 ErrorType = nameof(ArgumentException),
-                ErrorMessage = "This is a error messsage"
+                ErrorMessage = "This is an error messsage"
             };
             await connection.WriteFromServiceAsync(message);
 

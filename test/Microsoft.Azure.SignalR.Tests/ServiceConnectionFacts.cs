@@ -445,7 +445,7 @@ public class ServiceConnectionFacts
     }
 
     /// <summary>
-    /// Service connection should handle specific ping message and create a on-demand connection.
+    /// Service connection should handle specific ping message and create an on-demand connection.
     /// On-demand connection won't reconnect after disconnection.
     /// </summary>
     /// <returns></returns>
@@ -458,7 +458,7 @@ public class ServiceConnectionFacts
         _ = proxy.StartAsync();
         await serverTask1.OrTimeout();
 
-        // Try to send a ping message to ask for a on-demand connection
+        // Try to send a ping message to ask for an on-demand connection
         var serverTask2 = proxy.WaitForServerConnectionAsync(2);
 
         var target = "Target";
@@ -479,7 +479,7 @@ public class ServiceConnectionFacts
     }
 
     /// <summary>
-    /// If there's on-demand connection, default connection won't restart but promote a on-demand
+    /// If there's on-demand connection, default connection won't restart but promote an on-demand
     /// connection to default.
     /// </summary>
     /// <returns></returns>

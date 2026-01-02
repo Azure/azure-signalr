@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR
         string GenerateInvocationId(string connectionId);
 
         /// <summary>
-        /// Add a invocation which is directly called by current server
+        /// Add an invocation which is directly called by current server
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="hub"></param>

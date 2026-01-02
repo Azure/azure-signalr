@@ -31,7 +31,7 @@ public class Startup
     private const string TenantId = "";
 
     /// <summary>
-    /// Should be the Application (client) ID of a app registrations.
+    /// Should be the Application (client) ID of an app registrations.
     /// Or the Application ID of an enterprise application that you provisioned from other tenants.
     /// </summary>
     private const string AppClientId = "";

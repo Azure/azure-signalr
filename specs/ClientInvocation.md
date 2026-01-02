@@ -23,7 +23,7 @@ In this case, server is aware of target client status and can easily handle the 
 
 1. (1)(2) Server S1 inits the `ClientInvocation` to service and service forward the message to target client C2.
 
-2. (3)(4) When Client complete the invocation and return `CompletionMessage`, service handle as normal client message and forward to routed server S1 to deserialize. 
+2. (3)(4) When Client complete the invocation and return `CompletionMessage`, service handle as normal client message and forward to routed server S1 to deserialize.
 
 3. (5) S1 completes the invocation and return a `ServiceCompletionMessage` to let service do clean-up.
 
@@ -35,9 +35,9 @@ In this case, server is not aware of target client status, and depends on servic
 
 1. (1)(2)(3) Server S1 inits the `ClientInvocation` to service and service forward the message to target client C2.
 
-2. (3.1)(3.2) Service instance Pod2 send a `ServiceMappingMessage` to notify original invoker S1 aware of the Pod-Client mapping. In case Pod2 crashes and S1 received a instance offline ping then is able to know C2 is also down.
+2. (3.1)(3.2) Service instance Pod2 send a `ServiceMappingMessage` to notify original invoker S1 aware of the Pod-Client mapping. In case Pod2 crashes and S1 received an instance offline ping then is able to know C2 is also down.
 
-3. (4)(5) When Client complete the invocation and return `CompletionMessage`, service handle as normal client message and forward to routed server S2 to deserialize. 
+3. (4)(5) When Client complete the invocation and return `CompletionMessage`, service handle as normal client message and forward to routed server S2 to deserialize.
 
 4. (6) S2 awares the invocation is not from itself and return a `ServiceCompletionMessage` to let Pod2 forward to correct invoker.
 
@@ -65,7 +65,7 @@ Basically the process is similar and the major different is that service underst
 ## Limitations
 
 > NOTES
-> 
+>
 > * Service cached pending invocations for at most __10 minutes__ for memory concerns and will notify server when timeout.
 > * Serverless is __NOT__ supporeted in the first stage.
 > * ASPNET SignalR is __NOT__ supported.
