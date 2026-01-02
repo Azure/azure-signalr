@@ -72,7 +72,7 @@ var accessToken = negotiationResponse.AccessToken;
 ```
 The negotiation API is async now because there is an async operation behind if you use AAD connection string. In the old negotiation API, you just wait for the result synchronously.
 
-Except for the API change, we have also intergrated a health check mechanism with negotiation process. That is, the negotiation only returns a **healthy** SignalR endpoint. If none of your SignalR endpoints is healthy when you negotiate, then an `AzureSignalRNotConnectedException` is thrown.
+Except for the API change, we have also integrated a health check mechanism with negotiation process. That is, the negotiation only returns a **healthy** SignalR endpoint. If none of your SignalR endpoints is healthy when you negotiate, then an `AzureSignalRNotConnectedException` is thrown.
 
 ### Send Messages and Manage Groups
 
