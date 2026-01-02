@@ -621,7 +621,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     [Theory]
     [InlineData(Constants.AsrsMigrateFrom, true)]
     [InlineData("anotherheader", false)]
-    public async Task TestClientConnectionShouldSkipHandshakeWhenMigrateIn(string headerKey, bool shoudSkip)
+    public async Task TestClientConnectionShouldSkipHandshakeWhenMigrateIn(string headerKey, bool shouldSkip)
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
@@ -689,7 +689,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             Assert.True(protocol.TryParseMessage(ref buffer, out var message));
             var dataMessage = Assert.IsType<ConnectionDataMessage>(message);
 
-            if (shoudSkip)
+            if (shouldSkip)
             {
                 Assert.Equal(payload, dataMessage.Payload.ToArray());
             }
