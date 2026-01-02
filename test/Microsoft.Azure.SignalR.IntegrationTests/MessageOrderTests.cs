@@ -388,7 +388,7 @@ public class MessageOrderTests(ITestOutputHelper output) : VerifiableLoggedTest(
     // However the task spawned in the hub call still carries the previous connection selection information.
     //
     // To verify that there are no leaks after the hot reload we wrap the references to the old connection C and endpoint E
-    // in weak reference handles and induce a full GC. Then we check if the the weak references targets are nulled out.
+    // in weak reference handles and induce a full GC. Then we check if the weak references targets are nulled out.
     [RetryFact]
     public async Task PreviouslyUsedServiceConnectionsNotLeakedAfterHotReload2()
     {
