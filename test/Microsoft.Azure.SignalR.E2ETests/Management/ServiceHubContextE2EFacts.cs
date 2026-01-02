@@ -940,8 +940,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
             .BuildServiceManager();
         using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
         var groupName = nameof(ListConnectionsInGroupTest) + Guid.NewGuid().ToString();
-        var negotationResponse = await hubContext.NegotiateAsync();
-        var clientConnections = await CreateAndStartClientConnections(negotationResponse.Url, Enumerable.Repeat(negotationResponse.AccessToken, totalConnectionCount));
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnections = await CreateAndStartClientConnections(negotiationResponse.Url, Enumerable.Repeat(negotiationResponse.AccessToken, totalConnectionCount));
         foreach (var connection in clientConnections)
         {
             await hubContext.Groups.AddToGroupAsync(connection.ConnectionId, groupName);
