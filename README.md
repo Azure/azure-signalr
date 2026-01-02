@@ -50,7 +50,7 @@ More samples on how to use Azure SignalR Service can be found [here](https://git
 
 Package [Microsoft.Azure.SignalR.AspNet](https://www.nuget.org/packages/Microsoft.Azure.SignalR.AspNet) is the one to use when you are using [ASP.NET SignalR](https://github.com/SignalR/SignalR). If you are not familiar with ASP.NET SignalR yet, we recommend you to read [ASP.NET SignalR's documentation](https://docs.microsoft.com/en-us/aspnet/signalr/) first.
 
-Samples on how to use Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/aspnet-samples/ChatRoom)
+There is a [chat room sample](https://github.com/aspnet/AzureSignalR-samples/tree/master/aspnet-samples/ChatRoom).
 
 ### Management
 
