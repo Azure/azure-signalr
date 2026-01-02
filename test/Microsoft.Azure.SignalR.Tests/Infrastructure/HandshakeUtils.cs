@@ -52,7 +52,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     {
                         // Not enough data, and we won't be getting any more data.
                         throw new InvalidOperationException(
-                            "Service connectioned disconnected before sending a handshake request");
+                            "Service connection disconnected before sending a handshake request");
                     }
                 }
                 finally

@@ -61,11 +61,11 @@ public class MessageOrderTests(ITestOutputHelper output) : VerifiableLoggedTest(
             Assert.NotNull(svcConn.SDKSideServiceConnection);
             wrList.Add(new WeakReference(svcConn.SDKSideServiceConnection));
 
-            Assert.NotNull(svcConn.SDKSideServiceConnection.MyMockServiceConnetion);
-            wrList.Add(new WeakReference(svcConn.SDKSideServiceConnection.MyMockServiceConnetion));
+            Assert.NotNull(svcConn.SDKSideServiceConnection.MyMockServiceConnection);
+            wrList.Add(new WeakReference(svcConn.SDKSideServiceConnection.MyMockServiceConnection));
 
-            Assert.NotNull(svcConn.SDKSideServiceConnection.MyMockServiceConnetion.InnerServiceConnection);
-            wrList.Add(new WeakReference(svcConn.SDKSideServiceConnection.MyMockServiceConnetion.InnerServiceConnection));
+            Assert.NotNull(svcConn.SDKSideServiceConnection.MyMockServiceConnection.InnerServiceConnection);
+            wrList.Add(new WeakReference(svcConn.SDKSideServiceConnection.MyMockServiceConnection.InnerServiceConnection));
 
             Assert.NotNull(svcConn.Endpoint);
             wrList.Add(new WeakReference(svcConn.Endpoint));

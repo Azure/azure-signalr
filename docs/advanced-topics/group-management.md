@@ -51,9 +51,9 @@ At the momment, Azure SignalR Service doesn't provide any methods to check conne
 
 ## Group management for user ID
 
-To add or remove user IDs from a group, you call the add or remove methods, and pass in the user ID and group's name as parameters. Unlike connection ID, User-group membership **IS** preserved when a conenction of the user ID disconnects by default. For how to manipulate user-group membership 
+To add or remove user IDs from a group, you call the add or remove methods, and pass in the user ID and group's name as parameters. Unlike connection ID, User-group membership **IS** preserved when a connection of the user ID disconnects by default. For how to manipulate user-group membership 
 
-Note that user ID can be viewed as a **tag** to one or more connections. If you add a new tag to a group, that means you notify the group that all the group messages should be sent to the connetion with the tag. It is your responsibility to update the tags (user IDs) in a group.
+Note that user ID can be viewed as a **tag** to one or more connections. If you add a new tag to a group, that means you notify the group that all the group messages should be sent to the connection with the tag. It is your responsibility to update the tags (user IDs) in a group.
 
 We provides 2 options to clear tags in groups: [Removing user IDs](#removing-user-ids) and [Remove a user ID from all groups](#remove-user-from-all-groups).
 
