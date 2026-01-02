@@ -28,7 +28,7 @@ internal class DefaultEndpointRouter : DefaultMessageRouter, IEndpointRouter
     /// Only primary endpoints will be returned by client /negotiate
     /// If no primary endpoint is available, promote one secondary endpoint
     /// </summary>
-    /// <returns>The availbale endpoints</returns>
+    /// <returns>The available endpoints</returns>
     private ServiceEndpoint[] GetNegotiateEndpoints(IEnumerable<ServiceEndpoint> endpoints)
     {
         var primary = endpoints.Where(s => s.Online && s.EndpointType == EndpointType.Primary).ToArray();
