@@ -75,7 +75,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
         protocol.WriteMessage(closeMessage, pair.Transport.Output);
         await pair.Transport.Output.FlushAsync();
 
-        // complete Tranport layer to stop outgoing messages async.
+        // complete Transport layer to stop outgoing messages async.
         pair.Transport.Output.Complete();
         await outgoingTask.OrTimeout();
         await serviceConnection.CompleteAsync();
@@ -116,7 +116,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
         protocol.WriteMessage(invocationMessage, pair.Transport.Output);
         await pair.Transport.Output.FlushAsync();
 
-        // complete Tranport layer to stop outgoing messages async.
+        // complete Transport layer to stop outgoing messages async.
         pair.Transport.Output.Complete();
         await outgoingTask.OrTimeout();
         await serviceConnection.CompleteAsync();
@@ -154,7 +154,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
         HandshakeProtocol.WriteResponseMessage(response, pair.Transport.Output);
         await pair.Transport.Output.FlushAsync();
 
-        // complete Tranport layer to stop outgoing messages async.
+        // complete Transport layer to stop outgoing messages async.
         pair.Transport.Output.Complete();
         await outgoingTask.OrTimeout();
         await serviceConnection.CompleteAsync();
@@ -198,7 +198,7 @@ public class ClientConnectionContextFacts : VerifiableLoggedTest
         HandshakeProtocol.WriteResponseMessage(response, pair.Transport.Output);
         await pair.Transport.Output.FlushAsync();
 
-        // complete Tranport layer to stop outgoing messages async.
+        // complete Transport layer to stop outgoing messages async.
         pair.Transport.Output.Complete();
         await outgoingTask.OrTimeout();
         await serviceConnection.CompleteAsync();
