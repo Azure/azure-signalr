@@ -125,7 +125,7 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             }
         }
 
-        public void OnConnectionOpenning(HubConnectionContext connection)
+        public void OnConnectionOpening(HubConnectionContext connection)
         {
             if (connection.UserIdentifier != null)
             {
