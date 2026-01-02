@@ -330,7 +330,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
     }
 
     [Fact]
-    public async Task TestContainerWithOneEndpointWithAllConnectedSucceeeds()
+    public async Task TestContainerWithOneEndpointWithAllConnectedSucceeds()
     {
         var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
         var router = new TestEndpointRouter();
