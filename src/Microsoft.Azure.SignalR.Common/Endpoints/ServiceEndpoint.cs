@@ -90,7 +90,7 @@ public class ServiceEndpoint
         }
     }
 
-    // Flag to indicate an updaing endpoint needs staging
+    // Flag to indicate an updating endpoint needs staging
     internal virtual bool PendingReload { get; set; }
 
     /// <summary>
