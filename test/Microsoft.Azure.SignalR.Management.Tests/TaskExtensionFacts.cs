@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
     public class TaskExtensionFacts
     {
         [Fact]
-        public async Task TaskCompletedSuccufullyFirstTest()
+        public async Task TaskCompletedSuccessfullyFirstTest()
         {
             await Task.CompletedTask.OrTimeout();
         }
