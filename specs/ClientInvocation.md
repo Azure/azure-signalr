@@ -43,7 +43,7 @@ In this case, server is not aware of target client status, and depends on servic
 
 5. (7)(8) Pod2 clean-up local pending invocation and forward the result to original invoker S1.
 
-## Service Procotols
+## Service Protocols
 
 Name|Direction|Usage
 --|--|--
