@@ -259,7 +259,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="invocationId">The ID of the invocation that has completed.</param>
         /// <param name="connectionId">The client connection ID that complete the invocation.</param>
         /// <param name="callerServerId">The serverId that wrap the completion result.</param>
-        /// <param name="error">The error information about invacation failure.</param>
+        /// <param name="error">The error information about invocation failure.</param>
         /// <param name="tracingId">The tracing ID of the message.</param>
         public ErrorCompletionMessage(string invocationId, string connectionId, string callerServerId, string? error, ulong? tracingId = null)
             : base(invocationId, connectionId, callerServerId, tracingId)
