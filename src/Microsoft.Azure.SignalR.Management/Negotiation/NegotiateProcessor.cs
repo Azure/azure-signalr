@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR.Management
     internal class NegotiateProcessor
     {
         private const string GeneratingTokenTaskDescription = "Generating client access token task";
-        private const string ErrorMsg = "Geting client endpoint operation was not completed successfully.";
+        private const string ErrorMsg = "Getting client endpoint operation was not completed successfully.";
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
         private readonly IServiceEndpointManager _serviceEndpointManager;
         private readonly IEndpointRouter _router;
