@@ -601,7 +601,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public int? Top { get; set; }
 
         /// <summary>
-        /// A token to indiate the start point of results.
+        /// A token to indicate the start point of results.
         /// This parameter is provided by the service in the response of a previous request when there are additional results to be fetched.
         /// Clients should include the continuationToken in the next request to receive the subsequent page of data. If this parameter is omitted, the server will return the first page of results.
         /// </summary>
