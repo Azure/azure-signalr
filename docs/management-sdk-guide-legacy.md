@@ -39,7 +39,7 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 | Add a user to a group               | :heavy_check_mark: | :heavy_check_mark: |
 | Remove a user from a group          | :heavy_check_mark: | :heavy_check_mark: |
 
-> More details about different modes can be found [here](#Transport-Type).
+> More details about different modes can be found in [Transport Type](#Transport-Type).
 
 ## Quick Start
 
