@@ -37,7 +37,7 @@ In this case, server is not aware of target client status, and depends on servic
 
 2. (3.1)(3.2) Service instance Pod2 send a `ServiceMappingMessage` to notify original invoker S1 aware of the Pod-Client mapping. In case Pod2 crashes and S1 received an instance offline ping then is able to know C2 is also down.
 
-3. (4)(5) When Client complete the invocation and return `CompletionMessage`, service handle as normal client message and forward to routed server S2 to deserialize.
+3. (4)(5) When Client completes the invocation and return `CompletionMessage`, service handle as normal client message and forward to routed server S2 to deserialize.
 
 4. (6) S2 awares the invocation is not from itself and return a `ServiceCompletionMessage` to let Pod2 forward to correct invoker.
 
