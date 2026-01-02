@@ -923,7 +923,7 @@ public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTe
     {
         private readonly string _originalSetting;
 
-        private readonly List<KeyValuePair<string, string>> _originalAdditonalSettings;
+        private readonly List<KeyValuePair<string, string>> _originalAdditionalSettings;
 
         public AppSettingsConfigScope(string setting, params string[] additionalSettings)
         {
@@ -936,7 +936,7 @@ public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTe
                     Constants.Keys.ConnectionStringDefaultKey + ":" + Guid.NewGuid().ToString("N")
                     , s))
                 .ToList();
-            _originalAdditonalSettings = newSettings.Select(s =>
+            _originalAdditionalSettings = newSettings.Select(s =>
             {
                 var original = ConfigurationManager.AppSettings[s.Key];
                 ConfigurationManager.AppSettings[s.Key] = s.Value;
@@ -947,7 +947,7 @@ public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTe
         public void Dispose()
         {
             ConfigurationManager.AppSettings[Constants.Keys.ConnectionStringDefaultKey] = _originalSetting;
-            foreach (var pair in _originalAdditonalSettings)
+            foreach (var pair in _originalAdditionalSettings)
             {
                 ConfigurationManager.AppSettings[pair.Key] = pair.Value;
             }
