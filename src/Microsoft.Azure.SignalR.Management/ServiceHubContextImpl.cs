@@ -60,7 +60,7 @@ namespace Microsoft.Azure.SignalR.Management
         public override async Task DisposeAsync()
         {
             // Check _disposed to avoid disposing twice.
-            // When host is diposed, it will dispose all the disposable services including this class.
+            // When host is disposed, it will dispose all the disposable services including this class.
             if (!_disposing)
             {
                 _disposing = true;
