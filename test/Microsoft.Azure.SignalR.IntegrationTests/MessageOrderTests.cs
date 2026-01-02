@@ -169,7 +169,7 @@ public class MessageOrderTests(ITestOutputHelper output) : VerifiableLoggedTest(
         Assert.Equal(msgNum, primary.FirstOrDefault().Value);
 
         // for every secondary that received the messages verify that
-        // - their number equals to the number of seconary endpoints
+        // - their number equals the number of seconary endpoints
         // - each received N messages
         var secondary = counts.Where(c => c.Key.Endpoint.EndpointType == EndpointType.Secondary);
         var secondaryEndpoints = MockServiceMessageOrderTestParams.ServiceEndpoints.Where(ep => ep.EndpointType == EndpointType.Secondary);
@@ -246,7 +246,7 @@ public class MessageOrderTests(ITestOutputHelper output) : VerifiableLoggedTest(
         Assert.Equal(msgNum, primary.FirstOrDefault().Value);
 
         // for every secondary verify that
-        // - their number equals to the number of seconary endpoints
+        // - their number equals the number of seconary endpoints
         // - each received MsgNum messages
         // - each of the secondary ones is not the same as the original selection
         var secondary = counts.Where(c => c.Key.Endpoint.EndpointType == EndpointType.Secondary);
@@ -306,7 +306,7 @@ public class MessageOrderTests(ITestOutputHelper output) : VerifiableLoggedTest(
         Assert.Equal(msgNum + countOffset, primary.FirstOrDefault().Value);
 
         // for every secondary verify that
-        // - their number equals to the number of seconary endpoints
+        // - their number equals the number of seconary endpoints
         // - each received N + 2 messages
         // - each of the secondary ones is the same as the original selection
         var secondary = counts.Where(c => c.Key.Endpoint.EndpointType == EndpointType.Secondary);
