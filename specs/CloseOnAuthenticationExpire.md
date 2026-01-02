@@ -1,6 +1,6 @@
 Feature request: #1690
 
-When server sets `HttpConnectionDispatcherOptions.CloseOnAuthenticationExpiration` to true, SignalR service should track the client authentication expriation and close a client when its token expires. See [Advanced HTTP configuration options](https://learn.microsoft.com/aspnet/core/signalr/configuration?view=aspnetcore-6.0&tabs=dotnet#advanced-http-configuration-options) for related ASP.NET Core SignalR doc.
+When server sets `HttpConnectionDispatcherOptions.CloseOnAuthenticationExpiration` to true, SignalR service should track the client authentication expiration and close a client when its token expires. See [Advanced HTTP configuration options](https://learn.microsoft.com/aspnet/core/signalr/configuration?view=aspnetcore-6.0&tabs=dotnet#advanced-http-configuration-options) for related ASP.NET Core SignalR doc.
 
 The feature works since .NET 6 as ASP.NET Core SignalR adds it in ASP.NET Core 6.
 
