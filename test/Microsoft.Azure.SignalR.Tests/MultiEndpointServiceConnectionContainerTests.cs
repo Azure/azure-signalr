@@ -1116,7 +1116,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         };
         _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
 
-        // Wait a few time to let message router updated.
+        // Wait some time to let message router updated.
         await Task.Delay(100);
 
         hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
@@ -1495,7 +1495,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         };
         _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
 
-        // Wait a few time to let message router updated.
+        // Wait some time to let message router updated.
         await Task.Delay(100);
 
         hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
