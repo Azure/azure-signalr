@@ -385,14 +385,14 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 [22, Type, Id, Kind, Message, ExtensionMembers?]
 ```
 - 22 - Message Type, indicating this is a `ServiceEvent` message.
-- Type - An `Int32` indicats the object of event.
+- Type - An `Int32` indicates the object of event.
 	- 0, ServiceInstance events
 	- 1, Connection events
 	- 2, User events
 	- 3, Group events
 	- 4, ServerConnection events
 - Id - A `String` encoding id for ServiceInstance/Connection/User/Group/ServerConnection.
-- Kind - An `Int32` indicats the kind of event.
+- Kind - An `Int32` indicates the kind of event.
 	- 0, Reloading events. For example, the service is about to reloading.
 	- 1, Invalid events. For example, the connection id is invalid.
 	- 2, Not existed events. For example, the group is empty.
