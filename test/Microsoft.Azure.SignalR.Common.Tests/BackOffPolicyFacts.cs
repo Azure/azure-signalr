@@ -79,7 +79,7 @@ public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest
         }));
     }
 
-    [Fact(Skip = "Flacky in CI")]
+    [Fact(Skip = "Flaky in CI")]
     public async Task FirstProbeThrowsTest()
     {
         await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
@@ -102,7 +102,7 @@ public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest
         }));
     }
 
-    [Fact(Skip = "Flacky in CI")]
+    [Fact(Skip = "Flaky in CI")]
     public async Task FirstProbeTimeoutTest()
     {
         await RunProbeTests(new TestData()

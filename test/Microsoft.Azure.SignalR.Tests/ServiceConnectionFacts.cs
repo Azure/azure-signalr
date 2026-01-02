@@ -365,7 +365,7 @@ public class ServiceConnectionFacts
     /// <summary>
     /// Service connection should reconnecting to service after receiving a handshake response with error message.
     /// </summary>
-    [Fact(Skip = "Flacky in CI")]
+    [Fact(Skip = "Flaky in CI")]
     public async Task ReconnectAfterReceivingHandshakeErrorMessage()
     {
         var proxy = new ServiceConnectionProxy(connectionFactoryCallback: c => new TestConnectionFactoryWithHandshakeError(c));
