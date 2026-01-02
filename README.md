@@ -36,7 +36,7 @@ Package [Microsoft.Azure.SignalR](https://www.nuget.org/packages/Microsoft.Azure
 
 See the tutorial in the [Azure SignalR Service documentation](https://aka.ms/signalr_service_doc) to get started with Azure SignalR Service.
 
-More samples on how to use Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/).
+There are [samples on how to use Azure SignalR Service](https://github.com/aspnet/AzureSignalR-samples/).
 
 > Note
 >
