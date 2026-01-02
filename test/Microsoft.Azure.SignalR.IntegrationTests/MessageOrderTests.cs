@@ -379,7 +379,7 @@ public class MessageOrderTests(ITestOutputHelper output) : VerifiableLoggedTest(
     }
 
     // Config hot reload allows adding & removing endpoints and corresponding service connections
-    // This test verifies that when new endpoits are added, they will be selected for new connections.
+    // This test verifies that when new endpoints are added, they will be selected for new connections.
     // When old endpoints are removed, the corresponding previously used connections are not leaked.
     //
     // The test makes a service connection C over endpoint E, then makes a hub call which runs a new task.
