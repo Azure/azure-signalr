@@ -336,7 +336,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <list type="bullet">
         /// <item>0, Default, it can carry clients, service runtime should always accept this kind of connection.</item>
         /// <item>1, OnDemand, creating when service requested more connections, it can carry clients, but it may be rejected by service runtime.</item>
-        /// <item>2, Weak, it can not carry clients, but it can send message.</item>
+        /// <item>2, Weak, it cannot carry clients, but it can send message.</item>
         /// </list>
         /// </value>
         public int ConnectionType { get; set; }
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the migratable flag.
         /// <value>
         /// <list type="bullet">
-        /// <item>0, Off, a client connection can not be migrated to another server.</item>
+        /// <item>0, Off, a client connection cannot be migrated to another server.</item>
         /// <item>1, ShutdownOnly, a client connection can be migrated only if the pairing server was shutdown gracefully.</item>
         /// <item>2, Any, a client connection can be migrated even if the pairing server connection was dropped accidentally. (may cause data loss)</item>
         /// </list>

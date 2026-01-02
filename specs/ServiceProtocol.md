@@ -132,10 +132,10 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - ConnectionType - An `Int32` encoding number of the connection type.
 	- 0, Default, it can carry clients, service runtime should always accept this kind of connection.
 	- 1, OnDemand, creating when service requested more connections, it can carry clients, but it may be rejected by service runtime.
-	- 2, Weak, it can not carry clients, but it can send message.
+	- 2, Weak, it cannot carry clients, but it can send message.
 - Target - A `String` indicates the target service.
 - MigrationLevel (Optional) - An `Int32` encoding number indicates if further client connections associated with this server connection could be migrated.
-	- 0, Off, a client connection can not be migrated to another server.
+	- 0, Off, a client connection cannot be migrated to another server.
 	- 1, ShutdownOnly, a client connection can be migrated only if the matched server was shutdown gracefully.
 	- 2, Any, a client connection can be migrated even if the matched server connection was dropped accidentally. (may cause data loss)
 - ExtensibleMembers (Optional) - A MessagePack Map indicates the extensible members.

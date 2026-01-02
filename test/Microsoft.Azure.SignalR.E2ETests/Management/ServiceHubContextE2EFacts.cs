@@ -500,7 +500,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     [MemberData(nameof(TestData))]
     public async Task CloseConnectionTest(ServiceTransportType serviceTransportType, string appName)
     {
-        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we cannot use VerifiableLog
         using (StartLog(out var loggerFactory))
         {
             ServiceHubContext serviceHubContext = null;
@@ -548,7 +548,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     [InlineData(Management.ServiceTransportType.Persistent)]
     public async Task CheckConnectionExistsTest(ServiceTransportType serviceTransportType)
     {
-        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we cannot use VerifiableLog
         ServiceHubContext serviceHubContext = null;
         using (StartLog(out var loggerFactory))
         {
@@ -594,7 +594,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     [InlineData(Management.ServiceTransportType.Persistent)]
     public async Task CheckUserExistsTest(ServiceTransportType serviceTransportType)
     {
-        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we cannot use VerifiableLog
         ServiceHubContext serviceHubContext = null;
         using (StartLog(out var loggerFactory))
         {
@@ -640,7 +640,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     [InlineData(Management.ServiceTransportType.Persistent)]
     public async Task CheckGroupExistsTest(ServiceTransportType serviceTransportType)
     {
-        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we cannot use VerifiableLog
         ServiceHubContext serviceHubContext = null;
         using (StartLog(out var loggerFactory))
         {

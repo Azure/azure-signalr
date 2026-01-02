@@ -160,7 +160,7 @@ internal abstract class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<TH
             MessageLog.StartToBroadcastMessageToGroups(Logger, message);
         }
         // Send this message from a random service connection because this message involves of multiple groups.
-        // Unless we send message for each group one by one, we can not guarantee the message order for all groups.
+        // Unless we send message for each group one by one, we cannot guarantee the message order for all groups.
         return WriteAsync(message);
     }
 
