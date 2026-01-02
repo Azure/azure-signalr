@@ -82,11 +82,12 @@ var connection = new HubConnectionBuilder().WithUrl("http://<Your Host Name>/<Yo
 await connection.StartAsync();
 ```
 
-The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/1ccde134924b6ff11b292a84f1f95491d8ad2b2f/samples/Management).
+The [Management SDK sample](https://github.com/aspnet/AzureSignalR-samples/tree/1ccde134924b6ff11b292a84f1f95491d8ad2b2f/samples/Management) shows how to redirect SignalR clients to Azure SignalR Service.
 
 ### Create and Use ServiceHubContext
 
-You can create an instance of `IServiceHubContext` to publish messages or manage group membership. The sample on how to use Management SDK to publish messages to SignalR clients can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/1ccde134924b6ff11b292a84f1f95491d8ad2b2f/samples/Management).
+You can create an instance of `IServiceHubContext` to publish messages or manage group membership.
+The [Management SDK sample](https://github.com/aspnet/AzureSignalR-samples/tree/1ccde134924b6ff11b292a84f1f95491d8ad2b2f/samples/Management) shows how to publish messages to SignalR clients.
 
 ``` C#
 try
@@ -114,7 +115,7 @@ finally
 }
 ```
 
-For full sample on how to use Management SDK can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/1ccde134924b6ff11b292a84f1f95491d8ad2b2f/samples/Management).
+The [Management SDK sample](https://github.com/aspnet/AzureSignalR-samples/tree/1ccde134924b6ff11b292a84f1f95491d8ad2b2f/samples/Management) is a full sample.
 
 ## Transport Type
 
