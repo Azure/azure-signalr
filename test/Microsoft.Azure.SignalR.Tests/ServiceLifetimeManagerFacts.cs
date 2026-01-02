@@ -219,7 +219,7 @@ public class ServiceLifetimeManagerFacts
     }
 
     [Fact]
-    public async Task TestSendConnectionAsyncisOverwrittenWhenClientConnectionExisted()
+    public async Task TestSendConnectionAsyncIsOverwrittenWhenClientConnectionExisted()
     {
         var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
         var clientConnectionManager = new ClientConnectionManager();
