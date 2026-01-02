@@ -67,7 +67,7 @@ public class ChatHub(IHubContext<ChatHub> context) : Hub
                 _ = _context.Clients.Client(connectionId).SendAsync(
                     "echo",
                     "sys",
-                    $"last recieve message at: {stat.LastMessageReceivedAtUtc}, total size: {stat.ReceivedBytes}.");
+                    $"last receive message at: {stat.LastMessageReceivedAtUtc}, total size: {stat.ReceivedBytes}.");
                 _lastMessageReceivedAt = stat.LastMessageReceivedAtUtc;
             }
         }

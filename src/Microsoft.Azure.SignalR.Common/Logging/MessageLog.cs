@@ -147,7 +147,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly Action<ILogger, ulong?, string, Exception> ReceivedMessageFromServiceAction =
                 LoggerMessage.Define<ulong?, string>(
                     LogLevel.Information,
-                    new EventId(120, "RecieveMessageFromService"),
+                    new EventId(120, "ReceiveMessageFromService"),
                     ReceivedMessageFromClientConnectionTemplate);
 
         private static readonly Action<ILogger, ulong?, string, string, Exception> StartToCheckIfUserInGroupAction =

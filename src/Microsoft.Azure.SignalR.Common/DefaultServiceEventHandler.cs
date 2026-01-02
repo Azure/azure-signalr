@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define<string, string, string, string, string>(
                     LogLevel.Information,
                     new EventId(1, "ServiceEvent"),
-                    "{connectionId} recieved service event for {objectType}({objectId}) is {kind}, message is: {message}");
+                    "{connectionId} received service event for {objectType}({objectId}) is {kind}, message is: {message}");
 
             public static void ServiceEvent(ILogger logger, string connectionId, ServiceEventMessage message)
             {

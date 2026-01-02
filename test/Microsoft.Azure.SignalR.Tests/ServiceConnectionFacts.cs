@@ -296,15 +296,15 @@ public class ServiceConnectionFacts
         await Task.Delay(TimeSpan.FromSeconds(6));
 
         await proxy.WriteMessageAsync(new PingMessage());
-        // Check server PingMessage will send after reveive service PingMessage
+        // Check server PingMessage will send after receive service PingMessage
         await pingMessageTask.OrTimeout();
 
-        // Wait another 6 sec and recived connection message will also trigger ping
+        // Wait another 6 sec and received connection message will also trigger ping
         pingMessageTask = proxy.WaitForApplicationMessageAsync(typeof(PingMessage));
         await Task.Delay(TimeSpan.FromSeconds(6));
         await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
-        // Check server PingMessage will send after reveive service PingMessage
+        // Check server PingMessage will send after receive service PingMessage
         await pingMessageTask.OrTimeout();
 
         proxy.Stop();
