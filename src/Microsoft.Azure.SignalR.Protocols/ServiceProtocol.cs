@@ -328,11 +328,11 @@ public class ServiceProtocol : IServiceProtocol
             case ClientInvocationMessage clientInvocationMessage:
                 WriteClientInvocationMessage(ref writer, clientInvocationMessage);
                 break;
-            case ClientCompletionMessage clientCompletionMesssage:
-                WriteClientCompletionMessage(ref writer, clientCompletionMesssage);
+            case ClientCompletionMessage clientCompletionMessage:
+                WriteClientCompletionMessage(ref writer, clientCompletionMessage);
                 break;
-            case ErrorCompletionMessage errorCompletionMesssage:
-                WriteErrorCompletionMessage(ref writer, errorCompletionMesssage);
+            case ErrorCompletionMessage errorCompletionMessage:
+                WriteErrorCompletionMessage(ref writer, errorCompletionMessage);
                 break;
             case ServiceMappingMessage serviceMappingMessage:
                 WriteServiceMappingMessage(ref writer, serviceMappingMessage);
