@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         }
 
         [Fact]
-        public void TestAssginMessageId()
+        public void TestAssignMessageId()
         {
             var msg1 = new BroadcastDataMessage(null).WithTracingId();
 
