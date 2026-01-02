@@ -157,7 +157,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
         User = serviceMessage.GetUserPrincipal();
         InstanceId = GetInstanceId(serviceMessage.Headers);
 
-        // Create the Duplix Pipeline for the virtual connection
+        // Create the Duplex Pipeline for the virtual connection
         transportPipeOptions ??= DefaultPipeOptions;
         appPipeOptions ??= DefaultPipeOptions;
 
