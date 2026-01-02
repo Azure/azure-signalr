@@ -17,7 +17,7 @@ public enum ServerStickyMode
 
     ///// <summary>
     ///// We will try to find the server it /neogitate with from local, if that server is connected to this runtime instance, we choose that server
-    ///// Otherwise, we fallback to local existed server
+    ///// Otherwise, we fall back to local existed server
     ///// </summary>
     Preferred = 1,
 

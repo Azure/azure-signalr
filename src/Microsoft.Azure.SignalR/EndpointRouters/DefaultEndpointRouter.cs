@@ -37,7 +37,7 @@ internal class DefaultEndpointRouter : DefaultMessageRouter, IEndpointRouter
             return primary;
         }
 
-        // All primary endpoints are offline, fallback to the first online secondary endpoint
+        // All primary endpoints are offline, fall back to the first online secondary endpoint
         var secondary = endpoints.Where(s => s.Online && s.EndpointType == EndpointType.Secondary).ToArray();
         if (secondary.Length == 0)
         {
@@ -48,7 +48,7 @@ internal class DefaultEndpointRouter : DefaultMessageRouter, IEndpointRouter
     }
 
     /// <summary>
-    ///  Choose endpoint randomly by weight. 
+    ///  Choose endpoint randomly by weight.
     ///  The weight is defined as (the remaining connection quota / the connection capacity).
     /// </summary>
     private static ServiceEndpoint GetEndpointAccordingToWeight(ServiceEndpoint[] availableEndpoints)
@@ -74,7 +74,7 @@ internal class DefaultEndpointRouter : DefaultMessageRouter, IEndpointRouter
         }
 
         var index = StaticRandom.Next(totalCapacity);
-        
+
         return availableEndpoints[Array.FindLastIndex(we, x => x <= index) + 1];
     }
 }
