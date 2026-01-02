@@ -441,7 +441,7 @@ public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTe
                 Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
                 // Invalid request
-                response = await client.GetAsync("/negotiate?endpoint=notexists");
+                response = await client.GetAsync("/negotiate?endpoint=nonexistent");
 
                 Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
             }

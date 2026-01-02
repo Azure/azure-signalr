@@ -444,7 +444,7 @@ public class NegotiateHandlerFacts
         requestFeature = new HttpRequestFeature
         {
             Path = "/user/path/negotiate/",
-            QueryString = "?endpoint=notexists"
+            QueryString = "?endpoint=nonexistent"
         };
 
         responseFeature = new HttpResponseFeature();
