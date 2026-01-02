@@ -76,7 +76,7 @@ public class ClientInvocationManagerTests
         var invocationId = clientInvocationManager.Caller.GenerateInvocationId(connectionId);
 
         var cancellationToken = new CancellationToken();
-        // Server A knows the InstanceId of Client 2, so `instaceId` in `AddInvocation` is `targetClientInstanceId` 
+        // Server A knows the InstanceId of Client 2, so `instanceId` in `AddInvocation` is `targetClientInstanceId` 
         var task = clientInvocationManager.Caller.AddInvocation<string>("TestHub", connectionId, invocationId, cancellationToken);
 
         var ret = clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out var t);
@@ -125,7 +125,7 @@ public class ClientInvocationManagerTests
         var invocationId = ciManagers[0].Caller.GenerateInvocationId(TestConnectionIds[0]);
 
         var cancellationToken = new CancellationToken();
-        // Server 1 doesn't know the InstanceId of Client 2, so `instaceId` is null for `AddInvocation`
+        // Server 1 doesn't know the InstanceId of Client 2, so `instanceId` is null for `AddInvocation`
         var task = ciManagers[0].Caller.AddInvocation<string>("TestHub", TestConnectionIds[0], invocationId, cancellationToken);
         ciManagers[0].Caller.AddServiceMapping(new ServiceMappingMessage(invocationId, TestConnectionIds[1], TestInstanceIds[1]));
         ciManagers[1].Router.AddInvocation(TestConnectionIds[1], invocationId, serverIds[0], new CancellationToken());
@@ -189,7 +189,7 @@ public class ClientInvocationManagerTests
         var invocationId = clientInvocationManager.Caller.GenerateInvocationId(connectionId);
 
         var cancellationToken = new CancellationToken();
-        // Server A knows the InstanceId of Client 2, so `instaceId` in `AddInvocation` is `targetClientInstanceId` 
+        // Server A knows the InstanceId of Client 2, so `instanceId` in `AddInvocation` is `targetClientInstanceId` 
         var task = clientInvocationManager.Caller.AddInvocation<string>("TestHub", connectionId, invocationId, cancellationToken);
 
         var ret = clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out var t);
@@ -237,7 +237,7 @@ public class ClientInvocationManagerTests
         var invocationId = clientInvocationManager.Caller.GenerateInvocationId(connectionId);
 
         var cancellationToken = new CancellationToken();
-        // Server A knows the InstanceId of Client 2, so `instaceId` in `AddInvocation` is `targetClientInstanceId` 
+        // Server A knows the InstanceId of Client 2, so `instanceId` in `AddInvocation` is `targetClientInstanceId` 
         var task = clientInvocationManager.Caller.AddInvocation<string>("TestHub", connectionId, invocationId, cancellationToken);
 
         var ret = clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out var t);
