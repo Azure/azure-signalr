@@ -460,7 +460,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
             LoggerMessage.Define<string>(LogLevel.Debug, new EventId(2, "StoppingConnection"), "Stopping connections for endpoint {endpoint}.");
 
         private static readonly Action<ILogger, string, Exception> EndpointNotExistsAction =
-            LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "EndpointNotExists"), "Endpoint {endpoint} from the router does not exists.");
+            LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "EndpointNotExists"), "Endpoint {endpoint} from the router does not exist.");
 
         private static readonly Action<ILogger, string, Exception> FailedStartingConnectionForNewEndpointAction =
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, "FailedStartingConnectionForNewEndpoint"), "Fail to create and start server connection for new endpoint {endpoint}.");

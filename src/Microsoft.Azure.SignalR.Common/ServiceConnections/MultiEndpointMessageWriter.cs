@@ -225,7 +225,7 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter
         public const string FailedWritingMessageToEndpointTemplate = "{0} message {1} is not sent to endpoint {2} because all connections to this endpoint are offline.";
 
         private static readonly Action<ILogger, string, Exception> _endpointNotExists =
-            LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "EndpointNotExists"), "Endpoint {endpoint} from the router does not exists.");
+            LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "EndpointNotExists"), "Endpoint {endpoint} from the router does not exist.");
 
         private static readonly Action<ILogger, string, Exception> _noEndpointRouted =
             LoggerMessage.Define<string>(LogLevel.Warning, new EventId(4, "NoEndpointRouted"), "Message {messageType} is not sent because no endpoint is returned from the endpoint router.");
