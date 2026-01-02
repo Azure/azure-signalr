@@ -71,7 +71,7 @@ public class AddAzureSignalRFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public void AddAzureSignalRReadsInvalidCongifurationThrows()
+    public void AddAzureSignalRReadsInvalidConfigurationThrows()
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {

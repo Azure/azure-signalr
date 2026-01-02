@@ -157,7 +157,7 @@ public class AddAzureSignalRWithConnectionNameFacts : VerifiableLoggedTest
     }
 
     [Fact]
-    public void AddAzureSignalRWithConnectionNameReadsInvalidCongifurationThrows()
+    public void AddAzureSignalRWithConnectionNameReadsInvalidConfigurationThrows()
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
