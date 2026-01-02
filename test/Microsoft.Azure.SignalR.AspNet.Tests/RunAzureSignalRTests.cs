@@ -128,7 +128,7 @@ public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTe
     }
 
     [Fact]
-    public void TestRunAzureSignalRWiillUseApplicationNameInOptionsWhenUseHubPrefixIsTrue()
+    public void TestRunAzureSignalRWillUseApplicationNameInOptionsWhenUseHubPrefixIsTrue()
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
         {
