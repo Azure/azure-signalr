@@ -79,7 +79,7 @@ public class MicrosoftEntraAccessKeyTests
     }
 
     [Fact]
-    public async Task TestNotInitailized()
+    public async Task TestNotInitialized()
     {
         var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential(delay: 10000));
         Assert.False(key.Available);
