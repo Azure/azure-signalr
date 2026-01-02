@@ -124,7 +124,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         ServiceConnectionFactory = serviceConnectionFactory;
         Endpoint = endpoint;
 
-        // use globally unique AckHanlder if not specified
+        // use globally unique AckHandler if not specified
         // It is possible that the multiple MapHub calls the same hub, so that ack messages could be received by another instance of ServiceConnectionContainer
         // Use the ack handler singleton to allow ack message to be acked by another container instance
         _ackHandler = ackHandler ?? AckHandler.Singleton;
@@ -292,7 +292,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
     }
 
     /// <summary>
-    /// <see cref="WriteAckableMessageAsync(ServiceMessage, CancellationToken)"/> only checks <see cref="AckMessage.Status"/> as the response, 
+    /// <see cref="WriteAckableMessageAsync(ServiceMessage, CancellationToken)"/> only checks <see cref="AckMessage.Status"/> as the response,
     /// while this method checks <see cref="AckMessage.Payload"/> and deserialize it to <typeparamref name="T"/>.
     /// </summary>
     /// Made "interval virtual" for testing
