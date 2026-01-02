@@ -34,7 +34,7 @@ Azure SignalR Service is based on [ASP.NET Core SignalR](https://github.com/aspn
 
 Package [Microsoft.Azure.SignalR](https://www.nuget.org/packages/Microsoft.Azure.SignalR) is the one to use when you are using [ASP.NET Core SignalR](https://github.com/aspnet/SignalR). If you are not familiar with ASP.NET Core SignalR yet, we recommend you to read [ASP.NET Core SignalR's documentation](https://docs.microsoft.com/aspnet/core/signalr/) first.
 
-Follow the tutorial at [here](https://aka.ms/signalr_service_doc) to get started with Azure SignalR Service.
+See the tutorial in the [Azure SignalR Service documentation](https://aka.ms/signalr_service_doc) to get started with Azure SignalR Service.
 
 More samples on how to use Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/).
 
@@ -60,7 +60,7 @@ Samples on how to use Azure SignalR Service can be found [here](https://github.c
 
 Package [Microsoft.Azure.SignalR.Management](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) is the one to use when you want to manage SignalR clients through Azure SignalR Service directly such as broadcast messages. This SDK can be but not limited to be used in [serverless](https://azure.microsoft.com/solutions/serverless/) environments. You can use this SDK to manage SignalR clients connected to your Azure SignalR Service in any environment, such as in a console app, in an Azure function or in an App Server.
 
-More details can be found [here](https://learn.microsoft.com/azure/azure-signalr/signalr-howto-use-management-sdk).
+More details can be found in the [Azure SignalR Service documentation](https://learn.microsoft.com/azure/azure-signalr/signalr-howto-use-management-sdk).
 
 The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
 
