@@ -228,7 +228,7 @@ internal class NegotiateMiddleware : OwinMiddleware
         string originalPath = null;
         string queryString = null;
 
-        // add OriginalPath and QueryString when the clients protocol is higher than 2.0, earlier ASP.NET SignalR clients does not support redirect URL with query parameters
+        // add OriginalPath and QueryString when the clients protocol is above 2.0, earlier ASP.NET SignalR clients does not support redirect URL with query parameters
         if (!string.IsNullOrEmpty(clientProtocol) && Version.TryParse(clientProtocol, out var version) && version >= ClientSupportQueryStringVersion)
         {
             var clientRequestId = _connectionRequestIdProvider.GetRequestId("");
