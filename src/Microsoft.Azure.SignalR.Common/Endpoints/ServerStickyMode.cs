@@ -16,7 +16,7 @@ public enum ServerStickyMode
     Disabled = 0,
 
     ///// <summary>
-    ///// We will try to find the server it /neogitate with from local, if that server is connected to this runtime instance, we choose that server
+    ///// We will try to find the server it /negotiate with from local, if that server is connected to this runtime instance, we choose that server
     ///// Otherwise, we fall back to local existed server
     ///// </summary>
     Preferred = 1,
