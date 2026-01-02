@@ -59,7 +59,7 @@ We provides 2 options to clear tags in groups: [Removing user IDs](#removing-use
 
 ### Adding user IDs
 
-TTL determines whether the **future** connections with the user ID is added to the group. To remove the already existing connections with the user ID from a group excipitly, you can call `remove a user ID from a group` API. To remove the already existing connections with the user ID from all groups excipitly, please see [Remove user from all groups](#remove-user-from-all-groups) section.
+TTL determines whether the **future** connections with the user ID is added to the group. To remove the already existing connections with the user ID from a group explicitly, you can call `remove a user ID from a group` API. To remove the already existing connections with the user ID from all groups explicitly, please see [Remove user from all groups](#remove-user-from-all-groups) section.
 
 Once TTL is set to a user-group pair, newly connected connections with this user ID will be added to the group automatically on or before the expiration time (update time + TTL); otherwise, the connection will not added to the group. Once it is connected, the group membership to the connection will **NOT** change no matter how TTL changes, unless the membership is mamually remove by `remove a user ID from a group` or `remove a user ID from all groups` API.
 
