@@ -209,7 +209,7 @@ namespace Microsoft.Azure.SignalR
             }
             else
             {
-                // todo: ? should we hide some by "..." if the excluded list is too long (max count: 20) - e.g. "excecpt for <list count> connections: connId1, connId2, ..."
+                // todo: ? should we hide some by "..." if the excluded list is too long (max count: 20) - e.g. "except for <list count> connections: connId1, connId2, ..."
                 var excludedConnections = string.Join(", ", message.ExcludedList);
                 StartToBroadcastMessageWithExcludedConnectionAction(logger, message.TracingId, message.ExcludedList.Count, excludedConnections, null);
             }
