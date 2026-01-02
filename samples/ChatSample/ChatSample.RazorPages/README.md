@@ -60,7 +60,7 @@ To access the chat application, open your web browser and navigate to:
 
 #### Using broadcast method
 
-1. Browse to the site with your favorite browser and it will connect with the SignalR Javascript client.
+1. Browse to the site with your favorite browser and it will connect with the SignalR JavaScript client.
 2. It creates 2 clients by default.
 3. Enter some message in the text box above 'Broadcast'.
 4. Press 'Broadcast' to send message to all connected clients.
@@ -69,7 +69,7 @@ To access the chat application, open your web browser and navigate to:
 
 The sample also shows the usage of [SignalR client results](https://learn.microsoft.com/aspnet/core/signalr/hubs#client-results) which is the new feature supported since NET7.0.
 
-1. Browse to the site with your favorite browser and it will connect with the SignalR Javascript client.
+1. Browse to the site with your favorite browser and it will connect with the SignalR JavaScript client.
 2. It creates 2 clients by default. Grab an ID from the connected connections and paste it in the ID text box.
 3. Press 'Invoke' to invoke a Hub method which will ask the specified ID for a result.
 4. The client invoked will unlock 'Reply' button and you can type something in the text box above.
@@ -77,7 +77,7 @@ The sample also shows the usage of [SignalR client results](https://learn.micros
 
 #### Using client results from anywhere with `IHubContext`
 
-1. Browse to the site with your favorite browser and it will connect with the SignalR Javascript client.
+1. Browse to the site with your favorite browser and it will connect with the SignalR JavaScript client.
 2. Copy the ID for a connected connection.
 3. Navigate to `/get/<ID>` in a new tab. Replace `<ID>` with the copied connection ID.
 5. Go to the browser tab for the chosen ID and write a message in the Message text box.
