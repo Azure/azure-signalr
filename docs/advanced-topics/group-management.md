@@ -38,7 +38,7 @@ In general, we support 5 methods for group management for all SDKs and REST API 
 
 To add or remove connection IDs from a group, you call the add or remove methods, and pass in the connection ID and group's name as parameters. Group membership is **NOT** preserved when a connection ends. The connection needs to rejoin the group when it's re-established.
 
-At the momment, Azure SignalR Service doesn't provide any methods to check connection membership in a group. Therefore, it is app server's responsibility to manage the connection membership.
+At the moment, Azure SignalR Service doesn't provide any methods to check connection membership in a group. Therefore, it is app server's responsibility to manage the connection membership.
 
 ### Adding and removing connection IDs
 
