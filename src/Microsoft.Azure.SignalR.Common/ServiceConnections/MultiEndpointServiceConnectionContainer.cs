@@ -345,7 +345,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
                 return;
             }
 
-            // TDOO: shall we pass in cancellation token here?
+            // TODO: shall we pass in cancellation token here?
             _ = container.ConnectionContainer.OfflineAsync(GracefulShutdownMode.Off, default);
             await WaitForClientsDisconnect(container);
 
