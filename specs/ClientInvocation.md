@@ -8,8 +8,8 @@ Customer faced hub method is same with local SignalR and we'll provide same cust
 ```cs
 public async Task<string> GetMessage(string ID)
 {
-    var ressult = await Clients.Client(ID).InvokeAsync<string>("GetMessage", default);
-    return $"From {ID}: {ressult}";
+    var result = await Clients.Client(ID).InvokeAsync<string>("GetMessage", default);
+    return $"From {ID}: {result}";
 }
 ```
 
