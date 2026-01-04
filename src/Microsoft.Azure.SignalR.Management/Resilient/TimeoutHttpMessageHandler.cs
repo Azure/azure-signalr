@@ -42,7 +42,7 @@ internal class TimeoutHttpMessageHandler : DelegatingHandler
             }
             catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
             {
-                throw new TaskCanceledException($"The request was canceled due to the configured HttpClient.Timeout of {_timeout.TotalSeconds} seconds elapsing.", new TimeoutException(ex.Message, ex));
+                throw new TaskCanceledException($"The request was canceled because the configured HttpClient.Timeout of {_timeout.TotalSeconds} seconds elapsed.", new TimeoutException(ex.Message, ex));
             }
         }
         return await base.SendAsync(request, cancellationToken);
