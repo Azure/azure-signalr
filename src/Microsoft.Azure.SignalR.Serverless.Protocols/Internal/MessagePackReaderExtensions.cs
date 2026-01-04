@@ -67,7 +67,7 @@ internal static class MessagePackReaderExtensions
         var array = new object?[count];
         for (var i = 0; i < count; i++)
         {
-            array[i] = reader.ReadObject($"the element at indext {i} of {field}");
+            array[i] = reader.ReadObject($"the element at index {i} of {field}");
         }
         return array;
     }
