@@ -3,13 +3,13 @@ Build Azure SignalR Service SDK from Source
 
 Building Azure SignalR Service SDK from source allows you tweak and customize the SDK, and to contribute your improvements back to the project.
 
-## Install pre-requistes
+## Install prerequisites
 
 Building Azure SignalR Service SDK requires:
 
 * Latest Visual Studio (include pre-release). <https://visualstudio.com>
 * Git. <https://git-scm.org>
-* .NET SDK (Version >= 7.0.0-preview.7). <https://dotnet.microsoft.com/download/dotnet>	
+* .NET SDK (Version >= 7.0.0-preview.7). <https://dotnet.microsoft.com/download/dotnet>
 
 ## Clone the source code
 
