@@ -312,7 +312,7 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
         switch (protocol.Name)
         {
             case "json":
-            case "messagepack":
+            //case "messagepack":
                 return true;
             default:
                 return false;

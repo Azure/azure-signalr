@@ -975,13 +975,10 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
-    public static readonly IEnumerable<object[]> serviceTransportTypeTestData =
-        from serviceTransportType in ServiceTransportType
-        select new object[] { serviceTransportType};
-
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
-    [MemberData(nameof(serviceTransportTypeTestData))]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
     public async Task ClientInvocationTest_Default(ServiceTransportType serviceTransportType)
     {
         using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_Default));
@@ -1004,7 +1001,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
     //[ConditionalTheory]
     //[SkipIfConnectionStringNotPresent]
-    //[MemberData(nameof(serviceTransportTypeTestData))]
+    //[InlineData(Management.ServiceTransportType.Transient)]
+    //[InlineData(Management.ServiceTransportType.Persistent)]
     //public async Task ClientInvocationTest_WithMessagePack(ServiceTransportType serviceTransportType)
     //{
     //    using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithMessagePack));
@@ -1023,7 +1021,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
-    [MemberData(nameof(serviceTransportTypeTestData))]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
     public async Task ClientInvocationTest_WithJson(ServiceTransportType serviceTransportType)
     {
         using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithJson));
@@ -1042,7 +1041,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
     //[ConditionalTheory]
     //[SkipIfConnectionStringNotPresent]
-    //[MemberData(nameof(serviceTransportTypeTestData))]
+    //[InlineData(Management.ServiceTransportType.Transient)]
+    //[InlineData(Management.ServiceTransportType.Persistent)]
     //public async Task ClientInvocationTest_WithMessagePackWithNewtonSoft(ServiceTransportType serviceTransportType)
     //{
     //    using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithMessagePackWithNewtonSoft));
@@ -1066,7 +1066,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
     //[ConditionalTheory]
     //[SkipIfConnectionStringNotPresent]
-    //[MemberData(nameof(serviceTransportTypeTestData))]
+    //[InlineData(Management.ServiceTransportType.Transient)]
+    //[InlineData(Management.ServiceTransportType.Persistent)]
     //public async Task ClientInvocationTest_WithMultipleProtocols(ServiceTransportType serviceTransportType)
     //{
     //    using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithMultipleProtocols));
@@ -1086,7 +1087,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
-    [MemberData(nameof(serviceTransportTypeTestData))]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
     public async Task ClientInvocationTest_WithJsonWithCustomisedSerializer(ServiceTransportType serviceTransportType)
     {
         var options = JsonObjectSerializerHubProtocol.CreateDefaultSerializerSettings();
@@ -1112,7 +1114,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
     //[ConditionalTheory]
     //[SkipIfConnectionStringNotPresent]
-    //[MemberData(nameof(serviceTransportTypeTestData))]
+    //[InlineData(Management.ServiceTransportType.Transient)]
+    //[InlineData(Management.ServiceTransportType.Persistent)]
     //public async Task ClientInvocationTest_WithMessagepackWithCustomisedSerializer(ServiceTransportType serviceTransportType)
     //{
     //    var messagePackOptions = MessagePackSerializerOptions.Standard

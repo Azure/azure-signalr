@@ -447,7 +447,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         switch (protocol.Name)
         {
             case "json":
-            case "messagepack":
+            //case "messagepack":
                 return true;
             default:
                 return false;
