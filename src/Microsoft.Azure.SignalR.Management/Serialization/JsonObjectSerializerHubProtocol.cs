@@ -187,7 +187,7 @@ namespace Microsoft.Azure.SignalR.Management
                             var returnType = binder.GetReturnType(invocationId!);
                             using (var ms = new MemoryStream())
                             {
-                                using (var writer = new StreamWriter(ms, Encoding.UTF8, 1024, leaveOpen: true))
+                                using (var writer = new StreamWriter(ms, new UTF8Encoding(false), 1024, leaveOpen: true))
                                 {
                                     token.WriteTo(new JsonTextWriter(writer));
                                     writer.Flush();

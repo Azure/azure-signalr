@@ -393,33 +393,29 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
                 {
                     await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
-                    // 1. Deserialize whole response into JsonDocument (InvocationResponse "shell")
+                    // Deserialize whole response into JsonDocument (InvocationResponse "shell")
                     using var doc = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken);
                     var root = doc.RootElement;
 
-                    if (!root.TryGetProperty("result", out var resultProperty) || resultProperty.ValueKind == JsonValueKind.Null)
+                    if (!root.TryGetProperty("result", out var resultProperty))
                     {
                         throw new HubException("Response cannot be null or empty.");
                     }
-                    else
+                    
+                    using var resultStream = new MemoryStream();
+                    await using (var utf8Writer = new Utf8JsonWriter(resultStream))
                     {
-                        // 2. Re-serialize "result" and deserialize separately as T via ObjectSerializer
-                        using var resultStream = new MemoryStream();
-                        await using (var utf8Writer = new Utf8JsonWriter(resultStream))
-                        {
-                            resultProperty.WriteTo(utf8Writer);
-                            await utf8Writer.FlushAsync(cancellationToken);
-                        }
-
-                        resultStream.Position = 0;
-
-                        var deserialized = await _restClient.ObjectSerializer.DeserializeAsync(
-                            resultStream,
-                            typeof(T),
-                            cancellationToken);
-
-                        resultValue = (T)deserialized!;
+                        resultProperty.WriteTo(utf8Writer);
+                        await utf8Writer.FlushAsync(cancellationToken);
                     }
+
+                    resultStream.Position = 0;
+
+                    var deserialized = await _restClient.ObjectSerializer.DeserializeAsync(
+                                            resultStream,
+                                            typeof(T),
+                                            cancellationToken);
+                    resultValue = (T)deserialized!;
                 }
                 else
                 {
