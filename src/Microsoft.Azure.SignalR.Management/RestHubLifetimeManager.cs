@@ -15,8 +15,8 @@ using Azure;
 
 using Microsoft.AspNetCore.SignalR;
 #if NET7_0_OR_GREATER
+using System.IO;
 using Microsoft.AspNetCore.SignalR.Protocol;
-using Microsoft.Azure.SignalR.Management.ClientInvocation;
 #endif
 using Microsoft.Extensions.Primitives;
 
@@ -362,7 +362,6 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 #if NET7_0_OR_GREATER
     public override async Task<T> InvokeConnectionAsync<T>(string connectionId, string methodName, object?[] args, CancellationToken cancellationToken = default)
     {
-        // Validate input parameters
         if (string.IsNullOrEmpty(methodName))
         {
             throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
@@ -376,12 +375,11 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             throw new NotSupportedException("Non supported protocol for client invocation.");
         }
 
-        // Get API endpoint and prepare for the request
-        var api = _restApiProvider.SendClientInvocation(_appName, _hubName, connectionId);
-        InvocationResponse<T>? wrapper = null;
+        var api = _restApiProvider.GetClientInvocationEndpoint(_appName, _hubName, connectionId);
         string? errorContent = null;
-        bool isSuccess = false;
-        // Send request and capture the response
+        var isSuccess = false;
+        T? resultValue = default;
+
         await _restClient.SendMessageWithRetryAsync(
             api,
             HttpMethod.Post,
@@ -395,30 +393,49 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
                 {
                     await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
-                    var deserialized = await _restClient.ObjectSerializer.DeserializeAsync(
-                        contentStream,
-                        typeof(InvocationResponse<T>),
-                        cancellationToken);
+                    // 1. Deserialize whole response into JsonDocument (InvocationResponse "shell")
+                    using var doc = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken);
+                    var root = doc.RootElement;
 
-                    wrapper = deserialized as InvocationResponse<T>
-                        ?? throw new HubException("Failed to deserialize response");
+                    if (!root.TryGetProperty("result", out var resultProperty) || resultProperty.ValueKind == JsonValueKind.Null)
+                    {
+                        throw new HubException("Response cannot be null or empty.");
+                    }
+                    else
+                    {
+                        // 2. Re-serialize "result" and deserialize separately as T via ObjectSerializer
+                        using var resultStream = new MemoryStream();
+                        await using (var utf8Writer = new Utf8JsonWriter(resultStream))
+                        {
+                            resultProperty.WriteTo(utf8Writer);
+                            await utf8Writer.FlushAsync(cancellationToken);
+                        }
+
+                        resultStream.Position = 0;
+
+                        var deserialized = await _restClient.ObjectSerializer.DeserializeAsync(
+                            resultStream,
+                            typeof(T),
+                            cancellationToken);
+
+                        resultValue = (T)deserialized!;
+                    }
                 }
                 else
                 {
                     errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 }
 
-                return isSuccess || response.StatusCode == HttpStatusCode.BadRequest;
+                return isSuccess || response.StatusCode == HttpStatusCode.InternalServerError;
             },
             cancellationToken);
 
-        // Ensure we have a response
         if (!isSuccess)
         {
             throw new HubException(errorContent ?? "Unknown error in response");
         }
 
-        return wrapper!.Result;
+        return resultValue!;
     }
 
     public override Task SetConnectionResultAsync(string connectionId, CompletionMessage result)

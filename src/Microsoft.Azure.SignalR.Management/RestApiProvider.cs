@@ -105,7 +105,7 @@ internal class RestApiProvider
         return GenerateRestApiEndpoint(appName, hubName, $"/groups/{Uri.EscapeDataString(groupName)}/connections");
     }
 
-    public RestApiEndpoint SendClientInvocation(string appName, string hubName, string connectionId)
+    public RestApiEndpoint GetClientInvocationEndpoint(string appName, string hubName, string connectionId)
     {
         return GenerateRestApiEndpoint(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}/:invoke");
     }

@@ -180,7 +180,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task InvokeConnectionAsync_WithMissingResultNode_NoExceptionThrown()
+        public async Task InvokeConnectionAsync_WithMissingResultNode_ThrowsHubException()
         {
             // Arrange
             var connectionId = "connection1";
@@ -203,13 +203,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 });
 
             // Act & Assert
-            var response = await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args);
-
-            Assert.Null(response);
+            var exception = await Assert.ThrowsAsync<HubException>(
+                async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
+            Assert.Equal("Response cannot be null or empty.", exception.Message);
         }
 
         [Fact]
-        public async Task InvokeConnectionAsync_WithMissingJsonObjectNode_NoExceptionThrown()
+        public async Task InvokeConnectionAsync_WithMissingJsonObjectNode_ThrowsHubException()
         {
             // Arrange
             var connectionId = "connection1";
@@ -232,13 +232,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 });
 
             // Act & Assert
-            var response = await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args);
-
-            Assert.Null(response);
+            var exception = await Assert.ThrowsAsync<HubException>(
+                async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
+            Assert.Equal("Response cannot be null or empty.", exception.Message);
         }
 
         [Fact]
-        public async Task InvokeConnectionAsync_WithNullResultNode_NoExceptionThrown()
+        public async Task InvokeConnectionAsync_WithNullResultNode_ThrowsHubException()
         {
             // Arrange
             var connectionId = "connection1";
@@ -261,9 +261,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 });
 
             // Act & Assert
-            var response = await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args);
-
-            Assert.Null(response);
+            var exception = await Assert.ThrowsAsync<HubException>(
+                async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
+            Assert.Equal("Response cannot be null or empty.", exception.Message);
         }
 #endif
 
