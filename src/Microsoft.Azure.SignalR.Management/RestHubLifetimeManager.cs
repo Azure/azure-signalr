@@ -395,9 +395,9 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
                     // 1. Read the outer ClientInvocationResponse (JSON)
                     await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
                     var InvocationResponse = await JsonSerializer.DeserializeAsync<InvocationResponse>(contentStream, cancellationToken: cancellationToken).ConfigureAwait(false);
-                    if (InvocationResponse == null)
+                    if (InvocationResponse == null || InvocationResponse.protocol == null || InvocationResponse.Result == null)
                     {
-                        throw new HubException("Response cannot be null or empty.");
+                        throw new HubException("Response is null or incomplete.");
                     }
 
                     // 2. Pick the hub protocol that matches clientResponse.Protocol

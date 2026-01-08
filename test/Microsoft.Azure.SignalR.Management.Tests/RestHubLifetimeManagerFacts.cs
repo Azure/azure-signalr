@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Management.ClientInvocation;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Moq;
 using Moq.Protected;
@@ -98,7 +99,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var args = new object?[] { 42, "test-param", true };
             var expectedResult = "John Doe";
 
-            var jsonResponse = $"{{\"result\":\"{expectedResult}\"}}";
+            var clientResponse = "John Doe";
 
             _httpMessageHandlerMock
                 .Protected()
@@ -109,7 +110,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 )
                 .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = new StringContent(jsonResponse)
+                    Content = new StringContent(GetInvocationResponseJson(clientResponse))
                 });
 
             // Act
@@ -127,7 +128,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var methodName = "getUserProfile";
             var args = new object?[] { "userId123", new { filter = "personal" } };
 
-            var jsonResponse = @"{""result"":{""id"":123,""name"":""Jane Doe"",""active"":true,""roles"":[""user"",""admin""]}}";
+            var profile = new UserProfile { id = 123, name = "Jane Doe", active = true, roles = new[] { "user", "admin" } };
 
             _httpMessageHandlerMock
                 .Protected()
@@ -138,7 +139,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 )
                 .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = new StringContent(jsonResponse)
+                    Content = new StringContent(GetInvocationResponseJson(profile))
                 });
 
             // Act
@@ -151,6 +152,35 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.True(result.active);
             Assert.Equal(2, result.roles.Length);
             Assert.Contains("admin", result.roles);
+        }
+
+        [Fact]
+        public async Task InvokeConnectionAsync_WithNullClientResponse_ReturnsDeserializedObject()
+        {
+            // Arrange
+            var connectionId = "connection1";
+            var methodName = "getUserProfile";
+            var args = new object?[] { "userId123", new { filter = "personal" } };
+
+            object? response = null;
+
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(GetInvocationResponseJson(response))
+                });
+
+            // Act
+            var result = await _manager.InvokeConnectionAsync<object>(connectionId, methodName, args);
+
+            // Assert
+            Assert.Null(result);
         }
 
         [Fact]
@@ -188,7 +218,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var args = Array.Empty<object>();
 
             // JSON missing the required result node
-            var incompleteJsonResponse = "{\"jsonObject\":{}}";
+            var response = System.Text.Json.JsonSerializer.Serialize(new { jsonObject = new InvocationResponse { protocol = "json" } });
 
             _httpMessageHandlerMock
                 .Protected()
@@ -199,25 +229,25 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 )
                 .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = new StringContent(incompleteJsonResponse)
+                    Content = new StringContent(response!)
                 });
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<HubException>(
                 async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
-            Assert.Equal("Response cannot be null or empty.", exception.Message);
+            Assert.Equal("Response is null or incomplete.", exception.Message);
         }
 
         [Fact]
-        public async Task InvokeConnectionAsync_WithMissingJsonObjectNode_ThrowsHubException()
+        public async Task InvokeConnectionAsync_WithMissingProtocolNode_ThrowsHubException()
         {
             // Arrange
             var connectionId = "connection1";
             var methodName = "getIncompleteData";
             var args = Array.Empty<object>();
 
-            // JSON missing the required jsonObject node
-            var incompleteJsonResponse = "{}";
+            // JSON missing the required protocol node
+            var response = System.Text.Json.JsonSerializer.Serialize(new { jsonObject = new InvocationResponse { Result = "someResult" } });
 
             _httpMessageHandlerMock
                 .Protected()
@@ -228,13 +258,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 )
                 .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = new StringContent(incompleteJsonResponse)
+                    Content = new StringContent(response)
                 });
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<HubException>(
                 async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
-            Assert.Equal("Response cannot be null or empty.", exception.Message);
+            Assert.Equal("Response is null or incomplete.", exception.Message);
         }
 
         [Fact]
@@ -246,7 +276,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var args = Array.Empty<object>();
 
             // JSON with null result node
-            var incompleteJsonResponse = "{\"jsonObject\":{\"result\":null}}";
+            var response = System.Text.Json.JsonSerializer.Serialize(new { jsonObject = new InvocationResponse { Result = null, protocol = "json" } });
 
             _httpMessageHandlerMock
                 .Protected()
@@ -257,13 +287,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 )
                 .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = new StringContent(incompleteJsonResponse)
+                    Content = new StringContent(response)
                 });
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<HubException>(
                 async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
-            Assert.Equal("Response cannot be null or empty.", exception.Message);
+            Assert.Equal("Response is null or incomplete.", exception.Message);
         }
 #endif
 
@@ -288,6 +318,20 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 throw new NotImplementedException();
             }
+        }
+
+        private static string GetInvocationResponseJson(object? responseObject)
+        {
+            var completion = CompletionMessage.WithResult("1234", responseObject);
+            var jsonResponseBytes = new JsonHubProtocol().GetMessageBytes(completion);
+            var response =
+                new InvocationResponse
+                {
+                    protocol = "json",
+                    Result = Convert.ToBase64String(jsonResponseBytes.ToArray())
+                };
+            var responseJson = System.Text.Json.JsonSerializer.Serialize(response);
+            return responseJson;
         }
     }
 }
