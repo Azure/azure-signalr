@@ -15,8 +15,9 @@ using Azure;
 
 using Microsoft.AspNetCore.SignalR;
 #if NET7_0_OR_GREATER
-using System.IO;
+using Microsoft.Azure.SignalR.Management.ClientInvocation;
 using Microsoft.AspNetCore.SignalR.Protocol;
+using System.Buffers;
 #endif
 using Microsoft.Extensions.Primitives;
 
@@ -378,7 +379,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         var api = _restApiProvider.GetClientInvocationEndpoint(_appName, _hubName, connectionId);
         string? errorContent = null;
         var isSuccess = false;
-        T? resultValue = default;
+        CompletionMessage? responseMessage = null;
 
         await _restClient.SendMessageWithRetryAsync(
             api,
@@ -391,31 +392,46 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
                 if (isSuccess)
                 {
-                    await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-
-                    // Deserialize whole response into JsonDocument (InvocationResponse "shell")
-                    using var doc = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken);
-                    var root = doc.RootElement;
-
-                    if (!root.TryGetProperty("result", out var resultProperty))
+                    // 1. Read the outer ClientInvocationResponse (JSON)
+                    await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                    var InvocationResponse = await JsonSerializer.DeserializeAsync<InvocationResponse>(contentStream, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    if (InvocationResponse == null)
                     {
                         throw new HubException("Response cannot be null or empty.");
                     }
+
+                    // 2. Pick the hub protocol that matches clientResponse.Protocol
+                    var protocol = _protocolResolver.AllProtocols
+                        .FirstOrDefault(p => string.Equals(p.Name, InvocationResponse.protocol, StringComparison.OrdinalIgnoreCase));
                     
-                    using var resultStream = new MemoryStream();
-                    await using (var utf8Writer = new Utf8JsonWriter(resultStream))
+                    if (protocol == null)
                     {
-                        resultProperty.WriteTo(utf8Writer);
-                        await utf8Writer.FlushAsync(cancellationToken);
+                        if (string.Equals(InvocationResponse.protocol, "messagepack", StringComparison.OrdinalIgnoreCase) &&
+                            _protocolResolver.AllProtocols.Count == 1 &&
+                            _protocolResolver.AllProtocols[0] is JsonObjectSerializerHubProtocol jsonObjectSerializerHubProtocol)
+                        {
+                            // The hub protocol is the default one. Service will convert it to MessagePack and keep backward compatibility as users may depend on this feature for MessagePack client support.
+                            protocol = new MessagePackHubProtocol();
+                        }
+                        else
+                        {
+                            throw new NotSupportedException($"The protocol '{InvocationResponse.protocol}' is not supported.");
+                        }
                     }
 
-                    resultStream.Position = 0;
+                    // 3. Use SimpleInvocationBinder with typeof(T)
+                    var binder = new SimpleInvocationBinder(typeof(T));
 
-                    var deserialized = await _restClient.ObjectSerializer.DeserializeAsync(
-                                            resultStream,
-                                            typeof(T),
-                                            cancellationToken);
-                    resultValue = (T)deserialized!;
+                    // 4. Parse the payload bytes into InvocationResponse<T>
+                    var messageBytes = Convert.FromBase64String(InvocationResponse.Result);
+                    var sequence = new ReadOnlySequence<byte>(messageBytes);
+                    var local = sequence;
+                    if (!protocol.TryParseMessage(ref local, binder, out var hubMessage))
+                    {
+                        throw new HubException("Failed to parse invocation response.");
+                    }
+
+                    responseMessage = (CompletionMessage)hubMessage!;
                 }
                 else
                 {
@@ -424,14 +440,27 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
                 return isSuccess || response.StatusCode == HttpStatusCode.InternalServerError;
             },
+            (request) =>
+            {
+                // Add Accept header for SignalR client to recognize the request from management SDK
+                request.Headers.Accept!.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/octet-stream"));
+            },
             cancellationToken);
 
         if (!isSuccess)
         {
             throw new HubException(errorContent ?? "Unknown error in response");
         }
+        if ( responseMessage == null)
+        {
+            throw new HubException("Response message is null.");
+        }
+        if (responseMessage.Error != null)
+        {
+            throw new HubException(responseMessage.Error);
+        }
 
-        return resultValue!;
+        return (T)responseMessage!.Result!;
     }
 
     public override Task SetConnectionResultAsync(string connectionId, CompletionMessage result)
@@ -447,7 +476,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         switch (protocol.Name)
         {
             case "json":
-            //case "messagepack":
+            case "messagepack":
                 return true;
             default:
                 return false;

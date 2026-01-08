@@ -6,28 +6,32 @@
 using System;
 using System.Buffers;
 using System.Diagnostics;
-using System.IO;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 
 #if NET5_0_OR_GREATER
+using System.IO;
 using System.Text.Json.Serialization;
-
+using System.Diagnostics.CodeAnalysis;
 #endif
 using Azure.Core.Serialization;
 
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     /// <summary>
     /// Implements the SignalR Hub Protocol using <see cref="global::Azure.Core.Serialization.ObjectSerializer"/>.
     /// Modified from https://github.com/dotnet/aspnetcore/blob/d9660d157627af710b71c636fa8cb139616cadba/src/SignalR/common/Protocols.Json/src/Protocol/JsonHubProtocol.cs
+    /// <remarks>
+    /// Changes compared to original version:
+    ///  <list>
+    ///     <item> Change <see cref="TryParseMessage(ref ReadOnlySequence{byte}, IInvocationBinder, out HubMessage)"/> to a seperate version for Net7.0.</item>
+    /// </list>
+    /// </remarks>
     /// </summary>
     internal sealed class JsonObjectSerializerHubProtocol : IHubProtocol
     {
@@ -82,23 +86,28 @@ namespace Microsoft.Azure.SignalR.Management
             return version == Version;
         }
 
-        public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage message)
+#if NET7_0_OR_GREATER
+        public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, [NotNullWhen(true)] out HubMessage? message)
         {
+
             if (!TextMessageParser.TryParseMessage(ref input, out var payload))
             {
                 message = null!;
                 return false;
             }
 
-            // Use MemoryStream and StreamReader as a public alternative
-            using var memoryStream = new MemoryStream(payload.ToArray());
-            using var textReader = new StreamReader(memoryStream, Encoding.UTF8, false, 1024, leaveOpen: true);
+            message = ParseMessage(payload, binder);
 
-            message = ParseMessage(textReader, binder);
             return message != null;
         }
+#else
+        public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage message)
+        {
+            //We don't need reading message with this protocol.
+            throw new NotSupportedException();
+        }
+#endif
 
-        /// <inheritdoc />
         public void WriteMessage(HubMessage message, IBufferWriter<byte> output)
         {
             WriteMessageCore(message, output);
@@ -111,7 +120,8 @@ namespace Microsoft.Azure.SignalR.Management
             return HubProtocolExtensions.GetMessageBytes(this, message);
         }
 
-        private HubMessage ParseMessage(StreamReader streamReader, IInvocationBinder binder)
+#if NET7_0_OR_GREATER
+        private HubMessage ParseMessage(ReadOnlySequence<byte> input, IInvocationBinder binder)
         {
             try
             {
@@ -120,83 +130,118 @@ namespace Microsoft.Azure.SignalR.Management
                 string? error = null;
                 var hasResult = false;
                 object? result = null;
-                JToken? resultToken = null;
+                bool hasResultToken = false;
+                Utf8JsonReader resultToken = default;
                 var completed = false;
 
-                using (var reader = CreateJsonTextReader(streamReader))
+                var reader = new Utf8JsonReader(input, isFinalBlock: true, state: default);
+
+                reader.CheckRead();
+
+                // We're always parsing a JSON object
+                reader.EnsureObjectStart();
+
+                do
                 {
-                    reader.DateParseHandling = DateParseHandling.None;
-
-                    CheckRead(reader);
-                    EnsureObjectStart(reader);
-
-                    do
+                    switch (reader.TokenType)
                     {
-                        switch (reader.TokenType)
-                        {
-                            case JsonToken.PropertyName:
-                                var memberName = reader.Value!.ToString();
+                        case JsonTokenType.PropertyName:
+                            if (reader.ValueTextEquals(TypePropertyNameBytes.EncodedUtf8Bytes))
+                            {
+                                type = reader.ReadAsInt32(TypePropertyName);
 
-                                switch (memberName)
+                                if (type == null)
                                 {
-                                    case TypePropertyName:
-                                        var messageType = ReadAsInt32(reader, TypePropertyName);
-
-                                        if (messageType == null)
-                                        {
-                                            throw new InvalidDataException($"Missing required property '{TypePropertyName}'.");
-                                        }
-
-                                        type = messageType.Value;
-                                        break;
-                                    case InvocationIdPropertyName:
-                                        invocationId = ReadAsString(reader, InvocationIdPropertyName);
-                                        break;
-                                    case ErrorPropertyName:
-                                        error = ReadAsString(reader, ErrorPropertyName);
-                                        break;
-                                    case ResultPropertyName:
-                                        CheckRead(reader);
-                                        hasResult = true;
-                                        // store it as a JToken so we can parse it later
-                                        resultToken = JToken.Load(reader);
-                                        break;
-                                    default:
-                                        // Skip read the property name
-                                        CheckRead(reader);
-                                        // Skip the value for this property
-                                        reader.Skip();
-                                        break;
+                                    throw new InvalidDataException($"Expected '{TypePropertyName}' to be of type {JsonTokenType.Number}.");
                                 }
-                                break;
-                            case JsonToken.EndObject:
-                                completed = true;
-                                break;
-                        }
+                            }
+                            else if (reader.ValueTextEquals(InvocationIdPropertyNameBytes.EncodedUtf8Bytes))
+                            {
+                                invocationId = reader.ReadAsString(InvocationIdPropertyName);
+                            }
+                            else if (reader.ValueTextEquals(ErrorPropertyNameBytes.EncodedUtf8Bytes))
+                            {
+                                error = reader.ReadAsString(ErrorPropertyName);
+                            }
+                            else if (reader.ValueTextEquals(ResultPropertyNameBytes.EncodedUtf8Bytes))
+                            {
+                                hasResult = true;
+
+                                if (string.IsNullOrEmpty(invocationId))
+                                {
+                                    // If we don't have an invocation id then we need to value copy the reader so we can parse it later
+                                    hasResultToken = true;
+                                    resultToken = reader;
+                                    reader.Skip();
+                                }
+                                else
+                                {
+                                    // If we have an invocation id already we can parse the end result
+                                    var returnType = binder.GetReturnType(invocationId);
+                                    if (returnType is null)
+                                    {
+                                        reader.Skip();
+                                        result = null;
+                                    }
+                                    else
+                                    {
+                                        try
+                                        {
+                                            result = BindType(ref reader, input, returnType);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            error = $"Error trying to deserialize result to {returnType.Name}. {ex.Message}";
+                                            hasResult = false;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                reader.CheckRead();
+                                reader.Skip();
+                            }
+                            break;
+                        case JsonTokenType.EndObject:
+                            completed = true;
+                            break;
+
                     }
-                    while (!completed && CheckRead(reader));
                 }
+                while (!completed && reader.CheckRead());
 
                 HubMessage message;
 
                 switch (type)
                 {
                     case HubProtocolConstants.CompletionMessageType:
-                        if (hasResult && resultToken is JToken token)
+                        if (invocationId is null)
                         {
-                            var returnType = binder.GetReturnType(invocationId!);
-                            using (var ms = new MemoryStream())
+                            throw new InvalidDataException($"Missing required property '{InvocationIdPropertyName}'.");
+                        }
+
+                        if (hasResultToken)
+                        {
+                            var returnType = binder.GetReturnType(invocationId);
+                            if (returnType is null)
                             {
-                                using (var writer = new StreamWriter(ms, new UTF8Encoding(false), 1024, leaveOpen: true))
+                                result = null;
+                            }
+                            else
+                            {
+                                try
                                 {
-                                    token.WriteTo(new JsonTextWriter(writer));
-                                    writer.Flush();
-                                    ms.Position = 0;
-                                    result = ObjectSerializer.Deserialize(ms, returnType, default);
+                                    result = BindType(ref resultToken, input, returnType);
+                                }
+                                catch (Exception ex)
+                                {
+                                    error = $"Error trying to deserialize result to {returnType.Name}. {ex.Message}";
+                                    hasResult = false;
                                 }
                             }
                         }
-                        message = BindCompletionMessage(invocationId!, error, result, hasResult);
+                        message = BindCompletionMessage(invocationId, error, result, hasResult);
                         break;
                     case HubProtocolConstants.InvocationMessageType:
                     case HubProtocolConstants.StreamInvocationMessageType:
@@ -212,11 +257,107 @@ namespace Microsoft.Azure.SignalR.Management
                 }
                 return message;
             }
-            catch (JsonReaderException jrex)
+            catch (JsonException jrex)
             {
                 throw new InvalidDataException("Error reading JSON.", jrex);
             }
         }
+
+        private object? BindType(ref Utf8JsonReader reader, ReadOnlySequence<byte> input, Type type)
+        {
+            // Special handling for RawResult: preserve the raw JSON byte sequence
+            // instead of deserializing to allow deferred processing
+            if (type == typeof(RawResult))
+            {
+                var start = reader.BytesConsumed;
+                reader.Skip();
+                var end = reader.BytesConsumed;
+                var sequence = input.Slice(start, end - start);
+
+                // Note: The sequence is copied to avoid issues if the underlying buffer is recycled
+                // Future optimization: consider pooling with explicit lifetime management
+                return new RawResult(sequence);
+            }
+
+            // Convert Utf8JsonReader to Stream for ObjectSerializer compatibility
+            var stream = ConvertReaderToStream(ref reader);
+            return BindType(ref stream, type);
+        }
+
+        private object? BindType(ref Stream reader, Type type) => ObjectSerializer.Deserialize(reader, type, default);
+
+        private static Stream ConvertReaderToStream(ref Utf8JsonReader reader)
+        {
+            var memoryStream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(memoryStream, new JsonWriterOptions { SkipValidation = true }))
+            {
+                // Copy the current JSON value from reader to writer
+                WriteCurrentValue(ref reader, writer);
+                writer.Flush();
+            }
+
+            memoryStream.Position = 0;
+            return memoryStream;
+        }
+
+        private static void WriteCurrentValue(ref Utf8JsonReader reader, Utf8JsonWriter writer)
+        {
+            switch (reader.TokenType)
+            {
+                case JsonTokenType.Null:
+                    writer.WriteNullValue();
+                    break;
+                case JsonTokenType.True:
+                    writer.WriteBooleanValue(true);
+                    break;
+                case JsonTokenType.False:
+                    writer.WriteBooleanValue(false);
+                    break;
+                case JsonTokenType.Number:
+                    if (reader.TryGetInt64(out var longValue))
+                    {
+                        writer.WriteNumberValue(longValue);
+                    }
+                    else
+                    {
+                        writer.WriteNumberValue(reader.GetDouble());
+                    }
+                    break;
+                case JsonTokenType.String:
+                
+                    writer.WriteStringValue(reader.GetString());
+                    break;
+                case JsonTokenType.StartObject:
+                case JsonTokenType.StartArray:
+                case JsonTokenType.PropertyName:
+                    // For complex types, copy the entire structure
+                    JsonDocument.ParseValue(ref reader).WriteTo(writer);
+                    break;
+                default:
+                    throw new InvalidDataException($"Unexpected JSON token type: {reader.TokenType}");
+            }
+        }
+
+        private static HubMessage BindCompletionMessage(string invocationId, string? error, object? result, bool hasResult)
+        {
+            if (string.IsNullOrEmpty(invocationId))
+            {
+                throw new InvalidDataException($"Missing required property '{InvocationIdPropertyName}'.");
+            }
+
+            if (error != null && hasResult)
+            {
+                throw new InvalidDataException("The 'error' and 'result' properties are mutually exclusive.");
+            }
+
+            if (hasResult)
+            {
+                return new CompletionMessage(invocationId, error, result, hasResult: true);
+            }
+
+            return new CompletionMessage(invocationId, error, result: null, hasResult: false);
+        }
+#endif
 
         private void WriteMessageCore(HubMessage message, IBufferWriter<byte> stream)
         {
@@ -432,69 +573,6 @@ namespace Microsoft.Azure.SignalR.Management
                 DefaultBufferSize = 16 * 1024,
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             };
-        }
-
-        // Helper methods to replace missing JsonUtils functionality
-        private static JsonTextReader CreateJsonTextReader(StreamReader streamReader)
-        {
-            var reader = new JsonTextReader(streamReader)
-            {
-                DateParseHandling = DateParseHandling.None
-            };
-            return reader;
-        }
-
-        private static bool CheckRead(JsonTextReader reader)
-        {
-            return reader.Read();
-        }
-
-        private static void EnsureObjectStart(JsonTextReader reader)
-        {
-            if (reader.TokenType != JsonToken.StartObject)
-            {
-                throw new InvalidDataException("Expected start of JSON object.");
-            }
-        }
-
-        private static int? ReadAsInt32(JsonTextReader reader, string propertyName)
-        {
-            CheckRead(reader);
-            if (reader.TokenType != JsonToken.Integer)
-            {
-                throw new InvalidDataException($"Expected integer for property '{propertyName}'.");
-            }
-            return Convert.ToInt32(reader.Value, System.Globalization.CultureInfo.InvariantCulture);
-        }
-
-        private static string? ReadAsString(JsonTextReader reader, string propertyName)
-        {
-            CheckRead(reader);
-            if (reader.TokenType != JsonToken.String && reader.TokenType != JsonToken.Null)
-            {
-                throw new InvalidDataException($"Expected string for property '{propertyName}'.");
-            }
-            return reader.Value?.ToString();
-        }
-
-        private static HubMessage BindCompletionMessage(string invocationId, string? error, object? result, bool hasResult)
-        {
-            if (string.IsNullOrEmpty(invocationId))
-            {
-                throw new InvalidDataException($"Missing required property '{InvocationIdPropertyName}'.");
-            }
-
-            if (error != null && hasResult)
-            {
-                throw new InvalidDataException("The 'error' and 'result' properties are mutually exclusive.");
-            }
-
-            if (hasResult)
-            {
-                return new CompletionMessage(invocationId, error, result, hasResult: true);
-            }
-
-            return new CompletionMessage(invocationId, error, result: null, hasResult: false);
-        }
+        }        
     }
 }

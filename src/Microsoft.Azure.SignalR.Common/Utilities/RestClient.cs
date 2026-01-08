@@ -25,8 +25,6 @@ internal class RestClient
 
     private readonly IPayloadContentBuilder _payloadContentBuilder;
 
-    private static readonly ObjectSerializer DefaultObjectSerializer = new JsonObjectSerializer();
-
     public RestClient(IHttpClientFactory httpClientFactory, IPayloadContentBuilder contentBuilder)
     {
         _httpClientFactory = httpClientFactory;
@@ -57,7 +55,7 @@ internal class RestClient
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.UserDefault, api, httpMethod, null, null, handleExpectedResponseAsync, cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.UserDefault, api, httpMethod, null, null, handleExpectedResponseAsync, null, cancellationToken);
     }
 
     public Task SendWithRetryAsync(
@@ -75,7 +73,7 @@ internal class RestClient
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, null, handleExpectedResponseAsync, cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, null, handleExpectedResponseAsync, null, cancellationToken);
     }
 
     public Task SendMessageWithRetryAsync(
@@ -86,7 +84,27 @@ internal class RestClient
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponse = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, handleExpectedResponse, cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, handleExpectedResponse, null, cancellationToken);
+    }
+
+    public Task SendMessageWithRetryAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        string methodName,
+        object?[] args,
+        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponse = null,
+        Action<HttpRequestMessage>? preProcessRequest = null,
+        CancellationToken cancellationToken = default)
+    {
+
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient,
+            api,
+            httpMethod,
+            new InvocationMessage(methodName, args),
+            null,
+            handleExpectedResponse,
+            preProcessRequest,
+            cancellationToken);
     }
 
     public Task SendStreamMessageWithRetryAsync(
@@ -98,10 +116,8 @@ internal class RestClient
         Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new StreamItemMessage(streamId, arg), typeHint, AsAsync(handleExpectedResponse), cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new StreamItemMessage(streamId, arg), typeHint, AsAsync(handleExpectedResponse), null, cancellationToken);
     }
-
-    public ObjectSerializer ObjectSerializer => _payloadContentBuilder.ObjectSerializer ?? DefaultObjectSerializer;
 
     private static Uri GetUri(string url, IDictionary<string, StringValues>? query)
     {
@@ -168,10 +184,15 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
         HubMessage? body,
         Type? typeHint,
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
+        Action<HttpRequestMessage>? preProcessRequest = null,
         CancellationToken cancellationToken = default)
     {
         using var httpClient = _httpClientFactory.CreateClient(httpClientName);
         using var request = BuildRequest(api, httpMethod, body, typeHint);
+
+        // preprocess the request
+        // used for client invocation to add extra headers today.
+        preProcessRequest?.Invoke(request);
 
         try
         {

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 using Azure.Core.Serialization;
 using MessagePack;
 using MessagePack.Formatters;
+using MessagePack.Resolvers;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.SignalR.Protocol;
@@ -975,187 +977,93 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
+    public static IEnumerable<object[]> ClientInvocationTestData => from serviceTransportType in ServiceTransportType
+                                                                    from intention in (ClientInvocationTestIntentions[])Enum.GetValues(typeof(ClientInvocationTestIntentions))
+                                                                    select new object[] { serviceTransportType, intention };
+
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
-    [InlineData(Management.ServiceTransportType.Transient)]
-    [InlineData(Management.ServiceTransportType.Persistent)]
-    public async Task ClientInvocationTest_Default(ServiceTransportType serviceTransportType)
+    [MemberData(nameof(ClientInvocationTestData))]
+    public async Task ClientInvocationTest(ServiceTransportType serviceTransportType, ClientInvocationTestIntentions intention)
     {
-        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_Default));
-        using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+        bool testJson = true;
+        bool testMessagePack = true;
+        bool hasCustomisedSerializer = false;
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest));
+        var serviceManagerBuilder = new ServiceManagerBuilder().WithOptions(o =>
         {
             o.ConnectionString = TestConfiguration.Instance.ConnectionString;
             o.ServiceTransportType = serviceTransportType;
-        })
-            .WithLoggerFactory(loggerFactory)
+        });
+
+        switch (intention)
+        {
+            case ClientInvocationTestIntentions.Default:
+                {
+                    if (serviceTransportType == Management.ServiceTransportType.Persistent)
+                    {
+                        // In persistent mode, service will not convert the json message to messagepack automatically
+                        testMessagePack = false;
+                    }
+                    break;
+                }
+            case ClientInvocationTestIntentions.Json:
+                {
+                    serviceManagerBuilder = serviceManagerBuilder.WithHubProtocols(new JsonHubProtocol());
+                    testMessagePack = false;
+                    break;
+                }
+            case ClientInvocationTestIntentions.MessagePack:
+                {
+                    serviceManagerBuilder = serviceManagerBuilder.WithHubProtocols(new MessagePackHubProtocol());
+                    testJson = false;
+                    break;
+                }
+            case ClientInvocationTestIntentions.MultipleProtocols:
+                {
+                    serviceManagerBuilder = serviceManagerBuilder.WithHubProtocols(new JsonHubProtocol(), new MessagePackHubProtocol());
+                    break;
+                }
+            case ClientInvocationTestIntentions.MessagePackWithNewtonSoft:
+                {
+                    serviceManagerBuilder = serviceManagerBuilder.WithHubProtocols(new MessagePackHubProtocol())
+                        .WithNewtonsoftJson();
+                    break;
+                }
+            case ClientInvocationTestIntentions.JsonWithCustomisedSerializer:
+                {
+                    var options = JsonObjectSerializerHubProtocol.CreateDefaultSerializerSettings();
+                    options.Converters.Add(new TestEnumJsonConverter());
+                    var objectSerializer = new JsonObjectSerializer(options);
+                    var protocol = new JsonObjectSerializerHubProtocol(objectSerializer);
+                    serviceManagerBuilder = serviceManagerBuilder.WithHubProtocols(protocol);
+                    testMessagePack = false;
+                    hasCustomisedSerializer = true;
+                    break;
+                }
+            case ClientInvocationTestIntentions.MessagePackWithCustomisedSerializer:
+                {
+                    var protocol = GetMessagePackHubProtocolWithCustomisedSerializer();
+                    serviceManagerBuilder = serviceManagerBuilder.WithHubProtocols(protocol);
+                    testJson = false;
+                    hasCustomisedSerializer = true;
+                    break;
+                }
+        }
+
+        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory)
             .BuildServiceManager();
         using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
 
-        await TestClientInvocationAsync(hubContext, "json");
-        if (serviceTransportType == Management.ServiceTransportType.Transient)
+        if (testJson)
         {
-            // Only in Transient mode, We will try to convert JSON messages to MessagePack for backward compatibility
-            await TestClientInvocationAsync(hubContext, "messagepack");
+            await TestClientInvocationAsync(hubContext, "json", hasCustomisedSerializer);
+        }
+        if (testMessagePack)
+        {
+            await TestClientInvocationAsync(hubContext, "messagepack", hasCustomisedSerializer);
         }
     }
-
-    //[ConditionalTheory]
-    //[SkipIfConnectionStringNotPresent]
-    //[InlineData(Management.ServiceTransportType.Transient)]
-    //[InlineData(Management.ServiceTransportType.Persistent)]
-    //public async Task ClientInvocationTest_WithMessagePack(ServiceTransportType serviceTransportType)
-    //{
-    //    using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithMessagePack));
-    //    using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-    //    {
-    //        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-    //        o.ServiceTransportType = serviceTransportType;
-    //    })
-    //        .WithHubProtocols(new MessagePackHubProtocol())
-    //        .WithLoggerFactory(loggerFactory)
-    //        .BuildServiceManager();
-    //    using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
-
-    //    await TestClientInvocationAsync(hubContext, "messagepack");
-    //}
-
-    [ConditionalTheory]
-    [SkipIfConnectionStringNotPresent]
-    [InlineData(Management.ServiceTransportType.Transient)]
-    [InlineData(Management.ServiceTransportType.Persistent)]
-    public async Task ClientInvocationTest_WithJson(ServiceTransportType serviceTransportType)
-    {
-        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithJson));
-        using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-        {
-            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-            o.ServiceTransportType = serviceTransportType;
-        })
-            .WithHubProtocols(new JsonHubProtocol())
-            .WithLoggerFactory(loggerFactory)
-            .BuildServiceManager();
-        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
-
-        await TestClientInvocationAsync(hubContext, "json");
-    }
-
-    //[ConditionalTheory]
-    //[SkipIfConnectionStringNotPresent]
-    //[InlineData(Management.ServiceTransportType.Transient)]
-    //[InlineData(Management.ServiceTransportType.Persistent)]
-    //public async Task ClientInvocationTest_WithMessagePackWithNewtonSoft(ServiceTransportType serviceTransportType)
-    //{
-    //    using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithMessagePackWithNewtonSoft));
-    //    using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-    //    {
-    //        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-    //        o.ServiceTransportType = serviceTransportType;
-    //    })
-    //        .WithHubProtocols(new MessagePackHubProtocol())
-    //        .WithNewtonsoftJson()
-    //        .WithLoggerFactory(loggerFactory)
-    //        .BuildServiceManager();
-    //    using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
-
-    //    //if (serviceTransportType == Management.ServiceTransportType.Transient)
-    //    //{
-    //        await TestClientInvocationAsync(hubContext, "json");
-    //    //}
-    //    await TestClientInvocationAsync(hubContext, "messagepack");
-    //}
-
-    //[ConditionalTheory]
-    //[SkipIfConnectionStringNotPresent]
-    //[InlineData(Management.ServiceTransportType.Transient)]
-    //[InlineData(Management.ServiceTransportType.Persistent)]
-    //public async Task ClientInvocationTest_WithMultipleProtocols(ServiceTransportType serviceTransportType)
-    //{
-    //    using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithMultipleProtocols));
-    //    using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-    //    {
-    //        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-    //        o.ServiceTransportType = serviceTransportType;
-    //    })
-    //        .WithHubProtocols(new MessagePackHubProtocol(), new JsonHubProtocol())
-    //        .WithLoggerFactory(loggerFactory)
-    //        .BuildServiceManager();
-    //    using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
-
-    //    await TestClientInvocationAsync(hubContext, "json");
-    //    await TestClientInvocationAsync(hubContext, "messagepack");
-    //}
-
-    [ConditionalTheory]
-    [SkipIfConnectionStringNotPresent]
-    [InlineData(Management.ServiceTransportType.Transient)]
-    [InlineData(Management.ServiceTransportType.Persistent)]
-    public async Task ClientInvocationTest_WithJsonWithCustomisedSerializer(ServiceTransportType serviceTransportType)
-    {
-        var options = JsonObjectSerializerHubProtocol.CreateDefaultSerializerSettings();
-        options.Converters.Add(new TestEnumJsonConverter());
-
-        var objectSerializer = new JsonObjectSerializer(options);
-        var protocol = new JsonObjectSerializerHubProtocol(objectSerializer);
-
-        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithJsonWithCustomisedSerializer));
-        using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-        {
-            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-            o.ServiceTransportType = serviceTransportType;
-            o.ObjectSerializer = objectSerializer;
-        })
-            .WithHubProtocols(protocol)
-            .WithLoggerFactory(loggerFactory)
-            .BuildServiceManager();
-        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
-
-        await TestClientInvocationAsync(hubContext, "json", true);
-    }
-
-    //[ConditionalTheory]
-    //[SkipIfConnectionStringNotPresent]
-    //[InlineData(Management.ServiceTransportType.Transient)]
-    //[InlineData(Management.ServiceTransportType.Persistent)]
-    //public async Task ClientInvocationTest_WithMessagepackWithCustomisedSerializer(ServiceTransportType serviceTransportType)
-    //{
-    //    var messagePackOptions = MessagePackSerializerOptions.Standard
-    //.WithResolver(
-    //    CompositeResolver.Create(
-    //        new IMessagePackFormatter[]
-    //        {
-    //            new TestEnumFormatter(),
-    //        },
-    //        new IFormatterResolver[]
-    //        {
-    //            StandardResolver.Instance,
-    //        }));
-
-    //    var objectSerializer = new MessagePackObjectSerializer(messagePackOptions); // an ObjectSerializer wrapper
-
-    //    var protocolOptions = new MessagePackHubProtocolOptions
-    //    {
-    //        SerializerOptions = messagePackOptions,
-    //    };
-
-    //    var messagePackProtocol = new MessagePackObjectSerializerHubProtocol(
-    //        objectSerializer,
-    //        Extensions.Options.Options.Create(protocolOptions)
-    //    );
-
-    //    using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest_WithMessagepackWithCustomisedSerializer));
-    //    using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-    //    {
-    //        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-    //        o.ServiceTransportType = serviceTransportType;
-    //        o.ObjectSerializer = objectSerializer;
-    //    })
-    //        .WithHubProtocols(messagePackProtocol)
-    //        .WithLoggerFactory(loggerFactory)
-    //        .BuildServiceManager();
-    //    using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
-
-    //    await TestClientInvocationAsync(hubContext, "messagepack", true);
-    //}
 
     private static async Task<HubConnection> CreateAndStartClientConnectionWithProtocolAsync(string endpoint, string accessToken, string protocol = "json", bool hasCustomisedSerializer = false)
     {
@@ -1169,19 +1077,20 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
             })
             .WithAutomaticReconnect();
 
-        //var messagePackOptions = MessagePackSerializerOptions.Standard
-        //    .WithResolver(
-        //        CompositeResolver.Create(
-        //            // formatters (our enum formatter first)
-        //            new IMessagePackFormatter[]
-        //            {
-        //                new TestEnumFormatter(),
-        //            },
-        //            // resolvers
-        //            new IFormatterResolver[]
-        //            {
-        //                StandardResolver.Instance,
-        //            }));
+        var messagePackOptions = MessagePackSerializerOptions.Standard
+            .WithResolver(
+                CompositeResolver.Create(
+                    // formatters (our enum formatter first)
+                    new IMessagePackFormatter[]
+                    {
+                        new TestEnumFormatter(),
+                        new TestObjectFormatter(),
+                    },
+                    // resolvers
+                    new IFormatterResolver[]
+                    {
+                        StandardResolver.Instance,
+                    }));
 
         switch (protocol.ToLower())
         {
@@ -1204,7 +1113,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
                     connectionBuilder.AddMessagePackProtocol(
                         options =>
                         {
-                            //options.SerializerOptions = messagePackOptions;
+                            options.SerializerOptions = messagePackOptions;
                         });
                 }
                 else
@@ -1223,9 +1132,9 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         {
             return Task.FromResult<string>("Method Invoked");
         }));
-        connection.On("InvokeObject", (Func<string, Task<object>>)(args =>
+        connection.On("InvokeObject", (Func<string, Task<testObject>>)(args =>
         {
-            return Task.FromResult<object>(new { result = "Method Invoked" });
+            return Task.FromResult<testObject>(new testObject { Name = "Method Invoked", EnumValue = TestEnum.MethodInvoked });
         }));
         connection.On("InvokeEnum", (Func<string, Task<TestEnum>>)(args =>
         {
@@ -1256,21 +1165,9 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         var response_string = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<string>("InvokeString", "", default).OrTimeout();
         Assert.Equal(expectedStringMessage, response_string.ToString());
 
-        var response_object = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<object>("InvokeObject", "", default).OrTimeout();
-        switch (response_object)
-        {
-            case JsonElement json:
-                Assert.Equal(expectedStringMessage, json.GetProperty("result").GetString());
-                break;
-
-            case IDictionary<string, object> dictString:
-                Assert.Equal(expectedStringMessage, dictString["result"]?.ToString());
-                break;
-
-            case IDictionary<object, object> dictObj:
-                Assert.Equal(expectedStringMessage, dictObj["result"]?.ToString());
-                break;
-        }
+        var response_object = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+        Assert.Equal(expectedStringMessage, response_object.Name);
+        Assert.Equal(hasCustomisedSerializer ? expectedCustomisedEnumString : expectedEnumString, response_object.EnumValue.ToString());
 
         var response_null = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
         Assert.Null(response_null);
@@ -1374,12 +1271,6 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
                                    select connection.StopAsync());
             }
         }
-    }
-
-    private static string[] GetTestStringList(string prefix, int count)
-    {
-        return (from i in Enumerable.Range(0, count)
-                select $"{prefix}{i}").ToArray();
     }
 
     private async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType, string appName, IEnumerable<string> userNames)
@@ -1521,11 +1412,109 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
-    private enum TestEnum
+    private sealed class TestObjectFormatter : IMessagePackFormatter<testObject>
+    {
+        public void Serialize(ref MessagePackWriter writer, testObject value, MessagePackSerializerOptions options)
+        {
+            if (value is null)
+            {
+                writer.WriteNil();
+                return;
+            }
+
+            writer.WriteMapHeader(2);
+
+            writer.Write("Name");
+            writer.Write(value.Name);
+
+            writer.Write("EnumValue");
+            var resolver = options.Resolver;
+            var enumFormatter = resolver.GetFormatterWithVerify<TestEnum>();
+            enumFormatter.Serialize(ref writer, value.EnumValue, options);
+        }
+
+        public testObject Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+        {
+            if (reader.TryReadNil())
+            {
+                return null;
+            }
+
+            var count = reader.ReadMapHeader();
+
+            var result = new testObject();
+            var resolver = options.Resolver;
+            var enumFormatter = resolver.GetFormatterWithVerify<TestEnum>();
+
+            for (var i = 0; i < count; i++)
+            {
+                var propertyName = reader.ReadString();
+
+                switch (propertyName)
+                {
+                    case "Name":
+                        result.Name = reader.ReadString();
+                        break;
+                    case "EnumValue":
+                        result.EnumValue = enumFormatter.Deserialize(ref reader, options);
+                        break;
+                    default:
+                        reader.Skip();
+                        break;
+                }
+            }
+
+            return result;
+        }
+    }
+
+    public sealed class testObject
+    {
+        public string Name { get; set; }
+        public TestEnum EnumValue { get; set; }
+    }
+
+    public enum TestEnum
     {
         None,
         MethodInvoked,
         aaamytest
+    }
+
+    public enum ClientInvocationTestIntentions
+    {
+        Default,
+        Json,
+        MessagePack,
+        MultipleProtocols,
+        MessagePackWithNewtonSoft,
+        JsonWithCustomisedSerializer,
+        MessagePackWithCustomisedSerializer
+    }
+
+    private static MessagePackHubProtocol GetMessagePackHubProtocolWithCustomisedSerializer()
+    {
+        var messagePackOptions = MessagePackSerializerOptions.Standard
+        .WithResolver(
+            CompositeResolver.Create(
+                new IMessagePackFormatter[]
+                {
+                    new TestEnumFormatter(),
+                    new TestObjectFormatter(),
+                },
+                new IFormatterResolver[]
+                {
+                    StandardResolver.Instance,
+                }));
+
+        var protocolOptions = new MessagePackHubProtocolOptions
+        {
+            SerializerOptions = messagePackOptions,
+        };
+
+        return new MessagePackHubProtocol(
+            Extensions.Options.Options.Create(protocolOptions)
+        );
     }
 
     private sealed class TestEnumJsonConverter : JsonConverter<TestEnum>
@@ -1556,47 +1545,47 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
-//    private sealed class MessagePackObjectSerializer : ObjectSerializer
-//    {
-//        private readonly MessagePackSerializerOptions _options;
+    private sealed class MessagePackObjectSerializer : ObjectSerializer
+    {
+        private readonly MessagePackSerializerOptions _options;
 
-//        public MessagePackObjectSerializer(MessagePackSerializerOptions options)
-//        {
-//            _options = options ?? throw new ArgumentNullException(nameof(options));
-//        }
+        public MessagePackObjectSerializer(MessagePackSerializerOptions options)
+        {
+            _options = options ?? throw new ArgumentNullException(nameof(options));
+        }
 
-//        public override void Serialize(Stream stream, object value, Type type, CancellationToken cancellationToken)
-//        {
-//            // MessagePack is sync; we honor the token only for consistency.
-//            MessagePackSerializer.Serialize(type, stream, value, _options, cancellationToken: cancellationToken);
-//            stream.Flush();
-//        }
+        public override void Serialize(Stream stream, object value, Type type, CancellationToken cancellationToken)
+        {
+            // MessagePack is sync; we honor the token only for consistency.
+            MessagePackSerializer.Serialize(type, stream, value, _options, cancellationToken: cancellationToken);
+            stream.Flush();
+        }
 
-//        public override async ValueTask SerializeAsync(Stream stream, object value, Type type, CancellationToken cancellationToken)
-//        {
-//#if NETSTANDARD2_0
-//        // Async overloads may not be available; fall back to sync and wrap in Task.
-//        Serialize(stream, value, type, cancellationToken);
-//        await Task.CompletedTask;
-//#else
-//            await MessagePackSerializer.SerializeAsync(type, stream, value, _options, cancellationToken);
-//            await stream.FlushAsync(cancellationToken);
-//#endif
-//        }
+        public override async ValueTask SerializeAsync(Stream stream, object value, Type type, CancellationToken cancellationToken)
+        {
+#if NETSTANDARD2_0
+        // Async overloads may not be available; fall back to sync and wrap in Task.
+        Serialize(stream, value, type, cancellationToken);
+        await Task.CompletedTask;
+#else
+            await MessagePackSerializer.SerializeAsync(type, stream, value, _options, cancellationToken);
+            await stream.FlushAsync(cancellationToken);
+#endif
+        }
 
-//        public override object Deserialize(Stream stream, Type returnType, CancellationToken cancellationToken)
-//        {
-//            return MessagePackSerializer.Deserialize(returnType, stream, _options, cancellationToken: cancellationToken);
-//        }
+        public override object Deserialize(Stream stream, Type returnType, CancellationToken cancellationToken)
+        {
+            return MessagePackSerializer.Deserialize(returnType, stream, _options, cancellationToken: cancellationToken);
+        }
 
-//        public override async ValueTask<object> DeserializeAsync(Stream stream, Type returnType, CancellationToken cancellationToken)
-//        {
-//#if NETSTANDARD2_0
-//        // Async overloads may not be available; fall back to sync.
-//        return Deserialize(stream, returnType, cancellationToken);
-//#else
-//            return await MessagePackSerializer.DeserializeAsync(returnType, stream, _options, cancellationToken);
-//#endif
-//        }
-//    }
+        public override async ValueTask<object> DeserializeAsync(Stream stream, Type returnType, CancellationToken cancellationToken)
+        {
+#if NETSTANDARD2_0
+        // Async overloads may not be available; fall back to sync.
+        return Deserialize(stream, returnType, cancellationToken);
+#else
+            return await MessagePackSerializer.DeserializeAsync(returnType, stream, _options, cancellationToken);
+#endif
+        }
+    }
 }
