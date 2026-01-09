@@ -21,15 +21,11 @@ internal sealed class SimpleInvocationBinder : IInvocationBinder
 
     public IReadOnlyList<Type> GetParameterTypes(string methodName)
     {
-        // No parameters for responses in this scenario
-        return Array.Empty<Type>();
+        throw new NotImplementedException();
     }
 
-#pragma warning disable IDE0060 // Remove unused parameter
     public Type GetStreamItemType(string streamId)
-#pragma warning restore IDE0060 // Remove unused parameter
     {
-        // No streaming in this scenario
-        return typeof(object);
+        throw new NotImplementedException();
     }
 }

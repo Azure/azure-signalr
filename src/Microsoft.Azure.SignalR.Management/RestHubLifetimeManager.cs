@@ -15,7 +15,6 @@ using Azure;
 
 using Microsoft.AspNetCore.SignalR;
 #if NET7_0_OR_GREATER
-using Microsoft.Azure.SignalR.Management.ClientInvocation;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using System.Buffers;
 #endif
@@ -392,21 +391,24 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
                 if (isSuccess)
                 {
-                    // 1. Read the outer InvocationResponse (JSON)
-                    await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-                    var InvocationResponse = await JsonSerializer.DeserializeAsync<InvocationResponse>(contentStream, cancellationToken: cancellationToken).ConfigureAwait(false);
-                    if (InvocationResponse == null || InvocationResponse.protocol == null || InvocationResponse.Result == null)
+                    // 1. Get protocol from header (e.g. "json" or "messagepack")
+                    if (!response.Headers.TryGetValues("X-Protocol", out var protocolHeaderValues))
                     {
-                        throw new HubException("Response is null or incomplete.");
+                        throw new HubException("Response is missing protocol header.");
+                    }
+                    var protocolName = protocolHeaderValues.FirstOrDefault();
+                    if (string.IsNullOrEmpty(protocolName))
+                    {
+                        throw new HubException("Response protocol header is empty.");
                     }
 
-                    // 2. Pick the hub protocol that matches clientResponse.Protocol
+                    // 2. Pick the hub protocol that matches X-Protocol
                     var protocol = _protocolResolver.AllProtocols
-                        .FirstOrDefault(p => string.Equals(p.Name, InvocationResponse.protocol, StringComparison.OrdinalIgnoreCase));
-                    
+                        .FirstOrDefault(p => string.Equals(p.Name, protocolName, StringComparison.OrdinalIgnoreCase));
+
                     if (protocol == null)
                     {
-                        if (string.Equals(InvocationResponse.protocol, "messagepack", StringComparison.OrdinalIgnoreCase) &&
+                        if (string.Equals(protocolName, "messagepack", StringComparison.OrdinalIgnoreCase) &&
                             _protocolResolver.AllProtocols.Count == 1 &&
                             _protocolResolver.AllProtocols[0] is JsonObjectSerializerHubProtocol jsonObjectSerializerHubProtocol)
                         {
@@ -415,16 +417,22 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
                         }
                         else
                         {
-                            throw new NotSupportedException($"The protocol '{InvocationResponse.protocol}' is not supported.");
+                            throw new NotSupportedException($"The protocol '{protocolName}' is not supported.");
                         }
                     }
 
-                    // 3. Use SimpleInvocationBinder with typeof(T)
+                    // 3. Read raw completion payload from response body
+                    var payloadBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+                    if (payloadBytes == null || payloadBytes.Length == 0)
+                    {
+                        throw new HubException("Response payload is empty.");
+                    }
+
+                    // 4. Use SimpleInvocationBinder with typeof(T)
                     var binder = new SimpleInvocationBinder(typeof(T));
 
-                    // 4. Parse the payload bytes into CompletionMessage
-                    var messageBytes = Convert.FromBase64String(InvocationResponse.Result);
-                    var sequence = new ReadOnlySequence<byte>(messageBytes);
+                    // 5. Parse the payload bytes into CompletionMessage
+                    var sequence = new ReadOnlySequence<byte>(payloadBytes);
                     var local = sequence;
                     if (!protocol.TryParseMessage(ref local, binder, out var hubMessage))
                     {

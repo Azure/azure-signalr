@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.Azure.SignalR.Management.ClientInvocation;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Moq;
 using Moq.Protected;
@@ -91,99 +90,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task InvokeConnectionAsync_WithStringResult_ReturnsDeserializedValue()
-        {
-            // Arrange
-            var connectionId = "connection1";
-            var methodName = "getUsername";
-            var args = new object?[] { 42, "test-param", true };
-            var expectedResult = "John Doe";
-
-            var clientResponse = "John Doe";
-
-            _httpMessageHandlerMock
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                )
-                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(GetInvocationResponseJson(clientResponse))
-                });
-
-            // Act
-            var result = await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args);
-
-            // Assert
-            Assert.Equal(expectedResult, result);
-        }
-
-        [Fact]
-        public async Task InvokeConnectionAsync_WithComplexObjectResult_ReturnsDeserializedObject()
-        {
-            // Arrange
-            var connectionId = "connection1";
-            var methodName = "getUserProfile";
-            var args = new object?[] { "userId123", new { filter = "personal" } };
-
-            var profile = new UserProfile { id = 123, name = "Jane Doe", active = true, roles = new[] { "user", "admin" } };
-
-            _httpMessageHandlerMock
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                )
-                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(GetInvocationResponseJson(profile))
-                });
-
-            // Act
-            var result = await _manager.InvokeConnectionAsync<UserProfile>(connectionId, methodName, args);
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.Equal(123, result.id);
-            Assert.Equal("Jane Doe", result.name);
-            Assert.True(result.active);
-            Assert.Equal(2, result.roles.Length);
-            Assert.Contains("admin", result.roles);
-        }
-
-        [Fact]
-        public async Task InvokeConnectionAsync_WithNullClientResponse_ReturnsDeserializedObject()
-        {
-            // Arrange
-            var connectionId = "connection1";
-            var methodName = "getUserProfile";
-            var args = new object?[] { "userId123", new { filter = "personal" } };
-
-            object? response = null;
-
-            _httpMessageHandlerMock
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                )
-                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(GetInvocationResponseJson(response))
-                });
-
-            // Act
-            var result = await _manager.InvokeConnectionAsync<object>(connectionId, methodName, args);
-
-            // Assert
-            Assert.Null(result);
-        }
-
-        [Fact]
         public async Task InvokeConnectionAsync_WithErrorResponse_ThrowsHubException()
         {
             // Arrange
@@ -210,90 +116,169 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task InvokeConnectionAsync_WithMissingResultNode_ThrowsHubException()
+        public async Task InvokeConnectionAsync_WithStringResult_ReturnsDeserializedValue()
         {
             // Arrange
             var connectionId = "connection1";
-            var methodName = "getIncompleteData";
-            var args = Array.Empty<object>();
+            var methodName = "getUsername";
+            var args = new object?[] { 42, "test-param", true };
+            var expectedResult = "John Doe";
 
-            // JSON missing the required result node
-            var response = System.Text.Json.JsonSerializer.Serialize(new { jsonObject = new InvocationResponse { protocol = "json" } });
+            // Build a CompletionMessage carrying the string result
+            var completion = new CompletionMessage(
+                invocationId: "1234",
+                error: null,
+                result: expectedResult,
+                hasResult: true);
+
+            // Serialize to SignalR JSON frame (with record separator)
+            var protocol = new JsonHubProtocol();
+            var payloadBytes = protocol.GetMessageBytes(completion).ToArray();
 
             _httpMessageHandlerMock
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
                     ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                )
-                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() =>
                 {
-                    Content = new StringContent(response!)
+                    var response = new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new ByteArrayContent(payloadBytes),
+                    };
+
+                    // Protocol header expected by InvokeConnectionAsync
+                    response.Headers.Add("X-Protocol", protocol.Name);
+                    response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+
+                    return response;
                 });
 
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<HubException>(
-                async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
-            Assert.Equal("Response is null or incomplete.", exception.Message);
+            // Act
+            var result = await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args);
+
+            // Assert
+            Assert.Equal(expectedResult, result);
         }
 
         [Fact]
-        public async Task InvokeConnectionAsync_WithMissingProtocolNode_ThrowsHubException()
+        public async Task InvokeConnectionAsync_WithComplexObjectResult_ReturnsDeserializedObject()
         {
             // Arrange
             var connectionId = "connection1";
-            var methodName = "getIncompleteData";
-            var args = Array.Empty<object>();
+            var methodName = "getUserProfile";
+            var args = new object?[] { "userId123", new { filter = "personal" } };
 
-            // JSON missing the required protocol node
-            var response = System.Text.Json.JsonSerializer.Serialize(new { jsonObject = new InvocationResponse { Result = "someResult" } });
+            var expectedProfile = new UserProfile
+            {
+                id = 123,
+                name = "Jane Doe",
+                active = true,
+                roles = new[] { "user", "admin" },
+            };
+
+            var completion = new CompletionMessage(
+                invocationId: "1234",
+                error: null,
+                result: expectedProfile,
+                hasResult: true);
+
+            var protocol = new JsonHubProtocol();
+            var payloadBytes = protocol.GetMessageBytes(completion).ToArray();
 
             _httpMessageHandlerMock
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
                     ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                )
-                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() =>
                 {
-                    Content = new StringContent(response)
+                    var response = new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new ByteArrayContent(payloadBytes),
+                    };
+
+                    response.Headers.Add("X-Protocol", protocol.Name);
+                    response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+
+                    return response;
                 });
 
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<HubException>(
-                async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
-            Assert.Equal("Response is null or incomplete.", exception.Message);
+            // Act
+            var result = await _manager.InvokeConnectionAsync<UserProfile>(connectionId, methodName, args);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(expectedProfile.id, result.id);
+            Assert.Equal(expectedProfile.name, result.name);
+            Assert.Equal(expectedProfile.active, result.active);
+            Assert.Equal(expectedProfile.roles.Length, result.roles.Length);
+            Assert.Contains("admin", result.roles);
         }
 
         [Fact]
-        public async Task InvokeConnectionAsync_WithNullResultNode_ThrowsHubException()
+        public async Task InvokeConnectionAsync_WithMissingProtocolHeader_ThrowsHubException()
         {
             // Arrange
             var connectionId = "connection1";
-            var methodName = "getIncompleteData";
-            var args = Array.Empty<object>();
+            var methodName = "getData";
+            var args = Array.Empty<object?>();
 
-            // JSON with null result node
-            var response = System.Text.Json.JsonSerializer.Serialize(new { jsonObject = new InvocationResponse { Result = null, protocol = "json" } });
+            var protocol = new JsonHubProtocol();
+            var completion = new CompletionMessage("1234", null, "value", hasResult: true);
+            var payloadBytes = protocol.GetMessageBytes(completion).ToArray();
 
             _httpMessageHandlerMock
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
                     ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                )
-                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() =>
+                    new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new ByteArrayContent(payloadBytes),
+                    });
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<HubException>(
+                () => _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
+
+            Assert.Equal("Response is missing protocol header.", ex.Message);
+        }
+
+        [Fact]
+        public async Task InvokeConnectionAsync_WithEmptyPayload_ThrowsHubException()
+        {
+            // Arrange
+            var connectionId = "connection1";
+            var methodName = "getData";
+            var args = Array.Empty<object?>();
+
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() =>
                 {
-                    Content = new StringContent(response)
+                    var response = new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new ByteArrayContent(Array.Empty<byte>()),
+                    };
+                    response.Headers.Add("X-Protocol", "json");
+                    response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                    return response;
                 });
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<HubException>(
-                async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
-            Assert.Equal("Response is null or incomplete.", exception.Message);
+            var ex = await Assert.ThrowsAsync<HubException>(
+                () => _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
+
+            Assert.Equal("Response payload is empty.", ex.Message);
         }
 #endif
 
@@ -319,20 +304,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 throw new NotImplementedException();
             }
-        }
-
-        private static string GetInvocationResponseJson(object? responseObject)
-        {
-            var completion = CompletionMessage.WithResult("1234", responseObject);
-            var jsonResponseBytes = new JsonHubProtocol().GetMessageBytes(completion);
-            var response =
-                new InvocationResponse
-                {
-                    protocol = "json",
-                    Result = Convert.ToBase64String(jsonResponseBytes.ToArray())
-                };
-            var responseJson = System.Text.Json.JsonSerializer.Serialize(response);
-            return responseJson;
         }
     }
 }
