@@ -139,37 +139,36 @@ namespace Microsoft.Azure.SignalR.Management
                 object? result = null;
                 JsonElement? resultElement = null;
 
-                // Extract known properties. We ignore unknowns like headers/arguments here
-                foreach (var property in root.EnumerateObject())
+                // type
+                if (root.TryGetProperty(TypePropertyName, out var typeProp))
                 {
-                    if (property.NameEquals(TypePropertyName))
+                    if (typeProp.ValueKind != JsonValueKind.Number || !typeProp.TryGetInt32(out var messageType))
                     {
-                        if (property.Value.ValueKind != JsonValueKind.Number ||
-                            !property.Value.TryGetInt32(out var messageType))
-                        {
-                            throw new InvalidDataException($"Expected '{TypePropertyName}' to be of type {JsonTokenType.Number}.");
-                        }
+                        throw new InvalidDataException($"Expected '{TypePropertyName}' to be of type {JsonTokenType.Number}.");
+                    }
 
-                        type = messageType;
-                    }
-                    else if (property.NameEquals(InvocationIdPropertyName))
-                    {
-                        invocationId = property.Value.ValueKind == JsonValueKind.String
-                            ? property.Value.GetString()
-                            : null;
-                    }
-                    else if (property.NameEquals(ErrorPropertyName))
-                    {
-                        error = property.Value.ValueKind == JsonValueKind.String
-                            ? property.Value.GetString()
-                            : null;
-                    }
-                    else if (property.NameEquals(ResultPropertyName))
-                    {
-                        hasResult = true;
-                        resultElement = property.Value;
-                    }
-                    // Other properties (headers, target, arguments, etc.) are not needed for CompletionMessage parsing
+                    type = messageType;
+                }
+
+                // invocationId
+                if (root.TryGetProperty(InvocationIdPropertyName, out var invocationIdProp) &&
+                    invocationIdProp.ValueKind == JsonValueKind.String)
+                {
+                    invocationId = invocationIdProp.GetString();
+                }
+
+                // error
+                if (root.TryGetProperty(ErrorPropertyName, out var errorProp) &&
+                    errorProp.ValueKind == JsonValueKind.String)
+                {
+                    error = errorProp.GetString();
+                }
+
+                // result
+                if (root.TryGetProperty(ResultPropertyName, out var resultProp))
+                {
+                    hasResult = true;
+                    resultElement = resultProp;
                 }
 
                 HubMessage message;
@@ -227,15 +226,6 @@ namespace Microsoft.Azure.SignalR.Management
 
         private object? BindTypeFromElement(JsonElement element, Type type)
         {
-            // Preserve RawResult semantics: keep the raw JSON bytes
-            if (type == typeof(RawResult))
-            {
-                var rawJson = element.GetRawText();
-                var bytes = Encoding.UTF8.GetBytes(rawJson);
-                var sequence = new ReadOnlySequence<byte>(bytes);
-                return new RawResult(sequence);
-            }
-
             // For normal types, deserialize using ObjectSerializer from the element's raw JSON
             var raw = element.GetRawText();
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(raw));

@@ -55,7 +55,7 @@ internal class RestClient
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.UserDefault, api, httpMethod, null, null, handleExpectedResponseAsync, null, cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.UserDefault, api, httpMethod, null, null, handleExpectedResponseAsync, cancellationToken);
     }
 
     public Task SendWithRetryAsync(
@@ -73,7 +73,7 @@ internal class RestClient
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, null, handleExpectedResponseAsync, null, cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, null, handleExpectedResponseAsync, cancellationToken);
     }
 
     public Task SendMessageWithRetryAsync(
@@ -84,27 +84,7 @@ internal class RestClient
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponse = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, handleExpectedResponse, null, cancellationToken);
-    }
-
-    public Task SendMessageWithRetryAsync(
-        RestApiEndpoint api,
-        HttpMethod httpMethod,
-        string methodName,
-        object?[] args,
-        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponse = null,
-        Action<HttpRequestMessage>? preProcessRequest = null,
-        CancellationToken cancellationToken = default)
-    {
-
-        return SendAsyncCore(Constants.HttpClientNames.MessageResilient,
-            api,
-            httpMethod,
-            new InvocationMessage(methodName, args),
-            null,
-            handleExpectedResponse,
-            preProcessRequest,
-            cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, handleExpectedResponse, cancellationToken);
     }
 
     public Task SendStreamMessageWithRetryAsync(
@@ -116,7 +96,7 @@ internal class RestClient
         Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new StreamItemMessage(streamId, arg), typeHint, AsAsync(handleExpectedResponse), null, cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new StreamItemMessage(streamId, arg), typeHint, AsAsync(handleExpectedResponse), cancellationToken);
     }
 
     private static Uri GetUri(string url, IDictionary<string, StringValues>? query)
@@ -184,15 +164,10 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
         HubMessage? body,
         Type? typeHint,
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
-        Action<HttpRequestMessage>? preProcessRequest = null,
         CancellationToken cancellationToken = default)
     {
         using var httpClient = _httpClientFactory.CreateClient(httpClientName);
         using var request = BuildRequest(api, httpMethod, body, typeHint);
-
-        // preprocess the request
-        // used for client invocation to add extra headers today.
-        preProcessRequest?.Invoke(request);
 
         try
         {
@@ -223,6 +198,7 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
     private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues>? query, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
     {
         var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
+        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/octet-stream"));
         request.Content = _payloadContentBuilder.Build(body, typeHint);
         return request;
     }

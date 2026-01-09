@@ -448,11 +448,6 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
                 return isSuccess || response.StatusCode == HttpStatusCode.InternalServerError;
             },
-            (request) =>
-            {
-                // Add Accept header for SignalR client to recognize the request from management SDK
-                request.Headers.Accept!.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/octet-stream"));
-            },
             cancellationToken);
 
         if (!isSuccess)
