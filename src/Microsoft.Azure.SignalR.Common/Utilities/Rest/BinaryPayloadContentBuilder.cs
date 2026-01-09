@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using Azure.Core.Serialization;
 using Microsoft.AspNetCore.SignalR.Protocol;
 
 #nullable enable
@@ -19,8 +18,6 @@ internal class BinaryPayloadContentBuilder : IPayloadContentBuilder
     {
         _hubProtocols = hubProtocols;
     }
-
-    public ObjectSerializer? ObjectSerializer => null;
 
     public HttpContent? Build(HubMessage? payload, Type? typeHint)
     {

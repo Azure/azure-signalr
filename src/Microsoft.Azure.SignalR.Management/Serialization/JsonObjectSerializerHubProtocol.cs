@@ -125,91 +125,52 @@ namespace Microsoft.Azure.SignalR.Management
         {
             try
             {
+                using var doc = JsonDocument.Parse(input);
+                var root = doc.RootElement;
+                if (root.ValueKind != JsonValueKind.Object)
+                {
+                    throw new InvalidDataException("Expected JSON object for hub message.");
+                }
+
                 int? type = null;
                 string? invocationId = null;
                 string? error = null;
                 var hasResult = false;
                 object? result = null;
-                bool hasResultToken = false;
-                Utf8JsonReader resultToken = default;
-                var completed = false;
+                JsonElement? resultElement = null;
 
-                var reader = new Utf8JsonReader(input, isFinalBlock: true, state: default);
-
-                reader.CheckRead();
-
-                // We're always parsing a JSON object
-                reader.EnsureObjectStart();
-
-                do
+                // Extract known properties. We ignore unknowns like headers/arguments here
+                foreach (var property in root.EnumerateObject())
                 {
-                    switch (reader.TokenType)
+                    if (property.NameEquals(TypePropertyName))
                     {
-                        case JsonTokenType.PropertyName:
-                            if (reader.ValueTextEquals(TypePropertyNameBytes.EncodedUtf8Bytes))
-                            {
-                                type = reader.ReadAsInt32(TypePropertyName);
+                        if (property.Value.ValueKind != JsonValueKind.Number ||
+                            !property.Value.TryGetInt32(out var messageType))
+                        {
+                            throw new InvalidDataException($"Expected '{TypePropertyName}' to be of type {JsonTokenType.Number}.");
+                        }
 
-                                if (type == null)
-                                {
-                                    throw new InvalidDataException($"Expected '{TypePropertyName}' to be of type {JsonTokenType.Number}.");
-                                }
-                            }
-                            else if (reader.ValueTextEquals(InvocationIdPropertyNameBytes.EncodedUtf8Bytes))
-                            {
-                                invocationId = reader.ReadAsString(InvocationIdPropertyName);
-                            }
-                            else if (reader.ValueTextEquals(ErrorPropertyNameBytes.EncodedUtf8Bytes))
-                            {
-                                error = reader.ReadAsString(ErrorPropertyName);
-                            }
-                            else if (reader.ValueTextEquals(ResultPropertyNameBytes.EncodedUtf8Bytes))
-                            {
-                                hasResult = true;
-
-                                if (string.IsNullOrEmpty(invocationId))
-                                {
-                                    // If we don't have an invocation id then we need to value copy the reader so we can parse it later
-                                    hasResultToken = true;
-                                    resultToken = reader;
-                                    reader.Skip();
-                                }
-                                else
-                                {
-                                    // If we have an invocation id already we can parse the end result
-                                    var returnType = binder.GetReturnType(invocationId);
-                                    if (returnType is null)
-                                    {
-                                        reader.Skip();
-                                        result = null;
-                                    }
-                                    else
-                                    {
-                                        try
-                                        {
-                                            result = BindType(ref reader, input, returnType);
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            error = $"Error trying to deserialize result to {returnType.Name}. {ex.Message}";
-                                            hasResult = false;
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                reader.CheckRead();
-                                reader.Skip();
-                            }
-                            break;
-                        case JsonTokenType.EndObject:
-                            completed = true;
-                            break;
-
+                        type = messageType;
                     }
+                    else if (property.NameEquals(InvocationIdPropertyName))
+                    {
+                        invocationId = property.Value.ValueKind == JsonValueKind.String
+                            ? property.Value.GetString()
+                            : null;
+                    }
+                    else if (property.NameEquals(ErrorPropertyName))
+                    {
+                        error = property.Value.ValueKind == JsonValueKind.String
+                            ? property.Value.GetString()
+                            : null;
+                    }
+                    else if (property.NameEquals(ResultPropertyName))
+                    {
+                        hasResult = true;
+                        resultElement = property.Value;
+                    }
+                    // Other properties (headers, target, arguments, etc.) are not needed for CompletionMessage parsing
                 }
-                while (!completed && reader.CheckRead());
 
                 HubMessage message;
 
@@ -221,7 +182,7 @@ namespace Microsoft.Azure.SignalR.Management
                             throw new InvalidDataException($"Missing required property '{InvocationIdPropertyName}'.");
                         }
 
-                        if (hasResultToken)
+                        if (hasResult && resultElement.HasValue)
                         {
                             var returnType = binder.GetReturnType(invocationId);
                             if (returnType is null)
@@ -232,7 +193,7 @@ namespace Microsoft.Azure.SignalR.Management
                             {
                                 try
                                 {
-                                    result = BindType(ref resultToken, input, returnType);
+                                    result = BindTypeFromElement(resultElement.Value, returnType);
                                 }
                                 catch (Exception ex)
                                 {
@@ -241,6 +202,7 @@ namespace Microsoft.Azure.SignalR.Management
                                 }
                             }
                         }
+
                         message = BindCompletionMessage(invocationId, error, result, hasResult);
                         break;
                     case HubProtocolConstants.InvocationMessageType:
@@ -263,80 +225,24 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-        private object? BindType(ref Utf8JsonReader reader, ReadOnlySequence<byte> input, Type type)
+        private object? BindTypeFromElement(JsonElement element, Type type)
         {
-            // Special handling for RawResult: preserve the raw JSON byte sequence
-            // instead of deserializing to allow deferred processing
+            // Preserve RawResult semantics: keep the raw JSON bytes
             if (type == typeof(RawResult))
             {
-                var start = reader.BytesConsumed;
-                reader.Skip();
-                var end = reader.BytesConsumed;
-                var sequence = input.Slice(start, end - start);
-
-                // Note: The sequence is copied to avoid issues if the underlying buffer is recycled
-                // Future optimization: consider pooling with explicit lifetime management
+                var rawJson = element.GetRawText();
+                var bytes = Encoding.UTF8.GetBytes(rawJson);
+                var sequence = new ReadOnlySequence<byte>(bytes);
                 return new RawResult(sequence);
             }
 
-            // Convert Utf8JsonReader to Stream for ObjectSerializer compatibility
-            var stream = ConvertReaderToStream(ref reader);
+            // For normal types, deserialize using ObjectSerializer from the element's raw JSON
+            var raw = element.GetRawText();
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes(raw));
             return BindType(ref stream, type);
         }
 
-        private object? BindType(ref Stream reader, Type type) => ObjectSerializer.Deserialize(reader, type, default);
-
-        private static Stream ConvertReaderToStream(ref Utf8JsonReader reader)
-        {
-            var memoryStream = new MemoryStream();
-            using (var writer = new Utf8JsonWriter(memoryStream, new JsonWriterOptions { SkipValidation = true }))
-            {
-                // Copy the current JSON value from reader to writer
-                WriteCurrentValue(ref reader, writer);
-                writer.Flush();
-            }
-
-            memoryStream.Position = 0;
-            return memoryStream;
-        }
-
-        private static void WriteCurrentValue(ref Utf8JsonReader reader, Utf8JsonWriter writer)
-        {
-            switch (reader.TokenType)
-            {
-                case JsonTokenType.Null:
-                    writer.WriteNullValue();
-                    break;
-                case JsonTokenType.True:
-                    writer.WriteBooleanValue(true);
-                    break;
-                case JsonTokenType.False:
-                    writer.WriteBooleanValue(false);
-                    break;
-                case JsonTokenType.Number:
-                    if (reader.TryGetInt64(out var longValue))
-                    {
-                        writer.WriteNumberValue(longValue);
-                    }
-                    else
-                    {
-                        writer.WriteNumberValue(reader.GetDouble());
-                    }
-                    break;
-                case JsonTokenType.String:
-                
-                    writer.WriteStringValue(reader.GetString());
-                    break;
-                case JsonTokenType.StartObject:
-                case JsonTokenType.StartArray:
-                case JsonTokenType.PropertyName:
-                    // For complex types, copy the entire structure
-                    JsonDocument.ParseValue(ref reader).WriteTo(writer);
-                    break;
-                default:
-                    throw new InvalidDataException($"Unexpected JSON token type: {reader.TokenType}");
-            }
-        }
+        private object? BindType(ref MemoryStream reader, Type type) => ObjectSerializer.Deserialize(reader, type, default);
 
         private static HubMessage BindCompletionMessage(string invocationId, string? error, object? result, bool hasResult)
         {

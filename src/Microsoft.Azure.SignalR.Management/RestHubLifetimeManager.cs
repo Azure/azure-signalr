@@ -392,7 +392,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
                 if (isSuccess)
                 {
-                    // 1. Read the outer ClientInvocationResponse (JSON)
+                    // 1. Read the outer InvocationResponse (JSON)
                     await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
                     var InvocationResponse = await JsonSerializer.DeserializeAsync<InvocationResponse>(contentStream, cancellationToken: cancellationToken).ConfigureAwait(false);
                     if (InvocationResponse == null || InvocationResponse.protocol == null || InvocationResponse.Result == null)
@@ -422,7 +422,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
                     // 3. Use SimpleInvocationBinder with typeof(T)
                     var binder = new SimpleInvocationBinder(typeof(T));
 
-                    // 4. Parse the payload bytes into InvocationResponse<T>
+                    // 4. Parse the payload bytes into CompletionMessage
                     var messageBytes = Convert.FromBase64String(InvocationResponse.Result);
                     var sequence = new ReadOnlySequence<byte>(messageBytes);
                     var local = sequence;

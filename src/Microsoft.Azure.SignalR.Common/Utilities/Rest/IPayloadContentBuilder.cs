@@ -3,7 +3,6 @@
 
 using System;
 using System.Net.Http;
-using Azure.Core.Serialization;
 using Microsoft.AspNetCore.SignalR.Protocol;
 
 #nullable enable
@@ -13,6 +12,4 @@ namespace Microsoft.Azure.SignalR.Common;
 internal interface IPayloadContentBuilder
 {
     HttpContent? Build(HubMessage? payload, Type? typeHint);
-
-    ObjectSerializer? ObjectSerializer { get; }
 }
