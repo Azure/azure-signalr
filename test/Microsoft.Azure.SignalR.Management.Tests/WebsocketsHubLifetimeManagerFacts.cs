@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         public WebsocketsHubLifetimeManagerFacts()
         {
             _serviceConnectionManagerMock = new Mock<IServiceConnectionManager<TestHub>>();
-            _protocolResolver = new DefaultHubProtocolResolver([new JsonHubProtocol()]);
+            _protocolResolver = new DefaultHubProtocolResolver([new JsonHubProtocol(), new MessagePackHubProtocol()]);
             _globalHubOptionsMock = new Mock<IOptions<HubOptions>>();
             _hubOptionsMock = new Mock<IOptions<HubOptions<TestHub>>>();
             _loggerFactoryMock = new Mock<ILoggerFactory>();

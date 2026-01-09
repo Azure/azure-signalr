@@ -311,7 +311,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             public IReadOnlyList<IHubProtocol> AllProtocols => new List<IHubProtocol>
             {
-                new JsonHubProtocol()
+                new JsonHubProtocol(),
+                new MessagePackHubProtocol()
             };
 
             public IHubProtocol? GetProtocol(string protocolName, IReadOnlyList<string>? supportedProtocols)
