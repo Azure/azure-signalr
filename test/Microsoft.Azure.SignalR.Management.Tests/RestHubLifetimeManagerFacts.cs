@@ -149,7 +149,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     };
 
                     // Protocol header expected by InvokeConnectionAsync
-                    response.Headers.Add("X-Protocol", protocol.Name);
+                    response.Headers.Add(Constants.Headers.AsrsManagementSDKClientInvocationProtocol, protocol.Name);
                     response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
 
                     return response;
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                         Content = new ByteArrayContent(payloadBytes),
                     };
 
-                    response.Headers.Add("X-Protocol", protocol.Name);
+                    response.Headers.Add(Constants.Headers.AsrsManagementSDKClientInvocationProtocol, protocol.Name);
                     response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
 
                     return response;
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     {
                         Content = new ByteArrayContent(Array.Empty<byte>()),
                     };
-                    response.Headers.Add("X-Protocol", "json");
+                    response.Headers.Add(Constants.Headers.AsrsManagementSDKClientInvocationProtocol, "json");
                     response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
                     return response;
                 });
