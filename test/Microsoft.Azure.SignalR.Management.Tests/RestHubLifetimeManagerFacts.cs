@@ -96,7 +96,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var connectionId = "connection1";
             var methodName = "getError";
             var args = Array.Empty<object>();
-            var errorMessage = "Connection does not exist";
+            var errorMessage = "Connection does not exist.";
 
             _httpMessageHandlerMock
                 .Protected()

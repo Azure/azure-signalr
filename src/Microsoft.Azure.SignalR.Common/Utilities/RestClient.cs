@@ -152,7 +152,7 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
         {
             HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(requestUri, innerException, detail),
             HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(requestUri, innerException, jwtToken),
-            HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(requestUri, innerException),
+            HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(requestUri, innerException, detail),
             _ => new AzureSignalRRuntimeException(response.RequestMessage?.RequestUri?.ToString(), innerException, response.StatusCode, detail),
         };
     }
@@ -198,7 +198,6 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
     private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues>? query, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
     {
         var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
-        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/octet-stream"));
         request.Content = _payloadContentBuilder.Build(body, typeHint);
         return request;
     }

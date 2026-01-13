@@ -15,8 +15,9 @@ using Azure;
 
 using Microsoft.AspNetCore.SignalR;
 #if NET7_0_OR_GREATER
-using Microsoft.AspNetCore.SignalR.Protocol;
 using System.Buffers;
+using System.IO;
+using Microsoft.AspNetCore.SignalR.Protocol;
 #endif
 using Microsoft.Extensions.Primitives;
 
@@ -392,7 +393,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
                 if (isSuccess)
                 {
                     // 1. Get protocol from header (e.g. "json" or "messagepack")
-                    if (!response.Headers.TryGetValues("X-Protocol", out var protocolHeaderValues))
+                    if (!response.Headers.TryGetValues(Constants.Headers.AsrsManagementSDKClientInvocationProtocol, out var protocolHeaderValues))
                     {
                         throw new HubException("Response is missing protocol header.");
                     }
@@ -422,17 +423,25 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
                     }
 
                     // 3. Read raw completion payload from response body
-                    var payloadBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-                    if (payloadBytes == null || payloadBytes.Length == 0)
+
+                    byte[] buffer;
+                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken)
+                            .ConfigureAwait(false);
+                    using var ms = new MemoryStream();
+                    await stream.CopyToAsync(ms, cancellationToken).ConfigureAwait(false);
+
+                    if (ms.Length == 0)
                     {
                         throw new HubException("Response payload is empty.");
                     }
+
+                    buffer = ms.ToArray();
 
                     // 4. Use SimpleInvocationBinder with typeof(T)
                     var binder = new SimpleInvocationBinder(typeof(T));
 
                     // 5. Parse the payload bytes into CompletionMessage
-                    var sequence = new ReadOnlySequence<byte>(payloadBytes);
+                    var sequence = new ReadOnlySequence<byte>(buffer);
                     var local = sequence;
                     if (!protocol.TryParseMessage(ref local, binder, out var hubMessage))
                     {
@@ -454,7 +463,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         {
             throw new HubException(errorContent ?? "Unknown error in response");
         }
-        if ( responseMessage == null)
+        if (responseMessage == null)
         {
             throw new HubException("Response message is null.");
         }
