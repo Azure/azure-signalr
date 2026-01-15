@@ -125,6 +125,7 @@ namespace Microsoft.Azure.SignalR.Common
         [System.ObsoleteAttribute]
         protected AzureSignalRInaccessibleEndpointException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public AzureSignalRInaccessibleEndpointException(string requestUri, System.Exception innerException) { }
+        public AzureSignalRInaccessibleEndpointException(string requestUri, System.Exception innerException, string message) { }
     }
     public partial class AzureSignalRInvalidArgumentException : Microsoft.Azure.SignalR.Common.AzureSignalRException
     {
