@@ -164,7 +164,7 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
         {
             HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(requestUri, innerException, detail),
             HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(requestUri, innerException, jwtToken),
-            HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(requestUri, innerException, detail),
+            HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(requestUri, innerException),
             _ => new AzureSignalRRuntimeException(response.RequestMessage?.RequestUri?.ToString(), innerException, response.StatusCode, detail),
         };
     }

@@ -16,10 +16,6 @@ namespace Microsoft.Azure.SignalR.Common
         {
         }
 
-        public AzureSignalRInaccessibleEndpointException(string requestUri, Exception innerException, string message) : base(string.IsNullOrEmpty(requestUri) ? $"{message}" : $"{ErrorPhenomenon} {message} Request Uri: {requestUri}", innerException)
-        {
-        }
-
 #if NET8_0_OR_GREATER
         [Obsolete]
 #endif
