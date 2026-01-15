@@ -90,7 +90,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task InvokeConnectionAsync_WithErrorResponse_ThrowsHubException()
+        public async Task InvokeConnectionAsync_WithNotFoundResponse_ThrowsHubException()
         {
             // Arrange
             var connectionId = "connection1";
@@ -113,6 +113,34 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             // Act & Assert
             var exception = await Assert.ThrowsAsync<AzureSignalRInaccessibleEndpointException>(
                 async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
+
+        }
+
+        [Fact]
+        public async Task InvokeConnectionAsync_WithBadRequestResponse_ThrowsHubException()
+        {
+            // Arrange
+            var connectionId = "connection1";
+            var methodName = "getError";
+            var args = Array.Empty<object>();
+            var errorMessage = "This is a Bad Request.";
+
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.BadRequest)
+                {
+                    Content = new StringContent(errorMessage)
+                });
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<HubException>(
+                async () => await _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
+            Assert.Equal(errorMessage, exception.Message);
         }
 
         [Fact]

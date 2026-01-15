@@ -455,8 +455,9 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
                     errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 }
 
-                return isSuccess || response.StatusCode == HttpStatusCode.InternalServerError;
+                return isSuccess || response.StatusCode == HttpStatusCode.BadRequest;
             },
+            "application/octet-stream",
             cancellationToken);
 
         if (!isSuccess)
