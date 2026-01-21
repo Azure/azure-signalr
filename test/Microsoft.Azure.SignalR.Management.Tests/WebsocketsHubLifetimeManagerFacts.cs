@@ -1,22 +1,24 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
-using System;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
     public class WebsocketsHubLifetimeManagerFacts
     {
         private readonly Mock<IServiceConnectionManager<TestHub>> _serviceConnectionManagerMock;
-        private readonly Mock<IHubProtocolResolver> _protocolResolverMock;
+        private readonly DefaultHubProtocolResolver _protocolResolver;
         private readonly Mock<IOptions<HubOptions>> _globalHubOptionsMock;
         private readonly Mock<IOptions<HubOptions<TestHub>>> _hubOptionsMock;
         private readonly Mock<ILoggerFactory> _loggerFactoryMock;
@@ -28,7 +30,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         public WebsocketsHubLifetimeManagerFacts()
         {
             _serviceConnectionManagerMock = new Mock<IServiceConnectionManager<TestHub>>();
-            _protocolResolverMock = new Mock<IHubProtocolResolver>();
+            _protocolResolver = new DefaultHubProtocolResolver([new JsonHubProtocol(), new MessagePackHubProtocol()]);
             _globalHubOptionsMock = new Mock<IOptions<HubOptions>>();
             _hubOptionsMock = new Mock<IOptions<HubOptions<TestHub>>>();
             _loggerFactoryMock = new Mock<ILoggerFactory>();
@@ -49,7 +51,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             // Act
             var manager = new WebSocketsHubLifetimeManager<TestHub>(
                 _serviceConnectionManagerMock.Object,
-                _protocolResolverMock.Object,
+                _protocolResolver,
                 _globalHubOptionsMock.Object,
                 _hubOptionsMock.Object,
                 _loggerFactoryMock.Object,
@@ -71,7 +73,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             // Arrange
             var manager = new WebSocketsHubLifetimeManager<TestHub>(
                 _serviceConnectionManagerMock.Object,
-                _protocolResolverMock.Object,
+                _protocolResolver,
                 _globalHubOptionsMock.Object,
                 _hubOptionsMock.Object,
                 _loggerFactoryMock.Object,
@@ -108,7 +110,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             // Arrange
             var manager = new WebSocketsHubLifetimeManager<TestHub>(
                 _serviceConnectionManagerMock.Object,
-                _protocolResolverMock.Object,
+                _protocolResolver,
                 _globalHubOptionsMock.Object,
                 _hubOptionsMock.Object,
                 _loggerFactoryMock.Object,
@@ -133,7 +135,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             // Arrange
             var manager = new WebSocketsHubLifetimeManager<TestHub>(
                 _serviceConnectionManagerMock.Object,
-                _protocolResolverMock.Object,
+                _protocolResolver,
                 _globalHubOptionsMock.Object,
                 _hubOptionsMock.Object,
                 _loggerFactoryMock.Object,
@@ -150,6 +152,41 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             // Act & Assert
             await Assert.ThrowsAsync<ArgumentNullException>(() => manager.InvokeConnectionAsync<string>(connectionId, invalidMethodName, args, cancellationToken));
+        }
+
+        private sealed class DefaultHubProtocolResolver : IHubProtocolResolver
+        {
+
+            private readonly List<IHubProtocol> _hubProtocols;
+            private readonly Dictionary<string, IHubProtocol> _availableProtocols;
+
+            public IReadOnlyList<IHubProtocol> AllProtocols => _hubProtocols;
+
+            public DefaultHubProtocolResolver(IEnumerable<IHubProtocol> availableProtocols)
+            {
+                _availableProtocols = new Dictionary<string, IHubProtocol>(StringComparer.OrdinalIgnoreCase);
+
+                // We might get duplicates in _hubProtocols, but we're going to check it and overwrite in just a sec.
+                _hubProtocols = availableProtocols.ToList();
+                foreach (var protocol in _hubProtocols)
+                {
+                    _availableProtocols[protocol.Name] = protocol;
+                }
+            }
+
+            public IHubProtocol GetProtocol(string protocolName, IReadOnlyList<string> supportedProtocols)
+            {
+                protocolName = protocolName ?? throw new ArgumentNullException(nameof(protocolName));
+
+                if (_availableProtocols.TryGetValue(protocolName, out var protocol) && (supportedProtocols == null || supportedProtocols.Contains(protocolName, StringComparer.OrdinalIgnoreCase)))
+                {
+                    return protocol;
+                }
+
+                // null result indicates protocol is not supported
+                // result will be validated by the caller
+                return null;
+            }
         }
 #endif
 
