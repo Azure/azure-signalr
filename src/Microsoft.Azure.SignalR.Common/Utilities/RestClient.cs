@@ -55,7 +55,7 @@ internal class RestClient
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.UserDefault, api, httpMethod, null, null, handleExpectedResponseAsync, cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.UserDefault, api, httpMethod, null, null, handleExpectedResponseAsync, null, cancellationToken);
     }
 
     public Task SendWithRetryAsync(
@@ -73,7 +73,7 @@ internal class RestClient
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, null, handleExpectedResponseAsync, cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, null, handleExpectedResponseAsync, null, cancellationToken);
     }
 
     public Task SendMessageWithRetryAsync(
@@ -81,10 +81,22 @@ internal class RestClient
         HttpMethod httpMethod,
         string methodName,
         object?[] args,
-        Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
+        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponse = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, AsAsync(handleExpectedResponse), cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, handleExpectedResponse, null, cancellationToken);
+    }
+
+    public Task SendMessageWithRetryAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        string methodName,
+        object?[] args,
+        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponse = null,
+        string? accepts = null,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, handleExpectedResponse, accepts, cancellationToken);
     }
 
     public Task SendStreamMessageWithRetryAsync(
@@ -96,7 +108,7 @@ internal class RestClient
         Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
         CancellationToken cancellationToken = default)
     {
-        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new StreamItemMessage(streamId, arg), typeHint, AsAsync(handleExpectedResponse), cancellationToken);
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new StreamItemMessage(streamId, arg), typeHint, AsAsync(handleExpectedResponse), null, cancellationToken);
     }
 
     private static Uri GetUri(string url, IDictionary<string, StringValues>? query)
@@ -164,11 +176,15 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
         HubMessage? body,
         Type? typeHint,
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
+        string? accepts = null,
         CancellationToken cancellationToken = default)
     {
         using var httpClient = _httpClientFactory.CreateClient(httpClientName);
         using var request = BuildRequest(api, httpMethod, body, typeHint);
-
+        if (accepts != null)
+        {
+            request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue(accepts));
+        }
         try
         {
             using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
