@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -93,7 +94,7 @@ internal class RestClient
         string methodName,
         object?[] args,
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponse = null,
-        string? accepts = null,
+        MediaTypeWithQualityHeaderValue? accepts = null,
         CancellationToken cancellationToken = default)
     {
         return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, handleExpectedResponse, accepts, cancellationToken);
@@ -176,14 +177,14 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
         HubMessage? body,
         Type? typeHint,
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
-        string? accepts = null,
+        MediaTypeWithQualityHeaderValue? accepts = null,
         CancellationToken cancellationToken = default)
     {
         using var httpClient = _httpClientFactory.CreateClient(httpClientName);
         using var request = BuildRequest(api, httpMethod, body, typeHint);
         if (accepts != null)
         {
-            request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue(accepts));
+            request.Headers.Accept.Add(accepts);
         }
         try
         {
