@@ -311,8 +311,8 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
         // Use protocol.Name to check for supported protocols
         switch (protocol.Name)
         {
-            case "json":
-            case "messagepack":
+            case Constants.Protocol.Json:
+            case Constants.Protocol.MessagePack:
                 return true;
             default:
                 return false;
