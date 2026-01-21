@@ -40,7 +40,8 @@ namespace Microsoft.Azure.SignalR.Management
                         var httpClientFactory = _serviceProvider.GetRequiredService<IHttpClientFactory>();
                         var serviceEndpoint = _serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.First().Key;
                         var restClient = new RestClient(httpClientFactory, payloadBuilderResolver.GetPayloadContentBuilder());
-                        return new RestHubLifetimeManager<THub>(hubName, serviceEndpoint, _options.ApplicationName, restClient);
+                        var protocolResolver = _serviceProvider.GetRequiredService<IHubProtocolResolver>();
+                        return new RestHubLifetimeManager<THub>(hubName, serviceEndpoint, _options.ApplicationName, restClient, protocolResolver);
                     }
                 default: throw new InvalidEnumArgumentException(nameof(ServiceManagerOptions.ServiceTransportType), (int)_options.ServiceTransportType, typeof(ServiceTransportType));
             }
