@@ -1,8 +1,9 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -88,12 +89,15 @@ namespace Microsoft.Azure.SignalR
 
             if (_clientConnectionManager.TryGetClientConnection(connectionId, out var clientConnection))
             {
-                var message = CreateMessage(connectionId, methodName, args, clientConnection);
+                var activity = CreateActivity(methodName);
+                activity?.Start();
+                var message = CreateMessage(connectionId, methodName, args, clientConnection, activity);
                 var messageWithTracingId = (IMessageWithTracingId)message;
                 try
                 {
                     // Write directly to this connection
                     await clientConnection.ServiceConnection.WriteAsync(message);
+                    activity?.Stop();
 
                     if (messageWithTracingId.TracingId != null)
                     {
@@ -102,11 +106,26 @@ namespace Microsoft.Azure.SignalR
                 }
                 catch (ServiceConnectionNotActiveException)
                 {
-                    // Fallback to send message through other server connections
-                    // Although in current design the server connection drop leads to routed client connection drops
-                    // The message thrown here is misleading to the customer
-                    // Also sending the message back provides the support when later we support client connection migration
-                    await WriteAsync(message);
+                    try
+                    {
+                        // Fallback to send message through other server connections
+                        // Although in current design the server connection drop leads to routed client connection drops
+                        // The message thrown here is misleading to the customer
+                        // Also sending the message back provides the support when later we support client connection migration
+                        await WriteAsync(message);
+                        activity?.Stop();
+                    }
+                    catch (Exception ex)
+                    {
+                        if (activity is not null)
+                        {
+                            activity.SetStatus(ActivityStatusCode.Error);
+                            activity.SetTag("error.type", ex.GetType().FullName);
+                            activity.Stop();
+                        }
+
+                        throw;
+                    }
                 }
             }
             else
@@ -129,18 +148,28 @@ namespace Microsoft.Azure.SignalR
             }
 
             var invocationId = _clientInvocationManager.Caller.GenerateInvocationId(connectionId);
-            var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, invocationId)));
+            var activity = CreateActivity(methodName);
+            var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, activity, invocationId)));
             await WriteAsync(message);
             var task = _clientInvocationManager.Caller.AddInvocation<T>(_hub, connectionId, invocationId, cancellationToken);
 
             // Exception handling follows https://source.dot.net/#Microsoft.AspNetCore.SignalR.Core/DefaultHubLifetimeManager.cs,349
             try
             {
-                return await task;
+                activity?.Start();
+                var result = await task;
+                activity?.Stop();
+                return result;
             }
-            catch
+            catch (Exception ex)
             {
                 _clientInvocationManager.Caller.RemoveInvocation(invocationId);
+                if (activity is not null)
+                {
+                    activity.SetStatus(ActivityStatusCode.Error);
+                    activity.SetTag("error.type", ex.GetType().FullName);
+                    activity.Stop();
+                }
                 throw;
             }
         }
@@ -186,7 +215,7 @@ namespace Microsoft.Azure.SignalR
         }
 #endif
 
-        private MultiConnectionDataMessage CreateMessage(string connectionId, string methodName, object[] args, IClientConnection clientConnection)
+        private MultiConnectionDataMessage CreateMessage(string connectionId, string methodName, object[] args, IClientConnection clientConnection, Activity activity)
         {
             IDictionary<string, ReadOnlyMemory<byte>> payloads;
             if (clientConnection.HubProtocol != null)
@@ -198,7 +227,7 @@ namespace Microsoft.Azure.SignalR
             }
             else
             {
-                payloads = SerializeAllProtocols(methodName, args);
+                payloads = SerializeAllProtocols(methodName, args, activity);
             }
 
             // don't use ConnectionDataMessage here, since handshake message is also wrapped into ConnectionDataMessage.
