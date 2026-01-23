@@ -7,8 +7,7 @@ namespace Microsoft.Azure.SignalR;
 
 #nullable enable
 
-// TODO: make public later
-internal sealed record SignalRGroupConnection
+public sealed record SignalRGroupConnection
 {
     [JsonPropertyName("connectionId")]
     public string ConnectionId { internal set; get; }
