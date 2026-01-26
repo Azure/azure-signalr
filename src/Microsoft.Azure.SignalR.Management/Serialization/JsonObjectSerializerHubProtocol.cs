@@ -90,7 +90,6 @@ namespace Microsoft.Azure.SignalR.Management
 #if NET7_0_OR_GREATER
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, [NotNullWhen(true)] out HubMessage? message)
         {
-
             if (!TextMessageParser.TryParseMessage(ref input, out var payload))
             {
                 message = null!;
@@ -193,17 +192,10 @@ namespace Microsoft.Azure.SignalR.Management
 
                         message = BindCompletionMessage(invocationId, error, result, hasResult);
                         break;
-                    case HubProtocolConstants.InvocationMessageType:
-                    case HubProtocolConstants.StreamInvocationMessageType:
-                    case HubProtocolConstants.StreamItemMessageType:
-                    case HubProtocolConstants.CancelInvocationMessageType:
-                    case HubProtocolConstants.PingMessageType:
-                    case HubProtocolConstants.CloseMessageType:
-                        throw new NotSupportedException($"Not supported message type: {type}.");
                     case null:
                         throw new InvalidDataException($"Missing required property '{TypePropertyName}'.");
                     default:
-                        return null!;
+                        throw new NotSupportedException($"Not supported message type: {type}.");
                 }
                 return message;
             }
