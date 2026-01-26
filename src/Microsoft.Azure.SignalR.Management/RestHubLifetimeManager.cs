@@ -2,8 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -352,6 +354,130 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         }
         await _restClient.SendWithRetryAsync(api, HttpMethod.Post, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
+
+#if NET7_0_OR_GREATER
+    public override async Task<T> InvokeConnectionAsync<T>(string connectionId, string methodName, object?[] args, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(methodName))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
+        }
+        if (string.IsNullOrEmpty(connectionId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+        }
+        if (!_protocolResolver.AllProtocols.All(IsInvocationSupported))
+        {
+            throw new NotSupportedException("Non supported protocol for client invocation.");
+        }
+
+        var api = _restApiProvider.GetClientInvocationEndpoint(_appName, _hubName, connectionId);
+        string? errorContent = null;
+        var isSuccess = false;
+        CompletionMessage? responseMessage = null;
+
+        await _restClient.SendMessageWithRetryAsync(
+            api,
+            HttpMethod.Post,
+            methodName,
+            args,
+            async response =>
+            {
+                isSuccess = response.IsSuccessStatusCode;
+
+                if (isSuccess)
+                {
+                    // 1. Get protocol from header (e.g. "json" or "messagepack")
+                    if (!response.Headers.TryGetValues(Constants.Headers.AsrsManagementSDKClientInvocationProtocol, out var protocolHeaderValues))
+                    {
+                        throw new HubException("Response is missing protocol header.");
+                    }
+                    var protocolName = protocolHeaderValues.FirstOrDefault();
+                    if (string.IsNullOrEmpty(protocolName))
+                    {
+                        throw new HubException("Response protocol header is empty.");
+                    }
+
+                    // 2. Pick the hub protocol that matches X-Protocol
+                    var protocol = _protocolResolver.AllProtocols
+                        .FirstOrDefault(p => string.Equals(p.Name, protocolName, StringComparison.OrdinalIgnoreCase));
+
+                    if (protocol == null)
+                    {
+                        if (string.Equals(protocolName, "messagepack", StringComparison.OrdinalIgnoreCase) &&
+                            _protocolResolver.AllProtocols.Count == 1 &&
+                            _protocolResolver.AllProtocols[0] is JsonObjectSerializerHubProtocol jsonObjectSerializerHubProtocol)
+                        {
+                            // The hub protocol is the default one. Service will convert it to MessagePack and keep backward compatibility as users may depend on this feature for MessagePack client support.
+                            protocol = new MessagePackHubProtocol();
+                        }
+                        else
+                        {
+                            throw new NotSupportedException($"The protocol '{protocolName}' is not supported.");
+                        }
+                    }
+
+                    // 3. Read raw completion payload from response body
+
+                    byte[] buffer;
+                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken)
+                            .ConfigureAwait(false);
+                    using var ms = new MemoryStream();
+                    await stream.CopyToAsync(ms, cancellationToken).ConfigureAwait(false);
+
+                    if (ms.Length == 0)
+                    {
+                        throw new HubException("Response payload is empty.");
+                    }
+
+                    buffer = ms.ToArray();
+
+                    // 4. Use SimpleInvocationBinder with typeof(T)
+                    var binder = new SimpleInvocationBinder(typeof(T));
+
+                    // 5. Parse the payload bytes into CompletionMessage
+                    var sequence = new ReadOnlySequence<byte>(buffer);
+                    var local = sequence;
+                    if (!protocol.TryParseMessage(ref local, binder, out var hubMessage))
+                    {
+                        throw new HubException("Failed to parse invocation response.");
+                    }
+
+                    responseMessage = (CompletionMessage)hubMessage!;
+                }
+                else
+                {
+                    errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                }
+
+                return isSuccess || response.StatusCode == HttpStatusCode.BadRequest;
+            },
+            "application/octet-stream",
+            cancellationToken);
+
+        if (!isSuccess)
+        {
+            throw new HubException(errorContent ?? "Unknown error in response");
+        }
+        if (responseMessage == null)
+        {
+            throw new HubException("Response message is null.");
+        }
+        if (responseMessage.Error != null)
+        {
+            throw new HubException(responseMessage.Error);
+        }
+
+        return (T)responseMessage!.Result!;
+    }
+
+    public override Task SetConnectionResultAsync(string connectionId, CompletionMessage result)
+    {
+        // This method won't get trigger because in transient we will wait for the returned completion message.
+        // this is to honor the interface
+        throw new NotImplementedException();
+    }
+
 
     private static bool FilterExpectedResponse(HttpResponseMessage response, string expectedErrorCode) =>
         response.IsSuccessStatusCode
