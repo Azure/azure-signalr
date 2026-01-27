@@ -2,13 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +16,9 @@ using Azure;
 
 using Microsoft.AspNetCore.SignalR;
 #if NET7_0_OR_GREATER
+using System.IO;
+using System.Buffers;
+using System.Net.Http.Headers;
 using Microsoft.AspNetCore.SignalR.Protocol;
 #endif
 using Microsoft.Extensions.Primitives;
@@ -457,7 +459,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
                 return isSuccess || response.StatusCode == HttpStatusCode.BadRequest;
             },
-            "application/octet-stream",
+            new MediaTypeWithQualityHeaderValue("application/octet-stream"),
             cancellationToken);
 
         if (!isSuccess)
