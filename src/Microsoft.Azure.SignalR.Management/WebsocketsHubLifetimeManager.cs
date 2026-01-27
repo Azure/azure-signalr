@@ -2,6 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #nullable enable
 using System;
+#if NET7_0_OR_GREATER
+using System.Linq;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -269,6 +272,11 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
             throw new ArgumentNullException(nameof(methodName));
         }
 
+        if (!HubProtocolResolver.AllProtocols.All(IsInvocationSupported))
+        {
+            throw new NotSupportedException("Non supported protocol for client invocation.");
+        }
+
         // cancellationToken is required to be cancellable.
 
         using var cts = new CancellationTokenSource(DefaultInvocationTimeoutTimespan);
@@ -297,6 +305,19 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
         // this is to honor the interface
         throw new NotImplementedException();
     }
+
+    private static bool IsInvocationSupported(IHubProtocol protocol)
+    {
+        // Use protocol.Name to check for supported protocols
+        switch (protocol.Name)
+        {
+            case Constants.Protocol.Json:
+            case Constants.Protocol.MessagePack:
+                return true;
+            default:
+                return false;
+        }
+    }
 #endif
 
     protected override T AppendMessageTracingId<T>(T message)
@@ -310,7 +331,7 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
         return base.AppendMessageTracingId(message);
     }
 
-    public AsyncPageable<SignalRGroupConnection> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default)
+    public AsyncPageable<SignalRGroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default)
     {
         if (string.IsNullOrEmpty(groupName))
         {

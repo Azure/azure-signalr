@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #nullable enable
@@ -11,7 +11,9 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 
 #if NET5_0_OR_GREATER
+using System.IO;
 using System.Text.Json.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 #endif
 using Azure.Core.Serialization;
@@ -29,8 +31,7 @@ namespace Microsoft.Azure.SignalR.Management
     /// <remarks>
     /// Changes compared to original version:
     ///  <list>
-    ///     <item> Change <see cref="TryParseMessage(ref ReadOnlySequence{byte}, IInvocationBinder, out HubMessage)"/> to unsupported as we don't need it. Related codes removed.</item>
-    ///     <item> Use <see cref="global::Azure.Core.Serialization.ObjectSerializer"/> instead of <see cref="JsonSerializer"/> in the serialization. </item>
+    ///     <item> Change <see cref="TryParseMessage(ref ReadOnlySequence{byte}, IInvocationBinder, out HubMessage)"/> to a seperate version for Net7.0.</item>
     /// </list>
     /// </remarks>
     internal sealed class JsonObjectSerializerHubProtocol : IHubProtocol
@@ -86,11 +87,154 @@ namespace Microsoft.Azure.SignalR.Management
             return version == Version;
         }
 
+#if NET7_0_OR_GREATER
+        public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, [NotNullWhen(true)] out HubMessage? message)
+        {
+            if (!TextMessageParser.TryParseMessage(ref input, out var payload))
+            {
+                message = null!;
+                return false;
+            }
+
+            message = ParseMessage(payload, binder);
+
+            return message != null;
+        }
+#else
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage message)
         {
             //We don't need reading message with this protocol.
             throw new NotSupportedException();
         }
+#endif
+
+#if NET7_0_OR_GREATER
+        private HubMessage ParseMessage(ReadOnlySequence<byte> input, IInvocationBinder binder)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(input);
+                var root = doc.RootElement;
+                if (root.ValueKind != JsonValueKind.Object)
+                {
+                    throw new InvalidDataException("Expected JSON object for hub message.");
+                }
+
+                int? type = null;
+                string? invocationId = null;
+                string? error = null;
+                var hasResult = false;
+                object? result = null;
+                JsonElement? resultElement = null;
+
+                // type
+                if (root.TryGetProperty(TypePropertyName, out var typeProp))
+                {
+                    if (typeProp.ValueKind != JsonValueKind.Number || !typeProp.TryGetInt32(out var messageType))
+                    {
+                        throw new InvalidDataException($"Expected '{TypePropertyName}' to be of type {JsonTokenType.Number}.");
+                    }
+
+                    type = messageType;
+                }
+
+                // invocationId
+                if (root.TryGetProperty(InvocationIdPropertyName, out var invocationIdProp) &&
+                    invocationIdProp.ValueKind == JsonValueKind.String)
+                {
+                    invocationId = invocationIdProp.GetString();
+                }
+
+                // error
+                if (root.TryGetProperty(ErrorPropertyName, out var errorProp) &&
+                    errorProp.ValueKind == JsonValueKind.String)
+                {
+                    error = errorProp.GetString();
+                }
+
+                // result
+                if (root.TryGetProperty(ResultPropertyName, out var resultProp))
+                {
+                    hasResult = true;
+                    resultElement = resultProp;
+                }
+
+                HubMessage message;
+
+                switch (type)
+                {
+                    case HubProtocolConstants.CompletionMessageType:
+                        if (invocationId is null)
+                        {
+                            throw new InvalidDataException($"Missing required property '{InvocationIdPropertyName}'.");
+                        }
+
+                        if (hasResult && resultElement.HasValue)
+                        {
+                            var returnType = binder.GetReturnType(invocationId);
+                            if (returnType is null)
+                            {
+                                result = null;
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    result = BindTypeFromElement(resultElement.Value, returnType);
+                                }
+                                catch (Exception ex)
+                                {
+                                    error = $"Error trying to deserialize result to {returnType.Name}. {ex.Message}";
+                                    hasResult = false;
+                                }
+                            }
+                        }
+
+                        message = BindCompletionMessage(invocationId, error, result, hasResult);
+                        break;
+                    case null:
+                        throw new InvalidDataException($"Missing required property '{TypePropertyName}'.");
+                    default:
+                        throw new NotSupportedException($"Not supported message type: {type}.");
+                }
+                return message;
+            }
+            catch (JsonException jrex)
+            {
+                throw new InvalidDataException("Error reading JSON.", jrex);
+            }
+        }
+
+        private object? BindTypeFromElement(JsonElement element, Type type)
+        {
+            // For normal types, deserialize using ObjectSerializer from the element's raw JSON
+            var raw = element.GetRawText();
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes(raw));
+            return BindType(ref stream, type);
+        }
+
+        private object? BindType(ref MemoryStream reader, Type type) => ObjectSerializer.Deserialize(reader, type, default);
+
+        private static HubMessage BindCompletionMessage(string invocationId, string? error, object? result, bool hasResult)
+        {
+            if (string.IsNullOrEmpty(invocationId))
+            {
+                throw new InvalidDataException($"Missing required property '{InvocationIdPropertyName}'.");
+            }
+
+            if (error != null && hasResult)
+            {
+                throw new InvalidDataException("The 'error' and 'result' properties are mutually exclusive.");
+            }
+
+            if (hasResult)
+            {
+                return new CompletionMessage(invocationId, error, result, hasResult: true);
+            }
+
+            return new CompletionMessage(invocationId, error, result: null, hasResult: false);
+        }
+#endif
 
         /// <inheritdoc />
         public void WriteMessage(HubMessage message, IBufferWriter<byte> output)

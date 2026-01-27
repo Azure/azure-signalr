@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override Task RemoveFromAllGroupsAsync(string connectionId, CancellationToken cancellationToken = default) => _lifetimeManager.RemoveFromAllGroupsAsync(connectionId, cancellationToken);
 
-        internal override AsyncPageable<SignalRGroupConnection> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken cancellationToken = default)
+        public override AsyncPageable<SignalRGroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(groupName))
             {
