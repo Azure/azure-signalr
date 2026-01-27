@@ -20,6 +20,7 @@ internal abstract class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<TH
     protected const string TtlOutOfRangeErrorMessage = "Ttl cannot be less than 0.";
     protected readonly IServiceConnectionManager<THub> ServiceConnectionContainer;
     protected ILogger Logger { get; set; }
+    protected IHubProtocolResolver HubProtocolResolver { get; init; }
 
     private readonly DefaultHubMessageSerializer _messageSerializer;
 
@@ -28,6 +29,7 @@ internal abstract class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<TH
         Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         ServiceConnectionContainer = serviceConnectionManager;
         _messageSerializer = new DefaultHubMessageSerializer(protocolResolver, globalHubOptions.Value.SupportedProtocols, hubOptions.Value.SupportedProtocols);
+        HubProtocolResolver = protocolResolver;
     }
 
     public override Task OnConnectedAsync(HubConnectionContext connection)

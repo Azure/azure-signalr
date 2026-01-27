@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 using Azure;
 
 using Microsoft.AspNetCore.SignalR;
+#if NET7_0_OR_GREATER
+using Microsoft.AspNetCore.SignalR.Protocol;
+#endif
 using Microsoft.Extensions.Primitives;
 
 using static Microsoft.Azure.SignalR.Constants;
@@ -31,13 +34,15 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
     private readonly RestApiProvider _restApiProvider;
     private readonly string _hubName;
     private readonly string _appName;
+    private readonly IHubProtocolResolver _protocolResolver;
 
-    public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string appName, RestClient restClient)
+    public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string appName, RestClient restClient, IHubProtocolResolver protocolResolver)
     {
         _restApiProvider = new RestApiProvider(endpoint);
         _appName = appName;
         _hubName = hubName;
         _restClient = restClient;
+        _protocolResolver = protocolResolver;
     }
 
     public override async Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -352,6 +357,25 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         }
         await _restClient.SendWithRetryAsync(api, HttpMethod.Post, handleExpectedResponse: null, cancellationToken: cancellationToken);
     }
+
+#if NET7_0_OR_GREATER
+
+#pragma warning disable IDE0051 // Will be used in the future updates
+    private static bool IsInvocationSupported(IHubProtocol protocol)
+#pragma warning restore IDE0051 // Will be used in the future updates
+    {
+        // Use protocol.Name to check for supported protocols
+        switch (protocol.Name)
+        {
+            case Constants.Protocol.Json:
+            case Constants.Protocol.MessagePack:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+#endif
 
     private static bool FilterExpectedResponse(HttpResponseMessage response, string expectedErrorCode) =>
         response.IsSuccessStatusCode
