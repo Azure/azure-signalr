@@ -341,7 +341,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
             var container = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint && e.EndpointType == endpoint.EndpointType);
             if (container == null)
             {
-                Log.EndpointNotExists(_logger, endpoint.ToString());
+                Log.NonexistentEndpoint(_logger, endpoint.ToString());
                 return;
             }
 
@@ -484,7 +484,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
             StoppingConnectionAction(logger, endpoint, null);
         }
 
-        public static void EndpointNotExists(ILogger logger, string endpoint)
+        public static void NonexistentEndpoint(ILogger logger, string endpoint)
         {
             EndpointNotExistsAction(logger, endpoint, null);
         }

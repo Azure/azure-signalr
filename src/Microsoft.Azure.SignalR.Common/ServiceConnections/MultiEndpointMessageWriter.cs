@@ -38,7 +38,7 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter
                 // it is possible that the endpoint is not a valid HubServiceEndpoint since it can be changed by the router
                 if (hubEndpoint == null || hubEndpoint.ConnectionContainer == null)
                 {
-                    Log.EndpointNotExists(_logger, endpoint.ToString());
+                    Log.NonexistentEndpoint(_logger, endpoint.ToString());
                 }
                 else
                 {
@@ -244,7 +244,7 @@ internal class MultiEndpointMessageWriter : IServiceMessageWriter
             }
         }
 
-        public static void EndpointNotExists(ILogger logger, string endpoint)
+        public static void NonexistentEndpoint(ILogger logger, string endpoint)
         {
             _endpointNotExists(logger, endpoint, null);
         }
