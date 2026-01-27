@@ -143,7 +143,7 @@ internal class ServiceConnectionManager : IServiceConnectionManager
         return Task.WhenAll(GetConnections().Select(s => s.StopGetServersPing()));
     }
 
-    public IAsyncEnumerable<Page<SignalRGroupConnection>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
+    public IAsyncEnumerable<Page<SignalRGroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
     {
         throw new NotImplementedException();
     }

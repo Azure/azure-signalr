@@ -12,6 +12,7 @@ namespace Microsoft.Azure.SignalR.Management
     {
         protected GroupManager() { }
         public abstract System.Threading.Tasks.Task AddToGroupAsync(string connectionId, string groupName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        public virtual Azure.AsyncPageable<Microsoft.Azure.SignalR.SignalRGroupMember> ListConnectionsInGroup(string groupName, int? top = default(int?), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public abstract System.Threading.Tasks.Task RemoveFromAllGroupsAsync(string connectionId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         public abstract System.Threading.Tasks.Task RemoveFromGroupAsync(string connectionId, string groupName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     }

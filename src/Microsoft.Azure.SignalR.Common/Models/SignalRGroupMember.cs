@@ -7,7 +7,7 @@ namespace Microsoft.Azure.SignalR;
 
 #nullable enable
 
-public sealed record SignalRGroupConnection
+public sealed record SignalRGroupMember
 {
     [JsonPropertyName("connectionId")]
     public string ConnectionId { internal set; get; }
@@ -15,7 +15,7 @@ public sealed record SignalRGroupConnection
     [JsonPropertyName("userId")]
     public string? UserId { get; internal set; }
 
-    public SignalRGroupConnection(string connectionId, string? userId = default)
+    public SignalRGroupMember(string connectionId, string? userId = default)
     {
         ConnectionId = connectionId;
         UserId = userId;
