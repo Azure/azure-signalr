@@ -272,7 +272,7 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
             throw new ArgumentNullException(nameof(methodName));
         }
 
-        if (!ProtocolResolver.AllProtocols.All(IsInvocationSupported))
+        if (!HubProtocolResolver.AllProtocols.All(IsInvocationSupported))
         {
             throw new NotSupportedException("Non supported protocol for client invocation.");
         }
