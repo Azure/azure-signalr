@@ -82,6 +82,35 @@ namespace Microsoft.Azure.SignalR
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
+    [System.Runtime.CompilerServices.NullableAttribute((byte)0)]
+    [System.Runtime.CompilerServices.NullableContextAttribute((byte)1)]
+    public sealed partial class SignalRGroupMember : System.IEquatable<Microsoft.Azure.SignalR.SignalRGroupMember>
+    {
+        public SignalRGroupMember(string connectionId, [System.Runtime.CompilerServices.NullableAttribute((byte)2)] string? userId = null) { }
+        [System.Text.Json.Serialization.JsonPropertyNameAttribute("connectionId")]
+        public string ConnectionId { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        [System.Runtime.CompilerServices.NullableAttribute((byte)2)]
+        [System.Text.Json.Serialization.JsonPropertyNameAttribute("userId")]
+        public string? UserId { [System.Runtime.CompilerServices.CompilerGeneratedAttribute, System.Runtime.CompilerServices.NullableContextAttribute((byte)2)] get { throw null; } }
+        [System.Runtime.CompilerServices.CompilerGeneratedAttribute]
+        [System.Runtime.CompilerServices.NullableContextAttribute((byte)2)]
+        public bool Equals(Microsoft.Azure.SignalR.SignalRGroupMember? other) { throw null; }
+        [System.Runtime.CompilerServices.CompilerGeneratedAttribute]
+        [System.Runtime.CompilerServices.NullableContextAttribute((byte)2)]
+        public override bool Equals(object? obj) { throw null; }
+        [System.Runtime.CompilerServices.CompilerGeneratedAttribute]
+        public override int GetHashCode() { throw null; }
+        [System.Runtime.CompilerServices.CompilerGeneratedAttribute]
+        [System.Runtime.CompilerServices.NullableContextAttribute((byte)2)]
+        public static bool operator ==(Microsoft.Azure.SignalR.SignalRGroupMember? left, Microsoft.Azure.SignalR.SignalRGroupMember? right) { throw null; }
+        [System.Runtime.CompilerServices.CompilerGeneratedAttribute]
+        [System.Runtime.CompilerServices.NullableContextAttribute((byte)2)]
+        public static bool operator !=(Microsoft.Azure.SignalR.SignalRGroupMember? left, Microsoft.Azure.SignalR.SignalRGroupMember? right) { throw null; }
+        [System.Runtime.CompilerServices.CompilerGeneratedAttribute]
+        public override string ToString() { throw null; }
+        [System.Runtime.CompilerServices.CompilerGeneratedAttribute]
+        public Microsoft.Azure.SignalR.SignalRGroupMember <Clone>$() { throw null; }
+    }
 }
 namespace Microsoft.Azure.SignalR.Common
 {

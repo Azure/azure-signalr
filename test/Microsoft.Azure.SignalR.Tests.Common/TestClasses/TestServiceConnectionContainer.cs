@@ -113,12 +113,12 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
         throw new NotImplementedException();
     }
 
-    public IAsyncEnumerable<SignalRGroupConnection> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null)
+    public IAsyncEnumerable<SignalRGroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null)
     {
         throw new NotImplementedException();
     }
 
-    public IAsyncEnumerable<Page<SignalRGroupConnection>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
+    public IAsyncEnumerable<Page<SignalRGroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
     {
         throw new NotImplementedException();
     }

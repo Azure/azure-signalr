@@ -381,7 +381,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         response.IsSuccessStatusCode
         || (response.StatusCode == HttpStatusCode.NotFound && response.Headers.TryGetValues(Headers.MicrosoftErrorCode, out var errorCodes) && errorCodes.First().Equals(expectedErrorCode, StringComparison.OrdinalIgnoreCase));
 
-    public AsyncPageable<SignalRGroupConnection> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default)
+    public AsyncPageable<SignalRGroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(groupName))
         {
@@ -395,7 +395,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
         return new PageableGroupMember(FetchPages, token);
 
-        async IAsyncEnumerable<Page<SignalRGroupConnection>> FetchPages(string? continuationToken, int? pageSizeHint)
+        async IAsyncEnumerable<Page<SignalRGroupMember>> FetchPages(string? continuationToken, int? pageSizeHint)
         {
             // Calculate the api for the first page
             var api = _restApiProvider.GetListConnectionsInGroupEndpoint(_appName, _hubName, groupName);
@@ -438,9 +438,9 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             } while (true);
         }
 
-        async Task<Page<SignalRGroupConnection>> FetchSinglePage(RestApiEndpoint api, CancellationToken cancellationToken = default)
+        async Task<Page<SignalRGroupMember>> FetchSinglePage(RestApiEndpoint api, CancellationToken cancellationToken = default)
         {
-            var page = default(Page<SignalRGroupConnection>);
+            var page = default(Page<SignalRGroupMember>);
 
             await _restClient.SendWithRetryAsync(api, HttpMethod.Get, async response =>
             {

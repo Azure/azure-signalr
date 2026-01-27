@@ -13,15 +13,15 @@ using Azure;
 namespace Microsoft.Azure.SignalR;
 
 [JsonConverter(typeof(GroupMemberQueryResultPageConverter))]
-internal class GroupMemberQueryResultPage : Page<SignalRGroupConnection>
+internal class GroupMemberQueryResultPage : Page<SignalRGroupMember>
 {
-    public GroupMemberQueryResultPage(IReadOnlyList<SignalRGroupConnection> values, string? continuationToken)
+    public GroupMemberQueryResultPage(IReadOnlyList<SignalRGroupMember> values, string? continuationToken)
     {
         Values = values ?? throw new ArgumentNullException(nameof(values));
         ContinuationToken = continuationToken;
     }
 
-    public override IReadOnlyList<SignalRGroupConnection> Values { get; }
+    public override IReadOnlyList<SignalRGroupMember> Values { get; }
 
     public override string? ContinuationToken { get; }
 
@@ -42,7 +42,7 @@ internal class GroupMemberQueryResultPageConverter : JsonConverter<GroupMemberQu
             throw new JsonException("Expected StartObject token");
         }
 
-        IReadOnlyList<SignalRGroupConnection>? values = null;
+        IReadOnlyList<SignalRGroupMember>? values = null;
         string? continuationToken = null;
 
         while (reader.Read())
@@ -63,7 +63,7 @@ internal class GroupMemberQueryResultPageConverter : JsonConverter<GroupMemberQu
             switch (propertyName)
             {
                 case string s when s.Equals("value", StringComparison.OrdinalIgnoreCase):
-                    values = JsonSerializer.Deserialize<List<SignalRGroupConnection>>(ref reader, options);
+                    values = JsonSerializer.Deserialize<List<SignalRGroupMember>>(ref reader, options);
                     break;
                 case string s when s.Equals("nextlink", StringComparison.OrdinalIgnoreCase):
                     continuationToken = JsonSerializer.Deserialize<string>(ref reader, options);
@@ -74,7 +74,7 @@ internal class GroupMemberQueryResultPageConverter : JsonConverter<GroupMemberQu
             }
         }
 
-        return new GroupMemberQueryResultPage(values ?? new List<SignalRGroupConnection>(), continuationToken);
+        return new GroupMemberQueryResultPage(values ?? new List<SignalRGroupMember>(), continuationToken);
     }
 
     public override void Write(Utf8JsonWriter writer, GroupMemberQueryResultPage value, JsonSerializerOptions options)

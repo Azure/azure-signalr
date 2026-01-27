@@ -49,6 +49,6 @@ namespace Microsoft.Azure.SignalR.Management
         /// <param name="top">The maximum number of connections to return.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>An asynchronous enumerable of group members.</returns>
-        internal virtual AsyncPageable<SignalRGroupConnection> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public virtual AsyncPageable<SignalRGroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     }
 }

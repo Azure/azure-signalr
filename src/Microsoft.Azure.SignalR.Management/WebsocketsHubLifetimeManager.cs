@@ -331,7 +331,7 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
         return base.AppendMessageTracingId(message);
     }
 
-    public AsyncPageable<SignalRGroupConnection> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default)
+    public AsyncPageable<SignalRGroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default)
     {
         if (string.IsNullOrEmpty(groupName))
         {
