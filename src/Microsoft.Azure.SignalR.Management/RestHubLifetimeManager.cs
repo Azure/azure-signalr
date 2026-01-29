@@ -406,8 +406,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
                     }
 
                     // 2. Pick the hub protocol that matches X-Protocol
-                    var protocol = _protocolResolver.AllProtocols
-                        .FirstOrDefault(p => string.Equals(p.Name, protocolName, StringComparison.OrdinalIgnoreCase));
+                    var protocol = _protocolResolver.GetProtocol(protocolName, supportedProtocols: null);
 
                     if (protocol == null)
                     {
