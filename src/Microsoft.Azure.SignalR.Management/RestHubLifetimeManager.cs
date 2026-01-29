@@ -426,18 +426,13 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
                     // 3. Read raw completion payload from response body
 
-                    byte[] buffer;
-                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken)
+                    var buffer = await response.Content.ReadAsByteArrayAsync(cancellationToken)
                             .ConfigureAwait(false);
-                    using var ms = new MemoryStream();
-                    await stream.CopyToAsync(ms, cancellationToken).ConfigureAwait(false);
 
-                    if (ms.Length == 0)
+                    if (buffer.Length == 0)
                     {
                         throw new HubException("Response payload is empty.");
                     }
-
-                    buffer = ms.ToArray();
 
                     // 4. Use SimpleInvocationBinder with typeof(T)
                     var binder = new SimpleInvocationBinder(typeof(T));

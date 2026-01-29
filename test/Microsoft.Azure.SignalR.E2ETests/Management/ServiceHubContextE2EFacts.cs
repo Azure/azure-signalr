@@ -977,93 +977,222 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
-    public static IEnumerable<object[]> ClientInvocationTestData => from serviceTransportType in ServiceTransportType
-                                                                    from intention in (ClientInvocationTestIntentions[])Enum.GetValues(typeof(ClientInvocationTestIntentions))
-                                                                    select new object[] { serviceTransportType, intention };
+    #region ClientInvocation Tests
 
+    /// <summary>
+    /// Tests client invocation with default protocol configuration.
+    /// Setup: Create ServiceManager with default settings (no explicit hub protocol).
+    /// - Transient mode: Tests both JSON and MessagePack (service auto-converts).
+    /// - Persistent mode: Tests JSON only (no auto-conversion).
+    /// Verification: Client returns expected string, object, null, enum values and throws expected exceptions.
+    /// </summary>
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
-    [MemberData(nameof(ClientInvocationTestData))]
-    public async Task ClientInvocationTest(ServiceTransportType serviceTransportType, ClientInvocationTestIntentions intention)
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithDefaultProtocol_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
     {
-        bool testJson = true;
-        bool testMessagePack = true;
-        bool hasCustomisedSerializer = false;
-        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocationTest));
+        // Arrange: Create service manager with default protocol configuration
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithDefaultProtocol_ReturnsExpectedResults));
         var serviceManagerBuilder = new ServiceManagerBuilder().WithOptions(o =>
         {
             o.ConnectionString = TestConfiguration.Instance.ConnectionString;
             o.ServiceTransportType = serviceTransportType;
         });
 
-        switch (intention)
-        {
-            case ClientInvocationTestIntentions.Default:
-                {
-                    if (serviceTransportType == Management.ServiceTransportType.Persistent)
-                    {
-                        // In persistent mode, service will not convert the json message to messagepack automatically
-                        testMessagePack = false;
-                    }
-                    break;
-                }
-            case ClientInvocationTestIntentions.Json:
-                {
-                    serviceManagerBuilder = serviceManagerBuilder.WithHubProtocols(new JsonHubProtocol());
-                    testMessagePack = false;
-                    break;
-                }
-            case ClientInvocationTestIntentions.MessagePack:
-                {
-                    serviceManagerBuilder = serviceManagerBuilder.WithHubProtocols(new MessagePackHubProtocol());
-                    testJson = false;
-                    break;
-                }
-            case ClientInvocationTestIntentions.MultipleProtocols:
-                {
-                    serviceManagerBuilder = serviceManagerBuilder.WithHubProtocols(new JsonHubProtocol(), new MessagePackHubProtocol());
-                    break;
-                }
-            case ClientInvocationTestIntentions.MessagePackWithNewtonSoft:
-                {
-                    serviceManagerBuilder = serviceManagerBuilder.WithHubProtocols(new MessagePackHubProtocol())
-                        .WithNewtonsoftJson();
-                    break;
-                }
-            case ClientInvocationTestIntentions.JsonWithCustomisedSerializer:
-                {
-                    var options = JsonObjectSerializerHubProtocol.CreateDefaultSerializerSettings();
-                    options.Converters.Add(new TestEnumJsonConverter());
-                    var objectSerializer = new JsonObjectSerializer(options);
-                    var protocol = new JsonObjectSerializerHubProtocol(objectSerializer);
-                    serviceManagerBuilder = serviceManagerBuilder.WithHubProtocols(protocol);
-                    testMessagePack = false;
-                    hasCustomisedSerializer = true;
-                    break;
-                }
-            case ClientInvocationTestIntentions.MessagePackWithCustomisedSerializer:
-                {
-                    var protocol = GetMessagePackHubProtocolWithCustomisedSerializer();
-                    serviceManagerBuilder = serviceManagerBuilder.WithHubProtocols(protocol);
-                    testJson = false;
-                    hasCustomisedSerializer = true;
-                    break;
-                }
-        }
-
-        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory)
-            .BuildServiceManager();
+        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
         using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
 
-        if (testJson)
+        // Act & Assert: Test JSON protocol
+        await TestClientInvocationAsync(hubContext, "json", hasCustomisedSerializer: false);
+
+        // Act & Assert: Test MessagePack protocol (only in Transient mode where service auto-converts)
+        if (serviceTransportType == Management.ServiceTransportType.Transient)
         {
-            await TestClientInvocationAsync(hubContext, "json", hasCustomisedSerializer);
-        }
-        if (testMessagePack)
-        {
-            await TestClientInvocationAsync(hubContext, "messagepack", hasCustomisedSerializer);
+            await TestClientInvocationAsync(hubContext, "messagepack", hasCustomisedSerializer: false);
         }
     }
+
+    /// <summary>
+    /// Tests client invocation with explicit JSON protocol.
+    /// Setup: Create ServiceManager with JsonHubProtocol explicitly configured.
+    /// Verification: Client returns expected string, object, null, enum values and throws expected exceptions.
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithJsonProtocol_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create service manager with explicit JSON protocol
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithJsonProtocol_ReturnsExpectedResults));
+        var serviceManagerBuilder = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(new JsonHubProtocol());
+
+        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Act & Assert: Test JSON protocol only
+        await TestClientInvocationAsync(hubContext, "json", hasCustomisedSerializer: false);
+    }
+
+    /// <summary>
+    /// Tests client invocation with explicit MessagePack protocol.
+    /// Setup: Create ServiceManager with MessagePackHubProtocol explicitly configured.
+    /// Verification: Client returns expected string, object, null, enum values and throws expected exceptions.
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithMessagePackProtocol_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create service manager with explicit MessagePack protocol
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithMessagePackProtocol_ReturnsExpectedResults));
+        var serviceManagerBuilder = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(new MessagePackHubProtocol());
+
+        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Act & Assert: Test MessagePack protocol only
+        await TestClientInvocationAsync(hubContext, "messagepack", hasCustomisedSerializer: false);
+    }
+
+    /// <summary>
+    /// Tests client invocation with both JSON and MessagePack protocols configured.
+    /// Setup: Create ServiceManager with both JsonHubProtocol and MessagePackHubProtocol.
+    /// Verification: Both protocols work correctly and return expected results.
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithMultipleProtocols_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create service manager with both JSON and MessagePack protocols
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithMultipleProtocols_ReturnsExpectedResults));
+        var serviceManagerBuilder = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(new JsonHubProtocol(), new MessagePackHubProtocol());
+
+        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Act & Assert: Test both protocols
+        await TestClientInvocationAsync(hubContext, "json", hasCustomisedSerializer: false);
+        await TestClientInvocationAsync(hubContext, "messagepack", hasCustomisedSerializer: false);
+    }
+
+    /// <summary>
+    /// Tests client invocation with MessagePack protocol and Newtonsoft.Json serializer.
+    /// Setup: Create ServiceManager with MessagePackHubProtocol and WithNewtonsoftJson().
+    /// Verification: MessagePack protocol works with Newtonsoft serialization.
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithMessagePackAndNewtonsoftJson_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create service manager with MessagePack protocol and Newtonsoft.Json
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithMessagePackAndNewtonsoftJson_ReturnsExpectedResults));
+        var serviceManagerBuilder = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(new MessagePackHubProtocol())
+            .WithNewtonsoftJson();
+
+        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Act & Assert: Test MessagePack protocol with Newtonsoft serialization
+        await TestClientInvocationAsync(hubContext, "messagepack", hasCustomisedSerializer: false);
+    }
+
+    /// <summary>
+    /// Tests client invocation with JSON protocol using a customized serializer.
+    /// Setup: Create ServiceManager with JsonObjectSerializerHubProtocol containing custom TestEnumJsonConverter.
+    /// Verification: Custom enum serialization works (TestEnum.MethodInvoked serializes as "aaamytest").
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithCustomJsonSerializer_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create service manager with custom JSON serializer
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithCustomJsonSerializer_ReturnsExpectedResults));
+
+        var options = JsonObjectSerializerHubProtocol.CreateDefaultSerializerSettings();
+        options.Converters.Add(new TestEnumJsonConverter());
+        var objectSerializer = new JsonObjectSerializer(options);
+        var protocol = new JsonObjectSerializerHubProtocol(objectSerializer);
+
+        var serviceManagerBuilder = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(protocol);
+
+        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Act & Assert: Test JSON protocol with custom serializer (enum should serialize as "aaamytest")
+        await TestClientInvocationAsync(hubContext, "json", hasCustomisedSerializer: true);
+    }
+
+    /// <summary>
+    /// Tests client invocation with MessagePack protocol using a customized serializer.
+    /// Setup: Create ServiceManager with MessagePackHubProtocol containing custom TestEnumFormatter and TestObjectFormatter.
+    /// Verification: Custom enum serialization works (TestEnum.MethodInvoked serializes as "aaamytest").
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithCustomMessagePackSerializer_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create service manager with custom MessagePack serializer
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithCustomMessagePackSerializer_ReturnsExpectedResults));
+
+        var protocol = GetMessagePackHubProtocolWithCustomisedSerializer();
+
+        var serviceManagerBuilder = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(protocol);
+
+        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Act & Assert: Test MessagePack protocol with custom serializer (enum should serialize as "aaamytest")
+        await TestClientInvocationAsync(hubContext, "messagepack", hasCustomisedSerializer: true);
+    }
+
+    #endregion
 
     private static async Task<HubConnection> CreateAndStartClientConnectionWithProtocolAsync(string endpoint, string accessToken, string protocol = "json", bool hasCustomisedSerializer = false)
     {
@@ -1479,17 +1608,6 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         None,
         MethodInvoked,
         aaamytest
-    }
-
-    public enum ClientInvocationTestIntentions
-    {
-        Default,
-        Json,
-        MessagePack,
-        MultipleProtocols,
-        MessagePackWithNewtonSoft,
-        JsonWithCustomisedSerializer,
-        MessagePackWithCustomisedSerializer
     }
 
     private static MessagePackHubProtocol GetMessagePackHubProtocolWithCustomisedSerializer()

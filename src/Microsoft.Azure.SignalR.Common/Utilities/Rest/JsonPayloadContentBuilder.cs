@@ -24,6 +24,4 @@ internal class JsonPayloadContentBuilder : IPayloadContentBuilder
     {
         return payload == null ? null : new JsonPayloadMessageContent(payload, _jsonObjectSerializer, typeHint);
     }
-
-    public ObjectSerializer? ObjectSerializer => _jsonObjectSerializer;
 }
