@@ -44,7 +44,6 @@
 
   <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' != '.NETStandard' ">
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="8.0.11" />
   </ItemGroup>
 
 </Project>

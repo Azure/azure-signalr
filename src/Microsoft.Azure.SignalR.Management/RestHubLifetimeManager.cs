@@ -16,7 +16,6 @@ using Azure;
 
 using Microsoft.AspNetCore.SignalR;
 #if NET7_0_OR_GREATER
-using System.IO;
 using System.Buffers;
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.SignalR.Protocol;
@@ -410,17 +409,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
                     if (protocol == null)
                     {
-                        if (string.Equals(protocolName, "messagepack", StringComparison.OrdinalIgnoreCase) &&
-                            _protocolResolver.AllProtocols.Count == 1 &&
-                            _protocolResolver.AllProtocols[0] is JsonObjectSerializerHubProtocol jsonObjectSerializerHubProtocol)
-                        {
-                            // The hub protocol is the default one. Service will convert it to MessagePack and keep backward compatibility as users may depend on this feature for MessagePack client support.
-                            protocol = new MessagePackHubProtocol();
-                        }
-                        else
-                        {
-                            throw new NotSupportedException($"The protocol '{protocolName}' is not supported.");
-                        }
+                        throw new NotSupportedException($"The protocol '{protocolName}' is not supported.");
                     }
 
                     // 3. Read raw completion payload from response body

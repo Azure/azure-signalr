@@ -49,7 +49,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 new(FakeEndpointUtils.GetFakeConnectionString(1).First()),
                 _appName,
                 restClient,
-                new DefaultHubProtocolResolver()
+                new DefaultHubProtocolResolver(new IHubProtocol[]
+                {
+                    new JsonHubProtocol(),
+                    new MessagePackHubProtocol()
+                })
             );
         }
 
@@ -322,15 +326,36 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private sealed class DefaultHubProtocolResolver : IHubProtocolResolver
         {
-            public IReadOnlyList<IHubProtocol> AllProtocols => new List<IHubProtocol>
+
+            private readonly List<IHubProtocol> _hubProtocols;
+            private readonly Dictionary<string, IHubProtocol> _availableProtocols;
+
+            public IReadOnlyList<IHubProtocol> AllProtocols => _hubProtocols;
+
+            public DefaultHubProtocolResolver(IEnumerable<IHubProtocol> availableProtocols)
             {
-                new JsonHubProtocol(),
-                new MessagePackHubProtocol()
-            };
+                _availableProtocols = new Dictionary<string, IHubProtocol>(StringComparer.OrdinalIgnoreCase);
+
+                // We might get duplicates in _hubProtocols, but we're going to check it and overwrite in just a sec.
+                _hubProtocols = availableProtocols.ToList();
+                foreach (var protocol in _hubProtocols)
+                {
+                    _availableProtocols[protocol.Name] = protocol;
+                }
+            }
 
             public IHubProtocol? GetProtocol(string protocolName, IReadOnlyList<string>? supportedProtocols)
             {
-                throw new NotImplementedException();
+                protocolName = protocolName ?? throw new ArgumentNullException(nameof(protocolName));
+
+                if (_availableProtocols.TryGetValue(protocolName, out var protocol) && (supportedProtocols == null || supportedProtocols.Contains(protocolName, StringComparer.OrdinalIgnoreCase)))
+                {
+                    return protocol;
+                }
+
+                // null result indicates protocol is not supported
+                // result will be validated by the caller
+                return null;
             }
         }
     }
