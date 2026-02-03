@@ -409,7 +409,9 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
                     if (protocol == null)
                     {
-                        throw new NotSupportedException($"The protocol '{protocolName}' is not supported.");
+                        throw new InvalidOperationException(
+                            $"The protocol '{protocolName}' is not configured. " +
+                            $"Add the missing protocol using ServiceManagerBuilder.AddHubProtocol() or ServiceManagerBuilder.WithHubProtocols().");
                     }
 
                     // 3. Read raw completion payload from response body

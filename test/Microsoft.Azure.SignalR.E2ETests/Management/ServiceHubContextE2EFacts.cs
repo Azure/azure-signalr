@@ -980,344 +980,619 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     #region ClientInvocation Tests
 
     /// <summary>
-    /// Tests client invocation with default protocol configuration.
-    /// Setup: Create ServiceManager with default settings (no explicit hub protocol).
-    /// - Transient mode: Tests both JSON and MessagePack (service auto-converts).
-    /// - Persistent mode: Tests JSON only (no auto-conversion).
-    /// Verification: Client returns expected string, object, null, enum values and throws expected exceptions.
+    /// Tests client invocation with default protocol configuration using JSON client.
     /// </summary>
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
     [InlineData(Management.ServiceTransportType.Transient)]
     [InlineData(Management.ServiceTransportType.Persistent)]
-    public async Task ClientInvocation_WithDefaultProtocol_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
+    public async Task ClientInvocation_WithDefaultProtocol_JsonClient(ServiceTransportType serviceTransportType)
     {
-        // Arrange: Create service manager with default protocol configuration
-        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithDefaultProtocol_ReturnsExpectedResults));
-        var serviceManagerBuilder = new ServiceManagerBuilder().WithOptions(o =>
-        {
-            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-            o.ServiceTransportType = serviceTransportType;
-        });
-
-        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
+        // Arrange: Create service manager with default protocol (no explicit hub protocol configured)
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithDefaultProtocol_JsonClient));
+        var serviceManager = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
         using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
 
-        // Act & Assert: Test JSON protocol
-        await TestClientInvocationAsync(hubContext, "json", hasCustomisedSerializer: false);
+        // Arrange: Create JSON client connection
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnection = await CreateJsonClientConnectionAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
 
-        // Act & Assert: Test MessagePack protocol (only in Transient mode where service auto-converts)
-        if (serviceTransportType == Management.ServiceTransportType.Transient)
+        try
         {
-            await TestClientInvocationAsync(hubContext, "messagepack", hasCustomisedSerializer: false);
+            // Act: Invoke method that returns a string
+            var stringResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+
+            // Assert: Verify string result
+            Assert.Equal("Method Invoked", stringResult);
+
+            // Act: Invoke method that returns an object
+            var objectResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+
+            // Assert: Verify object result with standard enum serialization
+            Assert.Equal("Method Invoked", objectResult.Name);
+            Assert.Equal("MethodInvoked", objectResult.EnumValue.ToString());
+
+            // Act: Invoke method that returns null
+            var nullResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
+
+            // Assert: Verify null result
+            Assert.Null(nullResult);
+
+            // Act & Assert: Invoke method that throws exception
+            var ex = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(clientConnection.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+            Assert.Contains("Test exception", ex.Message);
+
+            // Act: Invoke method that returns an enum
+            var enumResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
+
+            // Assert: Verify enum result with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, enumResult);
+        }
+        finally
+        {
+            await clientConnection.StopAsync();
         }
     }
 
     /// <summary>
-    /// Tests client invocation with explicit JSON protocol.
-    /// Setup: Create ServiceManager with JsonHubProtocol explicitly configured.
-    /// Verification: Client returns expected string, object, null, enum values and throws expected exceptions.
+    /// Tests client invocation with explicit JSON protocol configured on ServiceManager.
     /// </summary>
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
     [InlineData(Management.ServiceTransportType.Transient)]
     [InlineData(Management.ServiceTransportType.Persistent)]
-    public async Task ClientInvocation_WithJsonProtocol_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
+    public async Task ClientInvocation_WithExplicitJsonProtocol(ServiceTransportType serviceTransportType)
     {
-        // Arrange: Create service manager with explicit JSON protocol
-        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithJsonProtocol_ReturnsExpectedResults));
-        var serviceManagerBuilder = new ServiceManagerBuilder()
+        // Arrange: Create service manager with explicit JsonHubProtocol
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithExplicitJsonProtocol));
+        var serviceManager = new ServiceManagerBuilder()
             .WithOptions(o =>
             {
                 o.ConnectionString = TestConfiguration.Instance.ConnectionString;
                 o.ServiceTransportType = serviceTransportType;
             })
-            .WithHubProtocols(new JsonHubProtocol());
-
-        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
+            .WithHubProtocols(new JsonHubProtocol())
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
         using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
 
-        // Act & Assert: Test JSON protocol only
-        await TestClientInvocationAsync(hubContext, "json", hasCustomisedSerializer: false);
+        // Arrange: Create JSON client connection
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnection = await CreateJsonClientConnectionAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+
+        try
+        {
+            // Act: Invoke method that returns a string
+            var stringResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+
+            // Assert: Verify string result
+            Assert.Equal("Method Invoked", stringResult);
+
+            // Act: Invoke method that returns an object
+            var objectResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+
+            // Assert: Verify object result with standard enum serialization
+            Assert.Equal("Method Invoked", objectResult.Name);
+            Assert.Equal("MethodInvoked", objectResult.EnumValue.ToString());
+
+            // Act: Invoke method that returns null
+            var nullResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
+
+            // Assert: Verify null result
+            Assert.Null(nullResult);
+
+            // Act & Assert: Invoke method that throws exception
+            var ex = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(clientConnection.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+            Assert.Contains("Test exception", ex.Message);
+
+            // Act: Invoke method that returns an enum
+            var enumResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
+
+            // Assert: Verify enum result with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, enumResult);
+        }
+        finally
+        {
+            await clientConnection.StopAsync();
+        }
     }
 
     /// <summary>
-    /// Tests client invocation with explicit MessagePack protocol.
-    /// Setup: Create ServiceManager with MessagePackHubProtocol explicitly configured.
-    /// Verification: Client returns expected string, object, null, enum values and throws expected exceptions.
+    /// Tests client invocation with explicit MessagePack protocol configured on ServiceManager.
     /// </summary>
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
     [InlineData(Management.ServiceTransportType.Transient)]
     [InlineData(Management.ServiceTransportType.Persistent)]
-    public async Task ClientInvocation_WithMessagePackProtocol_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
+    public async Task ClientInvocation_WithExplicitMessagePackProtocol(ServiceTransportType serviceTransportType)
     {
-        // Arrange: Create service manager with explicit MessagePack protocol
-        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithMessagePackProtocol_ReturnsExpectedResults));
-        var serviceManagerBuilder = new ServiceManagerBuilder()
-            .WithOptions(o =>
-            {
-                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                o.ServiceTransportType = serviceTransportType;
-            })
-            .WithHubProtocols(new MessagePackHubProtocol());
-
-        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
-        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
-
-        // Act & Assert: Test MessagePack protocol only
-        await TestClientInvocationAsync(hubContext, "messagepack", hasCustomisedSerializer: false);
-    }
-
-    /// <summary>
-    /// Tests client invocation with both JSON and MessagePack protocols configured.
-    /// Setup: Create ServiceManager with both JsonHubProtocol and MessagePackHubProtocol.
-    /// Verification: Both protocols work correctly and return expected results.
-    /// </summary>
-    [ConditionalTheory]
-    [SkipIfConnectionStringNotPresent]
-    [InlineData(Management.ServiceTransportType.Transient)]
-    [InlineData(Management.ServiceTransportType.Persistent)]
-    public async Task ClientInvocation_WithMultipleProtocols_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
-    {
-        // Arrange: Create service manager with both JSON and MessagePack protocols
-        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithMultipleProtocols_ReturnsExpectedResults));
-        var serviceManagerBuilder = new ServiceManagerBuilder()
-            .WithOptions(o =>
-            {
-                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                o.ServiceTransportType = serviceTransportType;
-            })
-            .WithHubProtocols(new JsonHubProtocol(), new MessagePackHubProtocol());
-
-        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
-        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
-
-        // Act & Assert: Test both protocols
-        await TestClientInvocationAsync(hubContext, "json", hasCustomisedSerializer: false);
-        await TestClientInvocationAsync(hubContext, "messagepack", hasCustomisedSerializer: false);
-    }
-
-    /// <summary>
-    /// Tests client invocation with MessagePack protocol and Newtonsoft.Json serializer.
-    /// Setup: Create ServiceManager with MessagePackHubProtocol and WithNewtonsoftJson().
-    /// Verification: MessagePack protocol works with Newtonsoft serialization.
-    /// </summary>
-    [ConditionalTheory]
-    [SkipIfConnectionStringNotPresent]
-    [InlineData(Management.ServiceTransportType.Transient)]
-    [InlineData(Management.ServiceTransportType.Persistent)]
-    public async Task ClientInvocation_WithMessagePackAndNewtonsoftJson_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
-    {
-        // Arrange: Create service manager with MessagePack protocol and Newtonsoft.Json
-        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithMessagePackAndNewtonsoftJson_ReturnsExpectedResults));
-        var serviceManagerBuilder = new ServiceManagerBuilder()
+        // Arrange: Create service manager with explicit MessagePackHubProtocol
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithExplicitMessagePackProtocol));
+        var serviceManager = new ServiceManagerBuilder()
             .WithOptions(o =>
             {
                 o.ConnectionString = TestConfiguration.Instance.ConnectionString;
                 o.ServiceTransportType = serviceTransportType;
             })
             .WithHubProtocols(new MessagePackHubProtocol())
-            .WithNewtonsoftJson();
-
-        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
         using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
 
-        // Act & Assert: Test MessagePack protocol with Newtonsoft serialization
-        await TestClientInvocationAsync(hubContext, "messagepack", hasCustomisedSerializer: false);
+        // Arrange: Create MessagePack client connection
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnection = await CreateMessagePackClientConnectionAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+
+        try
+        {
+            // Act: Invoke method that returns a string
+            var stringResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+
+            // Assert: Verify string result
+            Assert.Equal("Method Invoked", stringResult);
+
+            // Act: Invoke method that returns an object
+            var objectResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+
+            // Assert: Verify object result with standard enum serialization
+            Assert.Equal("Method Invoked", objectResult.Name);
+            Assert.Equal("MethodInvoked", objectResult.EnumValue.ToString());
+
+            // Act: Invoke method that returns null
+            var nullResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
+
+            // Assert: Verify null result
+            Assert.Null(nullResult);
+
+            // Act & Assert: Invoke method that throws exception
+            var ex = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(clientConnection.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+            Assert.Contains("Test exception", ex.Message);
+
+            // Act: Invoke method that returns an enum
+            var enumResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
+
+            // Assert: Verify enum result with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, enumResult);
+        }
+        finally
+        {
+            await clientConnection.StopAsync();
+        }
     }
 
     /// <summary>
-    /// Tests client invocation with JSON protocol using a customized serializer.
-    /// Setup: Create ServiceManager with JsonObjectSerializerHubProtocol containing custom TestEnumJsonConverter.
-    /// Verification: Custom enum serialization works (TestEnum.MethodInvoked serializes as "aaamytest").
+    /// Tests client invocation with both JSON and MessagePack protocols configured.
+    /// Verifies that clients using either protocol can successfully invoke methods.
     /// </summary>
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
     [InlineData(Management.ServiceTransportType.Transient)]
     [InlineData(Management.ServiceTransportType.Persistent)]
-    public async Task ClientInvocation_WithCustomJsonSerializer_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
+    public async Task ClientInvocation_WithMultipleProtocols(ServiceTransportType serviceTransportType)
     {
-        // Arrange: Create service manager with custom JSON serializer
-        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithCustomJsonSerializer_ReturnsExpectedResults));
-
-        var options = JsonObjectSerializerHubProtocol.CreateDefaultSerializerSettings();
-        options.Converters.Add(new TestEnumJsonConverter());
-        var objectSerializer = new JsonObjectSerializer(options);
-        var protocol = new JsonObjectSerializerHubProtocol(objectSerializer);
-
-        var serviceManagerBuilder = new ServiceManagerBuilder()
+        // Arrange: Create service manager with both JSON and MessagePack protocols
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithMultipleProtocols));
+        var serviceManager = new ServiceManagerBuilder()
             .WithOptions(o =>
             {
                 o.ConnectionString = TestConfiguration.Instance.ConnectionString;
                 o.ServiceTransportType = serviceTransportType;
             })
-            .WithHubProtocols(protocol);
-
-        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
+            .WithHubProtocols(new JsonHubProtocol(), new MessagePackHubProtocol())
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
         using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
 
-        // Act & Assert: Test JSON protocol with custom serializer (enum should serialize as "aaamytest")
-        await TestClientInvocationAsync(hubContext, "json", hasCustomisedSerializer: true);
+        // Arrange: Create both JSON and MessagePack client connections
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var jsonClient = await CreateJsonClientConnectionAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+        var messagePackClient = await CreateMessagePackClientConnectionAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+
+        try
+        {
+            // JSON Client
+            // Act: Invoke method that returns a string
+            var stringResult_json = await hubContext.Clients.Client(jsonClient.ConnectionId)
+                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+
+            // Assert: Verify string result
+            Assert.Equal("Method Invoked", stringResult_json);
+            // Act: Invoke method that returns an object
+            var objectResult_json = await hubContext.Clients.Client(jsonClient.ConnectionId)
+                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+
+            // Assert: Verify object result with standard enum serialization
+            Assert.Equal("Method Invoked", objectResult_json.Name);
+            Assert.Equal("MethodInvoked", objectResult_json.EnumValue.ToString());
+
+            // Act: Invoke method that returns null
+            var nullResult_json = await hubContext.Clients.Client(jsonClient.ConnectionId)
+                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
+
+            // Assert: Verify null result
+            Assert.Null(nullResult_json);
+
+            // Act & Assert: Invoke method that throws exception
+            var ex_json = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(jsonClient.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+            Assert.Contains("Test exception", ex_json.Message);
+
+            // Act: Invoke method that returns an enum
+            var enumResult_json = await hubContext.Clients.Client(jsonClient.ConnectionId)
+                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
+
+            // Assert: Verify enum result with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, enumResult_json);
+
+            // Messagepack Client
+            // Act: Invoke method that returns a string
+            var stringResult_messagePack = await hubContext.Clients.Client(messagePackClient.ConnectionId)
+                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+
+            // Assert: Verify string result
+            Assert.Equal("Method Invoked", stringResult_messagePack);
+
+            // Act: Invoke method that returns an object
+            var objectResult_messagePack = await hubContext.Clients.Client(messagePackClient.ConnectionId)
+                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+
+            // Assert: Verify object result with standard enum serialization
+            Assert.Equal("Method Invoked", objectResult_messagePack.Name);
+            Assert.Equal("MethodInvoked", objectResult_messagePack.EnumValue.ToString());
+
+            // Act: Invoke method that returns null
+            var nullResult_messagePack = await hubContext.Clients.Client(messagePackClient.ConnectionId)
+                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
+
+            // Assert: Verify null result
+            Assert.Null(nullResult_messagePack);
+            // Act & Assert: Invoke method that throws exception
+            var ex_messagePack = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(messagePackClient.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+            Assert.Contains("Test exception", ex_messagePack.Message);
+
+            // Act: Invoke method that returns an enum
+            var enumResult_messagePack = await hubContext.Clients.Client(messagePackClient.ConnectionId)
+                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
+
+            // Assert: Verify enum result with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, enumResult_messagePack);
+        }
+        finally
+        {
+            await jsonClient.StopAsync();
+            await messagePackClient.StopAsync();
+        }
     }
 
     /// <summary>
-    /// Tests client invocation with MessagePack protocol using a customized serializer.
-    /// Setup: Create ServiceManager with MessagePackHubProtocol containing custom TestEnumFormatter and TestObjectFormatter.
-    /// Verification: Custom enum serialization works (TestEnum.MethodInvoked serializes as "aaamytest").
+    /// Tests client invocation with MessagePack protocol and Newtonsoft.Json serializer for REST payloads.
     /// </summary>
     [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
     [InlineData(Management.ServiceTransportType.Transient)]
     [InlineData(Management.ServiceTransportType.Persistent)]
-    public async Task ClientInvocation_WithCustomMessagePackSerializer_ReturnsExpectedResults(ServiceTransportType serviceTransportType)
+    public async Task ClientInvocation_WithMessagePackAndNewtonsoftJson(ServiceTransportType serviceTransportType)
     {
-        // Arrange: Create service manager with custom MessagePack serializer
-        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithCustomMessagePackSerializer_ReturnsExpectedResults));
-
-        var protocol = GetMessagePackHubProtocolWithCustomisedSerializer();
-
-        var serviceManagerBuilder = new ServiceManagerBuilder()
+        // Arrange: Create service manager with MessagePack protocol and Newtonsoft.Json for REST
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithMessagePackAndNewtonsoftJson));
+        var serviceManager = new ServiceManagerBuilder()
             .WithOptions(o =>
             {
                 o.ConnectionString = TestConfiguration.Instance.ConnectionString;
                 o.ServiceTransportType = serviceTransportType;
             })
-            .WithHubProtocols(protocol);
-
-        var serviceManager = serviceManagerBuilder.WithLoggerFactory(loggerFactory).BuildServiceManager();
+            .WithHubProtocols(new MessagePackHubProtocol())
+            .WithNewtonsoftJson()
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
         using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
 
-        // Act & Assert: Test MessagePack protocol with custom serializer (enum should serialize as "aaamytest")
-        await TestClientInvocationAsync(hubContext, "messagepack", hasCustomisedSerializer: true);
+        // Arrange: Create MessagePack client connection
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnection = await CreateMessagePackClientConnectionAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+
+        try
+        {
+            // Act: Invoke method that returns a string
+            var stringResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+
+            // Assert: Verify string result
+            Assert.Equal("Method Invoked", stringResult);
+
+            // Act: Invoke method that returns an object
+            var objectResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+
+            // Assert: Verify object result with standard enum serialization
+            Assert.Equal("Method Invoked", objectResult.Name);
+            Assert.Equal("MethodInvoked", objectResult.EnumValue.ToString());
+
+            // Act: Invoke method that returns null
+            var nullResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
+
+            // Assert: Verify null result
+            Assert.Null(nullResult);
+
+            // Act & Assert: Invoke method that throws exception
+            var ex = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(clientConnection.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+            Assert.Contains("Test exception", ex.Message);
+
+            // Act: Invoke method that returns an enum
+            var enumResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
+
+            // Assert: Verify enum result with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, enumResult);
+        }
+        finally
+        {
+            await clientConnection.StopAsync();
+        }
+    }
+
+    /// <summary>
+    /// Tests client invocation with custom JSON serializer.
+    /// Custom serializer converts TestEnum.MethodInvoked to "aaamytest" string.
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithCustomJsonSerializer(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create custom JSON serializer with TestEnumJsonConverter
+        var jsonOptions = JsonObjectSerializerHubProtocol.CreateDefaultSerializerSettings();
+        jsonOptions.Converters.Add(new TestEnumJsonConverter());
+        var customProtocol = new JsonObjectSerializerHubProtocol(new JsonObjectSerializer(jsonOptions));
+
+        // Arrange: Create service manager with custom JSON protocol
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithCustomJsonSerializer));
+        var serviceManager = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(customProtocol)
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Arrange: Create JSON client with matching custom serializer
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnection = await CreateJsonClientWithCustomSerializerAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+
+        try
+        {
+            // Act: Invoke method that returns a string
+            var stringResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+
+            // Assert: Verify string result
+            Assert.Equal("Method Invoked", stringResult);
+
+            // Act: Invoke method that returns an object
+            var objectResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+
+            // Assert: Verify object result with customised enum serialization
+            Assert.Equal("Method Invoked", objectResult.Name);
+            Assert.Equal("aaamytest", objectResult.EnumValue.ToString()); // Custom formatter maps MethodInvoked -> aaamytest
+
+            // Act: Invoke method that returns null
+            var nullResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
+
+            // Assert: Verify null result
+            Assert.Null(nullResult);
+
+            // Act & Assert: Invoke method that throws exception
+            var ex = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(clientConnection.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+            Assert.Contains("Test exception", ex.Message);
+
+            // Act: Invoke method that returns an enum
+            var enumResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
+
+            // Assert: Verify enum result with customised serialization
+            Assert.Equal(TestEnum.aaamytest, enumResult); // Custom formatter maps MethodInvoked -> aaamytest
+        }
+        finally
+        {
+            await clientConnection.StopAsync();
+        }
+    }
+
+    /// <summary>
+    /// Tests client invocation with custom MessagePack serializer.
+    /// Custom serializer converts TestEnum.MethodInvoked to "aaamytest" string.
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithCustomMessagePackSerializer(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create custom MessagePack protocol with TestEnumFormatter and TestObjectFormatter
+        var customProtocol = CreateMessagePackProtocolWithCustomSerializer();
+
+        // Arrange: Create service manager with custom MessagePack protocol
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithCustomMessagePackSerializer));
+        var serviceManager = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(customProtocol)
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Arrange: Create MessagePack client with matching custom serializer
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnection = await CreateMessagePackClientWithCustomSerializerAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+
+        try
+        {
+            // Act: Invoke method that returns a string
+            var stringResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+
+            // Assert: Verify string result
+            Assert.Equal("Method Invoked", stringResult);
+
+            // Act: Invoke method that returns an object
+            var objectResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+
+            // Assert: Verify object result with customised enum serialization
+            Assert.Equal("Method Invoked", objectResult.Name);
+            Assert.Equal("aaamytest", objectResult.EnumValue.ToString()); // Custom formatter maps MethodInvoked -> aaamytest
+
+            // Act: Invoke method that returns null
+            var nullResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
+
+            // Assert: Verify null result
+            Assert.Null(nullResult);
+
+            // Act & Assert: Invoke method that throws exception
+            var ex = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(clientConnection.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+            Assert.Contains("Test exception", ex.Message);
+
+            // Act: Invoke method that returns an enum
+            var enumResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
+
+            // Assert: Verify enum result with customised serialization
+            Assert.Equal(TestEnum.aaamytest, enumResult); // Custom formatter maps MethodInvoked -> aaamytest
+        }
+        finally
+        {
+            await clientConnection.StopAsync();
+        }
     }
 
     #endregion
 
-    private static async Task<HubConnection> CreateAndStartClientConnectionWithProtocolAsync(string endpoint, string accessToken, string protocol = "json", bool hasCustomisedSerializer = false)
+    #region Client Connection Helpers (setup/teardown plumbing)
+
+    private static async Task<HubConnection> CreateJsonClientConnectionAsync(string endpoint, string accessToken)
     {
-        var connectionBuilder = new HubConnectionBuilder()
-            .WithUrl(endpoint, option =>
-            {
-                option.AccessTokenProvider = () =>
-                {
-                    return Task.FromResult(accessToken);
-                };
-            })
-            .WithAutomaticReconnect();
-
-        var messagePackOptions = MessagePackSerializerOptions.Standard
-            .WithResolver(
-                CompositeResolver.Create(
-                    // formatters (our enum formatter first)
-                    new IMessagePackFormatter[]
-                    {
-                        new TestEnumFormatter(),
-                        new TestObjectFormatter(),
-                    },
-                    // resolvers
-                    new IFormatterResolver[]
-                    {
-                        StandardResolver.Instance,
-                    }));
-
-        switch (protocol.ToLower())
-        {
-            case "json":
-                if (hasCustomisedSerializer)
-                {
-                    connectionBuilder.AddJsonProtocol(options =>
-                    {
-                        options.PayloadSerializerOptions.Converters.Add(new TestEnumJsonConverter());
-                    });
-                }
-                else
-                {
-                    connectionBuilder.AddJsonProtocol();
-                }
-                break;
-            case "messagepack":
-                if (hasCustomisedSerializer)
-                {
-                    connectionBuilder.AddMessagePackProtocol(
-                        options =>
-                        {
-                            options.SerializerOptions = messagePackOptions;
-                        });
-                }
-                else
-                {
-                    connectionBuilder.AddMessagePackProtocol();
-                }
-                break;
-            default:
-                throw new ArgumentException($"The protocol '{protocol}' is not supported.");
-        }
-        var connection = connectionBuilder.Build();
+        var connection = new HubConnectionBuilder()
+            .WithUrl(endpoint, option => option.AccessTokenProvider = () => Task.FromResult(accessToken))
+            .WithAutomaticReconnect()
+            .AddJsonProtocol()
+            .Build();
 
         await connection.StartAsync();
-
-        connection.On("InvokeString", (Func<string, Task<string>>)(args =>
-        {
-            return Task.FromResult<string>("Method Invoked");
-        }));
-        connection.On("InvokeObject", (Func<string, Task<testObject>>)(args =>
-        {
-            return Task.FromResult<testObject>(new testObject { Name = "Method Invoked", EnumValue = TestEnum.MethodInvoked });
-        }));
-        connection.On("InvokeEnum", (Func<string, Task<TestEnum>>)(args =>
-        {
-            return Task.FromResult<TestEnum>(TestEnum.MethodInvoked);
-        }));
-        connection.On("InvokeNull", (Func<string, Task<object>>)(args =>
-        {
-            return Task.FromResult<object>(null);
-        }));
-        connection.On("InvokeException", (Func<string, Task<object>>)(args =>
-        {
-            throw new InvalidOperationException("Test exception");
-        }));
-
+        RegisterClientInvocationHandlers(connection);
         return connection;
     }
 
-    private static async Task TestClientInvocationAsync(ServiceHubContext context, string protocol, bool hasCustomisedSerializer = false)
+    private static async Task<HubConnection> CreateMessagePackClientConnectionAsync(string endpoint, string accessToken)
     {
-        var negotationResponse = await context.NegotiateAsync();
+        var connection = new HubConnectionBuilder()
+            .WithUrl(endpoint, option => option.AccessTokenProvider = () => Task.FromResult(accessToken))
+            .WithAutomaticReconnect()
+            .AddMessagePackProtocol()
+            .Build();
 
-        var expectedStringMessage = "Method Invoked";
-        var expectedEnumString = "MethodInvoked";
-        var expectedCustomisedEnumString = "aaamytest";
-
-        var clientConnection = await CreateAndStartClientConnectionWithProtocolAsync(negotationResponse.Url, negotationResponse.AccessToken, protocol, hasCustomisedSerializer);
-
-        var response_string = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<string>("InvokeString", "", default).OrTimeout();
-        Assert.Equal(expectedStringMessage, response_string.ToString());
-
-        var response_object = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
-        Assert.Equal(expectedStringMessage, response_object.Name);
-        Assert.Equal(hasCustomisedSerializer ? expectedCustomisedEnumString : expectedEnumString, response_object.EnumValue.ToString());
-
-        var response_null = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
-        Assert.Null(response_null);
-
-        var ex = await Assert.ThrowsAsync<HubException>(async () =>
-            await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<object>("InvokeException", "", default).OrTimeout());
-        Assert.Contains("Test exception", ex.Message);
-
-        if (hasCustomisedSerializer)
-        {
-            var response_enum = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<TestEnum>("InvokeEnum", "", default);
-            Assert.Equal(expectedCustomisedEnumString, response_enum.ToString());
-        }
-        else
-        {
-            var response_enum = await context.Clients.Client(clientConnection.ConnectionId).InvokeAsync<TestEnum>("InvokeEnum", "", default);
-            Assert.Equal(expectedEnumString, response_enum.ToString());
-        }
-
-        await clientConnection.StopAsync();
+        await connection.StartAsync();
+        RegisterClientInvocationHandlers(connection);
+        return connection;
     }
+
+    private static async Task<HubConnection> CreateJsonClientWithCustomSerializerAsync(string endpoint, string accessToken)
+    {
+        var connection = new HubConnectionBuilder()
+            .WithUrl(endpoint, option => option.AccessTokenProvider = () => Task.FromResult(accessToken))
+            .WithAutomaticReconnect()
+            .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new TestEnumJsonConverter()))
+            .Build();
+
+        await connection.StartAsync();
+        RegisterClientInvocationHandlers(connection);
+        return connection;
+    }
+
+    private static async Task<HubConnection> CreateMessagePackClientWithCustomSerializerAsync(string endpoint, string accessToken)
+    {
+        var messagePackOptions = MessagePackSerializerOptions.Standard.WithResolver(
+            CompositeResolver.Create(
+                new IMessagePackFormatter[] { new TestEnumFormatter(), new TestObjectFormatter() },
+                new IFormatterResolver[] { StandardResolver.Instance }));
+
+        var connection = new HubConnectionBuilder()
+            .WithUrl(endpoint, option => option.AccessTokenProvider = () => Task.FromResult(accessToken))
+            .WithAutomaticReconnect()
+            .AddMessagePackProtocol(options => options.SerializerOptions = messagePackOptions)
+            .Build();
+
+        await connection.StartAsync();
+        RegisterClientInvocationHandlers(connection);
+        return connection;
+    }
+
+    private static void RegisterClientInvocationHandlers(HubConnection connection)
+    {
+        connection.On("InvokeString", (Func<string, Task<string>>)(_ => Task.FromResult("Method Invoked")));
+        connection.On("InvokeObject", (Func<string, Task<testObject>>)(_ =>
+            Task.FromResult(new testObject { Name = "Method Invoked", EnumValue = TestEnum.MethodInvoked })));
+        connection.On("InvokeEnum", (Func<string, Task<TestEnum>>)(_ => Task.FromResult(TestEnum.MethodInvoked)));
+        connection.On("InvokeNull", (Func<string, Task<object>>)(_ => Task.FromResult<object>(null)));
+        connection.On("InvokeException", (Func<string, Task<object>>)(_ => throw new InvalidOperationException("Test exception")));
+    }
+
+    private static MessagePackHubProtocol CreateMessagePackProtocolWithCustomSerializer()
+    {
+        var messagePackOptions = MessagePackSerializerOptions.Standard.WithResolver(
+            CompositeResolver.Create(
+                new IMessagePackFormatter[] { new TestEnumFormatter(), new TestObjectFormatter() },
+                new IFormatterResolver[] { StandardResolver.Instance }));
+
+        return new MessagePackHubProtocol(
+            Extensions.Options.Options.Create(new MessagePackHubProtocolOptions { SerializerOptions = messagePackOptions }));
+    }
+
+    #endregion
 
     private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)
     {
@@ -1608,31 +1883,6 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         None,
         MethodInvoked,
         aaamytest
-    }
-
-    private static MessagePackHubProtocol GetMessagePackHubProtocolWithCustomisedSerializer()
-    {
-        var messagePackOptions = MessagePackSerializerOptions.Standard
-        .WithResolver(
-            CompositeResolver.Create(
-                new IMessagePackFormatter[]
-                {
-                    new TestEnumFormatter(),
-                    new TestObjectFormatter(),
-                },
-                new IFormatterResolver[]
-                {
-                    StandardResolver.Instance,
-                }));
-
-        var protocolOptions = new MessagePackHubProtocolOptions
-        {
-            SerializerOptions = messagePackOptions,
-        };
-
-        return new MessagePackHubProtocol(
-            Extensions.Options.Options.Create(protocolOptions)
-        );
     }
 
     private sealed class TestEnumJsonConverter : JsonConverter<TestEnum>
