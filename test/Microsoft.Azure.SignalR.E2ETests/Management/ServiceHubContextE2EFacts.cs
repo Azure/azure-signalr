@@ -1006,40 +1006,27 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
         try
         {
-            // Act: Invoke method that returns a string
-            var stringResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+            // Act: Invoke method that returns all test values in a single call
+            var result = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
 
-            // Assert: Verify string result
-            Assert.Equal("Method Invoked", stringResult);
+            // Assert: Verify string value
+            Assert.Equal("Method Invoked", result.StringValue);
 
-            // Act: Invoke method that returns an object
-            var objectResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+            // Assert: Verify enum value with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, result.EnumValue);
 
-            // Assert: Verify object result with standard enum serialization
-            Assert.Equal("Method Invoked", objectResult.Name);
-            Assert.Equal("MethodInvoked", objectResult.EnumValue.ToString());
+            // Assert: Verify null value
+            Assert.Null(result.NullValue);
 
-            // Act: Invoke method that returns null
-            var nullResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
-
-            // Assert: Verify null result
-            Assert.Null(nullResult);
+            // Assert: Verify datetime value
+            Assert.Equal(TestDateTime, result.DateTimeValue);
 
             // Act & Assert: Invoke method that throws exception
             var ex = await Assert.ThrowsAsync<HubException>(async () =>
                 await hubContext.Clients.Client(clientConnection.ConnectionId)
-                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
             Assert.Contains("Test exception", ex.Message);
-
-            // Act: Invoke method that returns an enum
-            var enumResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
-
-            // Assert: Verify enum result with standard serialization
-            Assert.Equal(TestEnum.MethodInvoked, enumResult);
         }
         finally
         {
@@ -1075,40 +1062,27 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
         try
         {
-            // Act: Invoke method that returns a string
-            var stringResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+            // Act: Invoke method that returns all test values in a single call
+            var result = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
 
-            // Assert: Verify string result
-            Assert.Equal("Method Invoked", stringResult);
+            // Assert: Verify string value
+            Assert.Equal("Method Invoked", result.StringValue);
 
-            // Act: Invoke method that returns an object
-            var objectResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+            // Assert: Verify enum value with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, result.EnumValue);
 
-            // Assert: Verify object result with standard enum serialization
-            Assert.Equal("Method Invoked", objectResult.Name);
-            Assert.Equal("MethodInvoked", objectResult.EnumValue.ToString());
+            // Assert: Verify null value
+            Assert.Null(result.NullValue);
 
-            // Act: Invoke method that returns null
-            var nullResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
-
-            // Assert: Verify null result
-            Assert.Null(nullResult);
+            // Assert: Verify datetime value
+            Assert.Equal(TestDateTime, result.DateTimeValue);
 
             // Act & Assert: Invoke method that throws exception
             var ex = await Assert.ThrowsAsync<HubException>(async () =>
                 await hubContext.Clients.Client(clientConnection.ConnectionId)
-                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
             Assert.Contains("Test exception", ex.Message);
-
-            // Act: Invoke method that returns an enum
-            var enumResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
-
-            // Assert: Verify enum result with standard serialization
-            Assert.Equal(TestEnum.MethodInvoked, enumResult);
         }
         finally
         {
@@ -1144,40 +1118,27 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
         try
         {
-            // Act: Invoke method that returns a string
-            var stringResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+            // Act: Invoke method that returns all test values in a single call
+            var result = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
 
-            // Assert: Verify string result
-            Assert.Equal("Method Invoked", stringResult);
+            // Assert: Verify string value
+            Assert.Equal("Method Invoked", result.StringValue);
 
-            // Act: Invoke method that returns an object
-            var objectResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+            // Assert: Verify enum value with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, result.EnumValue);
 
-            // Assert: Verify object result with standard enum serialization
-            Assert.Equal("Method Invoked", objectResult.Name);
-            Assert.Equal("MethodInvoked", objectResult.EnumValue.ToString());
+            // Assert: Verify null value
+            Assert.Null(result.NullValue);
 
-            // Act: Invoke method that returns null
-            var nullResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
-
-            // Assert: Verify null result
-            Assert.Null(nullResult);
+            // Assert: Verify datetime value
+            Assert.Equal(TestDateTime, result.DateTimeValue);
 
             // Act & Assert: Invoke method that throws exception
             var ex = await Assert.ThrowsAsync<HubException>(async () =>
                 await hubContext.Clients.Client(clientConnection.ConnectionId)
-                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
             Assert.Contains("Test exception", ex.Message);
-
-            // Act: Invoke method that returns an enum
-            var enumResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
-
-            // Assert: Verify enum result with standard serialization
-            Assert.Equal(TestEnum.MethodInvoked, enumResult);
         }
         finally
         {
@@ -1215,75 +1176,37 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
         try
         {
-            // JSON Client
-            // Act: Invoke method that returns a string
-            var stringResult_json = await hubContext.Clients.Client(jsonClient.ConnectionId)
-                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+            // JSON Client - Act: Invoke method that returns all test values
+            var jsonResult = await hubContext.Clients.Client(jsonClient.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
 
-            // Assert: Verify string result
-            Assert.Equal("Method Invoked", stringResult_json);
-            // Act: Invoke method that returns an object
-            var objectResult_json = await hubContext.Clients.Client(jsonClient.ConnectionId)
-                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+            // Assert: Verify all values for JSON client
+            Assert.Equal("Method Invoked", jsonResult.StringValue);
+            Assert.Equal(TestEnum.MethodInvoked, jsonResult.EnumValue);
+            Assert.Null(jsonResult.NullValue);
+            Assert.Equal(TestDateTime, jsonResult.DateTimeValue);
 
-            // Assert: Verify object result with standard enum serialization
-            Assert.Equal("Method Invoked", objectResult_json.Name);
-            Assert.Equal("MethodInvoked", objectResult_json.EnumValue.ToString());
-
-            // Act: Invoke method that returns null
-            var nullResult_json = await hubContext.Clients.Client(jsonClient.ConnectionId)
-                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
-
-            // Assert: Verify null result
-            Assert.Null(nullResult_json);
-
-            // Act & Assert: Invoke method that throws exception
+            // Act & Assert: Invoke method that throws exception (JSON)
             var ex_json = await Assert.ThrowsAsync<HubException>(async () =>
                 await hubContext.Clients.Client(jsonClient.ConnectionId)
-                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
             Assert.Contains("Test exception", ex_json.Message);
 
-            // Act: Invoke method that returns an enum
-            var enumResult_json = await hubContext.Clients.Client(jsonClient.ConnectionId)
-                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
+            // MessagePack Client - Act: Invoke method that returns all test values
+            var msgPackResult = await hubContext.Clients.Client(messagePackClient.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
 
-            // Assert: Verify enum result with standard serialization
-            Assert.Equal(TestEnum.MethodInvoked, enumResult_json);
+            // Assert: Verify all values for MessagePack client
+            Assert.Equal("Method Invoked", msgPackResult.StringValue);
+            Assert.Equal(TestEnum.MethodInvoked, msgPackResult.EnumValue);
+            Assert.Null(msgPackResult.NullValue);
+            Assert.Equal(TestDateTime, msgPackResult.DateTimeValue);
 
-            // Messagepack Client
-            // Act: Invoke method that returns a string
-            var stringResult_messagePack = await hubContext.Clients.Client(messagePackClient.ConnectionId)
-                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
-
-            // Assert: Verify string result
-            Assert.Equal("Method Invoked", stringResult_messagePack);
-
-            // Act: Invoke method that returns an object
-            var objectResult_messagePack = await hubContext.Clients.Client(messagePackClient.ConnectionId)
-                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
-
-            // Assert: Verify object result with standard enum serialization
-            Assert.Equal("Method Invoked", objectResult_messagePack.Name);
-            Assert.Equal("MethodInvoked", objectResult_messagePack.EnumValue.ToString());
-
-            // Act: Invoke method that returns null
-            var nullResult_messagePack = await hubContext.Clients.Client(messagePackClient.ConnectionId)
-                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
-
-            // Assert: Verify null result
-            Assert.Null(nullResult_messagePack);
-            // Act & Assert: Invoke method that throws exception
+            // Act & Assert: Invoke method that throws exception (MessagePack)
             var ex_messagePack = await Assert.ThrowsAsync<HubException>(async () =>
                 await hubContext.Clients.Client(messagePackClient.ConnectionId)
-                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
             Assert.Contains("Test exception", ex_messagePack.Message);
-
-            // Act: Invoke method that returns an enum
-            var enumResult_messagePack = await hubContext.Clients.Client(messagePackClient.ConnectionId)
-                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
-
-            // Assert: Verify enum result with standard serialization
-            Assert.Equal(TestEnum.MethodInvoked, enumResult_messagePack);
         }
         finally
         {
@@ -1321,40 +1244,27 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
         try
         {
-            // Act: Invoke method that returns a string
-            var stringResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+            // Act: Invoke method that returns all test values in a single call
+            var result = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
 
-            // Assert: Verify string result
-            Assert.Equal("Method Invoked", stringResult);
+            // Assert: Verify string value
+            Assert.Equal("Method Invoked", result.StringValue);
 
-            // Act: Invoke method that returns an object
-            var objectResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+            // Assert: Verify enum value with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, result.EnumValue);
 
-            // Assert: Verify object result with standard enum serialization
-            Assert.Equal("Method Invoked", objectResult.Name);
-            Assert.Equal("MethodInvoked", objectResult.EnumValue.ToString());
+            // Assert: Verify null value
+            Assert.Null(result.NullValue);
 
-            // Act: Invoke method that returns null
-            var nullResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
-
-            // Assert: Verify null result
-            Assert.Null(nullResult);
+            // Assert: Verify datetime value
+            Assert.Equal(TestDateTime, result.DateTimeValue);
 
             // Act & Assert: Invoke method that throws exception
             var ex = await Assert.ThrowsAsync<HubException>(async () =>
                 await hubContext.Clients.Client(clientConnection.ConnectionId)
-                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
             Assert.Contains("Test exception", ex.Message);
-
-            // Act: Invoke method that returns an enum
-            var enumResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
-
-            // Assert: Verify enum result with standard serialization
-            Assert.Equal(TestEnum.MethodInvoked, enumResult);
         }
         finally
         {
@@ -1396,40 +1306,27 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
         try
         {
-            // Act: Invoke method that returns a string
-            var stringResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+            // Act: Invoke method that returns all test values in a single call
+            var result = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
 
-            // Assert: Verify string result
-            Assert.Equal("Method Invoked", stringResult);
+            // Assert: Verify string value
+            Assert.Equal("Method Invoked", result.StringValue);
 
-            // Act: Invoke method that returns an object
-            var objectResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+            // Assert: Verify enum value with customised serialization (MethodInvoked -> aaamytest)
+            Assert.Equal(TestEnum.aaamytest, result.EnumValue);
 
-            // Assert: Verify object result with customised enum serialization
-            Assert.Equal("Method Invoked", objectResult.Name);
-            Assert.Equal("aaamytest", objectResult.EnumValue.ToString()); // Custom formatter maps MethodInvoked -> aaamytest
+            // Assert: Verify null value
+            Assert.Null(result.NullValue);
 
-            // Act: Invoke method that returns null
-            var nullResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
-
-            // Assert: Verify null result
-            Assert.Null(nullResult);
+            // Assert: Verify datetime value
+            Assert.Equal(TestDateTime, result.DateTimeValue);
 
             // Act & Assert: Invoke method that throws exception
             var ex = await Assert.ThrowsAsync<HubException>(async () =>
                 await hubContext.Clients.Client(clientConnection.ConnectionId)
-                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
             Assert.Contains("Test exception", ex.Message);
-
-            // Act: Invoke method that returns an enum
-            var enumResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
-
-            // Assert: Verify enum result with customised serialization
-            Assert.Equal(TestEnum.aaamytest, enumResult); // Custom formatter maps MethodInvoked -> aaamytest
         }
         finally
         {
@@ -1447,7 +1344,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     [InlineData(Management.ServiceTransportType.Persistent)]
     public async Task ClientInvocation_WithCustomMessagePackSerializer(ServiceTransportType serviceTransportType)
     {
-        // Arrange: Create custom MessagePack protocol with TestEnumFormatter and TestObjectFormatter
+        // Arrange: Create custom MessagePack protocol with TestEnumFormatter and TestInvocationResultFormatter
         var customProtocol = CreateMessagePackProtocolWithCustomSerializer();
 
         // Arrange: Create service manager with custom MessagePack protocol
@@ -1469,40 +1366,27 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
         try
         {
-            // Act: Invoke method that returns a string
-            var stringResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<string>("InvokeString", "", default).OrTimeout();
+            // Act: Invoke method that returns all test values in a single call
+            var result = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
 
-            // Assert: Verify string result
-            Assert.Equal("Method Invoked", stringResult);
+            // Assert: Verify string value
+            Assert.Equal("Method Invoked", result.StringValue);
 
-            // Act: Invoke method that returns an object
-            var objectResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<testObject>("InvokeObject", "", default).OrTimeout();
+            // Assert: Verify enum value with customised serialization (MethodInvoked -> aaamytest)
+            Assert.Equal(TestEnum.aaamytest, result.EnumValue);
 
-            // Assert: Verify object result with customised enum serialization
-            Assert.Equal("Method Invoked", objectResult.Name);
-            Assert.Equal("aaamytest", objectResult.EnumValue.ToString()); // Custom formatter maps MethodInvoked -> aaamytest
+            // Assert: Verify null value
+            Assert.Null(result.NullValue);
 
-            // Act: Invoke method that returns null
-            var nullResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<object>("InvokeNull", "", default).OrTimeout();
-
-            // Assert: Verify null result
-            Assert.Null(nullResult);
+            // Assert: Verify datetime value
+            Assert.Equal(TestDateTime, result.DateTimeValue);
 
             // Act & Assert: Invoke method that throws exception
             var ex = await Assert.ThrowsAsync<HubException>(async () =>
                 await hubContext.Clients.Client(clientConnection.ConnectionId)
-                    .InvokeAsync<object>("InvokeException", "", default).OrTimeout());
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
             Assert.Contains("Test exception", ex.Message);
-
-            // Act: Invoke method that returns an enum
-            var enumResult = await hubContext.Clients.Client(clientConnection.ConnectionId)
-                .InvokeAsync<TestEnum>("InvokeEnum", "", default).OrTimeout();
-
-            // Assert: Verify enum result with customised serialization
-            Assert.Equal(TestEnum.aaamytest, enumResult); // Custom formatter maps MethodInvoked -> aaamytest
         }
         finally
         {
@@ -1557,7 +1441,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     {
         var messagePackOptions = MessagePackSerializerOptions.Standard.WithResolver(
             CompositeResolver.Create(
-                new IMessagePackFormatter[] { new TestEnumFormatter(), new TestObjectFormatter() },
+                new IMessagePackFormatter[] { new TestEnumFormatter(), new TestInvocationResultFormatter(), new TestInvocationInputFormatter() },
                 new IFormatterResolver[] { StandardResolver.Instance }));
 
         var connection = new HubConnectionBuilder()
@@ -1571,21 +1455,43 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         return connection;
     }
 
+    private static readonly DateTime TestDateTime = new DateTime(2024, 6, 15, 10, 30, 0, DateTimeKind.Utc);
+
+    private static readonly TestInvocationInput TestInput = new TestInvocationInput
+    {
+        StringValue = "Test Input String",
+        DateTimeValue = TestDateTime,
+        IntValue = 42
+    };
+
     private static void RegisterClientInvocationHandlers(HubConnection connection)
     {
-        connection.On("InvokeString", (Func<string, Task<string>>)(_ => Task.FromResult("Method Invoked")));
-        connection.On("InvokeObject", (Func<string, Task<testObject>>)(_ =>
-            Task.FromResult(new testObject { Name = "Method Invoked", EnumValue = TestEnum.MethodInvoked })));
-        connection.On("InvokeEnum", (Func<string, Task<TestEnum>>)(_ => Task.FromResult(TestEnum.MethodInvoked)));
-        connection.On("InvokeNull", (Func<string, Task<object>>)(_ => Task.FromResult<object>(null)));
-        connection.On("InvokeException", (Func<string, Task<object>>)(_ => throw new InvalidOperationException("Test exception")));
+        connection.On("InvokeAll", (Func<TestInvocationInput, Task<TestInvocationResult>>)(input =>
+        {
+            // Validate input was correctly deserialized
+            if (input.StringValue != TestInput.StringValue ||
+                input.DateTimeValue != TestInput.DateTimeValue ||
+                input.IntValue != TestInput.IntValue)
+            {
+                throw new InvalidOperationException($"Input validation failed. Expected: {TestInput.StringValue}, {TestInput.DateTimeValue}, {TestInput.IntValue}. Actual: {input.StringValue}, {input.DateTimeValue}, {input.IntValue}");
+            }
+
+            return Task.FromResult(new TestInvocationResult
+            {
+                StringValue = "Method Invoked",
+                EnumValue = TestEnum.MethodInvoked,
+                NullValue = null,
+                DateTimeValue = TestDateTime
+            });
+        }));
+        connection.On("InvokeException", (Func<TestInvocationInput, Task<object>>)(_ => throw new InvalidOperationException("Test exception")));
     }
 
     private static MessagePackHubProtocol CreateMessagePackProtocolWithCustomSerializer()
     {
         var messagePackOptions = MessagePackSerializerOptions.Standard.WithResolver(
             CompositeResolver.Create(
-                new IMessagePackFormatter[] { new TestEnumFormatter(), new TestObjectFormatter() },
+                new IMessagePackFormatter[] { new TestEnumFormatter(), new TestInvocationResultFormatter(), new TestInvocationInputFormatter() },
                 new IFormatterResolver[] { StandardResolver.Instance }));
 
         return new MessagePackHubProtocol(
@@ -1816,9 +1722,9 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
-    private sealed class TestObjectFormatter : IMessagePackFormatter<testObject>
+    private sealed class TestInvocationResultFormatter : IMessagePackFormatter<TestInvocationResult>
     {
-        public void Serialize(ref MessagePackWriter writer, testObject value, MessagePackSerializerOptions options)
+        public void Serialize(ref MessagePackWriter writer, TestInvocationResult value, MessagePackSerializerOptions options)
         {
             if (value is null)
             {
@@ -1826,18 +1732,24 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
                 return;
             }
 
-            writer.WriteMapHeader(2);
+            writer.WriteMapHeader(4);
 
-            writer.Write("Name");
-            writer.Write(value.Name);
+            writer.Write("StringValue");
+            writer.Write(value.StringValue);
 
             writer.Write("EnumValue");
             var resolver = options.Resolver;
             var enumFormatter = resolver.GetFormatterWithVerify<TestEnum>();
             enumFormatter.Serialize(ref writer, value.EnumValue, options);
+
+            writer.Write("NullValue");
+            writer.WriteNil();
+
+            writer.Write("DateTimeValue");
+            writer.Write(value.DateTimeValue.Ticks);
         }
 
-        public testObject Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+        public TestInvocationResult Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
             if (reader.TryReadNil())
             {
@@ -1846,7 +1758,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
             var count = reader.ReadMapHeader();
 
-            var result = new testObject();
+            var result = new TestInvocationResult();
             var resolver = options.Resolver;
             var enumFormatter = resolver.GetFormatterWithVerify<TestEnum>();
 
@@ -1856,11 +1768,18 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 
                 switch (propertyName)
                 {
-                    case "Name":
-                        result.Name = reader.ReadString();
+                    case "StringValue":
+                        result.StringValue = reader.ReadString();
                         break;
                     case "EnumValue":
                         result.EnumValue = enumFormatter.Deserialize(ref reader, options);
+                        break;
+                    case "NullValue":
+                        reader.TryReadNil();
+                        result.NullValue = null;
+                        break;
+                    case "DateTimeValue":
+                        result.DateTimeValue = new DateTime(reader.ReadInt64(), DateTimeKind.Utc);
                         break;
                     default:
                         reader.Skip();
@@ -1872,10 +1791,77 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
-    public sealed class testObject
+    private sealed class TestInvocationInputFormatter : IMessagePackFormatter<TestInvocationInput>
     {
-        public string Name { get; set; }
+        public void Serialize(ref MessagePackWriter writer, TestInvocationInput value, MessagePackSerializerOptions options)
+        {
+            if (value is null)
+            {
+                writer.WriteNil();
+                return;
+            }
+
+            writer.WriteMapHeader(3);
+
+            writer.Write("StringValue");
+            writer.Write(value.StringValue);
+
+            writer.Write("DateTimeValue");
+            writer.Write(value.DateTimeValue.Ticks);
+
+            writer.Write("IntValue");
+            writer.Write(value.IntValue);
+        }
+
+        public TestInvocationInput Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+        {
+            if (reader.TryReadNil())
+            {
+                return null;
+            }
+
+            var count = reader.ReadMapHeader();
+
+            var result = new TestInvocationInput();
+
+            for (var i = 0; i < count; i++)
+            {
+                var propertyName = reader.ReadString();
+
+                switch (propertyName)
+                {
+                    case "StringValue":
+                        result.StringValue = reader.ReadString();
+                        break;
+                    case "DateTimeValue":
+                        result.DateTimeValue = new DateTime(reader.ReadInt64(), DateTimeKind.Utc);
+                        break;
+                    case "IntValue":
+                        result.IntValue = reader.ReadInt32();
+                        break;
+                    default:
+                        reader.Skip();
+                        break;
+                }
+            }
+
+            return result;
+        }
+    }
+
+    public sealed class TestInvocationInput
+    {
+        public string StringValue { get; set; }
+        public DateTime DateTimeValue { get; set; }
+        public int IntValue { get; set; }
+    }
+
+    public sealed class TestInvocationResult
+    {
+        public string StringValue { get; set; }
         public TestEnum EnumValue { get; set; }
+        public object NullValue { get; set; }
+        public DateTime DateTimeValue { get; set; }
     }
 
     public enum TestEnum
