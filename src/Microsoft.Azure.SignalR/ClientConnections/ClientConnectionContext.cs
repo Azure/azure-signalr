@@ -83,6 +83,8 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private readonly Queue<IMemoryOwner<byte>> _bufferedMessages = new();
 
+    private readonly SemaphoreSlim _bufferedMessageLock = new(1, 1);
+
     private readonly int _closeTimeOutMilliseconds;
 
     private readonly bool _isMigrated;
@@ -436,7 +438,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     internal async Task PerformDisconnectAsync()
     {
-        ClearBufferedMessages();
+        await ClearBufferedMessagesAsync();
 
         // In normal close, service already knows the client is closed, no need to be informed.
         AbortOnClose = false;
@@ -479,19 +481,35 @@ internal partial class ClientConnectionContext : ConnectionContext,
             {
                 var owner = ExactSizeMemoryPool.Shared.Rent((int)connectionDataMessage.Payload.Length);
                 connectionDataMessage.Payload.CopyTo(owner.Memory.Span);
-                // make sure there is no await operation before _bufferingMessages.
-                _bufferedMessages.Enqueue(owner);
+                // make sure there is no await operation before _bufferedMessageLock.WaitAsync.
+                await _bufferedMessageLock.WaitAsync();
+                try
+                {
+                    _bufferedMessages.Enqueue(owner);
+                }
+                finally
+                {
+                    _bufferedMessageLock.Release();
+                }
             }
             else
             {
                 long length = 0;
-                foreach (var owner in _bufferedMessages)
+                await _bufferedMessageLock.WaitAsync();
+                try
                 {
-                    using (owner)
+                    foreach (var owner in _bufferedMessages)
                     {
-                        await WriteToApplicationAsync(new ReadOnlySequence<byte>(owner.Memory));
-                        length += owner.Memory.Length;
+                        using (owner)
+                        {
+                            await WriteToApplicationAsync(new ReadOnlySequence<byte>(owner.Memory));
+                            length += owner.Memory.Length;
+                        }
                     }
+                }
+                finally
+                {
+                    _bufferedMessageLock.Release();
                 }
                 _bufferedMessages.Clear();
 
@@ -507,9 +525,17 @@ internal partial class ClientConnectionContext : ConnectionContext,
         }
     }
 
-    internal void ClearBufferedMessages()
+    internal async Task ClearBufferedMessagesAsync()
     {
-        _bufferedMessages.Clear();
+        await _bufferedMessageLock.WaitAsync();
+        try
+        {
+            _bufferedMessages.Clear();
+        }
+        finally
+        {
+            _bufferedMessageLock.Release();
+        }
     }
 
     private void ProcessQuery(string queryString, out string originalPath)

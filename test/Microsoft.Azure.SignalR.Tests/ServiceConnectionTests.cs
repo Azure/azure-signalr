@@ -945,6 +945,86 @@ public class ServiceConnectionTests : VerifiableLoggedTest
         }
     }
 
+    [Fact]
+    public async Task TestPartialMessagesProcessingShouldBeThreadSafe()
+    {
+        var ccm = new TestClientConnectionManager();
+        var ccf = new ClientConnectionFactory(NullLoggerFactory.Instance, closeTimeOutMilliseconds: 500);
+        var protocol = new ServiceProtocol();
+        var hubProtocol = new JsonHubProtocol();
+        TestConnection transportConnection = null;
+        var connectionFactory = new TestConnectionFactory(conn =>
+        {
+            transportConnection = conn;
+            return Task.CompletedTask;
+        });
+        var services = new ServiceCollection();
+
+        var connectionHandler = new TextContentConnectionHandler();
+        services.AddSingleton(connectionHandler);
+        var builder = new ConnectionBuilder(services.BuildServiceProvider());
+        builder.UseConnectionHandler<TextContentConnectionHandler>();
+        var handler = builder.Build();
+        var hubProtocolResolver = new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance);
+        var connection = new ServiceConnection(protocol,
+                                               ccm,
+                                               connectionFactory,
+                                               NullLoggerFactory.Instance,
+                                               handler,
+                                               ccf,
+                                               "serverId",
+                                               Guid.NewGuid().ToString("N"),
+                                               null,
+                                               null,
+                                               null,
+                                               new DefaultClientInvocationManager(),
+                                               hubProtocolResolver,
+                                               null);
+
+        var connectionTask = connection.StartAsync();
+
+        // completed handshake
+        await connection.ConnectionInitializedTask.OrTimeout();
+        Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
+        var clientConnectionId = Guid.NewGuid().ToString();
+
+        var waitClientTask = ccm.WaitForClientConnectionAsync(clientConnectionId);
+        await transportConnection.Application.Output.WriteAsync(
+            protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, Array.Empty<Claim>()) { Protocol = hubProtocol.Name }));
+
+        var clientConnection = await waitClientTask.OrTimeout();
+
+        var enumerator = connectionHandler.EnumerateContent().GetAsyncEnumerator();
+        var moveNextTask = enumerator.MoveNextAsync().AsTask();
+
+        var partialBytes = protocol.GetMessageBytes(new ConnectionDataMessage(clientConnectionId, "a"u8.ToArray()) { IsPartial = true });
+        var reconnectBytes = protocol.GetMessageBytes(new ConnectionReconnectMessage(clientConnectionId));
+        for (int i = 0; i < 10; i++)
+        {
+            for (int j = 0; j < (i + 1) * 10; j++)
+            {
+                await transportConnection.Application.Output.WriteAsync(partialBytes);
+            }
+            await transportConnection.Application.Output.WriteAsync(reconnectBytes);
+        }
+
+        // when next message comes, there is no partial message.
+        await transportConnection.Application.Output.WriteAsync(
+            protocol.GetMessageBytes(new ConnectionDataMessage(clientConnectionId, Encoding.UTF8.GetBytes("{\"type\":1,\"target\":\"method\"}\u001e"))));
+        await moveNextTask;
+        Assert.Equal("{\"type\":1,\"target\":\"method\"}\u001e", enumerator.Current);
+
+        // complete reading to end the connection
+        transportConnection.Application.Output.Complete();
+
+        await clientConnection.LifetimeTask.OrTimeout();
+
+        // 1s for application task to timeout
+        await connectionTask.OrTimeout(1000);
+        Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
+        Assert.Empty(ccm.ClientConnections);
+    }
+
     private static async Task<ClientConnectionContext> CreateClientConnectionAsync(ServiceProtocol protocol,
                                                                                    IHubProtocol hubProtocol,
                                                                                    TestClientConnectionManager ccm,

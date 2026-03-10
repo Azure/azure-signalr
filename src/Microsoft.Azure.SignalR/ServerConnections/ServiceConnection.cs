@@ -398,12 +398,12 @@ internal partial class ServiceConnection : ServiceConnectionBase
         return Task.CompletedTask;
     }
 
-    private Task OnConnectionReconnectAsync(ConnectionReconnectMessage message)
+    private async Task OnConnectionReconnectAsync(ConnectionReconnectMessage message)
     {
-        if (_clientConnectionManager.TryGetClientConnection(message.ConnectionId, out var connection))
+        if (_clientConnectionManager.TryGetClientConnection(message.ConnectionId, out var connection) &&
+            connection is ClientConnectionContext clientConnection)
         {
-            (connection as ClientConnectionContext)?.ClearBufferedMessages();
+            await clientConnection.ClearBufferedMessagesAsync();
         }
-        return Task.CompletedTask;
     }
 }
