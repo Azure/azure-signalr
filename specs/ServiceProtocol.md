@@ -647,11 +647,12 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 ### RefreshToken Message
 `RefreshToken` messages have the following structure:
 ```
-[41, ConnectionIdOrToken, NewToken, ExtensionMembers]
+[41, ConnectionIdOrToken, AuthToken, ExpireTime, ExtensionMembers]
 ```
 - 41 - Message Type, indicating this is a `RefreshToken` message.
-- ConnectionIdOrToken - A `String` indicating the connection ID or token.
-- NewToken - A `String` indicating the new refresh token.
+- ConnectionIdOrToken - A `String` indicating the connection ID or the original token.
+- AuthToken - A `String` indicating the new auth token.
+- ExpireTime - An `Int64` indicating the expire time of the new auth token, in UTC ticks.
 - ExtensionMembers - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO

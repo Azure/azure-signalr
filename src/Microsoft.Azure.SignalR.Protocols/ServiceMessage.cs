@@ -327,29 +327,29 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the connection id or the original token.
         /// </summary>
-        public string? ConnectionIdOrToken { get; set; }
+        public string ConnectionIdOrToken { get; set; }
 
         /// <summary>
-        /// Gets or sets the new refresh token.
+        /// Gets or sets the new auth token.
         /// </summary>
-        public string? NewToken { get; set; }
+        public string AuthToken { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="RefreshTokenMessage"/> class.
+        /// Gets or sets the expire time of the new auth token in UTC.
         /// </summary>
-        public RefreshTokenMessage()
-        {
-        }
+        public DateTimeOffset ExpireTime { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RefreshTokenMessage"/> class.
         /// </summary>
         /// <param name="connectionIdOrToken">The connection id or the original token.</param>
-        /// <param name="newToken">The new refresh token.</param>
-        public RefreshTokenMessage(string connectionIdOrToken, string newToken)
+        /// <param name="authToken">The new auth token.</param>
+        /// <param name="expireTime">The expire time of the new auth token in UTC.</param>
+        public RefreshTokenMessage(string connectionIdOrToken, string authToken, DateTimeOffset expireTime)
         {
-            ConnectionIdOrToken = connectionIdOrToken;
-            NewToken = newToken;
+            ConnectionIdOrToken = connectionIdOrToken ?? throw new ArgumentNullException(nameof(connectionIdOrToken));
+            AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
+            ExpireTime = expireTime.ToUniversalTime();
         }
     }
 

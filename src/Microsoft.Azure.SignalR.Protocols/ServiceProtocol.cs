@@ -765,20 +765,23 @@ public class ServiceProtocol : IServiceProtocol
 
     private static void WriteRefreshTokenMessage(ref MessagePackWriter writer, RefreshTokenMessage message)
     {
-        writer.WriteArrayHeader(4);
+        writer.WriteArrayHeader(5);
         writer.Write(ServiceProtocolConstants.RefreshTokenMessageType);
         writer.Write(message.ConnectionIdOrToken);
-        writer.Write(message.NewToken);
+        writer.Write(message.AuthToken);
+        writer.Write(message.ExpireTime.UtcTicks);
         message.WriteExtensionMembers(ref writer);
     }
 
     private static RefreshTokenMessage CreateRefreshTokenMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var message = new RefreshTokenMessage()
-        {
-            ConnectionIdOrToken = ReadString(ref reader, "connectionIdOrToken"),
-            NewToken = ReadString(ref reader, "newToken"),
-        };
+        var connectionIdOrToken = ReadStringNotNull(ref reader, "connectionIdOrToken");
+        var authToken = ReadStringNotNull(ref reader, "authToken");
+        var expireTimeTicks = ReadInt64(ref reader, "expireTime");
+        var message = new RefreshTokenMessage(
+            connectionIdOrToken,
+            authToken,
+            new DateTimeOffset(expireTimeTicks, TimeSpan.Zero));
         message.ReadExtensionMembers(ref reader);
         return message;
     }

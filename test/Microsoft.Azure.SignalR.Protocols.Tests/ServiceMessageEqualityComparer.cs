@@ -415,7 +415,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         private static bool RefreshTokenMessageEqual(RefreshTokenMessage x, RefreshTokenMessage y)
         {
             return StringEqual(x.ConnectionIdOrToken, y.ConnectionIdOrToken) &&
-                StringEqual(x.NewToken, y.NewToken);
+                StringEqual(x.AuthToken, y.AuthToken) &&
+                x.ExpireTime == y.ExpireTime;
         }
 
         private static bool StringEqual(string x, string y)

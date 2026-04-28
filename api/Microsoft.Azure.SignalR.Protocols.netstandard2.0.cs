@@ -404,10 +404,10 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
     public partial class RefreshTokenMessage : Microsoft.Azure.SignalR.Protocol.ExtensibleServiceMessage
     {
-        public RefreshTokenMessage() { }
-        public RefreshTokenMessage(string connectionIdOrToken, string newToken) { }
-        public string? ConnectionIdOrToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public string? NewToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public RefreshTokenMessage(string connectionIdOrToken, string authToken, System.DateTimeOffset expireTime) { }
+        public string AuthToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public string ConnectionIdOrToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.DateTimeOffset ExpireTime { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
     }
     public abstract partial class ServiceCompletionMessage : Microsoft.Azure.SignalR.Protocol.ConnectionMessage, Microsoft.Azure.SignalR.Protocol.IMessageWithTracingId
     {

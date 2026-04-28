@@ -782,8 +782,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "lyiBAc0E0qVncm91cAEKpXRva2VuBQ=="),
             new ProtocolTestData(
                 name: "RefreshTokenMessage",
-                message: new RefreshTokenMessage("conn1", "newtoken"),
-                binary: "lCmlY29ubjGobmV3dG9rZW6A"),
+                message: new RefreshTokenMessage("conn1", "newtoken", new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero)),
+                binary: "lSmlY29ubjGobmV3dG9rZW7PCNwKXJkAwACA"),
         }.ToDictionary(t => t.Name);
 
 #pragma warning restore CS0618 // Type or member is obsolete
