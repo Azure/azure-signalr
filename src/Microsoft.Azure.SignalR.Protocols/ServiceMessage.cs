@@ -320,6 +320,40 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
+    /// A refresh token message.
+    /// </summary>
+    public class RefreshTokenMessage : ExtensibleServiceMessage
+    {
+        /// <summary>
+        /// Gets or sets the connection id or the original token.
+        /// </summary>
+        public string? ConnectionIdOrToken { get; set; }
+
+        /// <summary>
+        /// Gets or sets the new refresh token.
+        /// </summary>
+        public string? NewToken { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RefreshTokenMessage"/> class.
+        /// </summary>
+        public RefreshTokenMessage()
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RefreshTokenMessage"/> class.
+        /// </summary>
+        /// <param name="connectionIdOrToken">The connection id or the original token.</param>
+        /// <param name="newToken">The new refresh token.</param>
+        public RefreshTokenMessage(string connectionIdOrToken, string newToken)
+        {
+            ConnectionIdOrToken = connectionIdOrToken;
+            NewToken = newToken;
+        }
+    }
+
+    /// <summary>
     /// A handshake request message.
     /// </summary>
     public class HandshakeRequestMessage : ExtensibleServiceMessage

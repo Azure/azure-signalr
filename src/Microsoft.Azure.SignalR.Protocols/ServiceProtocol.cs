@@ -157,6 +157,8 @@ public class ServiceProtocol : IServiceProtocol
                 return CreateConnectionFlowControlMessage(ref reader, arrayLength);
             case ServiceProtocolConstants.GroupMemberQueryMessageType:
                 return CreateGroupMemberQueryMessage(ref reader, arrayLength);
+            case ServiceProtocolConstants.RefreshTokenMessageType:
+                return CreateRefreshTokenMessage(ref reader, arrayLength);
             default:
                 // Future protocol changes can add message types, old clients can ignore them
                 return null;
@@ -342,6 +344,9 @@ public class ServiceProtocol : IServiceProtocol
                 break;
             case GroupMemberQueryMessage groupMemberQueryMessage:
                 WriteGroupMemberQueryMessage(ref writer, groupMemberQueryMessage);
+                break;
+            case RefreshTokenMessage refreshTokenMessage:
+                WriteRefreshTokenMessage(ref writer, refreshTokenMessage);
                 break;
             default:
                 throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
@@ -756,6 +761,26 @@ public class ServiceProtocol : IServiceProtocol
         writer.WriteInt32((int)message.ConnectionType);
         writer.WriteInt32((int)message.Operation);
         message.WriteExtensionMembers(ref writer);
+    }
+
+    private static void WriteRefreshTokenMessage(ref MessagePackWriter writer, RefreshTokenMessage message)
+    {
+        writer.WriteArrayHeader(4);
+        writer.Write(ServiceProtocolConstants.RefreshTokenMessageType);
+        writer.Write(message.ConnectionIdOrToken);
+        writer.Write(message.NewToken);
+        message.WriteExtensionMembers(ref writer);
+    }
+
+    private static RefreshTokenMessage CreateRefreshTokenMessage(ref MessagePackReader reader, int arrayLength)
+    {
+        var message = new RefreshTokenMessage()
+        {
+            ConnectionIdOrToken = ReadString(ref reader, "connectionIdOrToken"),
+            NewToken = ReadString(ref reader, "newToken"),
+        };
+        message.ReadExtensionMembers(ref reader);
+        return message;
     }
 
     private static void WriteGroupMemberQueryMessage(ref MessagePackWriter writer, GroupMemberQueryMessage message)

@@ -643,3 +643,15 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - ContinuationToken - A `String` indicating the continuation token of query.
 
 #### Example: TODO
+
+### RefreshToken Message
+`RefreshToken` messages have the following structure:
+```
+[41, ConnectionIdOrToken, NewToken, ExtensionMembers]
+```
+- 41 - Message Type, indicating this is a `RefreshToken` message.
+- ConnectionIdOrToken - A `String` indicating the connection ID or token.
+- NewToken - A `String` indicating the new refresh token.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
+
+#### Example: TODO

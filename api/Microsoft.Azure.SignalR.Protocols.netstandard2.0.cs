@@ -402,6 +402,13 @@ namespace Microsoft.Azure.SignalR.Protocol
         public PingMessage() { }
         public string?[] Messages { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
     }
+    public partial class RefreshTokenMessage : Microsoft.Azure.SignalR.Protocol.ExtensibleServiceMessage
+    {
+        public RefreshTokenMessage() { }
+        public RefreshTokenMessage(string connectionIdOrToken, string newToken) { }
+        public string? ConnectionIdOrToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public string? NewToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+    }
     public abstract partial class ServiceCompletionMessage : Microsoft.Azure.SignalR.Protocol.ConnectionMessage, Microsoft.Azure.SignalR.Protocol.IMessageWithTracingId
     {
         public ServiceCompletionMessage(string invocationId, string connectionId, string callerServerId, ulong? tracingId = default(ulong?)) : base (default(string)) { }
@@ -494,6 +501,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public const int MultiUserDataMessageType = 9;
         public const int OpenConnectionMessageType = 4;
         public const int PingMessageType = 3;
+        public const int RefreshTokenMessageType = 41;
         public const int ServiceErrorMessageType = 15;
         public const int ServiceEventMessageType = 22;
         public const int ServiceMappingMessageType = 37;
