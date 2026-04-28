@@ -763,29 +763,6 @@ public class ServiceProtocol : IServiceProtocol
         message.WriteExtensionMembers(ref writer);
     }
 
-    private static void WriteRefreshTokenMessage(ref MessagePackWriter writer, RefreshTokenMessage message)
-    {
-        writer.WriteArrayHeader(5);
-        writer.Write(ServiceProtocolConstants.RefreshTokenMessageType);
-        writer.Write(message.ConnectionIdOrToken);
-        writer.Write(message.AuthToken);
-        writer.Write(message.ExpireTime.UtcTicks);
-        message.WriteExtensionMembers(ref writer);
-    }
-
-    private static RefreshTokenMessage CreateRefreshTokenMessage(ref MessagePackReader reader, int arrayLength)
-    {
-        var connectionIdOrToken = ReadStringNotNull(ref reader, "connectionIdOrToken");
-        var authToken = ReadStringNotNull(ref reader, "authToken");
-        var expireTimeTicks = ReadInt64(ref reader, "expireTime");
-        var message = new RefreshTokenMessage(
-            connectionIdOrToken,
-            authToken,
-            new DateTimeOffset(expireTimeTicks, TimeSpan.Zero));
-        message.ReadExtensionMembers(ref reader);
-        return message;
-    }
-
     private static void WriteGroupMemberQueryMessage(ref MessagePackWriter writer, GroupMemberQueryMessage message)
     {
         writer.WriteArrayHeader(7);
@@ -810,6 +787,16 @@ public class ServiceProtocol : IServiceProtocol
         {
             writer.WriteNil();
         }
+    }
+
+    private static void WriteRefreshTokenMessage(ref MessagePackWriter writer, RefreshTokenMessage message)
+    {
+        writer.WriteArrayHeader(5);
+        writer.Write(ServiceProtocolConstants.RefreshTokenMessageType);
+        writer.Write(message.ConnectionIdOrToken);
+        writer.Write(message.AuthToken);
+        writer.Write(message.ExpireTime.UtcTicks);
+        message.WriteExtensionMembers(ref writer);
     }
 
     private static void WriteStringArray(ref MessagePackWriter writer, IReadOnlyList<string>? array)
@@ -1447,4 +1434,18 @@ public class ServiceProtocol : IServiceProtocol
         }
         return result;
     }
+
+    private static RefreshTokenMessage CreateRefreshTokenMessage(ref MessagePackReader reader, int arrayLength)
+    {
+        var connectionIdOrToken = ReadStringNotNull(ref reader, "connectionIdOrToken");
+        var authToken = ReadStringNotNull(ref reader, "authToken");
+        var expireTimeTicks = ReadInt64(ref reader, "expireTime");
+        var message = new RefreshTokenMessage(
+            connectionIdOrToken,
+            authToken,
+            new DateTimeOffset(expireTimeTicks, TimeSpan.Zero));
+        message.ReadExtensionMembers(ref reader);
+        return message;
+    }
+
 }
