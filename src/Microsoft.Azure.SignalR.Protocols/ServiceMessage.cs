@@ -320,36 +320,36 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
-    /// A refresh token message.
+    /// A message to refresh the authentication state of an existing client connection without forcing the client to reconnect.
     /// </summary>
-    public class RefreshTokenMessage : ExtensibleServiceMessage
+    public class RefreshAuthMessage : ExtensibleServiceMessage, IAckableMessage
     {
         /// <summary>
-        /// Gets or sets the connection id or the original token.
+        /// Gets or sets the connection id or the original connection token that identifies the live client connection whose authentication state is being refreshed.
         /// </summary>
         public string ConnectionIdOrToken { get; set; }
 
         /// <summary>
-        /// Gets or sets the new auth token.
+        /// Gets or sets the refreshed user claims for the connection.
         /// </summary>
-        public string AuthToken { get; set; }
+        public System.Security.Claims.Claim[] Claims { get; set; }
 
         /// <summary>
-        /// Gets or sets the expire time of the new auth token in UTC.
+        /// Gets or sets the protocol correlation id used to acknowledge this refresh operation.
         /// </summary>
-        public DateTimeOffset ExpireTime { get; set; }
+        public int AckId { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="RefreshTokenMessage"/> class.
+        /// Initializes a new instance of the <see cref="RefreshAuthMessage"/> class.
         /// </summary>
-        /// <param name="connectionIdOrToken">The connection id or the original token.</param>
-        /// <param name="authToken">The new auth token.</param>
-        /// <param name="expireTime">The expire time of the new auth token in UTC.</param>
-        public RefreshTokenMessage(string connectionIdOrToken, string authToken, DateTimeOffset expireTime)
+        /// <param name="connectionIdOrToken">The connection id or the original connection token.</param>
+        /// <param name="claims">The refreshed user claims.</param>
+        /// <param name="ackId">The protocol correlation id used to acknowledge this refresh operation.</param>
+        public RefreshAuthMessage(string connectionIdOrToken, System.Security.Claims.Claim[] claims, int ackId)
         {
             ConnectionIdOrToken = connectionIdOrToken ?? throw new ArgumentNullException(nameof(connectionIdOrToken));
-            AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
-            ExpireTime = expireTime.ToUniversalTime();
+            Claims = claims ?? throw new ArgumentNullException(nameof(claims));
+            AckId = ackId;
         }
     }
 
@@ -636,7 +636,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         /// <summary>
         /// A token to indiate the start point of results.
-        /// This parameter is provided by the service in the response of a previous request when there are additional results to be fetched. 
+        /// This parameter is provided by the service in the response of a previous request when there are additional results to be fetched.
         /// Clients should include the continuationToken in the next request to receive the subsequent page of data. If this parameter is omitted, the server will return the first page of results.
         /// </summary>
         public string? ContinuationToken { get; set; }

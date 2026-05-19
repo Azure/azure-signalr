@@ -46,5 +46,5 @@ public static class ServiceProtocolConstants
     public const int ConnectionReconnectMessageType = 38;
     public const int ConnectionFlowControlMessageType = 39;
     public const int GroupMemberQueryMessageType = 40;
-    public const int RefreshTokenMessageType = 41;
+    public const int RefreshAuthMessageType = 41;
 }

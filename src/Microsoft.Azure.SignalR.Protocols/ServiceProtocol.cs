@@ -157,8 +157,8 @@ public class ServiceProtocol : IServiceProtocol
                 return CreateConnectionFlowControlMessage(ref reader, arrayLength);
             case ServiceProtocolConstants.GroupMemberQueryMessageType:
                 return CreateGroupMemberQueryMessage(ref reader, arrayLength);
-            case ServiceProtocolConstants.RefreshTokenMessageType:
-                return CreateRefreshTokenMessage(ref reader, arrayLength);
+            case ServiceProtocolConstants.RefreshAuthMessageType:
+                return CreateRefreshAuthMessage(ref reader, arrayLength);
             default:
                 // Future protocol changes can add message types, old clients can ignore them
                 return null;
@@ -345,8 +345,8 @@ public class ServiceProtocol : IServiceProtocol
             case GroupMemberQueryMessage groupMemberQueryMessage:
                 WriteGroupMemberQueryMessage(ref writer, groupMemberQueryMessage);
                 break;
-            case RefreshTokenMessage refreshTokenMessage:
-                WriteRefreshTokenMessage(ref writer, refreshTokenMessage);
+            case RefreshAuthMessage refreshAuthMessage:
+                WriteRefreshAuthMessage(ref writer, refreshAuthMessage);
                 break;
             default:
                 throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
@@ -789,13 +789,25 @@ public class ServiceProtocol : IServiceProtocol
         }
     }
 
-    private static void WriteRefreshTokenMessage(ref MessagePackWriter writer, RefreshTokenMessage message)
+    private static void WriteRefreshAuthMessage(ref MessagePackWriter writer, RefreshAuthMessage message)
     {
         writer.WriteArrayHeader(5);
-        writer.Write(ServiceProtocolConstants.RefreshTokenMessageType);
+        writer.Write(ServiceProtocolConstants.RefreshAuthMessageType);
         writer.Write(message.ConnectionIdOrToken);
-        writer.Write(message.AuthToken);
-        writer.Write(message.ExpireTime.UtcTicks);
+        if (message.Claims?.Length > 0)
+        {
+            writer.WriteMapHeader(message.Claims.Length);
+            foreach (var claim in message.Claims)
+            {
+                writer.Write(claim.Type);
+                writer.Write(claim.Value);
+            }
+        }
+        else
+        {
+            writer.WriteMapHeader(0);
+        }
+        writer.Write(message.AckId);
         message.WriteExtensionMembers(ref writer);
     }
 
@@ -1435,15 +1447,12 @@ public class ServiceProtocol : IServiceProtocol
         return result;
     }
 
-    private static RefreshTokenMessage CreateRefreshTokenMessage(ref MessagePackReader reader, int arrayLength)
+    private static RefreshAuthMessage CreateRefreshAuthMessage(ref MessagePackReader reader, int arrayLength)
     {
         var connectionIdOrToken = ReadStringNotNull(ref reader, "connectionIdOrToken");
-        var authToken = ReadStringNotNull(ref reader, "authToken");
-        var expireTimeTicks = ReadInt64(ref reader, "expireTime");
-        var message = new RefreshTokenMessage(
-            connectionIdOrToken,
-            authToken,
-            new DateTimeOffset(expireTimeTicks, TimeSpan.Zero));
+        var claims = ReadClaims(ref reader);
+        var ackId = ReadInt32(ref reader, "ackId");
+        var message = new RefreshAuthMessage(connectionIdOrToken, claims, ackId);
         message.ReadExtensionMembers(ref reader);
         return message;
     }

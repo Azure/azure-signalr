@@ -402,12 +402,12 @@ namespace Microsoft.Azure.SignalR.Protocol
         public PingMessage() { }
         public string?[] Messages { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
     }
-    public partial class RefreshTokenMessage : Microsoft.Azure.SignalR.Protocol.ExtensibleServiceMessage
+    public partial class RefreshAuthMessage : Microsoft.Azure.SignalR.Protocol.ExtensibleServiceMessage, Microsoft.Azure.SignalR.Protocol.IAckableMessage
     {
-        public RefreshTokenMessage(string connectionIdOrToken, string authToken, System.DateTimeOffset expireTime) { }
-        public string AuthToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public RefreshAuthMessage(string connectionIdOrToken, System.Security.Claims.Claim[] claims, int ackId) { }
+        public int AckId { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.Security.Claims.Claim[] Claims { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
         public string ConnectionIdOrToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public System.DateTimeOffset ExpireTime { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
     }
     public abstract partial class ServiceCompletionMessage : Microsoft.Azure.SignalR.Protocol.ConnectionMessage, Microsoft.Azure.SignalR.Protocol.IMessageWithTracingId
     {
@@ -501,7 +501,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public const int MultiUserDataMessageType = 9;
         public const int OpenConnectionMessageType = 4;
         public const int PingMessageType = 3;
-        public const int RefreshTokenMessageType = 41;
+        public const int RefreshAuthMessageType = 41;
         public const int ServiceErrorMessageType = 15;
         public const int ServiceEventMessageType = 22;
         public const int ServiceMappingMessageType = 37;

@@ -106,8 +106,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return ConnectionFlowControlMessageEqual(connectionFlowControlMessage, (ConnectionFlowControlMessage)y);
                 case GroupMemberQueryMessage groupMemberQueryMessage:
                     return GroupMemberQueryMessageEqual(groupMemberQueryMessage, (GroupMemberQueryMessage)y);
-                case RefreshTokenMessage refreshTokenMessage:
-                    return RefreshTokenMessageEqual(refreshTokenMessage, (RefreshTokenMessage)y);
+                case RefreshAuthMessage refreshAuthMessage:
+                    return RefreshAuthMessageEqual(refreshAuthMessage, (RefreshAuthMessage)y);
                 default:
                     throw new InvalidOperationException($"Unknown message type: {x.GetType().FullName}");
             }
@@ -412,11 +412,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                    x.TracingId == y.TracingId;
         }
 
-        private static bool RefreshTokenMessageEqual(RefreshTokenMessage x, RefreshTokenMessage y)
+        private static bool RefreshAuthMessageEqual(RefreshAuthMessage x, RefreshAuthMessage y)
         {
             return StringEqual(x.ConnectionIdOrToken, y.ConnectionIdOrToken) &&
-                StringEqual(x.AuthToken, y.AuthToken) &&
-                x.ExpireTime == y.ExpireTime;
+                x.AckId == y.AckId &&
+                ClaimsEqual(x.Claims, y.Claims);
         }
 
         private static bool StringEqual(string x, string y)

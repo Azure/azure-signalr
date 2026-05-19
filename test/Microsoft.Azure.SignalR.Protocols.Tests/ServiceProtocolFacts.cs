@@ -781,9 +781,13 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1, MaxPageSize = 5, Top = 10, ContinuationToken = "token", TracingId = 1234UL },
                 binary: "lyiBAc0E0qVncm91cAEKpXRva2VuBQ=="),
             new ProtocolTestData(
-                name: "RefreshTokenMessage",
-                message: new RefreshTokenMessage("conn1", "newtoken", new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero)),
-                binary: "lSmlY29ubjGobmV3dG9rZW7PCNwKXJkAwACA"),
+                name: "RefreshAuthMessage",
+                message: new RefreshAuthMessage("conn1", new[]
+                {
+                    new System.Security.Claims.Claim("sub", "u1"),
+                    new System.Security.Claims.Claim("exp", "1700000000"),
+                }, 1),
+                binary: "lSmlY29ubjGCo3N1YqJ1MaNleHCqMTcwMDAwMDAwMAGA"),
         }.ToDictionary(t => t.Name);
 
 #pragma warning restore CS0618 // Type or member is obsolete
