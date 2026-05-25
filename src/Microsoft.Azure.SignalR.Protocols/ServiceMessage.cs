@@ -325,7 +325,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class RefreshAuthMessage : ExtensibleServiceMessage, IAckableMessage
     {
         /// <summary>
-        /// Gets or sets the connection id or the original connection token that identifies the live client connection whose authentication state is being refreshed.
+        /// Gets or sets the connection id or the connection token that identifies the live client connection whose authentication state is being refreshed.
         /// </summary>
         public string ConnectionIdOrToken { get; set; }
 
@@ -335,6 +335,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         public System.Security.Claims.Claim[] Claims { get; set; }
 
         /// <summary>
+        /// Gets or sets the time at which the refreshed authentication state expires in UTC.
+        /// </summary>
+        public DateTimeOffset? ExpireTime { get; set; }
+
+        /// <summary>
         /// Gets or sets the protocol correlation id used to acknowledge this refresh operation.
         /// </summary>
         public int AckId { get; set; }
@@ -342,13 +347,15 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="RefreshAuthMessage"/> class.
         /// </summary>
-        /// <param name="connectionIdOrToken">The connection id or the original connection token.</param>
-        /// <param name="claims">The refreshed user claims.</param>
+        /// <param name="connectionIdOrToken">The connection id or the connection token that identifies the live client connection.</param>
+        /// <param name="claims">The refreshed user claims for the connection.</param>
+        /// <param name="expireTime">The time at which the refreshed authentication state expires in UTC.</param>
         /// <param name="ackId">The protocol correlation id used to acknowledge this refresh operation.</param>
-        public RefreshAuthMessage(string connectionIdOrToken, System.Security.Claims.Claim[] claims, int ackId)
+        public RefreshAuthMessage(string connectionIdOrToken, System.Security.Claims.Claim[] claims, DateTimeOffset? expireTime, int ackId)
         {
             ConnectionIdOrToken = connectionIdOrToken ?? throw new ArgumentNullException(nameof(connectionIdOrToken));
             Claims = claims ?? throw new ArgumentNullException(nameof(claims));
+            ExpireTime = expireTime;
             AckId = ackId;
         }
     }

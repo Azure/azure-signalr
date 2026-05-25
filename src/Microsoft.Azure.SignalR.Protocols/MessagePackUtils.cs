@@ -112,6 +112,18 @@ internal static class MessagePackUtils
         }
     }
 
+    internal static long ReadInt64(ref MessagePackReader reader, string field)
+    {
+        try
+        {
+            return reader.ReadInt64();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidDataException($"Reading '{field}' as Int64 failed.", ex);
+        }
+    }
+
     internal static string? ReadString(ref MessagePackReader reader, string field)
     {
         try
