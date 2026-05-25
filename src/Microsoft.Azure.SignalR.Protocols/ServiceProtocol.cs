@@ -1452,13 +1452,13 @@ public class ServiceProtocol : IServiceProtocol
     {
         var connectionIdOrToken = ReadStringNotNull(ref reader, "connectionIdOrToken");
         var claims = ReadClaims(ref reader);
-        var ackId = ReadInt32(ref reader, "ackId");
         var expireTimeTicks = ReadInt64(ref reader, "expireTime");
+        var ackId = ReadInt32(ref reader, "ackId");
         var message = new RefreshAuthMessage(
             connectionIdOrToken,
             claims,
-            ackId,
-           new DateTimeOffset(expireTimeTicks, TimeSpan.Zero));
+            new DateTimeOffset(expireTimeTicks, TimeSpan.Zero),
+            ackId);
         message.ReadExtensionMembers(ref reader);
         return message;
     }

@@ -337,7 +337,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the time at which the refreshed authentication state expires in UTC.
         /// </summary>
-        public DateTimeOffset? ExpireTime { get; set; }
+        public DateTimeOffset ExpireTime { get; set; }
 
         /// <summary>
         /// Gets or sets the protocol correlation id used to acknowledge this refresh operation.
@@ -351,11 +351,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="claims">The refreshed user claims for the connection.</param>
         /// <param name="expireTime">The time at which the refreshed authentication state expires in UTC.</param>
         /// <param name="ackId">The protocol correlation id used to acknowledge this refresh operation.</param>
-        public RefreshAuthMessage(string connectionIdOrToken, System.Security.Claims.Claim[] claims, DateTimeOffset? expireTime, int ackId)
+        public RefreshAuthMessage(string connectionIdOrToken, System.Security.Claims.Claim[] claims, DateTimeOffset expireTime, int ackId)
         {
             ConnectionIdOrToken = connectionIdOrToken ?? throw new ArgumentNullException(nameof(connectionIdOrToken));
             Claims = claims ?? throw new ArgumentNullException(nameof(claims));
-            ExpireTime = expireTime;
+            ExpireTime = expireTime.ToUniversalTime();
             AckId = ackId;
         }
     }

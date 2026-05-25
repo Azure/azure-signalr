@@ -784,10 +784,9 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "RefreshAuthMessage",
                 message: new RefreshAuthMessage("conn1", new[]
                 {
-                    new System.Security.Claims.Claim("sub", "u1"),
-                    new System.Security.Claims.Claim("exp", "1700000000"),
-                }, 1),
-                binary: "lSmlY29ubjGCo3N1YqJ1MaNleHCqMTcwMDAwMDAwMAGA"),
+                    new System.Security.Claims.Claim("role", "reader"),
+                }, new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero), 1),
+                binary: "limlY29ubjGBpHJvbGWmcmVhZGVyzwjcClyZAMAAAYA="),
         }.ToDictionary(t => t.Name);
 
 #pragma warning restore CS0618 // Type or member is obsolete
