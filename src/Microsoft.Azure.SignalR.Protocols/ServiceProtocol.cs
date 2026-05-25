@@ -807,7 +807,7 @@ public class ServiceProtocol : IServiceProtocol
         {
             writer.WriteMapHeader(0);
         }
-        writer.Write(message.ExpireTime.UtcTicks);
+        writer.Write(message.ExpireTime.UtcDateTime);
         writer.Write(message.AckId);
         message.WriteExtensionMembers(ref writer);
     }
@@ -1452,12 +1452,12 @@ public class ServiceProtocol : IServiceProtocol
     {
         var connectionIdOrToken = ReadStringNotNull(ref reader, "connectionIdOrToken");
         var claims = ReadClaims(ref reader);
-        var expireTimeTicks = ReadInt64(ref reader, "expireTime");
+        var expireTime = reader.ReadDateTime();
         var ackId = ReadInt32(ref reader, "ackId");
         var message = new RefreshAuthMessage(
             connectionIdOrToken,
             claims,
-            new DateTimeOffset(expireTimeTicks, TimeSpan.Zero),
+            new DateTimeOffset(expireTime, TimeSpan.Zero),
             ackId);
         message.ReadExtensionMembers(ref reader);
         return message;
