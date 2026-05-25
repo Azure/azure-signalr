@@ -31,9 +31,9 @@ public class JsonPayloadMessageContentTest
     }
 
     public static IEnumerable<object[]> GetInvocationData =>
-        from objectSeralizer in new ObjectSerializer[] { new JsonObjectSerializer(), new NewtonsoftJsonObjectSerializer() }
+        from objectSerializer in new ObjectSerializer[] { new JsonObjectSerializer(), new NewtonsoftJsonObjectSerializer() }
         from pair in GetInvocationArgumentsAndString()
-        select new object[] { objectSeralizer, new InvocationMessage("target", pair.Arguments), pair.Json };
+        select new object[] { objectSerializer, new InvocationMessage("target", pair.Arguments), pair.Json };
 
     private static IEnumerable<(object[] Arguments, string Json)> GetInvocationArgumentsAndString()
     {
@@ -43,9 +43,9 @@ public class JsonPayloadMessageContentTest
     }
 
     public static IEnumerable<object[]> GetStreamItemData() =>
-        from objectSeralizer in new ObjectSerializer[] { new JsonObjectSerializer(), new NewtonsoftJsonObjectSerializer() }
+        from objectSerializer in new ObjectSerializer[] { new JsonObjectSerializer(), new NewtonsoftJsonObjectSerializer() }
         from pair in GetStreamItemArgumentAndString()
-        select new object[] { objectSeralizer, new StreamItemMessage("id", pair.Argument), pair.Json };
+        select new object[] { objectSerializer, new StreamItemMessage("id", pair.Argument), pair.Json };
 
     private static IEnumerable<(object Argument, string Json)> GetStreamItemArgumentAndString()
     {

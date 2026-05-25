@@ -95,7 +95,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 case ServiceEventMessage serviceWarningMessage:
                     return ServiceWarningMessageEqual(serviceWarningMessage, (ServiceEventMessage)y);
                 case ClientInvocationMessage clientInvocationMessage:
-                    return ClientInvocationMessageEuqal(clientInvocationMessage, (ClientInvocationMessage)y);
+                    return ClientInvocationMessageEqual(clientInvocationMessage, (ClientInvocationMessage)y);
                 case ClientCompletionMessage clientCompletionMessage:
                     return ClientCompletionMessageEqual(clientCompletionMessage, (ClientCompletionMessage)y);
                 case ErrorCompletionMessage errorCompletionMessage:
@@ -361,7 +361,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 StringEqual(x.Message, y.Message);
         }
 
-        private static bool ClientInvocationMessageEuqal(ClientInvocationMessage x, ClientInvocationMessage y)
+        private static bool ClientInvocationMessageEqual(ClientInvocationMessage x, ClientInvocationMessage y)
         {
             return StringEqual(x.InvocationId, y.InvocationId) &&
                 StringEqual(x.ConnectionId, y.ConnectionId) &&

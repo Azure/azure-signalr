@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.SignalR
 {
     // Modified from https://github.com/dotnet/aspnetcore/blob/v7.0.0-preview.7.22376.6/src/SignalR/common/Shared/ClientResultsManager.cs#L110
-    // Custom TCS type links `cancellationToken.Cancel` to `tcs.SetCanceld()`. Besides, it provides a customized behaviour in `tcs.SetCanceld()`.
+    // Custom TCS type links `cancellationToken.Cancel` to `tcs.SetCanceled()`. Besides, it provides a customized behaviour in `tcs.SetCanceled()`.
     // This modified version decoupled this class with `ClientResultsManager`, `connectionId` and `invocationId` which are used in `SetCanceled()`
-    // This version uses a general `Action setCanceldAction` instead.
+    // This version uses a general `Action setCanceledAction` instead.
 
     // Custom TCS type to avoid the extra allocation that would be introduced if we managed the cancellation separately
     // Also makes it easier to keep track of the CancellationTokenRegistration for disposal
@@ -22,13 +22,13 @@ namespace Microsoft.Azure.SignalR
         private readonly CancellationToken _token;
         private CancellationTokenRegistration _tokenRegistration;
 
-        public TaskCompletionSourceWithCancellation(CancellationToken cancellationToken, Action trySetCanceldAction)
+        public TaskCompletionSourceWithCancellation(CancellationToken cancellationToken, Action trySetCanceledAction)
             : base(TaskCreationOptions.RunContinuationsAsynchronously)
         {
-            // Skip null check for cancellationToken because it never equals to null. 
-            ArgumentNullException.ThrowIfNull(trySetCanceldAction);
+            // Skip null check for cancellationToken because it never equals null.
+            ArgumentNullException.ThrowIfNull(trySetCanceledAction);
             _token = cancellationToken;
-            _trySetCanceledAction = trySetCanceldAction;
+            _trySetCanceledAction = trySetCanceledAction;
         }
 
         public void RegisterCancellation()

@@ -109,7 +109,7 @@ public class ConnectionStringParserTests
     public void InvalidPort(string connectionString)
     {
         var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-        Assert.Contains("Invalid value for port property, it must be an positive integer between (0, 65536). (Parameter 'connectionString')", exception.Message);
+        Assert.Contains("Invalid value for port property, it must be a positive integer between (0, 65536). (Parameter 'connectionString')", exception.Message);
     }
 
     [Theory]

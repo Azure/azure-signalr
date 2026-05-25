@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             if (_store.TryGetLifetimeContext(_hub, out var context))
             {
                 var userGroup = context.UserGroupManager;
-                userGroup.OnConnectionOpenning(connection);
+                userGroup.OnConnectionOpening(connection);
             }
             Connections.Add(connection);
             return base.OnConnectedAsync(connection);

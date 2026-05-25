@@ -290,7 +290,7 @@ internal sealed class AckHandler : IDisposable
         }
 
         /// <summary>
-        /// Forcely ack the multi ack regardless of the expected count.
+        /// Forcefully ack the multi ack regardless of the expected count.
         /// </summary>
         /// <param name="status"></param>
         /// <returns></returns>

@@ -210,7 +210,7 @@ public class ServiceEndpointProviderFacts
     [Theory]
     [InlineData(AccessTokenAlgorithm.HS256)]
     [InlineData(AccessTokenAlgorithm.HS512)]
-    public async Task GenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+    public async Task GenerateServerAccessTokenWithSpecifiedAlgorithm(AccessTokenAlgorithm algorithm)
     {
         var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
         var serverToken = await provider.GetServerAccessTokenProvider("hub1", "user1").ProvideAsync();
@@ -223,7 +223,7 @@ public class ServiceEndpointProviderFacts
     [Theory]
     [InlineData(AccessTokenAlgorithm.HS256)]
     [InlineData(AccessTokenAlgorithm.HS512)]
-    public async Task GenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+    public async Task GenerateClientAccessTokenWithSpecifiedAlgorithm(AccessTokenAlgorithm algorithm)
     {
         var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
         var generatedToken = await provider.GenerateClientAccessTokenAsync("hub1");

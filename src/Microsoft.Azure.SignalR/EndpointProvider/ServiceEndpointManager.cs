@@ -54,7 +54,7 @@ internal class ServiceEndpointManager : ServiceEndpointManagerBase
     private static class Log
     {
         private static readonly Action<ILogger, Exception> _detectEndpointChanges =
-            LoggerMessage.Define(LogLevel.Debug, new EventId(1, "DetectConfigurationChanges"), "Dected configuration changes in configuration, start live-scale.");
+            LoggerMessage.Define(LogLevel.Debug, new EventId(1, "DetectConfigurationChanges"), "Detected configuration changes in configuration, start live-scale.");
 
         public static void DetectConfigurationChanges(ILogger logger)
         {

@@ -27,7 +27,7 @@
                         "in": "path",
                         "required": true,
                         "type": "string",
-                        "description": "Target user Id."
+                        "description": "Target user ID."
                     },
                     {
                         "name": "message",

@@ -26,7 +26,7 @@ internal sealed class MockServiceConnectionContext : ConnectionContext
 
     public MockServiceSideConnection MyServiceSideConnection { get; private set; }
 
-    public MockServiceConnection MyMockServiceConnetion { get; set; }
+    public MockServiceConnection MyMockServiceConnection { get; set; }
 
     public MockServiceConnectionContext(IMockService mockService, HubServiceEndpoint endpoint, string target, string id)
     {

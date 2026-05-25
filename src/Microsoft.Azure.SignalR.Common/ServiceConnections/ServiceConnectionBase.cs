@@ -149,7 +149,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
     /// Start a service connection without the lifetime management.
     /// To get full lifetime management including dispose or restart, use <see cref="ServiceConnectionContainerBase"/>
     /// </summary>
-    /// <param name="target">The target instance Id</param>
+    /// <param name="target">The target instance ID</param>
     /// <returns>The task of StartAsync</returns>
     public async Task StartAsync(string target = null)
     {
@@ -474,7 +474,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
                 return flowControlMessage.Operation switch
                 {
                     ConnectionFlowControlOperation.Offline => OfflineAsync(),
-                    _ => throw new InvalidOperationException($"Opereration {flowControlMessage.Operation} is invalid on server connections."),
+                    _ => throw new InvalidOperationException($"Operation {flowControlMessage.Operation} is invalid on server connections."),
                 };
             }
         }
@@ -492,7 +492,7 @@ internal abstract partial class ServiceConnectionBase : IServiceConnection
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Opereration {flowControlMessage.Operation} is invalid on client connections.");
+                    throw new InvalidOperationException($"Operation {flowControlMessage.Operation} is invalid on client connections.");
                 }
             }
             return Task.CompletedTask;

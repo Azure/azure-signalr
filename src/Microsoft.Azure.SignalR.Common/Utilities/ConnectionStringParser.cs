@@ -57,7 +57,7 @@ internal static class ConnectionStringParser
 
     private const string InvalidServerEndpointProperty = $"Invalid value for {ServerEndpointProperty} property, it must be a valid URI.";
 
-    private const string InvalidPortValue = $"Invalid value for {PortProperty} property, it must be an positive integer between (0, 65536).";
+    private const string InvalidPortValue = $"Invalid value for {PortProperty} property, it must be a positive integer between (0, 65536).";
 
     private static readonly char[] KeyValueSeparator = { '=' };
 

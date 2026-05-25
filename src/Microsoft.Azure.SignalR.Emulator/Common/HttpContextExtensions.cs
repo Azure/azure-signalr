@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http.Features;
 
 namespace Microsoft.Azure.SignalR.Common
 {
-    internal static class HttpContextExtenstions
+    internal static class HttpContextExtensions
     {
         internal static string GetUserIdentifier(this ConnectionContext connectionContext)
         {

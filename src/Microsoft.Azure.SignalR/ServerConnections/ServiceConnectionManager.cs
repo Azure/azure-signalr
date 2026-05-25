@@ -54,14 +54,14 @@ internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionM
         return _serviceConnection.WriteAsync(serviceMessage);
     }
 
-    public Task<bool> WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default)
+    public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
     {
         if (_serviceConnection == null)
         {
             throw new AzureSignalRNotConnectedException();
         }
 
-        return _serviceConnection.WriteAckableMessageAsync(seviceMessage, cancellationToken);
+        return _serviceConnection.WriteAckableMessageAsync(serviceMessage, cancellationToken);
     }
 
     public void Dispose()

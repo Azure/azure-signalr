@@ -621,7 +621,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
     [Theory]
     [InlineData(Constants.AsrsMigrateFrom, true)]
     [InlineData("anotherheader", false)]
-    public async Task TestClientConnectionShouldSkipHandshakeWhenMigrateIn(string headerKey, bool shoudSkip)
+    public async Task TestClientConnectionShouldSkipHandshakeWhenMigrateIn(string headerKey, bool shouldSkip)
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
@@ -689,7 +689,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             Assert.True(protocol.TryParseMessage(ref buffer, out var message));
             var dataMessage = Assert.IsType<ConnectionDataMessage>(message);
 
-            if (shoudSkip)
+            if (shouldSkip)
             {
                 Assert.Equal(payload, dataMessage.Payload.ToArray());
             }
@@ -789,7 +789,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
             builder.UseConnectionHandler<TextContentConnectionHandler>();
             var handler = builder.Build();
-            var hubProcotolResolver = new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance);
+            var hubProtocolResolver = new DefaultHubProtocolResolver(new[] { hubProtocol }, NullLogger<DefaultHubProtocolResolver>.Instance);
             var connection = new ServiceConnection(protocol,
                                                    ccm,
                                                    connectionFactory,
@@ -802,7 +802,7 @@ public class ServiceConnectionTests : VerifiableLoggedTest
                                                    null,
                                                    null,
                                                    new DefaultClientInvocationManager(),
-                                                   hubProcotolResolver,
+                                                   hubProtocolResolver,
                                                    null);
 
             var connectionTask = connection.StartAsync().OrTimeout();

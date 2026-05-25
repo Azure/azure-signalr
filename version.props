@@ -4,7 +4,7 @@
     <VersionPrefix>1.33.1</VersionPrefix>
     <VersionPrefix Condition="'$(MSBuildProjectName)' == 'Microsoft.Azure.SignalR.Emulator'">1.7.0</VersionPrefix>
     <VersionPrefix Condition="'$(MSBuildProjectName)' == 'Microsoft.Azure.SignalR.Serverless.Protocols'">1.11.2</VersionPrefix>
-    <!-- Alphanumberic(+hyphen) string for PackageVersion and InformationalVersion-->
+    <!-- Alphanumeric(+hyphen) string for PackageVersion and InformationalVersion-->
     <VersionSuffix>preview1</VersionSuffix>
     <!-- Version = VersionPrefix-VersionSuffix, for PackageVersion and AssemblyVersion -->
     <PackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' == 'rtm' ">$(VersionPrefix)</PackageVersion>

@@ -330,7 +330,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
     }
 
     [Fact]
-    public async Task TestContainerWithOneEndpointWithAllConnectedSucceeeds()
+    public async Task TestContainerWithOneEndpointWithAllConnectedSucceeds()
     {
         var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
         var router = new TestEndpointRouter();
@@ -725,7 +725,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
         await container.StartedAsync();
 
-        // connection add should success
+        // connection add should succeed
         var message = Activator.CreateInstance(messageType, arguments) as ServiceMessage;
         var task = container.WriteAckableMessageAsync(message);
         await writeTcs.Task.OrTimeout();
@@ -744,7 +744,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
         await container.StartedAsync();
 
-        // connection add should success
+        // connection add should succeed
         var message = Activator.CreateInstance(messageType, arguments) as ServiceMessage;
         var task = container.WriteAckableMessageAsync(message);
         await writeTcs.Task.OrTimeout();
@@ -765,7 +765,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
         await container.StartedAsync();
 
-        // connection add should success
+        // connection add should succeed
         var message = Activator.CreateInstance(messageType, arguments) as ServiceMessage;
         var task = container.WriteAckableMessageAsync(message);
         await writeTcs.Task.OrTimeout();
@@ -1116,7 +1116,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         };
         _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
 
-        // Wait a few time to let message router updated.
+        // Wait some time to let message router updated.
         await Task.Delay(100);
 
         hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
@@ -1128,7 +1128,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var ngoEps = sem.GetEndpoints("hub").ToArray();
         Assert.Single(ngoEps);
 
-        // Mock there're 3 servers SA,SB connected to EP1 and EP2
+        // Mock there are 3 servers SA,SB connected to EP1 and EP2
         var containers = container.GetTestOnlineContainers();
         var serversTag = "Server1;Server2;Server3";
         await Task.WhenAll(containers.Select(c => c.MockReceivedServersPing(serversTag)));
@@ -1495,7 +1495,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         };
         _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
 
-        // Wait a few time to let message router updated.
+        // Wait some time to let message router updated.
         await Task.Delay(100);
 
         hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
@@ -1507,7 +1507,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         var ngoEps = sem.GetEndpoints("hub").ToArray();
         Assert.Single(ngoEps);
 
-        // Mock there're 3 servers SA,SB connected to EP1 and EP2
+        // Mock there are 3 servers SA,SB connected to EP1 and EP2
         var containers = container.GetTestOnlineContainers();
         var serversTag = "Server1;Server2;Server3";
         await Task.WhenAll(containers.Select(c => c.MockReceivedServersPing(serversTag)));

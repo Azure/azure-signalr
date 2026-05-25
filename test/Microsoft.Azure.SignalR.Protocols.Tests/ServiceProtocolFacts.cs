@@ -127,10 +127,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new OpenConnectionMessage("conn3", null, new Dictionary<string, StringValues>
                 {
                     {"header-key-1", "header-value-1"},
-                    {"header-key-2", new[] {"heaer-value-2a", "header-value-2b"}},
-                    {"header-key-3", new[] {"heaer-value-3a", "header-value-3b", "header-value-3c"}}
+                    {"header-key-2", new[] {"header-value-2a", "header-value-2b"}},
+                    {"header-key-3", new[] {"header-value-3a", "header-value-3b", "header-value-3c"}}
                 }, string.Empty),
-                binary: "lQSlY29ubjOAg6xoZWFkZXIta2V5LTGRrmhlYWRlci12YWx1ZS0xrGhlYWRlci1rZXktMpKuaGVhZXItdmFsdWUtMmGvaGVhZGVyLXZhbHVlLTJirGhlYWRlci1rZXktM5OuaGVhZXItdmFsdWUtM2GvaGVhZGVyLXZhbHVlLTNir2hlYWRlci12YWx1ZS0zY6A="),
+                binary: "lQSlY29ubjOAg6xoZWFkZXIta2V5LTGRr2hlYWRlci12YWx1ZS0xrGhlYWRlci1rZXktMpKvaGVhZGVyLXZhbHVlLTJhr2hlYWRlci12YWx1ZS0yYqxoZWFkZXIta2V5LTOTr2hlYWRlci12YWx1ZS0zYa9oZWFkZXItdmFsdWUtM2KvaGVhZGVyLXZhbHVlLTNjoA=="),
             new ProtocolTestData(
                 name: "OpenConnectionWithQueryString1_NoOptionalField",
                 message: new OpenConnectionMessage("conn4", null, new Dictionary<string, StringValues>(), "query1=value1"),
@@ -372,8 +372,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new OpenConnectionMessage("conn3", null, new Dictionary<string, StringValues>
                 {
                     {"header-key-1", "header-value-1"},
-                    {"header-key-2", new[] {"heaer-value-2a", "header-value-2b"}},
-                    {"header-key-3", new[] {"heaer-value-3a", "header-value-3b", "header-value-3c"}}
+                    {"header-key-2", new[] {"header-value-2a", "header-value-2b"}},
+                    {"header-key-3", new[] {"header-value-3a", "header-value-3b", "header-value-3c"}}
                 }, string.Empty),
                 binary: "lgSlY29ubjOAg6xoZWFkZXIta2V5LTGRrmhlYWRlci12YWx1ZS0xrGhlYWRlci1rZXktMpKuaGVhZXItdmFsdWUtMmGvaGVhZGVyLXZhbHVlLTJirGhlYWRlci1rZXktM5OuaGVhZXItdmFsdWUtM2GvaGVhZGVyLXZhbHVlLTNir2hlYWRlci12YWx1ZS0zY6CA"),
             new ProtocolTestData(

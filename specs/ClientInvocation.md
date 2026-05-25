@@ -8,8 +8,8 @@ Customer faced hub method is same with local SignalR and we'll provide same cust
 ```cs
 public async Task<string> GetMessage(string ID)
 {
-    var ressult = await Clients.Client(ID).InvokeAsync<string>("GetMessage", default);
-    return $"From {ID}: {ressult}";
+    var result = await Clients.Client(ID).InvokeAsync<string>("GetMessage", default);
+    return $"From {ID}: {result}";
 }
 ```
 
@@ -23,7 +23,7 @@ In this case, server is aware of target client status and can easily handle the 
 
 1. (1)(2) Server S1 inits the `ClientInvocation` to service and service forward the message to target client C2.
 
-2. (3)(4) When Client complete the invocation and return `CompletionMessage`, service handle as normal client message and forward to routed server S1 to deserialize. 
+2. (3)(4) When Client complete the invocation and return `CompletionMessage`, service handle as normal client message and forward to routed server S1 to deserialize.
 
 3. (5) S1 completes the invocation and return a `ServiceCompletionMessage` to let service do clean-up.
 
@@ -35,15 +35,15 @@ In this case, server is not aware of target client status, and depends on servic
 
 1. (1)(2)(3) Server S1 inits the `ClientInvocation` to service and service forward the message to target client C2.
 
-2. (3.1)(3.2) Service instance Pod2 send a `ServiceMappingMessage` to notify original invoker S1 aware of the Pod-Client mapping. In case Pod2 crashes and S1 received a instance offline ping then is able to know C2 is also down.
+2. (3.1)(3.2) Service instance Pod2 send a `ServiceMappingMessage` to notify original invoker S1 it is aware of the Pod-Client mapping. In case Pod2 crashes and S1 received an instance offline ping then is able to know C2 is also down.
 
-3. (4)(5) When Client complete the invocation and return `CompletionMessage`, service handle as normal client message and forward to routed server S2 to deserialize. 
+3. (4)(5) When Client completes the invocation and returns `CompletionMessage`, service handle as normal client message and forwards to routed server S2 to deserialize.
 
-4. (6) S2 awares the invocation is not from itself and return a `ServiceCompletionMessage` to let Pod2 forward to correct invoker.
+4. (6) S2 realizes the invocation is not from itself and returns a `ServiceCompletionMessage` to let Pod2 forward to correct invoker.
 
 5. (7)(8) Pod2 clean-up local pending invocation and forward the result to original invoker S1.
 
-## Service Procotols
+## Service Protocols
 
 Name|Direction|Usage
 --|--|--
@@ -65,8 +65,8 @@ Basically the process is similar and the major different is that service underst
 ## Limitations
 
 > NOTES
-> 
+>
 > * Service cached pending invocations for at most __10 minutes__ for memory concerns and will notify server when timeout.
-> * Serverless is __NOT__ supporeted in the first stage.
+> * Serverless is __NOT__ supported in the first stage.
 > * ASPNET SignalR is __NOT__ supported.
 > * Sharding is __NOT__ fully supported yet. Please use [Geo-Replication](https://learn.microsoft.com/azure/azure-signalr/howto-enable-geo-replication) for combined client invocation and large scale scenarios. Also see [this](https://github.com/Azure/azure-signalr/pull/1828) for planning.

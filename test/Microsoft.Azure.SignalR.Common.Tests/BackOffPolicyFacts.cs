@@ -79,7 +79,7 @@ public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest
         }));
     }
 
-    [Fact(Skip = "Flacky in CI")]
+    [Fact(Skip = "Flaky in CI")]
     public async Task FirstProbeThrowsTest()
     {
         await RetryWhenExceptionThrows(async () => await RunProbeTests(new TestData()
@@ -102,7 +102,7 @@ public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest
         }));
     }
 
-    [Fact(Skip = "Flacky in CI")]
+    [Fact(Skip = "Flaky in CI")]
     public async Task FirstProbeTimeoutTest()
     {
         await RunProbeTests(new TestData()
@@ -196,7 +196,7 @@ public class BackOffPolicyFacts(ITestOutputHelper output) : VerifiableLoggedTest
     }
 
     // To avoid very repetitive code we parametrize a generic test
-    // with different inputs and different expNextIntected results
+    // with different inputs and different expected results
     public class ProbeParam
     {
         // delay before calling the probe (to control the order of calls)

@@ -134,12 +134,12 @@ public class ServiceHubDispatcherTests
             StopIndex = Interlocked.Increment(ref _index.Value);
         }
 
-        public Task<bool> WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default)
+        public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
-        public Task WriteAsync(ServiceMessage seviceMessage)
+        public Task WriteAsync(ServiceMessage serviceMessage)
         {
             throw new NotImplementedException();
         }

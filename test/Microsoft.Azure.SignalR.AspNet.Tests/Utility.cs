@@ -23,7 +23,7 @@ internal static class Utility
         resolver.Register(typeof(ILoggerFactory), () => loggerFactory);
         var hubConfig = new HubConfiguration
         {
-            // Resolver is shared in GloblHost, use a new one instead
+            // Resolver is shared in GlobalHost, use a new one instead
             Resolver = resolver
         };
 

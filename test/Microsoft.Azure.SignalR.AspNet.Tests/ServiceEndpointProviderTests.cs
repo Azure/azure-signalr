@@ -128,7 +128,7 @@ public class ServiceEndpointProviderTests
     [Theory]
     [InlineData(AccessTokenAlgorithm.HS256)]
     [InlineData(AccessTokenAlgorithm.HS512)]
-    public async Task TestGenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+    public async Task TestGenerateServerAccessTokenWithSpecifiedAlgorithm(AccessTokenAlgorithm algorithm)
     {
         var connectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
         var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
@@ -143,7 +143,7 @@ public class ServiceEndpointProviderTests
     [Theory]
     [InlineData(AccessTokenAlgorithm.HS256)]
     [InlineData(AccessTokenAlgorithm.HS512)]
-    public async Task TestGenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+    public async Task TestGenerateClientAccessTokenWithSpecifiedAlgorithm(AccessTokenAlgorithm algorithm)
     {
         var connectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
         var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });

@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         /// <summary>
         /// Reply from the app server to ASRS.
-        /// Ackknowledge that the message sending towards ASRS has been pasued.
+        /// Acknowledge that the message sending towards ASRS has been paused.
         /// </summary>
         PauseAck = 2,
 
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string? Token { get; set; }
 
         /// <summary>
-        /// Gets or sets the key Id.
+        /// Gets or sets the key ID.
         /// <c>null</c>
         /// </summary>
         public string? Kid { get; set; }
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class AccessKeyResponseMessage : ExtensibleServiceMessage
     {
         /// <summary>
-        /// Gets or sets the key Id.
+        /// Gets or sets the key ID.
         /// </summary>
         public string? Kid { get; set; }
 
@@ -336,7 +336,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <list type="bullet">
         /// <item>0, Default, it can carry clients, service runtime should always accept this kind of connection.</item>
         /// <item>1, OnDemand, creating when service requested more connections, it can carry clients, but it may be rejected by service runtime.</item>
-        /// <item>2, Weak, it can not carry clients, but it can send message.</item>
+        /// <item>2, Weak, it cannot carry clients, but it can send message.</item>
         /// </list>
         /// </value>
         public int ConnectionType { get; set; }
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the migratable flag.
         /// <value>
         /// <list type="bullet">
-        /// <item>0, Off, a client connection can not be migrated to another server.</item>
+        /// <item>0, Off, a client connection cannot be migrated to another server.</item>
         /// <item>1, ShutdownOnly, a client connection can be migrated only if the pairing server was shutdown gracefully.</item>
         /// <item>2, Any, a client connection can be migrated even if the pairing server connection was dropped accidentally. (may cause data loss)</item>
         /// </list>
@@ -520,7 +520,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="AckMessage"/> class.
         /// </summary>
-        /// <param name="ackId">The ack Id</param>
+        /// <param name="ackId">The ack ID</param>
         /// <param name="status">The status code</param>
         public AckMessage(int ackId, int status) : this(ackId, status, string.Empty)
         {
@@ -529,7 +529,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="AckMessage"/> class.
         /// </summary>
-        /// <param name="ackId">The ack Id</param>
+        /// <param name="ackId">The ack ID</param>
         /// <param name="status">The status code</param>
         /// <param name="message">The ack message</param>
         public AckMessage(int ackId, int status, string? message)
@@ -546,26 +546,26 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class ServiceMappingMessage : ExtensibleServiceMessage
     {
         /// <summary>
-        /// Gets or sets the invocation Id.
+        /// Gets or sets the invocation ID.
         /// </summary>
         public string InvocationId { get; set; }
 
         /// <summary>
-        /// Gets or sets the connection Id.
+        /// Gets or sets the connection ID.
         /// </summary>
         public string ConnectionId { get; set; }
 
         /// <summary>
-        /// Gets or set the service instance Id.
+        /// Gets or set the service instance ID.
         /// </summary>
         public string InstanceId { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceMappingMessage"/> class.
         /// </summary>
-        /// <param name="invocationId">The invocation Id.</param>
-        /// <param name="connectionId">The connection Id.</param>
-        /// <param name="instanceId">The service instance Id.</param>
+        /// <param name="invocationId">The invocation ID.</param>
+        /// <param name="connectionId">The connection ID.</param>
+        /// <param name="instanceId">The service instance ID.</param>
         public ServiceMappingMessage(string invocationId, string connectionId, string instanceId)
         {
             InvocationId = invocationId;
@@ -601,8 +601,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         public int? Top { get; set; }
 
         /// <summary>
-        /// A token to indiate the start point of results.
-        /// This parameter is provided by the service in the response of a previous request when there are additional results to be fetched. 
+        /// A token to indicate the start point of results.
+        /// This parameter is provided by the service in the response of a previous request when there are additional results to be fetched.
         /// Clients should include the continuationToken in the next request to receive the subsequent page of data. If this parameter is omitted, the server will return the first page of results.
         /// </summary>
         public string? ContinuationToken { get; set; }

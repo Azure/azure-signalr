@@ -399,7 +399,7 @@ public class DependencyInjectionExtensionFacts
                             }
                             else
                             {
-                                throw new InvalidOperationException("Message tracing Id header is missing");
+                                throw new InvalidOperationException("Message tracing ID header is missing");
                             }
                         })))
             .BuildServiceManager()
@@ -427,7 +427,7 @@ public class DependencyInjectionExtensionFacts
                         {
                             if (message.Headers.TryGetValues(Constants.Headers.AsrsMessageTracingId, out var values))
                             {
-                                throw new InvalidOperationException("Message tracing Id header is not expected");
+                                throw new InvalidOperationException("Message tracing ID header is not expected");
                             }
                         })))
             .BuildServiceManager()

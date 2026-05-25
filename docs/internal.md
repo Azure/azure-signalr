@@ -1,3 +1,3 @@
 # Internals of Azure SignalR Service
 
-This article has been moved to [here](https://docs.microsoft.com/azure/azure-signalr/signalr-concept-internals).
+This article has been moved to [Azure SignalR Service internals (learn.microsoft.com)](https://learn.microsoft.com/azure/azure-signalr/signalr-concept-internals).

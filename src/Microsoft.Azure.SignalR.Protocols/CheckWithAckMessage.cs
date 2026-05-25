@@ -15,7 +15,7 @@ public abstract class CheckWithAckMessage : ExtensibleServiceMessage, IAckableMe
     public int AckId { get; set; }
 
     /// <summary>
-    /// Gets or sets the tracing Id
+    /// Gets or sets the tracing ID
     /// </summary>
     public ulong? TracingId { get; set; }
 
@@ -32,7 +32,7 @@ public abstract class CheckWithAckMessage : ExtensibleServiceMessage, IAckableMe
 public class CheckUserInGroupWithAckMessage : CheckWithAckMessage, IPartitionableMessage
 {
     /// <summary>
-    /// Gets or sets the user Id.
+    /// Gets or sets the user ID.
     /// </summary>
     public string UserId { get; set; }
 
@@ -45,10 +45,10 @@ public class CheckUserInGroupWithAckMessage : CheckWithAckMessage, IPartitionabl
     /// <summary>
     /// Initializes a new instance of the <see cref="CheckUserInGroupWithAckMessage"/> class.
     /// </summary>
-    /// <param name="userId">The user Id.</param>
-    /// <param name="groupName">The group name to check whether the user is in or not.</param>
-    /// <param name="ackId">The ack Id.</param>
-    /// <param name="tracingId">The tracing Id of the message.</param>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="groupName">The group name to check the user for membership.</param>
+    /// <param name="ackId">The ack ID.</param>
+    /// <param name="tracingId">The tracing ID of the message.</param>
     public CheckUserInGroupWithAckMessage(string userId, string groupName, int ackId = 0, ulong? tracingId = null) : base(ackId, tracingId)
     {
         UserId = userId;
@@ -72,8 +72,8 @@ public class CheckGroupExistenceWithAckMessage : CheckWithAckMessage, IPartition
     /// Initializes a new instance of the <see cref="CheckGroupExistenceWithAckMessage"/> class.
     /// </summary>
     /// <param name="groupName">The group name.</param>
-    /// <param name="ackId">The ack Id</param>
-    /// <param name="tracingId">The tracing Id of the message.</param>
+    /// <param name="ackId">The ack ID</param>
+    /// <param name="tracingId">The tracing ID of the message.</param>
     public CheckGroupExistenceWithAckMessage(string groupName, int ackId = 0, ulong? tracingId = null) : base(ackId, tracingId)
     {
         GroupName = groupName;
@@ -86,16 +86,16 @@ public class CheckGroupExistenceWithAckMessage : CheckWithAckMessage, IPartition
 public class CheckConnectionExistenceWithAckMessage : CheckWithAckMessage
 {
     /// <summary>
-    /// Gets or sets the connection Id.
+    /// Gets or sets the connection ID.
     /// </summary>
     public string ConnectionId { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CheckConnectionExistenceWithAckMessage"/> class.
     /// </summary>
-    /// <param name="connectionId">The connection Id.</param>
-    /// <param name="ackId">The ack Id</param>
-    /// <param name="tracingId">The tracing Id of the message.</param>
+    /// <param name="connectionId">The connection ID.</param>
+    /// <param name="ackId">The ack ID</param>
+    /// <param name="tracingId">The tracing ID of the message.</param>
     public CheckConnectionExistenceWithAckMessage(string connectionId, int ackId = 0, ulong? tracingId = null) : base(ackId, tracingId)
     {
         ConnectionId = connectionId;
@@ -108,7 +108,7 @@ public class CheckConnectionExistenceWithAckMessage : CheckWithAckMessage
 public class CheckUserExistenceWithAckMessage : CheckWithAckMessage, IPartitionableMessage
 {
     /// <summary>
-    /// Gets or sets the user Id.
+    /// Gets or sets the user ID.
     /// </summary>
     public string UserId { get; set; }
     public byte PartitionKey => GeneratePartitionKey(UserId);
@@ -116,9 +116,9 @@ public class CheckUserExistenceWithAckMessage : CheckWithAckMessage, IPartitiona
     /// <summary>
     /// Initializes a new instance of the <see cref="CheckUserExistenceWithAckMessage"/> class.
     /// </summary>
-    /// <param name="userId">The user Id.</param>
-    /// <param name="ackId">The ack Id</param>
-    /// <param name="tracingId">The tracing Id of the message.</param>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="ackId">The ack ID</param>
+    /// <param name="tracingId">The tracing ID of the message.</param>
     public CheckUserExistenceWithAckMessage(string userId, int ackId = 0, ulong? tracingId = null) : base(ackId, tracingId)
     {
         UserId = userId;

@@ -95,7 +95,7 @@
           {
             "name": "id",
             "in": "path",
-            "description": "The user Id.",
+            "description": "The user ID.",
             "required": true,
             "schema": {
               "type": "string"
@@ -149,7 +149,7 @@
           {
             "name": "connectionId",
             "in": "path",
-            "description": "The connection Id.",
+            "description": "The connection ID.",
             "required": true,
             "schema": {
               "type": "string"
@@ -584,7 +584,7 @@
           {
             "name": "connectionId",
             "in": "path",
-            "description": "Target connection Id",
+            "description": "Target connection ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -638,7 +638,7 @@
           {
             "name": "connectionId",
             "in": "path",
-            "description": "Target connection Id",
+            "description": "Target connection ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -694,7 +694,7 @@
           {
             "name": "user",
             "in": "path",
-            "description": "Target user Id",
+            "description": "Target user ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -748,7 +748,7 @@
           {
             "name": "user",
             "in": "path",
-            "description": "Target user Id",
+            "description": "Target user ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -802,7 +802,7 @@
           {
             "name": "user",
             "in": "path",
-            "description": "Target user Id",
+            "description": "Target user ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -862,7 +862,7 @@
           {
             "name": "user",
             "in": "path",
-            "description": "Target user Id",
+            "description": "Target user ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -906,7 +906,7 @@
           {
             "name": "user",
             "in": "path",
-            "description": "Target user Id",
+            "description": "Target user ID",
             "required": true,
             "schema": {
               "type": "string"

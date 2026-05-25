@@ -12,7 +12,7 @@ using System.Security.Claims;
 namespace Microsoft.Azure.SignalR;
 
 /// <summary>
-/// Defines the inbound and outbound mapping for claim claim types from jwt to .net claim 
+/// Defines the inbound and outbound mapping for claim types from jwt to .net claim 
 /// </summary>
 internal static class ClaimTypeMapping
 {

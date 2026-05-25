@@ -40,7 +40,7 @@ public class ServiceManagerFacts
 
     private static readonly ServiceTransportType[] ServiceTransportTypes = [ServiceTransportType.Transient, ServiceTransportType.Persistent];
 
-    private static readonly bool[] UseLoggerFatories = [false, true];
+    private static readonly bool[] UseLoggerFactories = [false, true];
 
     private static readonly string[] AppNames = ["appName", "", null];
 
@@ -51,7 +51,7 @@ public class ServiceManagerFacts
     private static readonly int[] ConnectionCounts = [1, 2];
 
     public static IEnumerable<object[]> TestServiceManagerOptionData => from transport in ServiceTransportTypes
-                                                                        from useLoggerFactory in UseLoggerFatories
+                                                                        from useLoggerFactory in UseLoggerFactories
                                                                         from appName in AppNames
                                                                         from connectionCount in ConnectionCounts
                                                                         select new object[] { transport, useLoggerFactory, appName, connectionCount };
@@ -151,7 +151,7 @@ public class ServiceManagerFacts
 
     [Theory(Skip = "Reenable when it is ready")]
     [MemberData(nameof(TestServiceManagerOptionData))]
-    internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFacory, string appName, int connectionCount)
+    internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFactory, string appName, int connectionCount)
     {
         var builder = new ServiceManagerBuilder()
             .WithOptions(o =>
@@ -163,7 +163,7 @@ public class ServiceManagerFacts
             });
         var serviceManager = builder.Build();
 
-        using var loggerFactory = useLoggerFacory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance;
+        using var loggerFactory = useLoggerFactory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance;
         var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
     }
 

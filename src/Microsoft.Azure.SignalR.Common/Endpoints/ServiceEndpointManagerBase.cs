@@ -58,7 +58,7 @@ internal abstract class ServiceEndpointManagerBase : IServiceEndpointManager
                 return items[0];
             }
 
-            // By default pick up the primary endpoint, otherwise the first one
+            // By default pick up the primary endpoint; otherwise, the first one
             var item = items.FirstOrDefault(i => i.EndpointType == EndpointType.Primary) ?? items.FirstOrDefault();
             Log.DuplicateEndpointFound(_logger, items.Count, item?.Endpoint, item?.ToString());
             return item;

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests;
 
 public class ServiceHubContextE2EFacts : VerifiableLoggedTest
 {
-    private const string HubName = "ManagemnetTestHub";
+    private const string HubName = "ManagementTestHub";
     private const string MethodName = "SendMessage";
     private const string Message = "Hello client, have a nice day!";
     private const int ClientConnectionCount = 4;
@@ -500,7 +500,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     [MemberData(nameof(TestData))]
     public async Task CloseConnectionTest(ServiceTransportType serviceTransportType, string appName)
     {
-        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we cannot use VerifiableLog
         using (StartLog(out var loggerFactory))
         {
             ServiceHubContext serviceHubContext = null;
@@ -548,7 +548,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     [InlineData(Management.ServiceTransportType.Persistent)]
     public async Task CheckConnectionExistsTest(ServiceTransportType serviceTransportType)
     {
-        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we cannot use VerifiableLog
         ServiceHubContext serviceHubContext = null;
         using (StartLog(out var loggerFactory))
         {
@@ -594,7 +594,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     [InlineData(Management.ServiceTransportType.Persistent)]
     public async Task CheckUserExistsTest(ServiceTransportType serviceTransportType)
     {
-        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we cannot use VerifiableLog
         ServiceHubContext serviceHubContext = null;
         using (StartLog(out var loggerFactory))
         {
@@ -640,7 +640,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     [InlineData(Management.ServiceTransportType.Persistent)]
     public async Task CheckGroupExistsTest(ServiceTransportType serviceTransportType)
     {
-        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+        //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we cannot use VerifiableLog
         ServiceHubContext serviceHubContext = null;
         using (StartLog(out var loggerFactory))
         {
@@ -940,8 +940,8 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
             .BuildServiceManager();
         using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
         var groupName = nameof(ListConnectionsInGroupTest) + Guid.NewGuid().ToString();
-        var negotationResponse = await hubContext.NegotiateAsync();
-        var clientConnections = await CreateAndStartClientConnections(negotationResponse.Url, Enumerable.Repeat(negotationResponse.AccessToken, totalConnectionCount));
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnections = await CreateAndStartClientConnections(negotiationResponse.Url, Enumerable.Repeat(negotiationResponse.AccessToken, totalConnectionCount));
         foreach (var connection in clientConnections)
         {
             await hubContext.Groups.AddToGroupAsync(connection.ConnectionId, groupName);

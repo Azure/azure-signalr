@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
         public abstract UserGroupManager UserGroups { get; }
 
         /// <summary>
-        /// Gets a <see cref="ClientManager"/> that can be used to manange client connections.
+        /// Gets a <see cref="ClientManager"/> that can be used to manage client connections.
         /// </summary>
         public abstract ClientManager ClientManager { get; }
 

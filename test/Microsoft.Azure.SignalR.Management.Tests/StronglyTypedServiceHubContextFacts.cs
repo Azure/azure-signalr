@@ -53,10 +53,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         public async Task TestNegotiateAsync(ServiceTransportType serviceTransportType)
         {
             await using var hubContext = await Create(serviceTransportType);
-            var negotaiteResponse = await hubContext.NegotiateAsync();
-            Assert.NotNull(negotaiteResponse);
-            Assert.NotNull(negotaiteResponse.AccessToken);
-            Assert.NotNull(negotaiteResponse.Url);
+            var negotiateResponse = await hubContext.NegotiateAsync();
+            Assert.NotNull(negotiateResponse);
+            Assert.NotNull(negotiateResponse.AccessToken);
+            Assert.NotNull(negotiateResponse.Url);
         }
 
         #region Test IHubContext<T>

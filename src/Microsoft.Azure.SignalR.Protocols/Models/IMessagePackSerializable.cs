@@ -8,7 +8,7 @@ internal interface IMessagePackSerializable
 {
     void Serialize(ref MessagePackWriter writer);
 
-    //.NET Standard 2.0 dones't support static abstract members.
+    //.NET Standard 2.0 doesn't support static abstract members.
     //As a workaround, we have to new an instance, and then load members from reader.
     void Load(ref MessagePackReader reader, string fieldName);
 }

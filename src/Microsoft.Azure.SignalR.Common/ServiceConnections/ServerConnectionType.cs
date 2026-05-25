@@ -14,7 +14,7 @@ internal enum ServiceConnectionType
     /// </summary>
     OnDemand = 1,
     /// <summary>
-    /// 2, Weak, it can not carry clients, but it can send message
+    /// 2, Weak, it cannot carry clients, but it can send message
     /// </summary>
     Weak = 2,
 }

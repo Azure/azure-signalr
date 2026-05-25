@@ -5,7 +5,7 @@ namespace System.Threading.Tasks;
 
 #nullable enable
 
-internal static class TaskExtenstions
+internal static class TaskExtensions
 {
     public static async Task OrCancelAsync(this Task task, CancellationToken token, string? message = null)
     {

@@ -296,15 +296,15 @@ public class ServiceConnectionFacts
         await Task.Delay(TimeSpan.FromSeconds(6));
 
         await proxy.WriteMessageAsync(new PingMessage());
-        // Check server PingMessage will send after reveive service PingMessage
+        // Check server PingMessage will send after receive service PingMessage
         await pingMessageTask.OrTimeout();
 
-        // Wait another 6 sec and recived connection message will also trigger ping
+        // Wait another 6 sec and received connection message will also trigger ping
         pingMessageTask = proxy.WaitForApplicationMessageAsync(typeof(PingMessage));
         await Task.Delay(TimeSpan.FromSeconds(6));
         await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
-        // Check server PingMessage will send after reveive service PingMessage
+        // Check server PingMessage will send after receive service PingMessage
         await pingMessageTask.OrTimeout();
 
         proxy.Stop();
@@ -365,7 +365,7 @@ public class ServiceConnectionFacts
     /// <summary>
     /// Service connection should reconnecting to service after receiving a handshake response with error message.
     /// </summary>
-    [Fact(Skip = "Flacky in CI")]
+    [Fact(Skip = "Flaky in CI")]
     public async Task ReconnectAfterReceivingHandshakeErrorMessage()
     {
         var proxy = new ServiceConnectionProxy(connectionFactoryCallback: c => new TestConnectionFactoryWithHandshakeError(c));
@@ -445,7 +445,7 @@ public class ServiceConnectionFacts
     }
 
     /// <summary>
-    /// Service connection should handle specific ping message and create a on-demand connection.
+    /// Service connection should handle specific ping message and create an on-demand connection.
     /// On-demand connection won't reconnect after disconnection.
     /// </summary>
     /// <returns></returns>
@@ -458,7 +458,7 @@ public class ServiceConnectionFacts
         _ = proxy.StartAsync();
         await serverTask1.OrTimeout();
 
-        // Try to send a ping message to ask for a on-demand connection
+        // Try to send a ping message to ask for an on-demand connection
         var serverTask2 = proxy.WaitForServerConnectionAsync(2);
 
         var target = "Target";
@@ -479,7 +479,7 @@ public class ServiceConnectionFacts
     }
 
     /// <summary>
-    /// If there's on-demand connection, default connection won't restart but promote a on-demand
+    /// If there's on-demand connection, default connection won't restart but promote an on-demand
     /// connection to default.
     /// </summary>
     /// <returns></returns>

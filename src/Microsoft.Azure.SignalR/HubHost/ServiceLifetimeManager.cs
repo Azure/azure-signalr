@@ -202,7 +202,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             // don't use ConnectionDataMessage here, since handshake message is also wrapped into ConnectionDataMessage.
-            // otherwise it may cause the handshake failure due to hub invocation message is sent to client before handshake message, when there's high preasure on server.
+            // otherwise it may cause the handshake failure due to hub invocation message is sent to client before handshake message, when there's high pressure on server.
             // do use ConnectionDataMessage when the message is sent from client.
             var message = new MultiConnectionDataMessage(new[] { connectionId }, payloads).WithTracingId();
             if (message.TracingId != null)

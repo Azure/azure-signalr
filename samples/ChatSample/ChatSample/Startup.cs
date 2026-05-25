@@ -25,13 +25,13 @@ public class Startup
     private const string Endpoint = "https://<resource-name>.service.signalr.net";
 
     /// <summary>
-    /// Should be the Directory (tenant) ID of your Azure SignalR resource is in.
+    /// Should be the ID of the Directory (tenant) containing your Azure SignalR resource.
     /// In most cases, it should be the same with the application Tenant ID.
     /// </summary>
     private const string TenantId = "";
 
     /// <summary>
-    /// Should be the Application (client) ID of a app registrations.
+    /// Should be the ID of the Application (client) for your app registration.
     /// Or the Application ID of an enterprise application that you provisioned from other tenants.
     /// </summary>
     private const string AppClientId = "";

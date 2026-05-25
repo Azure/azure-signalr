@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         }
 
         /// <summary>
-        /// Gets or sets the connection Id.
+        /// Gets or sets the connection ID.
         /// </summary>
         public string ConnectionId { get; set; }
     }
@@ -33,14 +33,14 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class OpenConnectionMessage : ConnectionMessage, IHasProtocol, IMessageWithTracingId
     {
         /// <summary>
-        /// Gets or sets the tracing Id
+        /// Gets or sets the tracing ID
         /// </summary>
         public ulong? TracingId { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OpenConnectionMessage"/> class.
         /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="claims">An array of <see cref="Claim"/> associated with the connection.</param>
         public OpenConnectionMessage(string connectionId, Claim[]? claims)
             : this(connectionId, claims, new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase), string.Empty)
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="OpenConnectionMessage"/> class.
         /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="claims">An array of <see cref="Claim"/> associated with the connection.</param>
         /// <param name="headers">A <see cref="IDictionary{TKey,TValue}"/> associated with the connection.</param>
         /// <param name="queryString">Query string associated with the connection.</param>
@@ -89,14 +89,14 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class CloseConnectionMessage : ConnectionMessage, IMessageWithTracingId
     {
         /// <summary>
-        /// Gets or sets the tracing Id
+        /// Gets or sets the tracing ID
         /// </summary>
         public ulong? TracingId { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CloseConnectionMessage"/> class.
         /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="errorMessage">Optional error message.</param>
         /// <param name="headers">A <see cref="IDictionary{TKey,TValue}"/> associated with the connection.</param>
         public CloseConnectionMessage(string connectionId, string? errorMessage, IDictionary<string, StringValues>? headers = null) : base(connectionId)
@@ -132,9 +132,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionDataMessage"/> class.
         /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="payload">Binary data to be delivered.</param>
-        /// <param name="tracingId">The tracing Id of the message</param>
+        /// <param name="tracingId">The tracing ID of the message</param>
         public ConnectionDataMessage(string connectionId, ReadOnlyMemory<byte> payload, ulong? tracingId = null)
             : this(connectionId, new ReadOnlySequence<byte>(payload), tracingId)
         {
@@ -143,9 +143,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionDataMessage"/> class.
         /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         /// <param name="payload">Binary data to be delivered.</param>
-        /// <param name="tracingId">The tracing Id of the message</param>
+        /// <param name="tracingId">The tracing ID of the message</param>
         public ConnectionDataMessage(string connectionId, ReadOnlySequence<byte> payload, ulong? tracingId = null) : base(connectionId)
         {
             Payload = payload;
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionReconnectMessage"/> class.
         /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="connectionId">The connection ID.</param>
         public ConnectionReconnectMessage(string connectionId) : base(connectionId) { }
     }
 
@@ -201,12 +201,12 @@ namespace Microsoft.Azure.SignalR.Protocol
         }
 
         /// <summary>
-        /// Gets or sets the client invocation Id of pending connection.
+        /// Gets or sets the client invocation ID of pending connection.
         /// </summary>
         public string InvocationId { get; set; }
 
         /// <summary>
-        /// Gets or sets the server Id which parse the completion message.
+        /// Gets or sets the server ID which parse the completion message.
         /// </summary>
         public string CallerServerId { get; set; }
 
@@ -224,12 +224,12 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initialize a new instance of <see cref="ClientCompletionMessage"/> class.
         /// </summary>
-        /// <param name="invocationId">The Id of the invocation that has completed.</param>
-        /// <param name="connectionId">The client connection Id that complete the invocation.</param>
+        /// <param name="invocationId">The ID of the invocation that has completed.</param>
+        /// <param name="connectionId">The client connection ID that complete the invocation.</param>
         /// <param name="callerServerId">The serverId that wrap the completion result.</param>
         /// <param name="protocol">The protocol of the connection.</param>
         /// <param name="payload">The payload of the completion result.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public ClientCompletionMessage(string invocationId, string connectionId, string callerServerId, string? protocol, ReadOnlyMemory<byte> payload, ulong? tracingId = null)
             : base(invocationId, connectionId, callerServerId, tracingId)
         {
@@ -256,11 +256,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initialize a new instance of <see cref="ClientCompletionMessage"/> class with error information.
         /// </summary>
-        /// <param name="invocationId">The Id of the invocation that has completed.</param>
-        /// <param name="connectionId">The client connection Id that complete the invocation.</param>
+        /// <param name="invocationId">The ID of the invocation that has completed.</param>
+        /// <param name="connectionId">The client connection ID that complete the invocation.</param>
         /// <param name="callerServerId">The serverId that wrap the completion result.</param>
-        /// <param name="error">The error information about invacation failure.</param>
-        /// <param name="tracingId">The tracing Id of the message.</param>
+        /// <param name="error">The error information about invocation failure.</param>
+        /// <param name="tracingId">The tracing ID of the message.</param>
         public ErrorCompletionMessage(string invocationId, string connectionId, string callerServerId, string? error, ulong? tracingId = null)
             : base(invocationId, connectionId, callerServerId, tracingId)
         {

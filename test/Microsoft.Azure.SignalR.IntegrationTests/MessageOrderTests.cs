@@ -61,11 +61,11 @@ public class MessageOrderTests(ITestOutputHelper output) : VerifiableLoggedTest(
             Assert.NotNull(svcConn.SDKSideServiceConnection);
             wrList.Add(new WeakReference(svcConn.SDKSideServiceConnection));
 
-            Assert.NotNull(svcConn.SDKSideServiceConnection.MyMockServiceConnetion);
-            wrList.Add(new WeakReference(svcConn.SDKSideServiceConnection.MyMockServiceConnetion));
+            Assert.NotNull(svcConn.SDKSideServiceConnection.MyMockServiceConnection);
+            wrList.Add(new WeakReference(svcConn.SDKSideServiceConnection.MyMockServiceConnection));
 
-            Assert.NotNull(svcConn.SDKSideServiceConnection.MyMockServiceConnetion.InnerServiceConnection);
-            wrList.Add(new WeakReference(svcConn.SDKSideServiceConnection.MyMockServiceConnetion.InnerServiceConnection));
+            Assert.NotNull(svcConn.SDKSideServiceConnection.MyMockServiceConnection.InnerServiceConnection);
+            wrList.Add(new WeakReference(svcConn.SDKSideServiceConnection.MyMockServiceConnection.InnerServiceConnection));
 
             Assert.NotNull(svcConn.Endpoint);
             wrList.Add(new WeakReference(svcConn.Endpoint));
@@ -169,7 +169,7 @@ public class MessageOrderTests(ITestOutputHelper output) : VerifiableLoggedTest(
         Assert.Equal(msgNum, primary.FirstOrDefault().Value);
 
         // for every secondary that received the messages verify that
-        // - their number equals to the number of seconary endpoints
+        // - their number equals the number of secondary endpoints
         // - each received N messages
         var secondary = counts.Where(c => c.Key.Endpoint.EndpointType == EndpointType.Secondary);
         var secondaryEndpoints = MockServiceMessageOrderTestParams.ServiceEndpoints.Where(ep => ep.EndpointType == EndpointType.Secondary);
@@ -246,7 +246,7 @@ public class MessageOrderTests(ITestOutputHelper output) : VerifiableLoggedTest(
         Assert.Equal(msgNum, primary.FirstOrDefault().Value);
 
         // for every secondary verify that
-        // - their number equals to the number of seconary endpoints
+        // - their number equals the number of secondary endpoints
         // - each received MsgNum messages
         // - each of the secondary ones is not the same as the original selection
         var secondary = counts.Where(c => c.Key.Endpoint.EndpointType == EndpointType.Secondary);
@@ -306,7 +306,7 @@ public class MessageOrderTests(ITestOutputHelper output) : VerifiableLoggedTest(
         Assert.Equal(msgNum + countOffset, primary.FirstOrDefault().Value);
 
         // for every secondary verify that
-        // - their number equals to the number of seconary endpoints
+        // - their number equals the number of secondary endpoints
         // - each received N + 2 messages
         // - each of the secondary ones is the same as the original selection
         var secondary = counts.Where(c => c.Key.Endpoint.EndpointType == EndpointType.Secondary);
@@ -379,7 +379,7 @@ public class MessageOrderTests(ITestOutputHelper output) : VerifiableLoggedTest(
     }
 
     // Config hot reload allows adding & removing endpoints and corresponding service connections
-    // This test verifies that when new endpoits are added, they will be selected for new connections.
+    // This test verifies that when new endpoints are added, they will be selected for new connections.
     // When old endpoints are removed, the corresponding previously used connections are not leaked.
     //
     // The test makes a service connection C over endpoint E, then makes a hub call which runs a new task.
@@ -388,7 +388,7 @@ public class MessageOrderTests(ITestOutputHelper output) : VerifiableLoggedTest(
     // However the task spawned in the hub call still carries the previous connection selection information.
     //
     // To verify that there are no leaks after the hot reload we wrap the references to the old connection C and endpoint E
-    // in weak reference handles and induce a full GC. Then we check if the the weak references targets are nulled out.
+    // in weak reference handles and induce a full GC. Then we check if the weak references targets are nulled out.
     [RetryFact]
     public async Task PreviouslyUsedServiceConnectionsNotLeakedAfterHotReload2()
     {

@@ -71,7 +71,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private readonly TaskCompletionSource<object> _connectionEndTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private readonly TaskCompletionSource<object> _hanshakeCompleteTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object> _handshakeCompleteTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly CancellationTokenSource _abortOutgoingCts = new();
 
@@ -130,7 +130,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     public Task LifetimeTask => _connectionEndTcs.Task;
 
-    public Task HandshakeResponseTask => _hanshakeCompleteTcs.Task;
+    public Task HandshakeResponseTask => _handshakeCompleteTcs.Task;
 
     public HttpContext HttpContext { get; set; }
 
@@ -157,7 +157,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
         User = serviceMessage.GetUserPrincipal();
         InstanceId = GetInstanceId(serviceMessage.Headers);
 
-        // Create the Duplix Pipeline for the virtual connection
+        // Create the Duplex Pipeline for the virtual connection
         transportPipeOptions ??= DefaultPipeOptions;
         appPipeOptions ??= DefaultPipeOptions;
 
@@ -328,7 +328,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
                                     _ => throw new ForwardMessageException(forwardResult),
                                 };
                             }
-                            _hanshakeCompleteTcs.TrySetResult(null);
+                            _handshakeCompleteTcs.TrySetResult(null);
                         }
                     }
                     if (HandshakeResponseTask.IsCompleted)

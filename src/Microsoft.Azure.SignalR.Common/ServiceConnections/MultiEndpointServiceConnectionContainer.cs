@@ -341,11 +341,11 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
             var container = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint && e.EndpointType == endpoint.EndpointType);
             if (container == null)
             {
-                Log.EndpointNotExists(_logger, endpoint.ToString());
+                Log.NonexistentEndpoint(_logger, endpoint.ToString());
                 return;
             }
 
-            // TDOO: shall we pass in cancellation token here?
+            // TODO: shall we pass in cancellation token here?
             _ = container.ConnectionContainer.OfflineAsync(GracefulShutdownMode.Off, default);
             await WaitForClientsDisconnect(container);
 
@@ -460,13 +460,13 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
             LoggerMessage.Define<string>(LogLevel.Debug, new EventId(2, "StoppingConnection"), "Stopping connections for endpoint {endpoint}.");
 
         private static readonly Action<ILogger, string, Exception> EndpointNotExistsAction =
-            LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "EndpointNotExists"), "Endpoint {endpoint} from the router does not exists.");
+            LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "EndpointNotExists"), "Endpoint {endpoint} from the router does not exist.");
 
         private static readonly Action<ILogger, string, Exception> FailedStartingConnectionForNewEndpointAction =
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, "FailedStartingConnectionForNewEndpoint"), "Fail to create and start server connection for new endpoint {endpoint}.");
 
         private static readonly Action<ILogger, string, int, Exception> TimeoutWaitingForAddingEndpointAction =
-            LoggerMessage.Define<string, int>(LogLevel.Error, new EventId(8, "TimeoutWaitingForAddingEndpoint"), "Timeout waiting for add a new endpoint {endpoint} in {timeoutSecond} seconds. Check if app configurations are consistant and restart app server.");
+            LoggerMessage.Define<string, int>(LogLevel.Error, new EventId(8, "TimeoutWaitingForAddingEndpoint"), "Timeout waiting for add a new endpoint {endpoint} in {timeoutSecond} seconds. Check if app configurations are consistent and restart app server.");
 
         private static readonly Action<ILogger, string, int, Exception> TimeoutWaitingClientsDisconnectAction =
            LoggerMessage.Define<string, int>(LogLevel.Error, new EventId(9, "TimeoutWaitingClientsDisconnect"), "Timeout waiting for clients disconnect for {endpoint} in {timeoutSecond} seconds.");
@@ -484,7 +484,7 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
             StoppingConnectionAction(logger, endpoint, null);
         }
 
-        public static void EndpointNotExists(ILogger logger, string endpoint)
+        public static void NonexistentEndpoint(ILogger logger, string endpoint)
         {
             EndpointNotExistsAction(logger, endpoint, null);
         }

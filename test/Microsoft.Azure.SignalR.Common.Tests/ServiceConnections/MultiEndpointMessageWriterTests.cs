@@ -30,7 +30,7 @@ public class MultiEndpointMessageWriterTests
         for (var i = 0; i < 2; i++)
         {
             var endpoint = new TestHubServiceEndpoint();
-            var resultFromConnectioContainer = MockAsyncEnumerable<SignalRGroupMember>.From(new GroupMemberQueryResultPage([
+            var resultFromConnectionContainer = MockAsyncEnumerable<SignalRGroupMember>.From(new GroupMemberQueryResultPage([
                 new SignalRGroupMember("1"),
                 new SignalRGroupMember("2"),
                 new SignalRGroupMember("3")],
@@ -39,7 +39,7 @@ public class MultiEndpointMessageWriterTests
             var containerMock = new Mock<IServiceConnectionContainer>();
             containerMocks.Add(containerMock);
             containerMock.Setup(c => c.ListConnectionsInGroupAsync(It.IsAny<string>(), It.IsAny<int?>(), null, null, default, default))
-                .Returns(resultFromConnectioContainer);
+                .Returns(resultFromConnectionContainer);
             endpoint.ConnectionContainer = containerMock.Object;
             targetEndpoints.Add(endpoint);
         }

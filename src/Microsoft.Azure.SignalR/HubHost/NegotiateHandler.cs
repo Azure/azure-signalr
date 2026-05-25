@@ -211,7 +211,7 @@ internal class NegotiateHandler<THub> where THub : Hub
             return Constants.Periods.DefaultHandshakeTimeout;
         }
 
-        // the custom handshake timeout is invalid, use default hanshake timeout instead
+        // the custom handshake timeout is invalid, use default handshake timeout instead
         if (timeout <= 0 || timeout > Constants.Periods.MaxCustomHandshakeTimeout)
         {
             Log.FailToSetCustomHandshakeTimeout(_logger, new ArgumentOutOfRangeException(nameof(handshakeTimeout)));

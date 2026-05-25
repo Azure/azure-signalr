@@ -21,19 +21,19 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Check if a connection exists asynchronously.
         /// </summary>
-        /// <returns>The created <see cref="System.Threading.Tasks.Task{TResult}">Task</see> that represents the asynchronous operation. True if the connection exists, otherwise false.</returns>
+        /// <returns>The created <see cref="System.Threading.Tasks.Task{TResult}">Task</see> that represents the asynchronous operation. True if the connection exists; otherwise, false.</returns>
         public abstract Task<bool> ConnectionExistsAsync(string connectionId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Check if any connections exists for a user asynchronously.
         /// </summary>
-        /// <returns>The created <see cref="System.Threading.Tasks.Task{TResult}">Task</see> that represents the asynchronous operation. True if any connection exists, otherwise false.</returns>
+        /// <returns>The created <see cref="System.Threading.Tasks.Task{TResult}">Task</see> that represents the asynchronous operation. True if any connection exists; otherwise, false.</returns>
         public abstract Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Check if any connections exists in a group asynchronously.
         /// </summary>
-        /// <returns>The created <see cref="System.Threading.Tasks.Task{TResult}">Task</see> that represents the asynchronous operation. True if any connection exists, otherwise false.</returns>
+        /// <returns>The created <see cref="System.Threading.Tasks.Task{TResult}">Task</see> that represents the asynchronous operation. True if any connection exists; otherwise, false.</returns>
         public abstract Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken = default);
     }
 }

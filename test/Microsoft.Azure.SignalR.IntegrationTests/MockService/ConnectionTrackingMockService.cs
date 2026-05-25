@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
         public Task AllConnectionsEstablished()
         {
             return Task.WhenAll(_serviceSideConnections.Select(
-                c => c.SDKSideServiceConnection.MyMockServiceConnetion.ConnectionInitializedTask));
+                c => c.SDKSideServiceConnection.MyMockServiceConnection.ConnectionInitializedTask));
         }
 
         public void RegisterSDKConnection(MockServiceConnection sdkSideConnection)
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 
                 // Found it! MockServiceConnectionContext, please meet the MockServiceConnection instance 
                 // which wraps ServiceConnection that is going to use you to send and receive messages 
-                sdkSideConnCtx.MyMockServiceConnetion = svcConnection;
+                sdkSideConnCtx.MyMockServiceConnection = svcConnection;
                 svcConnection.MyConnectionContext = sdkSideConnCtx;
 
                 // now fix the target

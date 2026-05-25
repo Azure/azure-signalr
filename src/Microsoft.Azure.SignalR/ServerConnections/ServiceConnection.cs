@@ -322,7 +322,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
                 // there is no need to write to the transport as application is no longer running
                 Log.WaitingForTransport(Logger);
 
-                // app task completes connection.Transport.Output, which will completes connection.Application.Input and ends the transport
+                // app task completes connection.Transport.Output, which will complete connection.Application.Input and ends the transport
                 // Transports are written by us and are well behaved, wait for them to drain
                 connection.CancelOutgoing(true);
                 // transport never throws

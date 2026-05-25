@@ -37,7 +37,7 @@ namespace Microsoft.Azure.SignalR.Management
         string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null);
 
         /// <summary>
-        /// Creates an client endpoint for SignalR hub connections to connect to Azure SignalR Service
+        /// Creates a client endpoint for SignalR hub connections to connect to Azure SignalR Service
         /// </summary>
         /// <param name="hubName">The hub name.</param>
         /// <returns>Client endpoint to Azure SignalR Service.</returns>
