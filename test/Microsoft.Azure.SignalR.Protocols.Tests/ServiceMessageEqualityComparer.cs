@@ -416,7 +416,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return StringEqual(x.ConnectionIdOrToken, y.ConnectionIdOrToken) &&
                 x.AckId == y.AckId &&
-                ClaimsEqual(x.Claims, y.Claims);
+                ClaimsEqual(x.Claims, y.Claims) &&
+                x.ExpireTime == y.ExpireTime;
         }
 
         private static bool StringEqual(string x, string y)
