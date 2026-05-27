@@ -404,10 +404,11 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
     public partial class RefreshAuthMessage : Microsoft.Azure.SignalR.Protocol.ExtensibleServiceMessage, Microsoft.Azure.SignalR.Protocol.IAckableMessage
     {
-        public RefreshAuthMessage(string connectionIdOrToken, System.Security.Claims.Claim[] claims, int ackId) { }
+        public RefreshAuthMessage(string connectionIdOrToken, System.Security.Claims.Claim[]? claims, System.DateTimeOffset expireTime, int ackId) { }
         public int AckId { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public System.Security.Claims.Claim[] Claims { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.Security.Claims.Claim[]? Claims { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
         public string ConnectionIdOrToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.DateTimeOffset ExpireTime { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
     }
     public abstract partial class ServiceCompletionMessage : Microsoft.Azure.SignalR.Protocol.ConnectionMessage, Microsoft.Azure.SignalR.Protocol.IMessageWithTracingId
     {
