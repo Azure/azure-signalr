@@ -4,6 +4,7 @@
 
 using System;
 using System.Buffers;
+using System.IO;
 
 using MessagePack;
 
@@ -211,6 +212,10 @@ namespace Microsoft.Azure.SignalR.Protocol
                     // todo : more optional fields
                     default:
                         // bypass unknown member.
+                        if (reader.NextMessagePackType == MessagePackType.Array || reader.NextMessagePackType == MessagePackType.Map)
+                        {
+                            throw new InvalidDataException("No complex data for extension members.");
+                        }
                         reader.Skip();
                         break;
                 }
