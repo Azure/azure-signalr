@@ -479,26 +479,43 @@ internal partial class ClientConnectionContext : ConnectionContext,
             {
                 var owner = ExactSizeMemoryPool.Shared.Rent((int)connectionDataMessage.Payload.Length);
                 connectionDataMessage.Payload.CopyTo(owner.Memory.Span);
-                // make sure there is no await operation before _bufferingMessages.
+                // make sure there is no await operation before _bufferingMessages.Enqueue.
                 _bufferedMessages.Enqueue(owner);
             }
             else
             {
-                long length = 0;
-                foreach (var owner in _bufferedMessages)
+                int length = 0;
+                if (_bufferedMessages.Count > 0)
                 {
-                    using (owner)
+                    length += (int)connectionDataMessage.Payload.Length;
+                    foreach (var buffered in _bufferedMessages)
                     {
-                        await WriteToApplicationAsync(new ReadOnlySequence<byte>(owner.Memory));
-                        length += owner.Memory.Length;
+                        length += buffered.Memory.Length;
                     }
+                    using var memoryOwner = ExactSizeMemoryPool.Shared.Rent(length);
+                    var destination = memoryOwner.Memory.Span;
+                    while (_bufferedMessages.Count > 0)
+                    {
+                        using var owner = _bufferedMessages.Dequeue();
+                        owner.Memory.Span.CopyTo(destination);
+                        destination = destination.Slice(owner.Memory.Length);
+                    }
+                    foreach (var memory in connectionDataMessage.Payload)
+                    {
+                        memory.Span.CopyTo(destination);
+                        destination = destination.Slice(memory.Length);
+                    }
+                    // make sure there is no await operation before WriteToApplicationAsync.
+                    await WriteToApplicationAsync(new ReadOnlySequence<byte>(memoryOwner.Memory));
                 }
-                _bufferedMessages.Clear();
-
-                var payload = connectionDataMessage.Payload;
-                length += payload.Length;
-                Log.WriteMessageToApplication(Logger, length, connectionDataMessage.ConnectionId);
-                await WriteToApplicationAsync(payload);
+                else
+                {
+                    var payload = connectionDataMessage.Payload;
+                    length += (int)payload.Length;
+                    Log.WriteMessageToApplication(Logger, length, connectionDataMessage.ConnectionId);
+                    // make sure there is no await operation before WriteToApplicationAsync.
+                    await WriteToApplicationAsync(payload);
+                }
             }
         }
         catch (Exception ex)

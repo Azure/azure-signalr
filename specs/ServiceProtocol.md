@@ -112,7 +112,7 @@ EMPTY | EMPTY | Both | Keep server connection alive ping
 `offline` | `fin:0` | Server -> Service | Request to drop clients for non-migratable server connections
 `offline` | `fin:1` | Server -> Service | Request to migrate client connections
 `offline` | `finack` | Service -> Server | Response of received `offline` request
-`servers` | EMPTY | Server -> Service | Request to get all server ids connect to the service 
+`servers` | EMPTY | Server -> Service | Request to get all server ids connect to the service
 `servers` | `<timestamp>:<server1>;<server2>` | Service -> Server | Response of `servers` ping of all server ids
 `echo` | `<identify>` | Service <-> Server | Identify the latency of server connection, available from SDK 1.21.6.
 
@@ -139,7 +139,7 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 	- 1, ShutdownOnly, a client connection can be migrated only if the matched server was shutdown gracefully.
 	- 2, Any, a client connection can be migrated even if the matched server connection was dropped accidentally. (may cause data loss)
 - ExtensibleMembers (Optional) - A MessagePack Map indicates the extensible members.
-- AllowStatefulReconnects (Optional) - A `Boolean` indicates the app server allows stateful reconnects or not. 
+- AllowStatefulReconnects (Optional) - A `Boolean` indicates the app server allows stateful reconnects or not.
 
 #### Example: TODO
 
@@ -641,5 +641,19 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - AckId - An `Int32` encoding Id number to identify the corresponding ack message.
 - Max - An `Int32` indicating the max count of results.
 - ContinuationToken - A `String` indicating the continuation token of query.
+
+#### Example: TODO
+
+### RefreshAuth Message
+`RefreshAuth` messages have the following structure:
+```
+[41, ConnectionIdOrToken, Claims?, ExpireTime, AckId, ExtensionMembers]
+```
+- 41 - Message Type, indicating this is a `RefreshAuth` message.
+- ConnectionIdOrToken - A `String` indicating the connection ID or the original connection token of the live client connection whose authentication state is being refreshed.
+- Claims - An optional MessagePack Map of `String` to `String` indicating the refreshed user claims.
+- ExpireTime - A MessagePack Timestamp indicating the new authentication expiration deadline in UTC.
+- AckId - An `Int32` encoding Id number to identify the corresponding ack message.
+- ExtensionMembers - A MessagePack Map indicates the extensible members.
 
 #### Example: TODO
