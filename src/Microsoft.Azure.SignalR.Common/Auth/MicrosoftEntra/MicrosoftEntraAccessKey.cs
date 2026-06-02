@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -27,6 +27,8 @@ internal class MicrosoftEntraAccessKey : IAccessKey
     private const int GetAccessKeyMaxRetryTimes = 3;
 
     private const int GetMicrosoftEntraTokenMaxRetryTimes = 3;
+
+    private const int MaxResponseContentLength = 1024 * 1024; // 1 MB cap to protect against oversized responses.
 
     private readonly object _lock = new object();
 
@@ -215,7 +217,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             return;
         }
 
-        var content = await response.Content.ReadAsStringAsync();
+        var content = await ReadAsStringWithLimitAsync(response.Content);
 
 #if NET5_0_OR_GREATER
         var innerException = new HttpRequestException(
@@ -261,7 +263,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             return;
         }
 
-        var content = await response.Content.ReadAsStringAsync();
+        var content = await ReadAsStringWithLimitAsync(response.Content);
         var obj = JsonSerializer.Deserialize<AccessKeyResponse>(content) ?? throw new AzureSignalRException("Access key response is not expected.");
 
         if (string.IsNullOrEmpty(obj.KeyId))
@@ -273,5 +275,33 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             throw new AzureSignalRException("Missing required <AccessKey> field.");
         }
         UpdateAccessKey(obj.KeyId, obj.AccessKey);
+    }
+
+    private static async Task<string> ReadAsStringWithLimitAsync(HttpContent content)
+    {
+        if (content.Headers.ContentLength is long length && length > MaxResponseContentLength)
+        {
+            throw new AzureSignalRException($"Response content length {length} exceeds the maximum allowed size of {MaxResponseContentLength} bytes.");
+        }
+
+        using var stream = await content.ReadAsStreamAsync();
+        var buffer = new byte[MaxResponseContentLength + 1];
+        var totalRead = 0;
+        int read;
+#if NETSTANDARD2_0 || NETFRAMEWORK
+        while (totalRead < buffer.Length && (read = await stream.ReadAsync(buffer, totalRead, buffer.Length - totalRead)) > 0)
+#else
+        while (totalRead < buffer.Length && (read = await stream.ReadAsync(buffer.AsMemory(totalRead))) > 0)
+#endif
+        {
+            totalRead += read;
+        }
+
+        if (totalRead > MaxResponseContentLength)
+        {
+            throw new AzureSignalRException($"Response content exceeds the maximum allowed size of {MaxResponseContentLength} bytes.");
+        }
+
+        return Encoding.UTF8.GetString(buffer, 0, totalRead);
     }
 }
