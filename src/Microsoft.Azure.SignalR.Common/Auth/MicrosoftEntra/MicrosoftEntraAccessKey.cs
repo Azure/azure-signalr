@@ -284,24 +284,15 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             throw new AzureSignalRException($"Response content length {length} exceeds the maximum allowed size of {MaxResponseContentLength} bytes.");
         }
 
-        using var stream = await content.ReadAsStreamAsync();
-        var buffer = new byte[MaxResponseContentLength + 1];
-        var totalRead = 0;
-        int read;
-#if NETSTANDARD2_0 || NETFRAMEWORK
-        while (totalRead < buffer.Length && (read = await stream.ReadAsync(buffer, totalRead, buffer.Length - totalRead)) > 0)
-#else
-        while (totalRead < buffer.Length && (read = await stream.ReadAsync(buffer.AsMemory(totalRead))) > 0)
-#endif
+        try
         {
-            totalRead += read;
+            await content.LoadIntoBufferAsync(MaxResponseContentLength);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new AzureSignalRException($"Response content exceeds the maximum allowed size of {MaxResponseContentLength} bytes.", ex);
         }
 
-        if (totalRead > MaxResponseContentLength)
-        {
-            throw new AzureSignalRException($"Response content exceeds the maximum allowed size of {MaxResponseContentLength} bytes.");
-        }
-
-        return Encoding.UTF8.GetString(buffer, 0, totalRead);
+        return await content.ReadAsStringAsync();
     }
 }
