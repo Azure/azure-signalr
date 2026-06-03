@@ -217,7 +217,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             return;
         }
 
-        var content = await ReadAsStringWithLimitAsync(response.Content);
+        var content = await response.Content.ReadAsStringAsync();
 
 #if NET5_0_OR_GREATER
         var innerException = new HttpRequestException(
@@ -248,6 +248,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var httpClient = _httpClientFactory.CreateClient(Constants.HttpClientNames.UserDefault);
+        httpClient.MaxResponseContentBufferSize = MaxResponseContentLength;
 
         var response = await httpClient.SendAsync(request, ctoken);
 
@@ -263,7 +264,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             return;
         }
 
-        var content = await ReadAsStringWithLimitAsync(response.Content);
+        var content = await response.Content.ReadAsStringAsync();
         var obj = JsonSerializer.Deserialize<AccessKeyResponse>(content) ?? throw new AzureSignalRException("Access key response is not expected.");
 
         if (string.IsNullOrEmpty(obj.KeyId))
@@ -275,24 +276,5 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             throw new AzureSignalRException("Missing required <AccessKey> field.");
         }
         UpdateAccessKey(obj.KeyId, obj.AccessKey);
-    }
-
-    private static async Task<string> ReadAsStringWithLimitAsync(HttpContent content)
-    {
-        if (content.Headers.ContentLength is long length && length > MaxResponseContentLength)
-        {
-            throw new AzureSignalRException($"Response content length {length} exceeds the maximum allowed size of {MaxResponseContentLength} bytes.");
-        }
-
-        try
-        {
-            await content.LoadIntoBufferAsync(MaxResponseContentLength);
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new AzureSignalRException($"Response content exceeds the maximum allowed size of {MaxResponseContentLength} bytes.", ex);
-        }
-
-        return await content.ReadAsStringAsync();
     }
 }
