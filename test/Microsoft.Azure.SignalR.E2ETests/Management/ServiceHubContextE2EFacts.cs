@@ -4,18 +4,24 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Azure.Core.Serialization;
+using MessagePack;
+using MessagePack.Formatters;
+using MessagePack.Resolvers;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-
 using Xunit;
 using Xunit.Abstractions;
 
@@ -971,6 +977,529 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
+    #region ClientInvocation Tests
+
+    /// <summary>
+    /// Tests client invocation with default protocol configuration using JSON client.
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithDefaultProtocol_JsonClient(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create service manager with default protocol (no explicit hub protocol configured)
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithDefaultProtocol_JsonClient));
+        var serviceManager = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Arrange: Create JSON client connection
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnection = await CreateJsonClientConnectionAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+
+        try
+        {
+            // Act: Invoke method that returns all test values in a single call
+            var result = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
+
+            // Assert: Verify string value
+            Assert.Equal("Method Invoked", result.StringValue);
+
+            // Assert: Verify enum value with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, result.EnumValue);
+
+            // Assert: Verify null value
+            Assert.Null(result.NullValue);
+
+            // Assert: Verify datetime value
+            Assert.Equal(TestDateTime, result.DateTimeValue);
+
+            // Act & Assert: Invoke method that throws exception
+            var ex = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(clientConnection.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
+            Assert.Contains("Test exception", ex.Message);
+        }
+        finally
+        {
+            await clientConnection.StopAsync();
+        }
+    }
+
+    /// <summary>
+    /// Tests client invocation with explicit JSON protocol configured on ServiceManager.
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithExplicitJsonProtocol(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create service manager with explicit JsonHubProtocol
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithExplicitJsonProtocol));
+        var serviceManager = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(new JsonHubProtocol())
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Arrange: Create JSON client connection
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnection = await CreateJsonClientConnectionAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+
+        try
+        {
+            // Act: Invoke method that returns all test values in a single call
+            var result = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
+
+            // Assert: Verify string value
+            Assert.Equal("Method Invoked", result.StringValue);
+
+            // Assert: Verify enum value with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, result.EnumValue);
+
+            // Assert: Verify null value
+            Assert.Null(result.NullValue);
+
+            // Assert: Verify datetime value
+            Assert.Equal(TestDateTime, result.DateTimeValue);
+
+            // Act & Assert: Invoke method that throws exception
+            var ex = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(clientConnection.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
+            Assert.Contains("Test exception", ex.Message);
+        }
+        finally
+        {
+            await clientConnection.StopAsync();
+        }
+    }
+
+    /// <summary>
+    /// Tests client invocation with explicit MessagePack protocol configured on ServiceManager.
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithExplicitMessagePackProtocol(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create service manager with explicit MessagePackHubProtocol
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithExplicitMessagePackProtocol));
+        var serviceManager = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(new MessagePackHubProtocol())
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Arrange: Create MessagePack client connection
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnection = await CreateMessagePackClientConnectionAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+
+        try
+        {
+            // Act: Invoke method that returns all test values in a single call
+            var result = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
+
+            // Assert: Verify string value
+            Assert.Equal("Method Invoked", result.StringValue);
+
+            // Assert: Verify enum value with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, result.EnumValue);
+
+            // Assert: Verify null value
+            Assert.Null(result.NullValue);
+
+            // Assert: Verify datetime value
+            Assert.Equal(TestDateTime, result.DateTimeValue);
+
+            // Act & Assert: Invoke method that throws exception
+            var ex = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(clientConnection.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
+            Assert.Contains("Test exception", ex.Message);
+        }
+        finally
+        {
+            await clientConnection.StopAsync();
+        }
+    }
+
+    /// <summary>
+    /// Tests client invocation with both JSON and MessagePack protocols configured.
+    /// Verifies that clients using either protocol can successfully invoke methods.
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithMultipleProtocols(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create service manager with both JSON and MessagePack protocols
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithMultipleProtocols));
+        var serviceManager = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(new JsonHubProtocol(), new MessagePackHubProtocol())
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Arrange: Create both JSON and MessagePack client connections
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var jsonClient = await CreateJsonClientConnectionAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+        var messagePackClient = await CreateMessagePackClientConnectionAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+
+        try
+        {
+            // JSON Client - Act: Invoke method that returns all test values
+            var jsonResult = await hubContext.Clients.Client(jsonClient.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
+
+            // Assert: Verify all values for JSON client
+            Assert.Equal("Method Invoked", jsonResult.StringValue);
+            Assert.Equal(TestEnum.MethodInvoked, jsonResult.EnumValue);
+            Assert.Null(jsonResult.NullValue);
+            Assert.Equal(TestDateTime, jsonResult.DateTimeValue);
+
+            // Act & Assert: Invoke method that throws exception (JSON)
+            var ex_json = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(jsonClient.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
+            Assert.Contains("Test exception", ex_json.Message);
+
+            // MessagePack Client - Act: Invoke method that returns all test values
+            var msgPackResult = await hubContext.Clients.Client(messagePackClient.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
+
+            // Assert: Verify all values for MessagePack client
+            Assert.Equal("Method Invoked", msgPackResult.StringValue);
+            Assert.Equal(TestEnum.MethodInvoked, msgPackResult.EnumValue);
+            Assert.Null(msgPackResult.NullValue);
+            Assert.Equal(TestDateTime, msgPackResult.DateTimeValue);
+
+            // Act & Assert: Invoke method that throws exception (MessagePack)
+            var ex_messagePack = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(messagePackClient.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
+            Assert.Contains("Test exception", ex_messagePack.Message);
+        }
+        finally
+        {
+            await jsonClient.StopAsync();
+            await messagePackClient.StopAsync();
+        }
+    }
+
+    /// <summary>
+    /// Tests client invocation with MessagePack protocol and Newtonsoft.Json serializer for REST payloads.
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithMessagePackAndNewtonsoftJson(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create service manager with MessagePack protocol and Newtonsoft.Json for REST
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithMessagePackAndNewtonsoftJson));
+        var serviceManager = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(new MessagePackHubProtocol())
+            .WithNewtonsoftJson()
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Arrange: Create MessagePack client connection
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnection = await CreateMessagePackClientConnectionAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+
+        try
+        {
+            // Act: Invoke method that returns all test values in a single call
+            var result = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
+
+            // Assert: Verify string value
+            Assert.Equal("Method Invoked", result.StringValue);
+
+            // Assert: Verify enum value with standard serialization
+            Assert.Equal(TestEnum.MethodInvoked, result.EnumValue);
+
+            // Assert: Verify null value
+            Assert.Null(result.NullValue);
+
+            // Assert: Verify datetime value
+            Assert.Equal(TestDateTime, result.DateTimeValue);
+
+            // Act & Assert: Invoke method that throws exception
+            var ex = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(clientConnection.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
+            Assert.Contains("Test exception", ex.Message);
+        }
+        finally
+        {
+            await clientConnection.StopAsync();
+        }
+    }
+
+    /// <summary>
+    /// Tests client invocation with custom JSON serializer.
+    /// Custom serializer converts TestEnum.MethodInvoked to "aaamytest" string.
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithCustomJsonSerializer(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create custom JSON serializer with TestEnumJsonConverter
+        var jsonOptions = JsonObjectSerializerHubProtocol.CreateDefaultSerializerSettings();
+        jsonOptions.Converters.Add(new TestEnumJsonConverter());
+        var customProtocol = new JsonObjectSerializerHubProtocol(new JsonObjectSerializer(jsonOptions));
+
+        // Arrange: Create service manager with custom JSON protocol
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithCustomJsonSerializer));
+        var serviceManager = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(customProtocol)
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Arrange: Create JSON client with matching custom serializer
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnection = await CreateJsonClientWithCustomSerializerAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+
+        try
+        {
+            // Act: Invoke method that returns all test values in a single call
+            var result = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
+
+            // Assert: Verify string value
+            Assert.Equal("Method Invoked", result.StringValue);
+
+            // Assert: Verify enum value with customised serialization (MethodInvoked -> aaamytest)
+            Assert.Equal(TestEnum.aaamytest, result.EnumValue);
+
+            // Assert: Verify null value
+            Assert.Null(result.NullValue);
+
+            // Assert: Verify datetime value
+            Assert.Equal(TestDateTime, result.DateTimeValue);
+
+            // Act & Assert: Invoke method that throws exception
+            var ex = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(clientConnection.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
+            Assert.Contains("Test exception", ex.Message);
+        }
+        finally
+        {
+            await clientConnection.StopAsync();
+        }
+    }
+
+    /// <summary>
+    /// Tests client invocation with custom MessagePack serializer.
+    /// Custom serializer converts TestEnum.MethodInvoked to "aaamytest" string.
+    /// </summary>
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(Management.ServiceTransportType.Transient)]
+    [InlineData(Management.ServiceTransportType.Persistent)]
+    public async Task ClientInvocation_WithCustomMessagePackSerializer(ServiceTransportType serviceTransportType)
+    {
+        // Arrange: Create custom MessagePack protocol with TestEnumFormatter and TestInvocationResultFormatter
+        var customProtocol = CreateMessagePackProtocolWithCustomSerializer();
+
+        // Arrange: Create service manager with custom MessagePack protocol
+        using var logger = StartLog(out var loggerFactory, nameof(ClientInvocation_WithCustomMessagePackSerializer));
+        var serviceManager = new ServiceManagerBuilder()
+            .WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = serviceTransportType;
+            })
+            .WithHubProtocols(customProtocol)
+            .WithLoggerFactory(loggerFactory)
+            .BuildServiceManager();
+        using var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
+
+        // Arrange: Create MessagePack client with matching custom serializer
+        var negotiationResponse = await hubContext.NegotiateAsync();
+        var clientConnection = await CreateMessagePackClientWithCustomSerializerAsync(negotiationResponse.Url, negotiationResponse.AccessToken);
+
+        try
+        {
+            // Act: Invoke method that returns all test values in a single call
+            var result = await hubContext.Clients.Client(clientConnection.ConnectionId)
+                .InvokeAsync<TestInvocationResult>("InvokeAll", TestInput, default).OrTimeout();
+
+            // Assert: Verify string value
+            Assert.Equal("Method Invoked", result.StringValue);
+
+            // Assert: Verify enum value with customised serialization (MethodInvoked -> aaamytest)
+            Assert.Equal(TestEnum.aaamytest, result.EnumValue);
+
+            // Assert: Verify null value
+            Assert.Null(result.NullValue);
+
+            // Assert: Verify datetime value
+            Assert.Equal(TestDateTime, result.DateTimeValue);
+
+            // Act & Assert: Invoke method that throws exception
+            var ex = await Assert.ThrowsAsync<HubException>(async () =>
+                await hubContext.Clients.Client(clientConnection.ConnectionId)
+                    .InvokeAsync<object>("InvokeException", TestInput, default).OrTimeout());
+            Assert.Contains("Test exception", ex.Message);
+        }
+        finally
+        {
+            await clientConnection.StopAsync();
+        }
+    }
+
+    #endregion
+
+    #region Client Connection Helpers (setup/teardown plumbing)
+
+    private static async Task<HubConnection> CreateJsonClientConnectionAsync(string endpoint, string accessToken)
+    {
+        var connection = new HubConnectionBuilder()
+            .WithUrl(endpoint, option => option.AccessTokenProvider = () => Task.FromResult(accessToken))
+            .WithAutomaticReconnect()
+            .AddJsonProtocol()
+            .Build();
+
+        await connection.StartAsync();
+        RegisterClientInvocationHandlers(connection);
+        return connection;
+    }
+
+    private static async Task<HubConnection> CreateMessagePackClientConnectionAsync(string endpoint, string accessToken)
+    {
+        var connection = new HubConnectionBuilder()
+            .WithUrl(endpoint, option => option.AccessTokenProvider = () => Task.FromResult(accessToken))
+            .WithAutomaticReconnect()
+            .AddMessagePackProtocol()
+            .Build();
+
+        await connection.StartAsync();
+        RegisterClientInvocationHandlers(connection);
+        return connection;
+    }
+
+    private static async Task<HubConnection> CreateJsonClientWithCustomSerializerAsync(string endpoint, string accessToken)
+    {
+        var connection = new HubConnectionBuilder()
+            .WithUrl(endpoint, option => option.AccessTokenProvider = () => Task.FromResult(accessToken))
+            .WithAutomaticReconnect()
+            .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new TestEnumJsonConverter()))
+            .Build();
+
+        await connection.StartAsync();
+        RegisterClientInvocationHandlers(connection);
+        return connection;
+    }
+
+    private static async Task<HubConnection> CreateMessagePackClientWithCustomSerializerAsync(string endpoint, string accessToken)
+    {
+        var messagePackOptions = MessagePackSerializerOptions.Standard.WithResolver(
+            CompositeResolver.Create(
+                new IMessagePackFormatter[] { new TestEnumFormatter(), new TestInvocationResultFormatter(), new TestInvocationInputFormatter() },
+                new IFormatterResolver[] { StandardResolver.Instance }));
+
+        var connection = new HubConnectionBuilder()
+            .WithUrl(endpoint, option => option.AccessTokenProvider = () => Task.FromResult(accessToken))
+            .WithAutomaticReconnect()
+            .AddMessagePackProtocol(options => options.SerializerOptions = messagePackOptions)
+            .Build();
+
+        await connection.StartAsync();
+        RegisterClientInvocationHandlers(connection);
+        return connection;
+    }
+
+    private static readonly DateTime TestDateTime = new DateTime(2024, 6, 15, 10, 30, 0, DateTimeKind.Utc);
+
+    private static readonly TestInvocationInput TestInput = new TestInvocationInput
+    {
+        StringValue = "Test Input String",
+        DateTimeValue = TestDateTime,
+        IntValue = 42
+    };
+
+    private static void RegisterClientInvocationHandlers(HubConnection connection)
+    {
+        connection.On("InvokeAll", (Func<TestInvocationInput, Task<TestInvocationResult>>)(input =>
+        {
+            // Validate input was correctly deserialized
+            if (input.StringValue != TestInput.StringValue ||
+                input.DateTimeValue != TestInput.DateTimeValue ||
+                input.IntValue != TestInput.IntValue)
+            {
+                throw new InvalidOperationException($"Input validation failed. Expected: {TestInput.StringValue}, {TestInput.DateTimeValue}, {TestInput.IntValue}. Actual: {input.StringValue}, {input.DateTimeValue}, {input.IntValue}");
+            }
+
+            return Task.FromResult(new TestInvocationResult
+            {
+                StringValue = "Method Invoked",
+                EnumValue = TestEnum.MethodInvoked,
+                NullValue = null,
+                DateTimeValue = TestDateTime
+            });
+        }));
+        connection.On("InvokeException", (Func<TestInvocationInput, Task<object>>)(_ => throw new InvalidOperationException("Test exception")));
+    }
+
+    private static MessagePackHubProtocol CreateMessagePackProtocolWithCustomSerializer()
+    {
+        var messagePackOptions = MessagePackSerializerOptions.Standard.WithResolver(
+            CompositeResolver.Create(
+                new IMessagePackFormatter[] { new TestEnumFormatter(), new TestInvocationResultFormatter(), new TestInvocationInputFormatter() },
+                new IFormatterResolver[] { StandardResolver.Instance }));
+
+        return new MessagePackHubProtocol(
+            Extensions.Options.Options.Create(new MessagePackHubProtocolOptions { SerializerOptions = messagePackOptions }));
+    }
+
+    #endregion
+
     private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)
     {
         return (from i in Enumerable.Range(0, userNames.Count)
@@ -1052,12 +1581,6 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
                                    select connection.StopAsync());
             }
         }
-    }
-
-    private static string[] GetTestStringList(string prefix, int count)
-    {
-        return (from i in Enumerable.Range(0, count)
-                select $"{prefix}{i}").ToArray();
     }
 
     private async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType, string appName, IEnumerable<string> userNames)
@@ -1177,6 +1700,246 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
             {
                 EventIds.Add(eventId);
             }
+        }
+    }
+
+    private sealed class TestEnumFormatter : IMessagePackFormatter<TestEnum>
+    {
+        public void Serialize(ref MessagePackWriter writer, TestEnum value, MessagePackSerializerOptions options)
+        {
+            if (value == TestEnum.MethodInvoked)
+            {
+                writer.Write("aaamytest");
+            }
+        }
+
+        public TestEnum Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+        {
+            var name = reader.ReadString();
+            return name == "aaamytest"
+                ? TestEnum.aaamytest
+                : TestEnum.None;
+        }
+    }
+
+    private sealed class TestInvocationResultFormatter : IMessagePackFormatter<TestInvocationResult>
+    {
+        public void Serialize(ref MessagePackWriter writer, TestInvocationResult value, MessagePackSerializerOptions options)
+        {
+            if (value is null)
+            {
+                writer.WriteNil();
+                return;
+            }
+
+            writer.WriteMapHeader(4);
+
+            writer.Write("StringValue");
+            writer.Write(value.StringValue);
+
+            writer.Write("EnumValue");
+            var resolver = options.Resolver;
+            var enumFormatter = resolver.GetFormatterWithVerify<TestEnum>();
+            enumFormatter.Serialize(ref writer, value.EnumValue, options);
+
+            writer.Write("NullValue");
+            writer.WriteNil();
+
+            writer.Write("DateTimeValue");
+            writer.Write(value.DateTimeValue.Ticks);
+        }
+
+        public TestInvocationResult Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+        {
+            if (reader.TryReadNil())
+            {
+                return null;
+            }
+
+            var count = reader.ReadMapHeader();
+
+            var result = new TestInvocationResult();
+            var resolver = options.Resolver;
+            var enumFormatter = resolver.GetFormatterWithVerify<TestEnum>();
+
+            for (var i = 0; i < count; i++)
+            {
+                var propertyName = reader.ReadString();
+
+                switch (propertyName)
+                {
+                    case "StringValue":
+                        result.StringValue = reader.ReadString();
+                        break;
+                    case "EnumValue":
+                        result.EnumValue = enumFormatter.Deserialize(ref reader, options);
+                        break;
+                    case "NullValue":
+                        reader.TryReadNil();
+                        result.NullValue = null;
+                        break;
+                    case "DateTimeValue":
+                        result.DateTimeValue = new DateTime(reader.ReadInt64(), DateTimeKind.Utc);
+                        break;
+                    default:
+                        reader.Skip();
+                        break;
+                }
+            }
+
+            return result;
+        }
+    }
+
+    private sealed class TestInvocationInputFormatter : IMessagePackFormatter<TestInvocationInput>
+    {
+        public void Serialize(ref MessagePackWriter writer, TestInvocationInput value, MessagePackSerializerOptions options)
+        {
+            if (value is null)
+            {
+                writer.WriteNil();
+                return;
+            }
+
+            writer.WriteMapHeader(3);
+
+            writer.Write("StringValue");
+            writer.Write(value.StringValue);
+
+            writer.Write("DateTimeValue");
+            writer.Write(value.DateTimeValue.Ticks);
+
+            writer.Write("IntValue");
+            writer.Write(value.IntValue);
+        }
+
+        public TestInvocationInput Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+        {
+            if (reader.TryReadNil())
+            {
+                return null;
+            }
+
+            var count = reader.ReadMapHeader();
+
+            var result = new TestInvocationInput();
+
+            for (var i = 0; i < count; i++)
+            {
+                var propertyName = reader.ReadString();
+
+                switch (propertyName)
+                {
+                    case "StringValue":
+                        result.StringValue = reader.ReadString();
+                        break;
+                    case "DateTimeValue":
+                        result.DateTimeValue = new DateTime(reader.ReadInt64(), DateTimeKind.Utc);
+                        break;
+                    case "IntValue":
+                        result.IntValue = reader.ReadInt32();
+                        break;
+                    default:
+                        reader.Skip();
+                        break;
+                }
+            }
+
+            return result;
+        }
+    }
+
+    public sealed class TestInvocationInput
+    {
+        public string StringValue { get; set; }
+        public DateTime DateTimeValue { get; set; }
+        public int IntValue { get; set; }
+    }
+
+    public sealed class TestInvocationResult
+    {
+        public string StringValue { get; set; }
+        public TestEnum EnumValue { get; set; }
+        public object NullValue { get; set; }
+        public DateTime DateTimeValue { get; set; }
+    }
+
+    public enum TestEnum
+    {
+        None,
+        MethodInvoked,
+        aaamytest
+    }
+
+    private sealed class TestEnumJsonConverter : JsonConverter<TestEnum>
+    {
+        public override TestEnum Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return TestEnum.None;
+            }
+
+            var name = reader.GetString();
+            return name == "aaamytest"
+                ? TestEnum.aaamytest
+                : TestEnum.None;
+        }
+
+        public override void Write(Utf8JsonWriter writer, TestEnum value, JsonSerializerOptions options)
+        {
+            if (value == TestEnum.MethodInvoked)
+            {
+                writer.WriteStringValue("aaamytest");
+            }
+            else
+            {
+                writer.WriteNullValue();
+            }
+        }
+    }
+
+    private sealed class MessagePackObjectSerializer : ObjectSerializer
+    {
+        private readonly MessagePackSerializerOptions _options;
+
+        public MessagePackObjectSerializer(MessagePackSerializerOptions options)
+        {
+            _options = options ?? throw new ArgumentNullException(nameof(options));
+        }
+
+        public override void Serialize(Stream stream, object value, Type type, CancellationToken cancellationToken)
+        {
+            // MessagePack is sync; we honor the token only for consistency.
+            MessagePackSerializer.Serialize(type, stream, value, _options, cancellationToken: cancellationToken);
+            stream.Flush();
+        }
+
+        public override async ValueTask SerializeAsync(Stream stream, object value, Type type, CancellationToken cancellationToken)
+        {
+#if NETSTANDARD2_0
+        // Async overloads may not be available; fall back to sync and wrap in Task.
+        Serialize(stream, value, type, cancellationToken);
+        await Task.CompletedTask;
+#else
+            await MessagePackSerializer.SerializeAsync(type, stream, value, _options, cancellationToken);
+            await stream.FlushAsync(cancellationToken);
+#endif
+        }
+
+        public override object Deserialize(Stream stream, Type returnType, CancellationToken cancellationToken)
+        {
+            return MessagePackSerializer.Deserialize(returnType, stream, _options, cancellationToken: cancellationToken);
+        }
+
+        public override async ValueTask<object> DeserializeAsync(Stream stream, Type returnType, CancellationToken cancellationToken)
+        {
+#if NETSTANDARD2_0
+        // Async overloads may not be available; fall back to sync.
+        return Deserialize(stream, returnType, cancellationToken);
+#else
+            return await MessagePackSerializer.DeserializeAsync(returnType, stream, _options, cancellationToken);
+#endif
         }
     }
 }
