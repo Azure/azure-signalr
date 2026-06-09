@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -29,8 +30,8 @@ internal partial class ClientConnectionContext
         private static readonly Action<ILogger, string, Exception> _connectedStarting =
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(6, "ConnectedStarting"), "Connection {TransportConnectionId} started.");
 
-        private static readonly Action<ILogger, string, Exception> _detectedLongRunningApplicationTask =
-            LoggerMessage.Define<string>(LogLevel.Warning, new EventId(7, "DetectedLongRunningApplicationTask"), "The connection {TransportConnectionId} has a long running application logic that prevents the connection from complete.");
+        private static readonly Action<ILogger, string, int, Exception> _detectedLongRunningApplicationTask =
+            LoggerMessage.Define<string, int>(LogLevel.Warning, new EventId(7, "DetectedLongRunningApplicationTask"), "The connection {TransportConnectionId} has a long running application logic that prevents the connection from complete after {TimeoutMilliseconds} milliseconds.");
 
         private static readonly Action<ILogger, string, Exception> _outgoingTaskPaused =
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(8, "OutgoingTaskPaused"), "Outgoing messages for connection {connectionId} have been paused.");
@@ -71,9 +72,9 @@ internal partial class ClientConnectionContext
             _connectedStarting(logger, connectionId, null);
         }
 
-        public static void DetectedLongRunningApplicationTask(ILogger logger, string connectionId)
+        public static void DetectedLongRunningApplicationTask(ILogger logger, string connectionId, int timeoutMilliseconds)
         {
-            _detectedLongRunningApplicationTask(logger, connectionId, null);
+            _detectedLongRunningApplicationTask(logger, connectionId, timeoutMilliseconds, null);
         }
 
         public static void OutgoingTaskPaused(ILogger logger, string connectionId)

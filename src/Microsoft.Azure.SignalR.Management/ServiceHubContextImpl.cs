@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,14 +33,17 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override UserGroupManager UserGroups { get; }
 
+        public override StreamingManager Streaming { get; }
+
         public override ClientManager ClientManager { get; }
 
-        public ServiceHubContextImpl(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager)
+        public ServiceHubContextImpl(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager, ILogger<ServiceHubContext> logger)
         {
             _hubName = hubName;
             _hubContext = hubContext;
             Groups = new GroupManagerAdapter(lifetimeManager);
             UserGroups = new UserGroupsManagerAdapter(lifetimeManager);
+            Streaming = new StreamingManagerAdapter(lifetimeManager, logger);
             ClientManager = new ClientManagerAdapter(lifetimeManager);
             ServiceProvider = serviceProvider;
             _negotiateProcessor = negotiateProcessor;
@@ -67,13 +71,17 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override ServiceHubContext WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
+#if NET6_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(endpoints);
+#else
             if (endpoints is null)
             {
                 throw new ArgumentNullException(nameof(endpoints));
             }
+#endif
 
             var targetEndpoints = _endpointManager.GetEndpoints(_hubName).Intersect(endpoints, EqualityComparer<ServiceEndpoint>.Default).ToList();
-            var container = new MultiEndpointMessageWriter(targetEndpoints, ServiceProvider.GetRequiredService<ILoggerFactory>());
+            var container = new MessageWriterServiceContainerWrapper(targetEndpoints, ServiceProvider.GetRequiredService<ILoggerFactory>());
             var servicesFromServiceManager = ServiceProvider.GetRequiredService<IReadOnlyCollection<ServiceDescriptor>>();
             var services = new ServiceCollection()
                 .Add(servicesFromServiceManager)
@@ -87,6 +95,38 @@ namespace Microsoft.Azure.SignalR.Management
                 .AddSingleton<IEndpointRouter>(new FixedEndpointRouter(targetEndpoints));
 
             return services.BuildServiceProvider().GetRequiredService<ServiceHubContext>();
+        }
+
+        private sealed class MessageWriterServiceContainerWrapper : MultiEndpointMessageWriter, IServiceConnectionContainer
+        {
+            public MessageWriterServiceContainerWrapper(IReadOnlyCollection<ServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
+            : base(targetEndpoints, loggerFactory) { }
+
+            public Task StartAsync() => Task.CompletedTask;
+
+            public Task StopAsync() => Task.CompletedTask;
+
+            public void Dispose()
+            {
+            }
+
+            #region Not supported method or properties
+
+            public ServiceConnectionStatus Status => throw new NotSupportedException();
+
+            public string ServersTag => throw new NotSupportedException();
+
+            public bool HasClients => throw new NotSupportedException();
+
+            public Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token) => throw new NotSupportedException();
+
+            public Task StartGetServersPing() => throw new NotSupportedException();
+
+            public Task StopGetServersPing() => throw new NotSupportedException();
+
+            public Task CloseClientConnections(CancellationToken token) => throw new NotSupportedException();
+
+            #endregion Not supported method or properties
         }
     }
 }

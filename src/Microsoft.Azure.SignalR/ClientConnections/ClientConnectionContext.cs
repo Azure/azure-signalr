@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -6,13 +6,13 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http;
@@ -65,27 +65,29 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private const int IdleState = 0;
 
-    private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(
+    private static readonly PipeOptions DefaultPipeOptions = new(
         readerScheduler: PipeScheduler.ThreadPool,
         useSynchronizationContext: false);
 
-    private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object> _connectionEndTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private readonly TaskCompletionSource<object> _hanshakeCompleteTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object> _hanshakeCompleteTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
+    private readonly CancellationTokenSource _abortOutgoingCts = new();
 
-    private readonly object _heartbeatLock = new object();
+    private readonly CancellationTokenSource _connectionClosedCts = new();
 
-    private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
+    private readonly object _heartbeatLock = new();
+
+    private readonly SemaphoreSlim _writeLock = new(1, 1);
 
     private readonly Queue<IMemoryOwner<byte>> _bufferedMessages = new();
 
     private readonly int _closeTimeOutMilliseconds;
 
-    private readonly bool _isMigrated = false;
+    private readonly bool _isMigrated;
 
-    private readonly PauseHandler _pauseHandler = new PauseHandler();
+    private readonly PauseHandler _pauseHandler = new();
 
     private int _connectionState = IdleState;
 
@@ -96,6 +98,10 @@ internal partial class ClientConnectionContext : ConnectionContext,
     private long _lastMessageReceivedAt;
 
     private long _receivedBytes;
+
+#if !NETSTANDARD
+    public override CancellationToken ConnectionClosed => _connectionClosedCts.Token;
+#endif
 
     public override string ConnectionId { get; set; }
 
@@ -128,7 +134,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     public HttpContext HttpContext { get; set; }
 
-    public DateTime LastMessageReceivedAtUtc => new DateTime(Volatile.Read(ref _lastMessageReceivedAt), DateTimeKind.Utc);
+    public DateTime LastMessageReceivedAtUtc => new(Volatile.Read(ref _lastMessageReceivedAt), DateTimeKind.Utc);
 
     public DateTime StartedAtUtc { get; } = DateTime.UtcNow;
 
@@ -136,9 +142,9 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     public ILogger<ServiceConnection> Logger { get; init; } = NullLogger<ServiceConnection>.Instance;
 
-    private Task DelayTask => Task.Delay(_closeTimeOutMilliseconds);
-
     private CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
+
+    public string RequestId { get; set; }
 
     public ClientConnectionContext(OpenConnectionMessage serviceMessage,
                                    Action<HttpContext> configureContext = null,
@@ -255,7 +261,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     public Task PauseAckAsync()
     {
-        if (_pauseHandler.ShouldReplyAck)
+        if (_pauseHandler.ShouldReplyAck())
         {
             Log.OutgoingTaskPauseAck(Logger, ConnectionId);
             var message = new ConnectionFlowControlMessage(ConnectionId, ConnectionFlowControlOperation.PauseAck);
@@ -328,17 +334,26 @@ internal partial class ClientConnectionContext : ConnectionContext,
                     if (HandshakeResponseTask.IsCompleted)
                     {
                         var next = buffer;
-                        while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
-                        {
-                            if (!await _pauseHandler.WaitAsync(StaticRandom.Next(500, 1500), OutgoingAborted))
-                            {
-                                Log.OutgoingTaskPaused(Logger, ConnectionId);
-                                buffer = buffer.Slice(0);
-                                break;
-                            }
 
-                            try
+                        // we still want messages to successfully going out when application completes
+                        int waitTime = 0;
+                        while (!await _pauseHandler.TryAcquire(1000))
+                        {
+                            Log.OutgoingTaskPaused(Logger, ConnectionId);
+                            if (OutgoingAborted.IsCancellationRequested)
                             {
+                                waitTime++;
+                                if (waitTime > 5)
+                                {
+                                    OutgoingAborted.ThrowIfCancellationRequested();
+                                }
+                            }
+                        }
+                        try
+                        {
+                            while (!buffer.IsEmpty && protocol.TryParseMessage(ref next, FakeInvocationBinder.Instance, out var message))
+                            {
+
                                 var messageType = message switch
                                 {
                                     SignalRProtocol.HubInvocationMessage => DataMessageType.Invocation,
@@ -356,10 +371,10 @@ internal partial class ClientConnectionContext : ConnectionContext,
                                     _ => next,
                                 };
                             }
-                            finally
-                            {
-                                _pauseHandler.Release();
-                            }
+                        }
+                        finally
+                        {
+                            _pauseHandler.Release();
                         }
                     }
                 }
@@ -372,6 +387,10 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
                 Application.Input.AdvanceTo(buffer.Start, buffer.End);
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // cancelled
         }
         catch (ForwardMessageException)
         {
@@ -401,11 +420,6 @@ internal partial class ClientConnectionContext : ConnectionContext,
             // application task can end when exception, or Context.Abort() from hub
             await connectionDelegate(this);
         }
-        catch (ObjectDisposedException)
-        {
-            // When the application shuts down and disposes IServiceProvider, HubConnectionHandler.RunHubAsync is still running and runs into _dispatcher.OnDisconnectedAsync
-            // no need to throw the error out
-        }
         catch (Exception ex)
         {
             // Capture the exception to communicate it to the transport (this isn't strictly required)
@@ -434,14 +448,20 @@ internal partial class ClientConnectionContext : ConnectionContext,
         // Wait for the connection's lifetime task to end
         // Wait on the application task to complete
         // We wait gracefully here to be consistent with self-host SignalR
-        await Task.WhenAny(LifetimeTask, DelayTask);
-
-        if (!LifetimeTask.IsCompleted)
+        using var cts = new CancellationTokenSource(_closeTimeOutMilliseconds);
+        try
         {
-            Log.DetectedLongRunningApplicationTask(Logger, ConnectionId);
+            await LifetimeTask.OrCancelAsync(cts.Token);
+            cts.Cancel();
         }
+        catch (OperationCanceledException)
+        {
 
-        await LifetimeTask;
+            Log.DetectedLongRunningApplicationTask(Logger, ConnectionId, _closeTimeOutMilliseconds);
+#if !NETSTANDARD
+            _connectionClosedCts.Cancel();
+#endif
+        }
     }
 
     internal async Task ProcessConnectionDataMessageAsync(ConnectionDataMessage connectionDataMessage)
@@ -459,26 +479,43 @@ internal partial class ClientConnectionContext : ConnectionContext,
             {
                 var owner = ExactSizeMemoryPool.Shared.Rent((int)connectionDataMessage.Payload.Length);
                 connectionDataMessage.Payload.CopyTo(owner.Memory.Span);
-                // make sure there is no await operation before _bufferingMessages.
+                // make sure there is no await operation before _bufferingMessages.Enqueue.
                 _bufferedMessages.Enqueue(owner);
             }
             else
             {
-                long length = 0;
-                foreach (var owner in _bufferedMessages)
+                int length = 0;
+                if (_bufferedMessages.Count > 0)
                 {
-                    using (owner)
+                    length += (int)connectionDataMessage.Payload.Length;
+                    foreach (var buffered in _bufferedMessages)
                     {
-                        await WriteToApplicationAsync(new ReadOnlySequence<byte>(owner.Memory));
-                        length += owner.Memory.Length;
+                        length += buffered.Memory.Length;
                     }
+                    using var memoryOwner = ExactSizeMemoryPool.Shared.Rent(length);
+                    var destination = memoryOwner.Memory.Span;
+                    while (_bufferedMessages.Count > 0)
+                    {
+                        using var owner = _bufferedMessages.Dequeue();
+                        owner.Memory.Span.CopyTo(destination);
+                        destination = destination.Slice(owner.Memory.Length);
+                    }
+                    foreach (var memory in connectionDataMessage.Payload)
+                    {
+                        memory.Span.CopyTo(destination);
+                        destination = destination.Slice(memory.Length);
+                    }
+                    // make sure there is no await operation before WriteToApplicationAsync.
+                    await WriteToApplicationAsync(new ReadOnlySequence<byte>(memoryOwner.Memory));
                 }
-                _bufferedMessages.Clear();
-
-                var payload = connectionDataMessage.Payload;
-                length += payload.Length;
-                Log.WriteMessageToApplication(Logger, length, connectionDataMessage.ConnectionId);
-                await WriteToApplicationAsync(payload);
+                else
+                {
+                    var payload = connectionDataMessage.Payload;
+                    length += (int)payload.Length;
+                    Log.WriteMessageToApplication(Logger, length, connectionDataMessage.ConnectionId);
+                    // make sure there is no await operation before WriteToApplicationAsync.
+                    await WriteToApplicationAsync(payload);
+                }
             }
         }
         catch (Exception ex)
@@ -492,7 +529,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
         _bufferedMessages.Clear();
     }
 
-    private static void ProcessQuery(string queryString, out string originalPath)
+    private void ProcessQuery(string queryString, out string originalPath)
     {
         originalPath = string.Empty;
         var query = QueryHelpers.ParseNullableQuery(queryString);
@@ -500,48 +537,13 @@ internal partial class ClientConnectionContext : ConnectionContext,
         {
             return;
         }
-
-        if (query.TryGetValue(Constants.QueryParameter.RequestCulture, out var culture))
+        if (query.TryGetValue(Constants.QueryParameter.ConnectionRequestId, out var connectionRequestId))
         {
-            SetCurrentThreadCulture(culture.FirstOrDefault());
-        }
-        if (query.TryGetValue(Constants.QueryParameter.RequestUICulture, out var uiCulture))
-        {
-            SetCurrentThreadUiCulture(uiCulture.FirstOrDefault());
+            RequestId = connectionRequestId;
         }
         if (query.TryGetValue(Constants.QueryParameter.OriginalPath, out var path))
         {
             originalPath = path.FirstOrDefault();
-        }
-    }
-
-    private static void SetCurrentThreadCulture(string cultureName)
-    {
-        if (!string.IsNullOrEmpty(cultureName))
-        {
-            try
-            {
-                CultureInfo.CurrentCulture = new CultureInfo(cultureName);
-            }
-            catch (Exception)
-            {
-                // skip invalid culture, normal won't hit.
-            }
-        }
-    }
-
-    private static void SetCurrentThreadUiCulture(string uiCultureName)
-    {
-        if (!string.IsNullOrEmpty(uiCultureName))
-        {
-            try
-            {
-                CultureInfo.CurrentUICulture = new CultureInfo(uiCultureName);
-            }
-            catch (Exception)
-            {
-                // skip invalid culture, normal won't hit.
-            }
         }
     }
 
@@ -660,7 +662,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
         ProcessQuery(message.QueryString, out var originalPath);
         var requestFeature = new HttpRequestFeature
         {
-            Headers = new HeaderDictionary((Dictionary<string, StringValues>)message.Headers),
+            Headers = new HeaderDictionary(new Dictionary<string, StringValues>(message.Headers, StringComparer.OrdinalIgnoreCase)),
             QueryString = message.QueryString,
             Path = originalPath
         };
@@ -681,13 +683,22 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     private sealed class FakeInvocationBinder : IInvocationBinder
     {
-        public static readonly FakeInvocationBinder Instance = new FakeInvocationBinder();
+        public static readonly FakeInvocationBinder Instance = new();
 
-        public IReadOnlyList<Type> GetParameterTypes(string methodName) => Type.EmptyTypes;
+        public IReadOnlyList<Type> GetParameterTypes(string methodName)
+        {
+            return Type.EmptyTypes;
+        }
 
-        public Type GetReturnType(string invocationId) => typeof(object);
+        public Type GetReturnType(string invocationId)
+        {
+            return typeof(object);
+        }
 
-        public Type GetStreamItemType(string streamId) => typeof(object);
+        public Type GetStreamItemType(string _)
+        {
+            return typeof(object);
+        }
     }
 
     private sealed class ForwardMessageException : Exception

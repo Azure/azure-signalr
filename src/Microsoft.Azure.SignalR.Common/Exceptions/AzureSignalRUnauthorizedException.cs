@@ -4,26 +4,41 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace Microsoft.Azure.SignalR.Common
+namespace Microsoft.Azure.SignalR.Common;
+
+#nullable enable
+
+[Serializable]
+public class AzureSignalRUnauthorizedException : AzureSignalRException
 {
-    [Serializable]
-    public class AzureSignalRUnauthorizedException : AzureSignalRException
+    [Obsolete]
+    internal const string ErrorMessage = $"401 Unauthorized. If you were using AccessKey, {ErrorMessageLocalAuth}. If you were using Microsoft Entra authentication, {ErrorMessageMicrosoftEntra}";
+
+    internal const string ErrorMessageLocalAuth = "please check the connection string and see if the AccessKey is correct.";
+
+    internal const string ErrorMessageMicrosoftEntra = "please check if you set the AzureAuthorityHosts properly in your TokenCredentialOptions, see \"https://learn.microsoft.com/en-us/dotnet/api/azure.identity.azureauthorityhosts\".";
+
+    [Obsolete]
+    public AzureSignalRUnauthorizedException(string? requestUri, Exception innerException) : base(string.IsNullOrEmpty(requestUri) ? ErrorMessage : $"{ErrorMessage} Request Uri: {requestUri}", innerException)
     {
-        private const string ErrorMessage = "Authorization failed. If you were using AccessKey, please check connection string and see if the AccessKey is correct. If you were using Azure Active Directory, please note that the role assignments will take up to 30 minutes to take effect if it was added recently.";
+    }
 
-        public AzureSignalRUnauthorizedException(string requestUri, Exception innerException) : base(string.IsNullOrEmpty(requestUri) ? ErrorMessage : $"{ErrorMessage} Request Uri: {requestUri}", innerException)
-        {
-        }
+    internal AzureSignalRUnauthorizedException(string? requestUri, Exception innerException, string? jwtToken) : base(GetExceptionMessage(jwtToken, requestUri), innerException)
+    {
+    }
 
-        internal AzureSignalRUnauthorizedException(Exception innerException) : base(ErrorMessage, innerException)
-        {
-        }
+    private static string GetExceptionMessage(string? jwtToken, string? requestUri)
+    {
+        var message = TokenUtilities.TryParseIssuer(jwtToken, out var iss)
+            ? Constants.AsrsTokenIssuer.Equals(iss) ? ErrorMessageLocalAuth : ErrorMessageMicrosoftEntra
+            : ErrorMessageLocalAuth;
+        return string.IsNullOrEmpty(requestUri) ? $"401 Unauthorized, {message}" : $"401 Unauthorized, {message} Request Uri: {requestUri}";
+    }
 
 #if NET8_0_OR_GREATER
-        [Obsolete]
+    [Obsolete]
 #endif
-        protected AzureSignalRUnauthorizedException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+    protected AzureSignalRUnauthorizedException(SerializationInfo info, StreamingContext context) : base(info, context)
+    {
     }
 }

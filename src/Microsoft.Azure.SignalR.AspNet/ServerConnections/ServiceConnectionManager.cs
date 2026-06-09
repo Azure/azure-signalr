@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Azure;
 
 using Microsoft.Azure.SignalR.Protocol;
 
@@ -83,17 +85,22 @@ internal class ServiceConnectionManager : IServiceConnectionManager
 
     public Task StartAsync()
     {
-        return Task.WhenAll(GetConnections().Select(s => s.StartAsync()));
+        return Task.WhenAll(GetConnections().Select(c => c.StartAsync()));
     }
 
     public Task StopAsync()
     {
-        return Task.WhenAll(GetConnections().Select(s => s.StopAsync()));
+        return Task.WhenAll(GetConnections().Select(c => c.StopAsync()));
     }
 
-    public Task OfflineAsync(GracefulShutdownMode mode)
+    public Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
     {
-        return Task.WhenAll(GetConnections().Select(s => s.OfflineAsync(mode)));
+        return Task.WhenAll(GetConnections().Select(c => c.OfflineAsync(mode, token)));
+    }
+
+    public Task CloseClientConnections(CancellationToken token)
+    {
+        return Task.WhenAll(GetConnections().Select(c => c.CloseClientConnections(token)));
     }
 
     public IServiceConnectionContainer WithHub(string hubName)
@@ -134,6 +141,11 @@ internal class ServiceConnectionManager : IServiceConnectionManager
     public Task StopGetServersPing()
     {
         return Task.WhenAll(GetConnections().Select(s => s.StopGetServersPing()));
+    }
+
+    public IAsyncEnumerable<Page<SignalRGroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
     }
 
     public void Dispose()

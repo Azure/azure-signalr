@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.AspNetCore.Connections;
@@ -9,7 +9,9 @@ using Microsoft.Azure.SignalR.Emulator.Controllers;
 using Microsoft.Azure.SignalR.Emulator.HubEmulator;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+
 using Moq;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Emulator.Tests.Controllers
@@ -49,6 +51,15 @@ namespace Microsoft.Azure.SignalR.Emulator.Tests.Controllers
             };
 
             _controller.ControllerContext = controllerContext;
+        }
+
+        [Fact]
+        public void HealthCheckReturnsOK()
+        {
+            var result = _controller.GetHealthStatus();
+
+            // assert
+            Assert.IsType<OkResult>(result);
         }
 
         // CheckConnectionExistence Tests
@@ -215,6 +226,25 @@ namespace Microsoft.Azure.SignalR.Emulator.Tests.Controllers
             // Arrange
             var groupManager = new GroupManager();
             groupManager.AddConnectionIntoGroup(TestConnectionId, TestGroup);
+
+            var dynamicHubContextMock = new Mock<DynamicHubContext>();
+            dynamicHubContextMock.Setup(d => d.UserGroupManager).Returns(groupManager);
+
+            var dynamicHubContext = dynamicHubContextMock.Object;
+            _storeMock.Setup(s => s.TryGetLifetimeContext(It.IsAny<string>(), out dynamicHubContext)).Returns(true);
+
+            // Act
+            var result = _controller.RemoveConnectionFromAllGroups(TestHub, TestConnectionId, TestApplication);
+
+            // Assert
+            Assert.IsType<OkResult>(result);
+        }
+
+        [Fact]
+        public void RemoveConnectionFromAllGroupsValidConnectionWithNoGroupReturnsOk()
+        {
+            // Arrange
+            var groupManager = new GroupManager();
 
             var dynamicHubContextMock = new Mock<DynamicHubContext>();
             dynamicHubContextMock.Setup(d => d.UserGroupManager).Returns(groupManager);

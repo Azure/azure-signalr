@@ -6,12 +6,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging.Abstractions;
+
 using Newtonsoft.Json;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests;
@@ -19,8 +22,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests;
 public class SignalRMessageParserTest
 {
     private readonly IDependencyResolver _resolver = GetDefaultResolver();
-    private readonly MemoryPool _pool = new MemoryPool();
-    private readonly JsonSerializer _serializer = new JsonSerializer();
+    private readonly MemoryPool _pool = new();
+    private readonly JsonSerializer _serializer = new();
 
     [Theory]
     [InlineData("")]
@@ -132,7 +135,6 @@ public class SignalRMessageParserTest
         Assert.Empty(msgs);
     }
 
-
     [Theory]
     [InlineData("connection1", "msg")]
     [InlineData("a.connection1", null)]
@@ -147,7 +149,7 @@ public class SignalRMessageParserTest
 
         var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetHubName(connectionId), input);
         var excludedConnectionIds = new string[] { GenerateRandomName(), GenerateRandomName() };
-        message.Filter = GetFilter(excludedConnectionIds.Select(s => PrefixHelper.GetConnectionId(s)).ToList());
+        message.Filter = GetFilter(excludedConnectionIds.Select(PrefixHelper.GetConnectionId).ToList());
 
         if (exceptionType != null)
         {
@@ -179,7 +181,7 @@ public class SignalRMessageParserTest
 
         var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetHubConnectionId(connectionId), input);
         var excludedConnectionIds = new string[] { GenerateRandomName(), GenerateRandomName() };
-        message.Filter = GetFilter(excludedConnectionIds.Select(s => PrefixHelper.GetConnectionId(s)).ToList());
+        message.Filter = GetFilter(excludedConnectionIds.Select(PrefixHelper.GetConnectionId).ToList());
 
         if (exceptionType != null)
         {
@@ -207,7 +209,7 @@ public class SignalRMessageParserTest
         var fullName = PrefixHelper.GetHubGroupName(hub + "." + groupName);
         var message = SignalRMessageUtility.CreateMessage(fullName, input);
         var excludedConnectionIds = new string[] { GenerateRandomName(), GenerateRandomName() };
-        message.Filter = GetFilter(excludedConnectionIds.Select(s => PrefixHelper.GetConnectionId(s)).ToList());
+        message.Filter = GetFilter(excludedConnectionIds.Select(PrefixHelper.GetConnectionId).ToList());
 
         var msgs = parser.GetMessages(message).ToList();
         Assert.Single(msgs);
@@ -231,7 +233,7 @@ public class SignalRMessageParserTest
 
         var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetHubUserId(hub + "." + userName), input);
         var excludedConnectionIds = new string[] { GenerateRandomName(), GenerateRandomName() };
-        message.Filter = GetFilter(excludedConnectionIds.Select(s => PrefixHelper.GetConnectionId(s)).ToList());
+        message.Filter = GetFilter(excludedConnectionIds.Select(PrefixHelper.GetConnectionId).ToList());
 
         if (exceptionType != null)
         {

@@ -1,13 +1,18 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -23,18 +28,13 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     private const string ClientConnectionCountInServiceConnection = "#client";
 
-    // Fix issue: https://github.com/Azure/azure-signalr/issues/198
-    // .NET Framework has restriction about reserved string as the header name like "User-Agent"
-    private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
-
     private readonly IConnectionFactory _connectionFactory;
 
     private readonly IClientConnectionFactory _clientConnectionFactory;
 
     private readonly IClientConnectionManager _clientConnectionManager;
 
-    private readonly ConcurrentDictionary<string, string> _connectionIds =
-        new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string> _connectionIds = new(StringComparer.Ordinal);
 
     private readonly string[] _pingMessages =
         new string[4] { ClientConnectionCountInHub, null, ClientConnectionCountInServiceConnection, null };
@@ -44,6 +44,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
     private readonly IClientInvocationManager _clientInvocationManager;
 
     private readonly IHubProtocolResolver _hubProtocolResolver;
+
+    private readonly ICultureFeatureManager _cultureFeatureManager;
 
     public Action<HttpContext> ConfigureContext { get; set; }
 
@@ -60,6 +62,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
                              IServiceEventHandler serviceEventHandler,
                              IClientInvocationManager clientInvocationManager,
                              IHubProtocolResolver hubProtocolResolver,
+                             ICultureFeatureManager cultureFeatureManager,
                              ServiceConnectionType connectionType = ServiceConnectionType.Default,
                              GracefulShutdownMode mode = GracefulShutdownMode.Off,
                              bool allowStatefulReconnects = false)
@@ -81,6 +84,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
         _clientConnectionFactory = clientConnectionFactory;
         _clientInvocationManager = clientInvocationManager;
         _hubProtocolResolver = hubProtocolResolver;
+        _cultureFeatureManager = cultureFeatureManager;
     }
 
     public override bool TryAddClientConnection(IClientConnection connection)
@@ -100,9 +104,44 @@ internal partial class ServiceConnection : ServiceConnectionBase
         return r;
     }
 
-    protected override Task<ConnectionContext> CreateConnection(string target = null)
+    protected override void AttachClientConnection(IClientConnection connection)
     {
-        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target, headers: CustomHeader);
+        _connectionIds.TryAdd(connection.ConnectionId, connection.InstanceId);
+    }
+
+    protected override void DetachClientConnection(IClientConnection connection)
+    {
+        _connectionIds.TryRemove(connection.ConnectionId, out _);
+    }
+
+    public override async Task CloseClientConnections(CancellationToken token)
+    {
+        var tasks = new List<Task>();
+        foreach (var entity in _connectionIds)
+        {
+            if (_clientConnectionManager.TryGetClientConnection(entity.Key, out var c) && c is ClientConnectionContext connection)
+            {
+                // batch remove 100 connections once
+                if (tasks.Count % 100 == 0)
+                {
+                    await Task.Delay(1, token);
+                    await Task.WhenAll(tasks);
+                    tasks.Clear();
+                }
+                // Add a little delay to avoid too much pressure closing all the clients at one time
+                tasks.Add(connection.PerformDisconnectAsync());
+            }
+        }
+
+        if (tasks.Count > 0)
+        {
+            await Task.WhenAll(tasks);
+        }
+    }
+
+    protected override Task<ConnectionContext> CreateConnection(string target = null, CancellationToken cancellationToken = default)
+    {
+        return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target, cancellationToken);
     }
 
     protected override Task DisposeConnection(ConnectionContext connection)
@@ -133,8 +172,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
 
     protected override ReadOnlyMemory<byte> GetPingMessage()
     {
-        _pingMessages[1] = _clientConnectionManager.Count.ToString();
-        _pingMessages[3] = _connectionIds.Count.ToString();
+        _pingMessages[1] = _clientConnectionManager.Count.ToString(CultureInfo.InvariantCulture);
+        _pingMessages[3] = _connectionIds.Count.ToString(CultureInfo.InvariantCulture);
 
         return ServiceProtocol.GetMessageBytes(
             new PingMessage
@@ -148,6 +187,15 @@ internal partial class ServiceConnection : ServiceConnectionBase
         var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext) as ClientConnectionContext;
         connection.ServiceConnection = this;
 
+        connection.Features.Set<IConnectionMigrationFeature>(null);
+
+        if (_cultureFeatureManager != null && connection.RequestId != null && _cultureFeatureManager.TryRemoveCultureFeature(connection.RequestId, out var cultureFeature))
+        {
+            CultureInfo.CurrentCulture = cultureFeature.RequestCulture.Culture;
+            CultureInfo.CurrentUICulture = cultureFeature.RequestCulture.UICulture;
+            connection.GetHttpContext().Features.Set<IRequestCultureFeature>(cultureFeature);
+        }
+
         if (message.Headers.TryGetValue(Constants.AsrsMigrateFrom, out var from))
         {
             connection.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(from, ServerId));
@@ -159,7 +207,7 @@ internal partial class ServiceConnection : ServiceConnectionBase
         message.Headers.TryGetValue(Constants.AsrsIsDiagnosticClient, out var isDiagnosticClientValue);
         if (!StringValues.IsNullOrEmpty(isDiagnosticClientValue))
         {
-            isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
+            isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault(), CultureInfo.InvariantCulture);
         }
 
         using (new ClientConnectionScope(endpoint: HubEndpoint, outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
@@ -184,6 +232,8 @@ internal partial class ServiceConnection : ServiceConnectionBase
     {
         if (_clientConnectionManager.TryRemoveClientConnection(message.ConnectionId, out var c) && c is ClientConnectionContext connection)
         {
+            connection.Features.Set<IConnectionMigrationFeature>(null);
+
             if (message.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
             {
                 connection.AbortOnClose = false;
@@ -275,7 +325,6 @@ internal partial class ServiceConnection : ServiceConnectionBase
                 // app task completes connection.Transport.Output, which will completes connection.Application.Input and ends the transport
                 // Transports are written by us and are well behaved, wait for them to drain
                 connection.CancelOutgoing(true);
-
                 // transport never throws
                 await transport;
             }
@@ -357,5 +406,4 @@ internal partial class ServiceConnection : ServiceConnectionBase
         }
         return Task.CompletedTask;
     }
-
 }

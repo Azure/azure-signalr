@@ -36,3 +36,7 @@ dotnet build
 Before opening our .sln files in Visual Studio or VS Code, it is suggested to run `dotnet restore` to make sure all the dependencies are restored correctly.
 
 The solution file is **AzureSignalR.sln** in the root.
+
+## Public API changes
+
+If you make a public API change `eng\Export-API.ps1` script has to be run to update public API listings.

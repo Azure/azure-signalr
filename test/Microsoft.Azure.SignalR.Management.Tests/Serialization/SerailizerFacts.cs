@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -7,15 +7,20 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+
 using Azure.Core.Serialization;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+
 using Moq;
+
 using Newtonsoft.Json;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -31,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 yield return new object[] { new NewtonsoftJsonObjectSerializer(new() { NullValueHandling = NullValueHandling.Ignore }) };
             }
         }
-        private static readonly string TargetName = "target";
+        private const string TargetName = "target";
         private static readonly object Argument = new
         {
             Content = default(object), // test null value handling
@@ -117,7 +122,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 {
                     services.AddHttpClient(Constants.HttpClientNames.MessageResilient).AddHttpMessageHandler(() => new TestRootHandler((message, cancellationToken) =>
                     {
-                        var actualBody = message.Content.ReadAsStringAsync().Result;
+                        var actualBody = message.Content.ReadAsStringAsync(cancellationToken).Result;
 
                         _logger.LogDebug($"Expected: {expectedHttpBody}");
                         _logger.LogDebug($"Actual: {actualBody}");

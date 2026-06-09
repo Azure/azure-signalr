@@ -1,7 +1,10 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#nullable enable
 
 using System;
+using System.Buffers;
+using System.IO;
 
 using MessagePack;
 
@@ -68,9 +71,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Clone should make a copy of everything that may get modified throughout the lifetime of the message
         /// The default implementation is a shallow copy as it fits the current needs.
         /// </summary>
-        public virtual ServiceMessage Clone() => MemberwiseClone() as ServiceMessage;
+        public virtual ServiceMessage Clone() => (MemberwiseClone() as ServiceMessage)!;
 
-        public static byte GeneratePartitionKey(string input)
+        public static byte GeneratePartitionKey(string? input)
         {
             return (byte)((input?.GetHashCode() ?? 0) & 0xFF);
         }
@@ -209,6 +212,10 @@ namespace Microsoft.Azure.SignalR.Protocol
                     // todo : more optional fields
                     default:
                         // bypass unknown member.
+                        if (reader.NextMessagePackType == MessagePackType.Array || reader.NextMessagePackType == MessagePackType.Map)
+                        {
+                            throw new InvalidDataException("No complex data for extension members.");
+                        }
                         reader.Skip();
                         break;
                 }
@@ -238,13 +245,13 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the Azure Active Directory token.
         /// </summary>
-        public string Token { get; set; }
+        public string? Token { get; set; }
 
         /// <summary>
         /// Gets or sets the key Id.
         /// <c>null</c>
         /// </summary>
-        public string Kid { get; set; }
+        public string? Kid { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AccessKeyRequestMessage"/> class.
@@ -271,22 +278,22 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the key Id.
         /// </summary>
-        public string Kid { get; set; }
+        public string? Kid { get; set; }
 
         /// <summary>
         /// Gets or sets the access key.
         /// </summary>
-        public string AccessKey { get; set; }
+        public string? AccessKey { get; set; }
 
         /// <summary>
         /// Gets or sets error type.
         /// </summary>
-        public string ErrorType { get; set; }
+        public string? ErrorType { get; set; }
 
         /// <summary>
         /// Gets or sets error message.
         /// </summary>
-        public string ErrorMessage { get; set; }
+        public string? ErrorMessage { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AccessKeyResponseMessage"/> class.
@@ -318,6 +325,47 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
+    /// A message to refresh the authentication state of an existing client connection without forcing the client to reconnect.
+    /// </summary>
+    public class RefreshAuthMessage : ExtensibleServiceMessage, IAckableMessage
+    {
+        /// <summary>
+        /// Gets or sets the connection id or the connection token that identifies the live client connection whose authentication state is being refreshed.
+        /// </summary>
+        public string ConnectionIdOrToken { get; set; }
+
+        /// <summary>
+        /// Gets or sets the refreshed user claims for the connection.
+        /// </summary>
+        public System.Security.Claims.Claim[]? Claims { get; set; }
+
+        /// <summary>
+        /// Gets or sets the time at which the refreshed authentication state expires in UTC.
+        /// </summary>
+        public DateTimeOffset ExpireTime { get; set; }
+
+        /// <summary>
+        /// Gets or sets the protocol correlation id used to acknowledge this refresh operation.
+        /// </summary>
+        public int AckId { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RefreshAuthMessage"/> class.
+        /// </summary>
+        /// <param name="connectionIdOrToken">The connection id or the connection token that identifies the live client connection.</param>
+        /// <param name="claims">The refreshed user claims for the connection.</param>
+        /// <param name="expireTime">The time at which the refreshed authentication state expires in UTC.</param>
+        /// <param name="ackId">The protocol correlation id used to acknowledge this refresh operation.</param>
+        public RefreshAuthMessage(string connectionIdOrToken, System.Security.Claims.Claim[]? claims, DateTimeOffset expireTime, int ackId)
+        {
+            ConnectionIdOrToken = connectionIdOrToken ?? throw new ArgumentNullException(nameof(connectionIdOrToken));
+            Claims = claims;
+            ExpireTime = expireTime.ToUniversalTime();
+            AckId = ackId;
+        }
+    }
+
+    /// <summary>
     /// A handshake request message.
     /// </summary>
     public class HandshakeRequestMessage : ExtensibleServiceMessage
@@ -342,7 +390,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the target of service connection, only work for OnDemand connections.
         /// </summary>
-        public string Target { get; set; }
+        public string? Target { get; set; }
 
         /// <summary>
         /// Gets or sets the migratable flag.
@@ -392,12 +440,12 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the optional error message.
         /// </summary>
-        public string ErrorMessage { get; set; }
+        public string? ErrorMessage { get; set; }
 
         /// <summary>
         /// Gets or sets the id of this connection.
         /// </summary>
-        public string ConnectionId { get; set; }
+        public string? ConnectionId { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HandshakeResponseMessage"/> class.
@@ -410,7 +458,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Initializes a new instance of the <see cref="HandshakeResponseMessage"/> class.
         /// </summary>
         /// <param name="errorMessage">An optional response error message. A <c>null</c> or empty error message indicates a successful handshake.</param>
-        public HandshakeResponseMessage(string errorMessage)
+        public HandshakeResponseMessage(string? errorMessage)
         {
             ErrorMessage = errorMessage;
         }
@@ -426,7 +474,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public static PingMessage Instance = new PingMessage();
 
-        public string[] Messages { get; set; } = Array.Empty<string>();
+        public string?[] Messages { get; set; } = Array.Empty<string?>();
     }
 
     /// <summary>
@@ -443,9 +491,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Initializes a new instance of the <see cref="ServiceErrorMessage"/> class.
         /// </summary>
         /// <param name="errorMessage">An error message.</param>
-        public ServiceErrorMessage(string errorMessage)
+        public ServiceErrorMessage(string? errorMessage)
         {
-            ErrorMessage = errorMessage;
+            ErrorMessage = errorMessage ?? string.Empty;
         }
     }
 
@@ -462,7 +510,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the id of event object.
         /// </summary>
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
         /// <summary>
         /// Gets or sets the kind of event.
@@ -481,12 +529,12 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="id">An id of event object.</param>
         /// <param name="kind">A kind of event.</param>
         /// <param name="message">A message of event.</param>
-        public ServiceEventMessage(ServiceEventObjectType type, string id, ServiceEventKind kind, string message)
+        public ServiceEventMessage(ServiceEventObjectType type, string? id, ServiceEventKind kind, string? message)
         {
             Type = type;
             Id = id;
             Kind = kind;
-            Message = message;
+            Message = message ?? string.Empty;
         }
     }
 
@@ -511,6 +559,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string Message { get; set; }
 
         /// <summary>
+        /// Gets or sets the payload.
+        /// </summary>
+        public ReadOnlySequence<byte>? Payload { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="AckMessage"/> class.
         /// </summary>
         /// <param name="ackId">The ack Id</param>
@@ -525,11 +578,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="ackId">The ack Id</param>
         /// <param name="status">The status code</param>
         /// <param name="message">The ack message</param>
-        public AckMessage(int ackId, int status, string message)
+        public AckMessage(int ackId, int status, string? message)
         {
             AckId = ackId;
             Status = status;
-            Message = message;
+            Message = message ?? string.Empty;
         }
     }
 
@@ -565,5 +618,44 @@ namespace Microsoft.Azure.SignalR.Protocol
             ConnectionId = connectionId;
             InstanceId = instanceId;
         }
+    }
+
+    /// <summary>
+    /// A message to list connections in a group.
+    /// </summary>
+    /// <remarks>The expected response of this message is an <see cref="AckMessage"/> whose <see cref="AckMessage.Payload"/> is a serialized <see cref="GroupMemberQueryResponse"/>.</remarks>
+    public class GroupMemberQueryMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
+    {
+        /// <summary>
+        /// The id to ack.
+        /// </summary>
+        public int AckId { get; set; }
+
+        /// <summary>
+        /// The name of the group to list.
+        /// </summary>
+        public string GroupName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The max size of a page.
+        /// </summary>
+        public int? MaxPageSize { get; set; }
+
+        /// <summary>
+        /// The max count of connections to return.
+        /// </summary>
+        public int? Top { get; set; }
+
+        /// <summary>
+        /// A token to indiate the start point of results.
+        /// This parameter is provided by the service in the response of a previous request when there are additional results to be fetched.
+        /// Clients should include the continuationToken in the next request to receive the subsequent page of data. If this parameter is omitted, the server will return the first page of results.
+        /// </summary>
+        public string? ContinuationToken { get; set; }
+
+        /// <summary>
+        /// The tracing id.
+        /// </summary>
+        public ulong? TracingId { get; set; }
     }
 }

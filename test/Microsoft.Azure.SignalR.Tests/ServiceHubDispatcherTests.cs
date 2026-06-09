@@ -1,15 +1,23 @@
-﻿using System;
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Azure;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -17,7 +25,7 @@ namespace Microsoft.Azure.SignalR.Tests;
 public class ServiceHubDispatcherTests
 {
     [Fact]
-    public async void TestShutdown()
+    public async Task TestShutdown()
     {
         var index = new StrongBox<int>();
         var clientManager = new TestClientConnectionManager(index);
@@ -30,6 +38,7 @@ public class ServiceHubDispatcherTests
             Mode = GracefulShutdownMode.WaitForClientsClose
         };
 
+        var sc = new ServiceCollection();
         var dispatcher = new ServiceHubDispatcher<Hub>(
             null,
             TestHubContext<Hub>.GetInstance(),
@@ -45,6 +54,8 @@ public class ServiceHubDispatcherTests
             null,
             null,
             new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
+            null,
+            sc.BuildServiceProvider(),
             null
         );
 
@@ -101,7 +112,7 @@ public class ServiceHubDispatcherTests
             _index = index;
         }
 
-        public async Task OfflineAsync(GracefulShutdownMode mode)
+        public async Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
         {
             await Task.Yield();
             OfflineIndex = Interlocked.Increment(ref _index.Value);
@@ -129,6 +140,16 @@ public class ServiceHubDispatcherTests
         }
 
         public Task WriteAsync(ServiceMessage seviceMessage)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task CloseClientConnections(CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IAsyncEnumerable<Page<SignalRGroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
         {
             throw new NotImplementedException();
         }

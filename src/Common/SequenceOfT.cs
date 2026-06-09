@@ -1,5 +1,5 @@
-﻿// Copyright (c) Andrew Arnott. All rights reserved.
-// Licensed under the MIT license. See https://github.com/AArnott/Nerdbank.Streams/blob/master/LICENSE file in the project root for full license information.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #nullable enable
 

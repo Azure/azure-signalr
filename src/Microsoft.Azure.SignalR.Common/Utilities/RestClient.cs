@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -9,184 +9,216 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Azure.Core.Serialization;
+
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Primitives;
 
 #nullable enable
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal class RestClient
 {
-    internal class RestClient
+    private readonly IHttpClientFactory _httpClientFactory;
+
+    private readonly IPayloadContentBuilder _payloadContentBuilder;
+
+    public RestClient(IHttpClientFactory httpClientFactory, IPayloadContentBuilder contentBuilder)
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IPayloadContentBuilder _payloadContentBuilder;
+        _httpClientFactory = httpClientFactory;
+        _payloadContentBuilder = contentBuilder;
+    }
 
-        public RestClient(IHttpClientFactory httpClientFactory, IPayloadContentBuilder contentBuilder)
+    // TODO: Test only, will remove later
+    internal RestClient(IHttpClientFactory httpClientFactory) : this(httpClientFactory, new JsonPayloadContentBuilder(new JsonObjectSerializer()))
+    {
+    }
+
+    public Task SendAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(api, httpMethod, (Func<HttpResponseMessage, Task<bool>>?)null, cancellationToken);
+
+    public Task SendAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        Func<HttpResponseMessage, bool>? handleExpectedResponse,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(api, httpMethod, AsAsync(handleExpectedResponse), cancellationToken);
+
+    public Task SendAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsyncCore(Constants.HttpClientNames.UserDefault, api, httpMethod, null, null, handleExpectedResponseAsync, null, cancellationToken);
+    }
+
+    public Task SendWithRetryAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
+        CancellationToken cancellationToken = default)
+    {
+        return SendWithRetryAsync(api, httpMethod, AsAsync(handleExpectedResponse), cancellationToken);
+    }
+
+    public Task SendWithRetryAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, null, handleExpectedResponseAsync, null, cancellationToken);
+    }
+
+    public Task SendMessageWithRetryAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        string methodName,
+        object?[] args,
+        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponse = null,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, handleExpectedResponse, null, cancellationToken);
+    }
+
+    public Task SendMessageWithRetryAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        string methodName,
+        object?[] args,
+        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponse = null,
+        MediaTypeWithQualityHeaderValue? accepts = null,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new InvocationMessage(methodName, args), null, handleExpectedResponse, accepts, cancellationToken);
+    }
+
+    public Task SendStreamMessageWithRetryAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        string streamId,
+        object? arg = null,
+        Type? typeHint = null,
+        Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, new StreamItemMessage(streamId, arg), typeHint, AsAsync(handleExpectedResponse), null, cancellationToken);
+    }
+
+    private static Uri GetUri(string url, IDictionary<string, StringValues>? query)
+    {
+        if (query == null || query.Count == 0)
         {
-            _httpClientFactory = httpClientFactory;
-            _payloadContentBuilder = contentBuilder;
+            return new Uri(url);
         }
-
-        // TODO: Test only, will remove later
-        internal RestClient(IHttpClientFactory httpClientFactory) : this(httpClientFactory, new JsonPayloadContentBuilder(new JsonObjectSerializer()))
+        var builder = new UriBuilder(url);
+        var sb = new StringBuilder(builder.Query);
+        if (sb.Length == 1 && sb[0] == '?')
         {
+            sb.Clear();
         }
-
-        // TODO: remove later
-        public RestClient() : this(HttpClientFactory.Instance)
+        else if (sb.Length > 0 && sb[0] != '?')
         {
+            sb.Insert(0, '?');
         }
-
-        public Task SendAsync(
-            RestApiEndpoint api,
-            HttpMethod httpMethod,
-            string? methodName = null,
-            object[]? args = null,
-            Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
-            CancellationToken cancellationToken = default)
+        foreach (var item in query)
         {
-            if (handleExpectedResponse == null)
+            foreach (var value in item.Value)
             {
-                return SendAsync(api, httpMethod, methodName, args, handleExpectedResponseAsync: null, cancellationToken);
+                sb.Append(sb.Length > 0 ? '&' : '?');
+                sb.Append(Uri.EscapeDataString(item.Key));
+                sb.Append('=');
+                sb.Append(Uri.EscapeDataString(value!));
             }
+        }
+        builder.Query = sb.ToString();
+        return builder.Uri;
+    }
 
-            return SendAsync(api, httpMethod, methodName, args, response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
+    private static async Task ThrowExceptionOnResponseFailureAsync(HttpRequestMessage request, HttpResponseMessage response)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            return;
         }
 
-        public Task SendAsync(
-            RestApiEndpoint api,
-            HttpMethod httpMethod,
-            string? methodName = null,
-            object[]? args = null,
-            Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
-            CancellationToken cancellationToken = default)
-        {
-            return SendAsyncCore(Constants.HttpClientNames.UserDefault, api, httpMethod, methodName, args, handleExpectedResponseAsync, cancellationToken);
-        }
-
-        public Task SendWithRetryAsync(
-            RestApiEndpoint api,
-            HttpMethod httpMethod,
-            string? methodName = null,
-            object[]? args = null,
-            Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
-            CancellationToken cancellationToken = default)
-        {
-            return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, methodName, args, handleExpectedResponse == null ? null : response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
-        }
-
-        public Task SendMessageWithRetryAsync(
-            RestApiEndpoint api,
-            HttpMethod httpMethod,
-            string? methodName = null,
-            object[]? args = null,
-            Func<HttpResponseMessage, bool>? handleExpectedResponse = null,
-            CancellationToken cancellationToken = default)
-        {
-            return SendAsyncCore(Constants.HttpClientNames.MessageResilient, api, httpMethod, methodName, args, handleExpectedResponse == null ? null : response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
-        }
-
-        private async Task ThrowExceptionOnResponseFailureAsync(HttpResponseMessage response)
-        {
-            if (response.IsSuccessStatusCode)
-            {
-                return;
-            }
-
-            var detail = await response.Content.ReadAsStringAsync();
+        var detail = await response.Content.ReadAsStringAsync();
 
 #if NET5_0_OR_GREATER
-            var innerException = new HttpRequestException(
-    $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})", null, response.StatusCode);
+        var innerException = new HttpRequestException(
+$"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})", null, response.StatusCode);
 #else
-            var innerException = new HttpRequestException(
-                $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})");
+        var innerException = new HttpRequestException(
+            $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})");
 #endif
-            throw response.StatusCode switch
-            {
-                HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(response.RequestMessage?.RequestUri?.ToString(), innerException, detail),
-                HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(response.RequestMessage?.RequestUri?.ToString(), innerException),
-                HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(response.RequestMessage?.RequestUri?.ToString(), innerException),
-                _ => new AzureSignalRRuntimeException(response.RequestMessage?.RequestUri?.ToString(), innerException),
-            };
-        }
 
-        private async Task SendAsyncCore(
-            string httpClientName,
-            RestApiEndpoint api,
-            HttpMethod httpMethod,
-            string? methodName = null,
-            object[]? args = null,
-            Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
-            CancellationToken cancellationToken = default)
+        var requestUri = request.RequestUri?.ToString();
+        var jwtToken = request.Headers.Authorization?.Parameter ?? null;
+        throw response.StatusCode switch
         {
-            using var httpClient = _httpClientFactory.CreateClient(httpClientName);
-            using var request = BuildRequest(api, httpMethod, methodName, args);
+            HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(requestUri, innerException, detail),
+            HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(requestUri, innerException, jwtToken),
+            HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(requestUri, innerException),
+            _ => new AzureSignalRRuntimeException(response.RequestMessage?.RequestUri?.ToString(), innerException, response.StatusCode, detail),
+        };
+    }
 
-            try
-            {
-                using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                if (handleExpectedResponseAsync == null)
-                {
-                    await ThrowExceptionOnResponseFailureAsync(response);
-                }
-                else
-                {
-                    if (!await handleExpectedResponseAsync(response))
-                    {
-                        await ThrowExceptionOnResponseFailureAsync(response);
-                    }
-                }
-            }
-            catch (HttpRequestException ex)
-            {
-                throw new AzureSignalRException($"An error happened when making request to {request.RequestUri}", ex);
-            }
-        }
-
-        private static Uri GetUri(string url, IDictionary<string, StringValues>? query)
+    private async Task SendAsyncCore(
+        string httpClientName,
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        HubMessage? body,
+        Type? typeHint,
+        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
+        MediaTypeWithQualityHeaderValue? accepts = null,
+        CancellationToken cancellationToken = default)
+    {
+        using var httpClient = _httpClientFactory.CreateClient(httpClientName);
+        using var request = BuildRequest(api, httpMethod, body, typeHint);
+        if (accepts != null)
         {
-            if (query == null || query.Count == 0)
+            request.Headers.Accept.Add(accepts);
+        }
+        try
+        {
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (handleExpectedResponseAsync == null)
             {
-                return new Uri(url);
+                await ThrowExceptionOnResponseFailureAsync(request, response);
             }
-            var builder = new UriBuilder(url);
-            var sb = new StringBuilder(builder.Query);
-            if (sb.Length == 1 && sb[0] == '?')
+            else
             {
-                sb.Clear();
-            }
-            else if (sb.Length > 0 && sb[0] != '?')
-            {
-                sb.Insert(0, '?');
-            }
-            foreach (var item in query)
-            {
-                foreach (var value in item.Value)
+                if (!await handleExpectedResponseAsync(response))
                 {
-                    sb.Append(sb.Length > 0 ? '&' : '?');
-                    sb.Append(Uri.EscapeDataString(item.Key));
-                    sb.Append('=');
-                    sb.Append(Uri.EscapeDataString(value!));
+                    await ThrowExceptionOnResponseFailureAsync(request, response);
                 }
             }
-            builder.Query = sb.ToString();
-            return builder.Uri;
         }
-
-        private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string? methodName = null, object[]? args = null)
+        catch (HttpRequestException ex)
         {
-            var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
-            return GenerateHttpRequest(api.Audience, api.Query, httpMethod, payload, api.Token);
-        }
-
-        private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, PayloadMessage? payload, string tokenString)
-        {
-            var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
-            request.Content = _payloadContentBuilder.Build(payload);
-            return request;
+            throw new AzureSignalRException($"An error happened when making request to {request.RequestUri}", ex);
         }
     }
+
+    private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
+    {
+        return GenerateHttpRequest(api.Audience, api.Query, httpMethod, body, typeHint);
+    }
+
+    private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues>? query, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
+    {
+        var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
+        request.Content = _payloadContentBuilder.Build(body, typeHint);
+        return request;
+    }
+
+    private static Func<HttpResponseMessage, Task<bool>>? AsAsync(Func<HttpResponseMessage, bool>? syncFunc) =>
+        syncFunc == null ? null : (response => Task.FromResult(syncFunc(response)));
 }

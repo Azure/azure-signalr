@@ -21,19 +21,19 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests;
 
-internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnectionFactory, IServiceConnectionFactory
+internal sealed class ServiceConnectionProxy : IClientConnectionManager, IClientConnectionFactory, IServiceConnectionFactory
 {
     private static readonly IServiceProtocol SharedServiceProtocol = new ServiceProtocol();
 
     private readonly PipeOptions _clientPipeOptions;
 
-    private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new();
 
-    private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new();
 
-    private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
+    private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new();
 
-    private readonly ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>> _waitForServerConnection = new ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>>();
+    private readonly ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>> _waitForServerConnection = new();
 
     private int _connectedServerConnectionCount;
 
@@ -120,6 +120,7 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
             null,
             ClientInvocationManager,
             new DefaultHubProtocolResolver(new[] { new JsonHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
+            null,
             type,
             allowStatefulReconnects: AllowStatefulReconnects);
         ServiceConnections.TryAdd(connectionId, connection);
@@ -234,7 +235,10 @@ internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnect
         return _waitForServerConnection.GetOrAdd(count, key => new TaskCompletionSource<ConnectionContext>()).Task;
     }
 
-    public bool TryAddClientConnection(IClientConnection connection) => TryAddClientConnection(connection as ClientConnectionContext);
+    public bool TryAddClientConnection(IClientConnection connection)
+    {
+        return TryAddClientConnection(connection as ClientConnectionContext);
+    }
 
     public bool TryRemoveClientConnection(string connectionId, out IClientConnection connection)
     {

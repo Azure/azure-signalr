@@ -1,10 +1,12 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Concurrent;
 using System.IO.Pipelines;
+using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -14,28 +16,33 @@ namespace Microsoft.Azure.SignalR.Tests.Common;
 
 #nullable enable
 
-internal class TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected,
-                                     bool throws = false,
-                                     ILogger? logger = null,
-                                     IServiceMessageHandler? serviceMessageHandler = null,
-                                     IServiceEventHandler? serviceEventHandler = null)
-    : ServiceConnectionBase(new ServiceProtocol(),
-                            "serverId",
-                            Guid.NewGuid().ToString(),
-                            new TestHubServiceEndpoint(),
-                            serviceMessageHandler,
-                            serviceEventHandler,
-                            new TestClientConnectionManager(),
-                            ServiceConnectionType.Default,
-                            logger ?? NullLogger.Instance)
+internal class TestServiceConnection : ServiceConnectionBase
 {
-    private readonly TaskCompletionSource<object?> _created = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<object?> _created = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private readonly bool _throws = throws;
+    private readonly bool _throws;
 
     private ConnectionContext? _connection;
 
-    private ServiceConnectionStatus _expectedStatus = status;
+    private ServiceConnectionStatus _expectedStatus;
+
+    public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected,
+                                         bool throws = false,
+                                         ILogger? logger = null,
+                                         IServiceMessageHandler? serviceMessageHandler = null,
+                                         IServiceEventHandler? serviceEventHandler = null) : base(new ServiceProtocol(),
+                                "serverId",
+                                Guid.NewGuid().ToString(),
+                                new TestHubServiceEndpoint(),
+                                serviceMessageHandler,
+                                serviceEventHandler,
+                                new TestClientConnectionManager(),
+                                ServiceConnectionType.Default,
+                                logger ?? NullLogger.Instance)
+    {
+        _throws = throws;
+        SetStatus(status);
+    }
 
     public IDuplexPipe? Application { get; private set; }
 
@@ -52,6 +59,11 @@ internal class TestServiceConnection(ServiceConnectionStatus status = ServiceCon
     public void Stop()
     {
         _connection?.Transport.Input.CancelPendingRead();
+    }
+
+    public override Task CloseClientConnections(CancellationToken token)
+    {
+        throw new NotImplementedException();
     }
 
     public override Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
@@ -81,7 +93,7 @@ internal class TestServiceConnection(ServiceConnectionStatus status = ServiceCon
         return Task.CompletedTask;
     }
 
-    protected override Task<ConnectionContext> CreateConnection(string? target = null)
+    protected override Task<ConnectionContext> CreateConnection(string? target = null, CancellationToken cancellationToken = default)
     {
         var pipeOptions = new PipeOptions();
         var duplex = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);

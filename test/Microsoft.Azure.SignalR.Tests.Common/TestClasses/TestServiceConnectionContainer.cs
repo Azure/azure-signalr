@@ -1,10 +1,13 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Azure;
+
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests.Common;
@@ -86,7 +89,7 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
         return Task.CompletedTask;
     }
 
-    public Task OfflineAsync(GracefulShutdownMode mode)
+    public Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token)
     {
         return Task.CompletedTask;
     }
@@ -103,5 +106,20 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
 
     public void Dispose()
     {
+    }
+
+    public Task CloseClientConnections(CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IAsyncEnumerable<SignalRGroupMember> ListConnectionsInGroupAsync(string groupName, int? top = null, ulong? tracingId = null)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IAsyncEnumerable<Page<SignalRGroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
     }
 }

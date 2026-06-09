@@ -1,35 +1,31 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
-
   <PropertyGroup>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>aspnetcore;azure;signalr</PackageTags>
-    <EnableApiCheck>false</EnableApiCheck>
-    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <GenerateAPIListing>true</GenerateAPIListing>
+    <IsProtocolLibrary Condition="'$(MSBuildProjectName)' == 'Microsoft.Azure.SignalR.Protocols' OR '$(MSBuildProjectName)' == 'Microsoft.Azure.SignalR.Serverless.Protocols'">true</IsProtocolLibrary>
+    <IsSignalRLibrary Condition="'$(OutputType)' != 'Exe' AND '$(IsProtocolLibrary)' == ''">true</IsSignalRLibrary>
   </PropertyGroup>
+  <!-- Order matters, please do not change the order -->
+  <Import Project="..\eng\ApiListing.targets" />
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudioEng.MicroBuild.Core" Version="$(MicrosoftVisualStudioEngMicroBuildCoreVersion)">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubPackageVersion)" PrivateAssets="All" />
+    <PackageReference Condition="'$(GenerateAPIListing)' == 'true'" Include="Microsoft.DotNet.GenAPI" Version="5.0.0-beta.19552.1" PrivateAssets="All" />
   </ItemGroup>
 
-  <ItemGroup>
-      <!-- Adding the assemblies to sign -->
-      <FilesToSign Include="$(OutDir)\$(RootNamespace)*.nupkg">
-        <Authenticode>NuGet</Authenticode>
-      </FilesToSign>
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(OutputType)' != 'Exe'">
+  <ItemGroup Condition=" '$(IsSignalRLibrary)' != '' ">
     <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionHttpVersion)" />
     <PackageReference Include="Azure.Identity" Version="$(AzureIdentityPackageVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' AND '$(OutputType)' != 'Exe'">
+  <ItemGroup Condition=" '$(IsSignalRLibrary)' != '' AND '$(TargetFramework)' == 'netstandard2.0' ">
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Connections.Abstractions" Version="$(MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Common" Version="$(MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion)" />
@@ -44,4 +40,15 @@
     <PackageReference Include="System.Net.WebSockets.WebSocketProtocol" Version="$(SystemNetWebSocketsWebSocketProtocolPackageVersion)" />
   </ItemGroup>
 
+  <!-- For AspNet SignalR only-->
+  <ItemGroup Condition=" '$(IsSignalRLibrary)' != '' AND '$(TargetFrameworkIdentifier)' == '.NETFramework' ">
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionNet8PackageVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.Connections.Abstractions" Version="$(MicrosoftAspNetCoreConnectionsAbstractionsNet8PackageVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Common" Version="$(MicrosoftAspNetCoreHttpConnectionsCommonNet8PackageVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(MicrosoftExtensionsLoggingAbstractionsNet8PackageVersion)" />
+    <PackageReference Include="System.IO.Pipelines" Version="$(SystemIOPipelinesPackageVersion)" />
+    <PackageReference Include="System.Threading.Channels" Version="$(SystemThreadingChannelsPackageVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="$(MicrosoftAspNetCoreSignalRCommonNet8PackageVersion)" />
+    <Reference Include="System.Web" />
+  </ItemGroup>
 </Project>

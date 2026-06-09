@@ -13,5 +13,5 @@ internal class HealthCheckOption
     public TimeSpan CheckInterval { get; set; } = TimeSpan.FromMinutes(2);
     public TimeSpan RetryInterval { get; set; } = TimeSpan.FromSeconds(3);
     public TimeSpan HttpTimeout { get; set; } = TimeSpan.FromSeconds(2);
-    public bool EnabledForSingleEndpoint { get; set; } = false;
+    public bool EnabledForSingleEndpoint { get; set; }
 }

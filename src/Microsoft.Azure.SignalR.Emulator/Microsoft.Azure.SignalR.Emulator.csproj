@@ -8,12 +8,18 @@
     <ToolCommandName>asrs-emulator</ToolCommandName>
     <PackageOutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\build</PackageOutputPath>
     <IsPackable>true</IsPackable>
+    <NoWarn>$(NoWarn);</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Common\MemoryBufferWriter.cs" Link="Common\MemoryBufferWriter.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="$(EmulatorMicrosoftPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="$(EmulatorMicrosoftPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(EmulatorMicrosoftPackageVersion)" />
-    <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="$(MicrosoftExtensionsCommandLineUtilsPackageVersion)" />
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLinePackageVersion)" />
+    <PackageReference Include="MessagePack" Version="$(MessagePackPackageVersion)" />
   </ItemGroup>
 </Project>

@@ -1,9 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
+
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -13,7 +17,7 @@ public class VerifiableLoggedTest(ITestOutputHelper output) : LoggedTest(output)
 {
     public static async Task RetryWhenExceptionThrows(Func<Task> asyncFunc, int maxCount = 3)
     {
-        AssertActualExpectedException last = null;
+        NotEqualException last = null;
         int i;
         for (i = 0; i < maxCount; i++)
         {
@@ -22,7 +26,7 @@ public class VerifiableLoggedTest(ITestOutputHelper output) : LoggedTest(output)
                 await asyncFunc();
                 break;
             }
-            catch (AssertActualExpectedException e)
+            catch (NotEqualException e)
             {
                 last = e;
                 continue;
@@ -34,21 +38,19 @@ public class VerifiableLoggedTest(ITestOutputHelper output) : LoggedTest(output)
         }
     }
 
-    public virtual IDisposable StartVerifiableLog(out ILoggerFactory loggerFactory, [CallerMemberName] string testName = null, Func<WriteContext, bool> expectedErrors = null)
+    public virtual IVerifiableLog StartVerifiableLog(out ILoggerFactory loggerFactory, [CallerMemberName] string testName = null)
     {
         var disposable = StartLog(out loggerFactory, testName);
 
-        return new VerifyLogScope(loggerFactory, disposable, expectedErrors);
+        return new VerifyLogScope(loggerFactory, disposable);
     }
 
-    public virtual IDisposable StartVerifiableLog(out ILoggerFactory loggerFactory,
+    public virtual IVerifiableLog StartVerifiableLog(out ILoggerFactory loggerFactory,
                                                   LogLevel minLogLevel,
-                                                  [CallerMemberName] string testName = null,
-                                                  Func<WriteContext, bool> expectedErrors = null,
-                                                  Func<IList<LogRecord>, bool> logChecker = null)
+                                                  [CallerMemberName] string testName = null)
     {
         var disposable = StartLog(out loggerFactory, minLogLevel, testName);
 
-        return new VerifyLogScope(loggerFactory, disposable, expectedErrors, logChecker);
+        return new VerifyLogScope(loggerFactory, disposable);
     }
 }

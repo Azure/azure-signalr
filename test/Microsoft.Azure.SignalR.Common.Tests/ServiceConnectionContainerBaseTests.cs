@@ -2,8 +2,17 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Buffers;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
+
+using Moq;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -31,13 +40,7 @@ public class ServiceConnectionContainerBaseTests(ITestOutputHelper output) : Ver
     [Fact]
     public void TestWeakConnectionStatus()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: e => true,
-            logChecker: s =>
-            {
-                Assert.Single(s);
-                Assert.Equal("EndpointOffline", s[0].Write.EventId.Name);
-                return true;
-            }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var endpoint1 = new TestHubServiceEndpoint();
             var conn1 = new TestServiceConnection();
@@ -62,19 +65,14 @@ public class ServiceConnectionContainerBaseTests(ITestOutputHelper output) : Ver
 
             conn1.SetStatus(ServiceConnectionStatus.Connected);
             Assert.True(endpoint1.Online);
+            logCollector.Expects("EndpointOffline");
         }
     }
 
     [Fact]
     public void TestStrongConnectionStatus()
     {
-        using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: e => true,
-            logChecker: s =>
-            {
-                Assert.Single(s);
-                Assert.Equal("EndpointOffline", s[0].Write.EventId.Name);
-                return true;
-            }))
+        using (var logCollector = StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var endpoint1 = new TestHubServiceEndpoint();
             var conn1 = new TestServiceConnection();
@@ -99,6 +97,65 @@ public class ServiceConnectionContainerBaseTests(ITestOutputHelper output) : Ver
 
             conn1.SetStatus(ServiceConnectionStatus.Connected);
             Assert.True(endpoint1.Online);
+            logCollector.Expects("EndpointOffline");
         }
+    }
+
+    [Fact]
+    public async Task TestInvokeAsync()
+    {
+        var endpoint1 = new TestHubServiceEndpoint();
+        var conn1 = new TestServiceConnection();
+        var scf = new TestServiceConnectionFactory(endpoint1 => conn1);
+        var container = new WeakServiceConnectionContainer(scf, 5, endpoint1, Mock.Of<ILogger>());
+        var queryMessage = new GroupMemberQueryMessage() { GroupName = "group" };
+        var invokeTask = container.InvokeAsync<GroupMemberQueryResponse>(queryMessage, default);
+
+        var expectedResponse = new GroupMemberQueryResponse()
+        {
+            ContinuationToken = "abc",
+            Members = [new() { ConnectionId = "1" }, new() { ConnectionId = "2" }]
+        };
+        var buffer = new ArrayBufferWriter<byte>();
+        new ServiceProtocol().WriteMessagePayload(expectedResponse, buffer);
+        AckHandler.Singleton.TriggerAck(queryMessage.AckId, AckStatus.Ok, new ReadOnlySequence<byte>(buffer.WrittenMemory));
+        var response = await invokeTask;
+        Assert.Equal(queryMessage, conn1.ReceivedMessages.Single());
+        Assert.Equal(expectedResponse.ContinuationToken, response.ContinuationToken);
+        Assert.True(expectedResponse.Members.SequenceEqual(response.Members));
+    }
+
+    [Fact]
+    public async Task TestListConnectionsInGroupAsync()
+    {
+        var conn = new TestServiceConnection();
+        var groupName = "groupName";
+        var top = 3;
+        var tracingId = (ulong)1;
+        var connectionContainerMock = new Mock<ServiceConnectionContainerBase>(
+             new TestServiceConnectionFactory(endpoint => conn),
+            5,
+            new TestHubServiceEndpoint(),
+            null,
+            Mock.Of<ILogger>(),
+            null);
+        connectionContainerMock.SetupSequence(c => c.InvokeAsync<GroupMemberQueryResponse>(
+            It.IsAny<ServiceMessage>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GroupMemberQueryResponse() { ContinuationToken = "abc", Members = [new() { ConnectionId = "1" }, new() { ConnectionId = "2" }] })
+            .ReturnsAsync(new GroupMemberQueryResponse() { ContinuationToken = null, Members = [new() { ConnectionId = "3" }] });
+        var enumerator = connectionContainerMock.Object
+            .ListConnectionsInGroupAsync(groupName, top, null, null, tracingId)
+            .GetAsyncEnumerator();
+        Assert.True(await enumerator.MoveNextAsync());
+        Assert.Equal("1", enumerator.Current.Values[0].ConnectionId);
+        Assert.Equal("2", enumerator.Current.Values[1].ConnectionId);
+        connectionContainerMock.Verify(c => c.InvokeAsync<GroupMemberQueryResponse>(
+            It.Is<GroupMemberQueryMessage>(m => m.GroupName == groupName && m.Top == 3 && m.TracingId == tracingId), It.IsAny<CancellationToken>()), Times.Once);
+        connectionContainerMock.Invocations.Clear();
+        Assert.True(await enumerator.MoveNextAsync());
+        Assert.Equal("3", enumerator.Current.Values[0].ConnectionId);
+        connectionContainerMock.Verify(c => c.InvokeAsync<GroupMemberQueryResponse>(
+    It.Is<GroupMemberQueryMessage>(m => m.GroupName == groupName && m.Top == 1 && m.TracingId == tracingId && m.ContinuationToken == "abc"), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.False(await enumerator.MoveNextAsync());
     }
 }

@@ -5,8 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
 using Microsoft.AspNet.SignalR.Client;
 using Microsoft.Azure.SignalR.Tests.Common;
+
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests

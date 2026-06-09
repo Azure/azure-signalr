@@ -6,47 +6,47 @@ using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Azure.SignalR.Connections.Client.Internal;
 using Microsoft.Extensions.Logging;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+/// <summary>
+/// TODO: Implement Features
+/// </summary>
+internal class WebSocketConnectionContext : ConnectionContext
 {
+    private readonly WebSocketsTransport _websocketTransport;
+
     /// <summary>
-    /// TODO: Implement Features
+    /// TODO: get from service handshake
     /// </summary>
-    internal class WebSocketConnectionContext : ConnectionContext
+    public override string ConnectionId { get; set; }
+
+    public override IFeatureCollection Features { get; } = new FeatureCollection();
+
+    public override IDictionary<object, object> Items { get; set; } = new ConnectionItems();
+
+    public override IDuplexPipe Transport { get; set; }
+
+    public WebSocketConnectionContext(WebSocketConnectionOptions httpConnectionOptions,
+                                      ILoggerFactory loggerFactory,
+                                      IAccessTokenProvider accessTokenProvider)
     {
-        private readonly WebSocketsTransport _websocketTransport;
+        Transport = _websocketTransport = new WebSocketsTransport(httpConnectionOptions, loggerFactory, accessTokenProvider);
+        ConnectionId = "sc_" + Guid.NewGuid();
+    }
 
-        /// <summary>
-        /// TODO: get from service handshake
-        /// </summary>
-        public override string ConnectionId { get; set; }
+    public async Task StartAsync(Uri url, CancellationToken cancellationToken = default)
+    {
+        await _websocketTransport.StartAsync(url, cancellationToken).ForceAsync();
+    }
 
-        public override IFeatureCollection Features { get; } = new FeatureCollection();
-
-        public override IDictionary<object, object> Items { get; set; } = new ConnectionItems();
-
-        public override IDuplexPipe Transport { get; set; }
-
-        public WebSocketConnectionContext(WebSocketConnectionOptions httpConnectionOptions,
-                                          ILoggerFactory loggerFactory,
-                                          IAccessTokenProvider accessTokenProvider)
-        {
-            Transport = _websocketTransport = new WebSocketsTransport(httpConnectionOptions, loggerFactory, accessTokenProvider);
-            ConnectionId = "sc_" + Guid.NewGuid();
-        }
-
-        public async Task StartAsync(Uri url, CancellationToken cancellationToken = default)
-        {
-            await _websocketTransport.StartAsync(url, cancellationToken).ForceAsync();
-        }
-
-        public Task StopAsync()
-        {
-            return _websocketTransport.StopAsync();
-        }
+    public Task StopAsync()
+    {
+        return _websocketTransport.StopAsync();
     }
 }

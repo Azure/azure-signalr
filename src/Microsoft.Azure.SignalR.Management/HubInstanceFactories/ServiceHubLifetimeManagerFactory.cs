@@ -1,10 +1,11 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
                         var container = _serviceProvider.GetRequiredService<IServiceConnectionContainer>();
                         var connectionManager = new ServiceConnectionManager<THub>();
                         connectionManager.SetServiceConnection(container);
-                        return ActivatorUtilities.CreateInstance<WebSocketsHubLifetimeManager<THub>>(_serviceProvider, connectionManager);
+                        return ActivatorUtilities.CreateInstance<WebSocketsHubLifetimeManager<THub>>(_serviceProvider, connectionManager, hubName);
                     }
                 case ServiceTransportType.Transient:
                     {
@@ -39,7 +40,8 @@ namespace Microsoft.Azure.SignalR.Management
                         var httpClientFactory = _serviceProvider.GetRequiredService<IHttpClientFactory>();
                         var serviceEndpoint = _serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.First().Key;
                         var restClient = new RestClient(httpClientFactory, payloadBuilderResolver.GetPayloadContentBuilder());
-                        return new RestHubLifetimeManager<THub>(hubName, serviceEndpoint, _options.ApplicationName, restClient);
+                        var protocolResolver = _serviceProvider.GetRequiredService<IHubProtocolResolver>();
+                        return new RestHubLifetimeManager<THub>(hubName, serviceEndpoint, _options.ApplicationName, restClient, protocolResolver);
                     }
                 default: throw new InvalidEnumArgumentException(nameof(ServiceManagerOptions.ServiceTransportType), (int)_options.ServiceTransportType, typeof(ServiceTransportType));
             }

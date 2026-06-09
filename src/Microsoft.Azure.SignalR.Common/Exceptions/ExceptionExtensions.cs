@@ -4,22 +4,23 @@
 using System;
 using System.Net.WebSockets;
 
-namespace Microsoft.Azure.SignalR.Common
+namespace Microsoft.Azure.SignalR.Common;
+
+#nullable enable
+
+internal static class ExceptionExtensions
 {
-    internal static class ExceptionExtensions
+    internal static Exception WrapAsAzureSignalRException(this Exception e, string? jwtToken)
     {
-        internal static Exception WrapAsAzureSignalRException(this Exception e)
+        switch (e)
         {
-            switch (e)
-            {
-                case WebSocketException webSocketException:
-                    if (e.Message.StartsWith("The server returned status code \"401\""))
-                    {
-                        return new AzureSignalRUnauthorizedException(webSocketException);
-                    }
-                    return e;
-                default: return e;
-            }
+            case WebSocketException webSocketException:
+                if (e.Message.StartsWith("The server returned status code \"401\""))
+                {
+                    return new AzureSignalRUnauthorizedException(null, webSocketException, jwtToken);
+                }
+                return e;
+            default: return e;
         }
     }
 }

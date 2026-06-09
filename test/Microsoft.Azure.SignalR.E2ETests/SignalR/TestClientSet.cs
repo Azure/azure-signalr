@@ -1,31 +1,37 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Azure.SignalR.Tests.Common;
+
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    internal class TestClientSet : ITestClientSet
+    internal sealed class TestClientSet : ITestClientSet
     {
         private readonly IList<HubConnection> _connections;
 
-        private ITestOutputHelper _output;
+        private readonly ITestOutputHelper _output;
 
         public int Count => _connections?.Count ?? 0;
 
         public TestClientSet(string serverUrl, int count, ITestOutputHelper output)
         {
             _output = output;
+#if NET6_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(serverUrl);
+#else
             if (serverUrl == null)
             {
                 throw new ArgumentNullException(nameof(serverUrl));
             }
+#endif
 
             _connections = (from i in Enumerable.Range(0, count)
                             select new HubConnectionBuilder().WithUrl($"{serverUrl}/{nameof(TestHub)}?user=user_{i}").Build()).ToList();

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+
 using Owin;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests;

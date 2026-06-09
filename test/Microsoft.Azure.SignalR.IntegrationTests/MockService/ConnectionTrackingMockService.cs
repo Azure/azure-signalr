@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 
@@ -22,9 +23,9 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     /// - routing of messages to clients
     /// - group management
     /// </summary>
-    internal class ConnectionTrackingMockService : IMockService
+    internal sealed class ConnectionTrackingMockService : IMockService
     {
-        private object _addRemoveLock = new object();
+        private readonly object _addRemoveLock = new();
         private ConcurrentBag<MockServiceSideConnection> _serviceSideConnections = new ConcurrentBag<MockServiceSideConnection>();
         private ConcurrentBag<MockServiceConnection> _sdkSideConnections = new ConcurrentBag<MockServiceConnection>();
 
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 
         public IInvocationBinder CurrentInvocationBinder { get; set; } = new DefaultMockInvocationBinder();
 
-        public bool RemoveUnregisteredConnections { get; set; } = false;
+        public bool RemoveUnregisteredConnections { get; set; }
 
         public Task AllConnectionsEstablished()
         {
@@ -67,7 +68,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                 // as it flows from MockServiceConnection instance to MockServiceConnectionContext 
                 // see MockServiceConnection.StartAsync
                 string startTag = "svc_";
-                Debug.Assert(target.IndexOf(startTag) == 0);
+                Debug.Assert(target.StartsWith(startTag));
 
                 int endTagIndex = target.IndexOf(value: "_", startIndex: startTag.Length);
                 Debug.Assert(endTagIndex >= startTag.Length + 1);
@@ -82,7 +83,6 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                     System.Threading.Thread.Sleep(1111);
                     svcConnection = _sdkSideConnections.Where(c => c.ConnectionNumber == serviceConnectionIndex).FirstOrDefault();
                 }
-
 
                 Debug.Assert(svcConnection != default, $"Missing MockServiceConnection with id {id}");
 
@@ -162,11 +162,11 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
             }
         }
 
-        internal class DefaultMockInvocationBinder : IInvocationBinder
+        internal sealed class DefaultMockInvocationBinder : IInvocationBinder
         {
             public IReadOnlyList<Type> GetParameterTypes(string methodName)
             {
-                return new List<Type>(new Type[] { });
+                return [];
             }
 
             public Type GetReturnType(string invocationId)

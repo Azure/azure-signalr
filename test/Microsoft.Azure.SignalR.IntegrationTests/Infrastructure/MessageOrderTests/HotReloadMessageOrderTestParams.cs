@@ -1,11 +1,11 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure.MessageOrderTests
 {
-    internal class HotReloadMessageOrderTestParams : IHotReloadIntegrationTestStartupParameters
+    internal sealed class HotReloadMessageOrderTestParams : IHotReloadIntegrationTestStartupParameters
     {
         public static int ConnectionCount = 1;
         public static GracefulShutdownMode ShutdownMode = GracefulShutdownMode.WaitForClientsClose;
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure.MessageOrderTe
         };
 
         int IIntegrationTestStartupParameters.ConnectionCount => ConnectionCount;
-        ServiceEndpoint[] IIntegrationTestStartupParameters.ServiceEndpoints => new ServiceEndpoint[] { };
+        ServiceEndpoint[] IIntegrationTestStartupParameters.ServiceEndpoints => [];
         GracefulShutdownMode IIntegrationTestStartupParameters.ShutdownMode => ShutdownMode;
         // rather than having a fixed set of endpoints hot reload startup parameters provide versioned sets
         public KeyValuePair<string, string>[] Endpoints(int versionIndex) => AllEndpoints[versionIndex];

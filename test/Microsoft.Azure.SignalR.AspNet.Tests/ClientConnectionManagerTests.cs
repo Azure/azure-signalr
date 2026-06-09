@@ -7,10 +7,12 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests;
@@ -66,7 +68,7 @@ public class ClientConnectionManagerTests
     {
         var message = new OpenConnectionMessage(Guid.NewGuid().ToString("N"),
             new Claim[] {
-                new Claim(ClaimTypes.Name, "user1")
+                new(ClaimTypes.Name, "user1")
             },
             new Dictionary<string, StringValues>
             {

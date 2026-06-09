@@ -1,8 +1,9 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -37,7 +38,9 @@ namespace Microsoft.Azure.SignalR.Emulator
 
             return services;
         }
-
+// Suppress CodeQL scanning issues related to JWT token validations
+// because this emulator is not supposed to be used in production.
+#pragma warning disable SM04387,SM04284
         public static IServiceCollection AddJwtBearerAuth(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -45,9 +48,9 @@ namespace Microsoft.Azure.SignalR.Emulator
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateLifetime = false,
+                    ValidateIssuer = false, // CodeQL [SM03926] emulator code is not intended for production use, local only
+                    ValidateAudience = false, // CodeQL [SM04387] emulator code is not intended for production use, local only
+                    ValidateLifetime = false, // CodeQL [SM04284] emulator code is not intended for production use, local only
                     ValidateIssuerSigningKey = false,
                     IssuerSigningKeyResolver = (t, s, k, v) => ValidKeys,
                 };
@@ -68,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Emulator
 
             return services;
         }
-
+#pragma warning restore SM04387,SM04284
         public static IServiceCollection AddSignalREmulator(this IServiceCollection services)
         {
             services.AddSingleton(typeof(HubLifetimeManager<>), typeof(CachedHubLifetimeManager<>));

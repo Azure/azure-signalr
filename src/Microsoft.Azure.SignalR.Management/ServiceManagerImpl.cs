@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -82,7 +83,7 @@ internal class ServiceManagerImpl : ServiceManager, IServiceManager
 
     public override async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
     {
-        var api = await _restApiEndpointProvider.GetServiceHealthEndpointAsync();
+        var api = _restApiEndpointProvider.GetServiceHealthEndpoint();
         var isHealthy = false;
         await _restClient.SendAsync(api, HttpMethod.Head, handleExpectedResponse: response =>
         {
@@ -97,7 +98,7 @@ internal class ServiceManagerImpl : ServiceManager, IServiceManager
                 return true;
             }
             return false;
-        });
+        }, cancellationToken: cancellationToken);
         return isHealthy;
     }
 }

@@ -5,43 +5,38 @@ using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR;
+
+internal class RestApiAccessTokenGenerator
 {
-    internal class RestApiAccessTokenGenerator
+    private const AccessTokenAlgorithm DefaultAlgorithm = AccessTokenAlgorithm.HS256;
+
+    private readonly IAccessKey _accessKey;
+
+    private readonly Claim[] _claims;
+
+    public RestApiAccessTokenGenerator(IAccessKey accessKey, string serverName = null)
     {
-        private readonly AccessKey _accessKey;
-
-        private readonly Claim[] _claims;
-
-        private const AccessTokenAlgorithm DefaultAlgorithm = AccessTokenAlgorithm.HS256;
-
-        public RestApiAccessTokenGenerator(AccessKey accessKey, string serverName = null)
+        serverName ??= GenerateServerName();
+        _accessKey = accessKey;
+        _claims = new[]
         {
-            serverName ??= GenerateServerName();
-            _accessKey = accessKey;
-            _claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, serverName)
-            };
-        }
+            new Claim(ClaimTypes.NameIdentifier, serverName)
+        };
+    }
 
-        public Task<string> Generate(string audience, TimeSpan? lifetime = null)
+    public static string GenerateServerName()
+    {
+        return $"{Environment.MachineName}_{Guid.NewGuid():N}";
+    }
+
+    public Task<string> Generate(string audience, TimeSpan? lifetime = null)
+    {
+        if (_accessKey is MicrosoftEntraAccessKey key)
         {
-            if (_accessKey is AccessKeyForMicrosoftEntra key)
-            {
-                return key.GetMicrosoftEntraTokenAsync();
-            }
-
-            return _accessKey.GenerateAccessTokenAsync(
-                audience,
-                _claims,
-                lifetime ?? Constants.Periods.DefaultAccessTokenLifetime,
-                DefaultAlgorithm);
+            return key.GetMicrosoftEntraTokenAsync();
         }
-
-        public static string GenerateServerName()
-        {
-            return $"{Environment.MachineName}_{Guid.NewGuid():N}";
-        }
+        var time = lifetime ?? Constants.Periods.DefaultAccessTokenLifetime;
+        return _accessKey.GenerateAccessTokenAsync(audience, _claims, time, DefaultAlgorithm);
     }
 }

@@ -1,19 +1,19 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+
 using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 
-namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
-{
-    internal class MockServiceSideConnectionEndpointComparer : IEqualityComparer<MockServiceSideConnection>
-    {
-        public bool Equals(MockServiceSideConnection x, MockServiceSideConnection y)
-        {
-            return x.Endpoint.Endpoint == y.Endpoint.Endpoint && x.Endpoint.EndpointType == y.Endpoint.EndpointType;
-        }
+namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 
-        public int GetHashCode([DisallowNull] MockServiceSideConnection obj) => obj.Endpoint.GetHashCode();
+internal sealed class MockServiceSideConnectionEndpointComparer : IEqualityComparer<MockServiceSideConnection>
+{
+    public bool Equals(MockServiceSideConnection x, MockServiceSideConnection y)
+    {
+        return x.Endpoint.Endpoint == y.Endpoint.Endpoint && x.Endpoint.EndpointType == y.Endpoint.EndpointType;
     }
+
+    public int GetHashCode([DisallowNull] MockServiceSideConnection obj) => obj.Endpoint.GetHashCode();
 }

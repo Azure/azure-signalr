@@ -1,0 +1,50 @@
+﻿@page
+@using Microsoft.AspNetCore.Http.Extensions;
+<div class="container">
+    <div class="row"><h3>Status:</h3></div>
+    <div class="row">
+      <span>ConnectionId:</span>
+      <input type="text" id="connectionIdInput" disabled />
+    </div>
+    <div class="row"><h3>Broadcast messages:</h3></div>
+    <div class="row">
+        <div class="col-2">Message</div>
+        <div class="col-4"><input type="text" id="messageInput" value="Hello everyone" /></div>
+        <input type="button" id="broadcastButton" value="Broadcast" />
+    </div>
+
+    <div class="row"><h3>Invoke:</h3></div>
+        <div class="row">
+            <div class="col-2">Invoke Hub method that calls another client connection</div>
+            <div class="col-4"><input type="text" id="IDInput" placeholder="Target connection Id"/></div>
+        </div>
+        <div class="row">&nbsp;</div>
+        <div class="row">
+            <div class="col-6">
+                <input type="button" id="getButton" value="Invoke" />
+            </div>
+        </div>
+        <div class="row">&nbsp;</div>
+        <div class="row">
+            <div class="col-2">Message</div>
+            <div class="col-4"><input type="text" id="messageReply" value="Hello reply"/></div>
+        </div>
+        <div class="row">&nbsp;</div>
+        <div class="row">
+            <div class="col-6">
+                <input type="button" id="sendButton" value="Reply" />
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <hr />
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-6">
+            <ul id="messagesList"></ul>
+        </div>
+    </div>
+<script src="~/js/signalr/8.0.7/dist/browser/signalr.min.js"></script>
+<script src="~/js/chat.js"></script>

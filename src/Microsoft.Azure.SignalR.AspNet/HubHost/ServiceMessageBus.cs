@@ -1,9 +1,10 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Messaging;
@@ -47,7 +48,7 @@ internal class ServiceMessageBus : MessageBus
             return ProcessMessage(messages[0]);
         }
 
-        return Task.WhenAll(messages.Select(m => ProcessMessage(m)));
+        return Task.WhenAll(messages.Select(ProcessMessage));
     }
 
     private async Task ProcessMessage(AppMessage message)

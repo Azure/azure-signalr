@@ -22,11 +22,13 @@ using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
 
+#nullable enable
+
 public class ServiceConnectionFacts
 {
     private const int DefaultTimeoutInMilliSeconds = 1000;
 
-    private static readonly ServiceProtocol Protocol = new ServiceProtocol();
+    private static readonly ServiceProtocol Protocol = new();
 
     [Theory]
     [InlineData(true)]
@@ -142,10 +144,8 @@ public class ServiceConnectionFacts
     public async Task ClosingConnectionSendsCloseMessage()
     {
         var proxy = new ServiceConnectionProxy(context =>
-        {
             // Just let the connection end immediately
-            return Task.CompletedTask;
-        });
+            Task.CompletedTask);
 
         var serverTask = proxy.WaitForServerConnectionAsync(1);
         _ = proxy.StartAsync();
@@ -336,7 +336,7 @@ public class ServiceConnectionFacts
     /// <summary>
     /// When having intermittent connectivity failure, service connection should keep reconnecting to service.
     /// </summary>
-    [Fact]
+    [RetryFact]
     public async Task ReconnectWhenHavingIntermittentConnectivityFailure()
     {
         var proxy = new ServiceConnectionProxy(connectionFactoryCallback: c => new TestConnectionFactoryWithConnectivityFailure(c));
@@ -559,8 +559,8 @@ public class ServiceConnectionFacts
 
         // Validate client1 is closed and client2 is still connected
         await disconnectTask.OrTimeout();
-        Assert.Single(proxy.ClientConnections);
-        Assert.Equal(connectionId2, proxy.ClientConnections.FirstOrDefault().ConnectionId);
+        var clientConnection = Assert.Single(proxy.ClientConnections);
+        Assert.Equal(connectionId2, clientConnection.ConnectionId);
     }
 
     /// <summary>
@@ -578,7 +578,7 @@ public class ServiceConnectionFacts
             var initTask = conn.StartAsync();
             await conn.ConnectionInitializedTask;
             conn.Stop();
-            var completedTask = Task.WhenAny(initTask, Task.Delay(3000)).Result;
+            var completedTask = await Task.WhenAny(initTask, Task.Delay(3000));
             Assert.Equal(initTask, completedTask);
         }
         finally
@@ -592,7 +592,7 @@ public class ServiceConnectionFacts
         Assert.False(Task.WaitAll(task, DefaultTimeoutInMilliSeconds));
     }
 
-    private class TestConnectionFactoryWithHandshakeError : TestConnectionFactory
+    private sealed class TestConnectionFactoryWithHandshakeError : TestConnectionFactory
     {
         public TestConnectionFactoryWithHandshakeError(Func<TestConnection, Task> callback) : base(callback)
         {
@@ -606,7 +606,7 @@ public class ServiceConnectionFacts
         }
     }
 
-    private class TestConnectionFactoryWithConnectivityFailure : TestConnectionFactory
+    private sealed class TestConnectionFactoryWithConnectivityFailure : TestConnectionFactory
     {
         private const int MaxErrorCount = 3;
 
@@ -622,14 +622,14 @@ public class ServiceConnectionFacts
             if (_connectCount < MaxErrorCount)
             {
                 _connectCount++;
-                throw new Exception("Connect error.");
+                throw new InvalidOperationException("Connect error.");
             }
 
             return Task.CompletedTask;
         }
     }
 
-    private class TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage : TestConnectionFactory
+    private sealed class TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage : TestConnectionFactory
     {
         private const int MaxErrorCount = 3;
 

@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 
@@ -13,11 +14,11 @@ internal sealed class TestClientConnectionManager(IServiceConnection serviceConn
 {
     private readonly IServiceConnection _serviceConnection = serviceConnection;
 
-    private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new();
 
-    public ConcurrentDictionary<string, TestTransport> CurrentTransports = new ConcurrentDictionary<string, TestTransport>();
+    public ConcurrentDictionary<string, TestTransport> CurrentTransports = new();
 
-    private readonly ConcurrentDictionary<string, IClientConnection> _connections = new ConcurrentDictionary<string, IClientConnection>();
+    private readonly ConcurrentDictionary<string, IClientConnection> _connections = new();
 
     public IEnumerable<IClientConnection> ClientConnections => _connections.Values;
 

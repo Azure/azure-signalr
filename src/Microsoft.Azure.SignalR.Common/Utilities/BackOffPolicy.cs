@@ -10,8 +10,8 @@ namespace Microsoft.Azure.SignalR.Common
 {
     internal class BackOffPolicy
     {
-        private TaskCompletionSource<bool> _currentProbeTcs = null;
-        private int _currentRetryCount = 0;
+        private TaskCompletionSource<bool> _currentProbeTcs;
+        private int _currentRetryCount;
 
         /// <summary>
         /// Provides a synchronized mechanism of calling probing funcs by multiple concurrent callers.

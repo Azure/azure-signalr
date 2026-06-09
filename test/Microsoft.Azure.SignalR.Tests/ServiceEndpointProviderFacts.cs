@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+
 using Microsoft.Extensions.Options;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests;
@@ -16,31 +18,31 @@ public class ServiceEndpointProviderFacts
     private const string Endpoint = "https://myendpoint";
     private const string AccessKey = "fake_key";
     private static readonly string HubName = nameof(TestHub).ToLower();
-    private static readonly string AppName = "testapp";
+    private const string AppName = "testapp";
 
-    private static readonly string ConnectionStringWithoutVersion =
+    private const string ConnectionStringWithoutVersion =
         $"Endpoint={Endpoint};AccessKey={AccessKey};";
 
-    private static readonly string ConnectionStringWithPreviewVersion =
+    private const string ConnectionStringWithPreviewVersion =
         $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0-preview";
 
-    private static readonly string ConnectionStringWithV1Version = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0";
+    private const string ConnectionStringWithV1Version = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0";
 
     private static readonly ServiceOptions _optionsWithoutAppName = Options.Create(new ServiceOptions()).Value;
     private static readonly ServiceOptions _optionsWithAppName = Options.Create(new ServiceOptions { ApplicationName = AppName }).Value;
 
     private static readonly ServiceEndpointProvider[] EndpointProviderArray =
     {
-        new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithoutAppName),
-        new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName),
-        new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithoutAppName)
+        new(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithoutAppName),
+        new(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName),
+        new(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithoutAppName)
     };
 
     private static readonly ServiceEndpointProvider[] EndpointProviderArrayWithPrefix =
     {
-        new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithAppName),
-        new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithAppName),
-        new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithAppName)
+        new(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithAppName),
+        new(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithAppName),
+        new(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithAppName)
     };
 
     private static readonly (string path, string queryString, string expectedQuery)[] PathAndQueryArray =
@@ -132,7 +134,7 @@ public class ServiceEndpointProviderFacts
         var tokenString = await provider.GetServerAccessTokenProvider(nameof(TestHub), userId).ProvideAsync();
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-        var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/server/?hub={HubName}",
+        var expectedTokenString = JwtTokenHelper.GenerateJwtToken($"{Endpoint}/server/?hub={HubName}",
             new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, userId)
@@ -154,7 +156,7 @@ public class ServiceEndpointProviderFacts
         var tokenString = await provider.GetServerAccessTokenProvider(nameof(TestHub), userId).ProvideAsync();
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-        var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/server/?hub={AppName}_{HubName}",
+        var expectedTokenString = JwtTokenHelper.GenerateJwtToken($"{Endpoint}/server/?hub={AppName}_{HubName}",
             new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, userId)
@@ -172,11 +174,11 @@ public class ServiceEndpointProviderFacts
     [MemberData(nameof(DefaultEndpointProviders))]
     internal async Task GenerateClientAccessToken(IServiceEndpointProvider provider)
     {
-        var requestId = Guid.NewGuid().ToString();
+        _ = Guid.NewGuid().ToString();
         var tokenString = await provider.GenerateClientAccessTokenAsync(HubName);
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-        var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/client/?hub={HubName}",
+        var expectedTokenString = JwtTokenHelper.GenerateJwtToken($"{Endpoint}/client/?hub={HubName}",
             null,
             token.ValidTo,
             token.ValidFrom,
@@ -194,7 +196,7 @@ public class ServiceEndpointProviderFacts
         var tokenString = await provider.GenerateClientAccessTokenAsync(HubName);
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-        var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/client/?hub={AppName}_{HubName}",
+        var expectedTokenString = JwtTokenHelper.GenerateJwtToken($"{Endpoint}/client/?hub={AppName}_{HubName}",
             null,
             token.ValidTo,
             token.ValidFrom,

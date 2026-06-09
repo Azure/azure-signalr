@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -6,12 +6,15 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+
 using Newtonsoft.Json;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -64,7 +67,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             void assertion(HttpRequestMessage request, CancellationToken t)
             {
                 var payload = new PayloadMessage { Target = nameof(IChat.NewMessage), Arguments = new[] { messageContext } };
-                var actual = request.Content.ReadAsStringAsync().Result;
+                var actual = request.Content.ReadAsStringAsync(t).Result;
                 var expected = JsonConvert.SerializeObject(payload);
                 Assert.Equal(expected, actual);
             }
@@ -111,7 +114,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var groupName = "groupName";
             void assertion(HttpRequestMessage request, CancellationToken t)
             {
-                Assert.EndsWith($"/groups/{groupName}/connections/{connectionId}?api-version=2022-06-01", request.RequestUri.AbsoluteUri);
+                Assert.EndsWith($"/groups/{groupName}/connections/{connectionId}?api-version={RestApiProvider.Version}", request.RequestUri.AbsoluteUri);
             }
             var services = new ServiceCollection()
                 .AddSignalRServiceManager()
@@ -153,7 +156,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var groupName = "groupName";
             void assertion(HttpRequestMessage request, CancellationToken t)
             {
-                Assert.EndsWith($"/users/{userId}/groups/{groupName}?api-version=2022-06-01", request.RequestUri.AbsoluteUri);
+                Assert.EndsWith($"/users/{userId}/groups/{groupName}?api-version={RestApiProvider.Version}", request.RequestUri.AbsoluteUri);
             }
             var services = new ServiceCollection()
                 .AddSignalRServiceManager()
@@ -194,7 +197,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var connectionId = "connectionId";
             void assertion(HttpRequestMessage request, CancellationToken t)
             {
-                Assert.EndsWith($"/connections/{connectionId}?api-version=2022-06-01", request.RequestUri.AbsoluteUri);
+                Assert.EndsWith($"/connections/{connectionId}?api-version={RestApiProvider.Version}", request.RequestUri.AbsoluteUri);
                 Assert.Equal(HttpMethod.Delete, request.Method);
             }
             var services = new ServiceCollection()

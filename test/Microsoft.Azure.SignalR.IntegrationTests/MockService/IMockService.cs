@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 

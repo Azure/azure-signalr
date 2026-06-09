@@ -9,8 +9,7 @@ using System.Security.Claims;
 using System.Text;
 
 using Microsoft.Extensions.Primitives;
-using Moq;
-using Newtonsoft.Json.Linq;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Protocol.Tests
@@ -251,6 +250,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new AckMessage(1, 100),
                 binary: "lBQBZKA="),
             new ProtocolTestData(
+                name: "Ack",
+                message: new AckMessage(1, 100),
+                binary: "lRQBZKCA"),
+            new ProtocolTestData(
                 name: "AckWithMessage_NoOptionalField",
                 message: new AckMessage(2, 101, "Joined group successfully"),
                 binary: "lBQCZblKb2luZWQgZ3JvdXAgc3VjY2Vzc2Z1bGx5"),
@@ -281,10 +284,17 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }, tracingId: 1234L),
                 binary: "lQ2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoEBzQTS"),
+            new ProtocolTestData(
+                name: "GroupMemberQueryMessage",
+                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1 },
+                binary: "liiApWdyb3VwAcDA"),
+            new ProtocolTestData(
+                name: "GroupMemberQueryMessageWithOptionalFields",
+                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1, Top = 10, ContinuationToken = "token", TracingId = 1234UL },
+                binary: "liiBAc0E0qVncm91cAEKpXRva2Vu"),
         }.ToDictionary(t => t.Name);
 
 #pragma warning disable CS0618 // Type or member is obsolete
-
         public static IDictionary<string, ProtocolTestData> TestData => new[]
         {
             new ProtocolTestData(
@@ -341,6 +351,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "Ping+",
                 message: new PingMessage { Messages = new string[] { "a", "b" } },
                 binary: "kwOhYaFi"),
+            new ProtocolTestData(
+                name: "Ping+_Nullable",
+                message: new PingMessage { Messages = new string[] { "a", null } },
+                binary: "kwOhYcA="),
             new ProtocolTestData(
                 name: "OpenConnection",
                 message: new OpenConnectionMessage("conn1", null),
@@ -407,6 +421,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 }),
                 binary: "lAeSpWNvbm42pWNvbm43gqRqc29uxAcCAwQFBgcBq21lc3NhZ2VwYWNrxAcDBAUGBwECgA=="),
             new ProtocolTestData(
+                name: "MultiConnectionData_Nullable",
+                message: new MultiConnectionDataMessage(new [] {"conn6", null}, new Dictionary<string, ReadOnlyMemory<byte>>
+                {
+                    ["json"] = new byte[] {2, 3, 4, 5, 6, 7, 1},
+                    ["messagepack"] = new byte[] {3, 4, 5, 6, 7, 1, 2}
+                }),
+                binary: "lAeSpWNvbm42wIKkanNvbsQHAgMEBQYHAattZXNzYWdlcGFja8QHAwQFBgcBAoA="),
+            new ProtocolTestData(
                 name: "UserData",
                 message: new UserDataMessage("user1",
                     new Dictionary<string, ReadOnlyMemory<byte>>
@@ -425,6 +447,15 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     }),
                 binary: "lAmSpXVzZXIxpXVzZXIygqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgA=="),
             new ProtocolTestData(
+                name: "MultiUserData_Nullable",
+                message: new MultiUserDataMessage(new [] {"user1", null},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "lAmSpXVzZXIxwIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoA="),
+            new ProtocolTestData(
                 name: "Broadcast",
                 message: new BroadcastDataMessage(new Dictionary<string, ReadOnlyMemory<byte>>
                 {
@@ -441,6 +472,15 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }),
                 binary: "lAqTpWNvbm43pWNvbm44pWNvbm45gqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgA=="),
+            new ProtocolTestData(
+                name: "BroadcastExcept_Nullable",
+                message: new BroadcastDataMessage(new[] {"conn7", null},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "lAqSpWNvbm43wIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoA="),
             new ProtocolTestData(
                 name: "JoinGroup",
                 message: new JoinGroupMessage("conn10", "group1"),
@@ -480,6 +520,15 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     }),
                 binary: "lw2mZ3JvdXAzkqZjb25uMTKmY29ubjEzgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgJDA"),
             new ProtocolTestData(
+                name: "GroupBroadcastExcept_Nullable",
+                message: new GroupBroadcastDataMessage("group3", new [] {"conn12", null},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "lw2mZ3JvdXAzkqZjb25uMTLAgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgJDA"),
+            new ProtocolTestData(
                 name: "GroupBroadcastExceptUser",
                 message: new GroupBroadcastDataMessage("group3", new [] {"conn12", "conn13"},
                     new Dictionary<string, ReadOnlyMemory<byte>>
@@ -492,6 +541,19 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     CallerUserId = "user3"
                 },
                 binary: "lw2mZ3JvdXAzkqZjb25uMTKmY29ubjEzgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgJKldXNlcjGldXNlcjKldXNlcjM="),
+            new ProtocolTestData(
+                name: "GroupBroadcastExceptUser_Nullable",
+                message: new GroupBroadcastDataMessage("group3", new [] {"conn12", null},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    })
+                {
+                    ExcludedUserList = new [] {"user1", null},
+                    CallerUserId = "user3"
+                },
+                binary: "lw2mZ3JvdXAzkqZjb25uMTLAgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgJKldXNlcjHApXVzZXIz"),
             new ProtocolTestData(
                 name: "GroupBroadcastWithTracingId",
                 message: new GroupBroadcastDataMessage("group3",
@@ -511,6 +573,15 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     }),
                 binary: "lA6Spmdyb3VwNKZncm91cDWCpGpzb27ECAECAwQFBgcIq21lc3NhZ2VwYWNrxAgHCAECAwQFBoA="),
             new ProtocolTestData(
+                name: "MultiGroupBroadcast_Nullable",
+                message: new MultiGroupBroadcastDataMessage(new [] {"group4", null},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {1, 2, 3, 4, 5, 6, 7, 8},
+                        ["messagepack"] = new byte[] {7, 8, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "lA6Spmdyb3VwNMCCpGpzb27ECAECAwQFBgcIq21lc3NhZ2VwYWNrxAgHCAECAwQFBoA="),
+            new ProtocolTestData(
                 name: "ServiceError",
                 message: new ServiceErrorMessage("Maximum message count limit reached: 100000"),
                 binary: "kg/ZK01heGltdW0gbWVzc2FnZSBjb3VudCBsaW1pdCByZWFjaGVkOiAxMDAwMDA="),
@@ -523,14 +594,12 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new LeaveGroupWithAckMessage("conn15", "group2", 1),
                 binary: "lROmY29ubjE1pmdyb3VwMgGA"),
             new ProtocolTestData(
-                name: "Ack",
-                message: new AckMessage(1, 100),
-                binary: "lRQBZKCA"),
-            new ProtocolTestData(
-                name: "AckWithMessage",
-                message: new AckMessage(2, 101, "Joined group successfully"),
-                binary: "lRQCZblKb2luZWQgZ3JvdXAgc3VjY2Vzc2Z1bGx5gA=="),
-
+                name: "AckWithPayload",
+                message: new AckMessage(2, 0)
+                {
+                    Payload = new ReadOnlySequence<byte>([1,2,3]),
+                },
+                binary: "lhQCAKCAxAMBAgM="),
             // messages with tracing id
             new ProtocolTestData(
                 name: "ConnectionDataWithTracingId",
@@ -703,6 +772,21 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: nameof(ConnectionFlowControlMessage) + "-2",
                 message: new ConnectionFlowControlMessage("conn2", ConnectionFlowControlOperation.Offline, ConnectionType.Server),
                 binary: "lSelY29ubjLSAAAAAtIAAAAEgA=="),
+            new ProtocolTestData(
+                name: "GroupMemberQueryMessage",
+                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1 },
+                binary: "lyiApWdyb3VwAcDAwA=="),
+            new ProtocolTestData(
+                name: "GroupMemberQueryMessageWithOptionalFields",
+                message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1, MaxPageSize = 5, Top = 10, ContinuationToken = "token", TracingId = 1234UL },
+                binary: "lyiBAc0E0qVncm91cAEKpXRva2VuBQ=="),
+            new ProtocolTestData(
+                name: "RefreshAuthMessage",
+                message: new RefreshAuthMessage("conn1", new[]
+                {
+                    new System.Security.Claims.Claim("role", "reader"),
+                }, new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero), 1),
+                binary: "limlY29ubjGBpHJvbGWmcmVhZGVy1v9lkgCAAYA="),
         }.ToDictionary(t => t.Name);
 
 #pragma warning restore CS0618 // Type or member is obsolete

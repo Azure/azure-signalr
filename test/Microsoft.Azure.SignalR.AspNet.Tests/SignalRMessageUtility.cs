@@ -5,20 +5,23 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
+
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Json;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.Azure.SignalR.Protocol;
+
 using Newtonsoft.Json;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests;
 
 internal static class SignalRMessageUtility
 {
-    private static readonly ServiceProtocol DefaultServiceProtocol = new ServiceProtocol();
-    private static readonly JsonSerializer DefaultJsonSerializer = new JsonSerializer();
-    private static readonly MemoryPool DefaultPool = new MemoryPool();
+    private static readonly ServiceProtocol DefaultServiceProtocol = new();
+    private static readonly JsonSerializer DefaultJsonSerializer = new();
+    private static readonly MemoryPool DefaultPool = new();
 
     public static ReadOnlyMemory<byte> GenerateSingleFrameBuffer(this ReadOnlyMemory<byte> inner)
     {
@@ -50,12 +53,11 @@ internal static class SignalRMessageUtility
 
     public static Message CreateMessage(string key, object value)
     {
-        ArraySegment<byte> messageBuffer = GetMessageBuffer(value);
+        var messageBuffer = GetMessageBuffer(value);
 
         var message = new Message(Guid.NewGuid().ToString("N"), key, messageBuffer);
 
-        var command = value as Command;
-        if (command != null)
+        if (value is Command command)
         {
             // Set the command id
             message.CommandId = command.Id;
@@ -83,30 +85,25 @@ internal static class SignalRMessageUtility
 
     private static ArraySegment<byte> SerializeMessageValue(object value)
     {
-        using (var writer = new MemoryPoolTextWriter(DefaultPool))
+        using var writer = new MemoryPoolTextWriter(DefaultPool);
+        if (value is IJsonWritable selfSerializer)
         {
-
-            var selfSerializer = value as IJsonWritable;
-
-            if (selfSerializer != null)
-            {
-                selfSerializer.WriteJson(writer);
-            }
-            else
-            {
-                DefaultJsonSerializer.Serialize(writer, value);
-            }
-
-            writer.Flush();
-
-            var data = writer.Buffer;
-
-            var buffer = new byte[data.Count];
-
-            Buffer.BlockCopy(data.Array, data.Offset, buffer, 0, data.Count);
-
-            return new ArraySegment<byte>(buffer);
+            selfSerializer.WriteJson(writer);
         }
+        else
+        {
+            DefaultJsonSerializer.Serialize(writer, value);
+        }
+
+        writer.Flush();
+
+        var data = writer.Buffer;
+
+        var buffer = new byte[data.Count];
+
+        Buffer.BlockCopy(data.Array, data.Offset, buffer, 0, data.Count);
+
+        return new ArraySegment<byte>(buffer);
     }
 
     private sealed class Response<T>

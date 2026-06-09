@@ -1,19 +1,20 @@
 name: Gated-Windows
-on: 
+on:
  push:
-   branches: 
+   branches:
     - 'releases/**'
     - dev
  pull_request:
-   branches: 
+   branches:
     - 'releases/**'
     - dev
 jobs:
   build_windows:
     runs-on: [windows-latest]
     strategy:
+      fail-fast: false # Disable the auto cancelling of all in-progress and queued jobs in the matrix if any job in the matrix fails.
       matrix:
-        dotnet-version: [ '8.0.x', '7.0.x', '6.0.x' ]
+        dotnet-version: [ '9.0.x', '8.0.x' ]
     steps:
     - uses: actions/checkout@v4
     - uses: dorny/paths-filter@v2
@@ -45,9 +46,10 @@ jobs:
       run:  "dotnet build AzureSignalR.sln"
       if: steps.filter.outputs.src == 'true'
     - name: Test
-      run: dotnet test --no-build --logger trx --results-directory "TestResults-ubuntu-${{ matrix.dotnet-version }}"
+      # exclude E2Etest until creating test resources are supported
+      run: dotnet test --no-build --filter "FullyQualifiedName!~Microsoft.Azure.SignalR.E2ETests&FullyQualifiedName!~Microsoft.Azure.SignalR.AspNet.E2ETests" --logger trx --results-directory "TestResults-ubuntu-${{ matrix.dotnet-version }}"
     - name: Upload dotnet test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dotnet-results-${{ matrix.dotnet-version }}
         path: TestResults-ubuntu-${{ matrix.dotnet-version }}

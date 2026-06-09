@@ -3,19 +3,27 @@
 
 using System;
 
-namespace Microsoft.Azure.SignalR
+using Azure.Core;
+
+namespace Microsoft.Azure.SignalR;
+
+#nullable enable
+
+internal class ParsedConnectionString
 {
-    internal class ParsedConnectionString
+    internal Uri Endpoint { get; }
+
+    internal string? AccessKey { get; init; }
+
+    internal TokenCredential TokenCredential { get; }
+
+    internal Uri? ClientEndpoint { get; init; }
+
+    internal Uri? ServerEndpoint { get; init; }
+
+    public ParsedConnectionString(Uri endpoint, TokenCredential tokenCredential)
     {
-        internal AccessKey AccessKey { get; set; }
-
-        internal Uri Endpoint { get; set; }
-
-        internal Uri ClientEndpoint { get; set; }
-
-        internal Uri ServerEndpoint { get; set; }
-
-        internal string Version { get; set; }
-
+        Endpoint = endpoint;
+        TokenCredential = tokenCredential;
     }
 }

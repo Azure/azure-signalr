@@ -11,9 +11,7 @@ namespace Microsoft.Azure.SignalR.Tests;
 
 internal static class JwtTokenHelper
 {
-    public static readonly JwtSecurityTokenHandler JwtHandler = new JwtSecurityTokenHandler();
-
-    private const string TestEndpoint = "http://localhost:443";
+    public static readonly JwtSecurityTokenHandler JwtHandler = new();
 
     public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, AccessKey accessKey, IEnumerable<Claim> customClaims = null)
     {
@@ -32,7 +30,7 @@ internal static class JwtTokenHelper
             claims.AddRange(customClaims.ToList());
         }
 
-        var tokenString = GenerateJwtBearer(
+        var tokenString = GenerateJwtToken(
             audience, claims,
             token.ValidTo,
             token.ValidFrom,
@@ -45,38 +43,35 @@ internal static class JwtTokenHelper
 
     public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string key, IEnumerable<Claim> customClaims = null)
     {
-        return GenerateExpectedAccessToken(token, audience, new AccessKey(TestEndpoint, key), customClaims: customClaims);
+        return GenerateExpectedAccessToken(token, audience, new AccessKey(key), customClaims: customClaims);
     }
 
-    public static string GenerateJwtBearer(
-        string audience,
-        IEnumerable<Claim> subject,
-        DateTime expires,
-        DateTime notBefore,
-        DateTime issueAt,
-        AccessKey signingKey
-    )
+    public static string GenerateJwtToken(string audience,
+                                          IEnumerable<Claim> subject,
+                                          DateTime expires,
+                                          DateTime notBefore,
+                                          DateTime issueAt,
+                                          IAccessKey signingKey)
     {
-        return AuthUtility.GenerateJwtBearer(
-            issuer: null,
+        return AuthUtility.GenerateJwtToken(
+            signingKey.KeyBytes,
+            signingKey.Kid,
+            issuer: Constants.AsrsTokenIssuer,
             audience: audience,
             claims: subject,
             notBefore: notBefore,
             expires: expires,
-            issuedAt: issueAt,
-            signingKey: signingKey
+            issuedAt: issueAt
         );
     }
 
-    public static string GenerateJwtBearer(
-        string audience,
-        IEnumerable<Claim> subject,
-        DateTime expires,
-        DateTime notBefore,
-        DateTime issueAt,
-        string signingKey
-    )
+    public static string GenerateJwtToken(string audience,
+                                          IEnumerable<Claim> subject,
+                                          DateTime expires,
+                                          DateTime notBefore,
+                                          DateTime issueAt,
+                                          string signingKey)
     {
-        return GenerateJwtBearer(audience, subject, expires, notBefore, issueAt, new AccessKey(TestEndpoint, signingKey));
+        return GenerateJwtToken(audience, subject, expires, notBefore, issueAt, new AccessKey(signingKey));
     }
 }
