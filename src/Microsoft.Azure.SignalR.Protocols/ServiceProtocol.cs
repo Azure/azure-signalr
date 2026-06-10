@@ -793,7 +793,7 @@ public class ServiceProtocol : IServiceProtocol
     {
         writer.WriteArrayHeader(6);
         writer.Write(ServiceProtocolConstants.RefreshAuthMessageType);
-        writer.Write(message.ConnectionIdOrToken);
+        writer.Write(message.ConnectionToken);
         if (message.Claims?.Length > 0)
         {
             writer.WriteMapHeader(message.Claims.Length);
@@ -1450,12 +1450,12 @@ public class ServiceProtocol : IServiceProtocol
 
     private static RefreshAuthMessage CreateRefreshAuthMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionIdOrToken = ReadStringNotNull(ref reader, "connectionIdOrToken");
+        var connectionToken = ReadStringNotNull(ref reader, "connectionToken");
         var claims = ReadClaims(ref reader);
         var expireTime = reader.ReadDateTime();
         var ackId = ReadInt32(ref reader, "ackId");
         var message = new RefreshAuthMessage(
-            connectionIdOrToken,
+            connectionToken,
             claims,
             new DateTimeOffset(expireTime, TimeSpan.Zero),
             ackId);

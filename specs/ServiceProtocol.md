@@ -647,10 +647,10 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 ### RefreshAuth Message
 `RefreshAuth` messages have the following structure:
 ```
-[41, ConnectionIdOrToken, Claims?, ExpireTime, AckId, ExtensionMembers]
+[41, ConnectionToken, Claims?, ExpireTime, AckId, ExtensionMembers]
 ```
 - 41 - Message Type, indicating this is a `RefreshAuth` message.
-- ConnectionIdOrToken - A `String` indicating the connection ID or the original connection token of the live client connection whose authentication state is being refreshed.
+- ConnectionToken - A `String` indicating the connection token of the live client connection whose authentication state is being refreshed.
 - Claims - An optional MessagePack Map of `String` to `String` indicating the refreshed user claims.
 - ExpireTime - A MessagePack Timestamp indicating the new authentication expiration deadline in UTC.
 - AckId - An `Int32` encoding Id number to identify the corresponding ack message.
