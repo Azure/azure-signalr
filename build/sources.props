@@ -9,7 +9,7 @@
     </RestoreSources>
     <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true' AND '$(TF_BUILD)' != ''">
       $(RestoreSources);
-      https://msazure.pkgs.visualstudio.com/One/_packaging/1es-internal/nuget/v2;
+      https://msazure.pkgs.visualstudio.com/One/_packaging/VSOnline-Internal/nuget/v2;
     </RestoreSources>
     <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true' AND '$(TF_BUILD)' == ''">
       $(RestoreSources);
@@ -17,7 +17,7 @@
     </RestoreSources>
     <RestoreSources Condition="'$(UseLocalFeed)' == 'true' AND '$(TF_BUILD)' != ''">
       $(LocalFeed);
-      https://msazure.pkgs.visualstudio.com/One/_packaging/1es-internal/nuget/v2;
+      https://msazure.pkgs.visualstudio.com/One/_packaging/VSOnline-Internal/nuget/v2;
     </RestoreSources>
     <RestoreSources Condition="'$(UseLocalFeed)' == 'true' AND '$(TF_BUILD)' == ''">
       $(LocalFeed);
@@ -25,7 +25,7 @@
     </RestoreSources>
     <RestoreSources Condition="'$(AzureSignalRSDKE2ETest)' == 'true' AND '$(TF_BUILD)' != ''">
       $(MSBuildThisFileDirectory)packages;
-      https://msazure.pkgs.visualstudio.com/One/_packaging/1es-internal/nuget/v2;
+      https://msazure.pkgs.visualstudio.com/One/_packaging/VSOnline-Internal/nuget/v2;
     </RestoreSources>
     <RestoreSources Condition="'$(AzureSignalRSDKE2ETest)' == 'true' AND '$(TF_BUILD)' == ''">
       $(MSBuildThisFileDirectory)packages;
