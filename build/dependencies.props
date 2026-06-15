@@ -59,7 +59,7 @@
     
     <!-- Vulnerability fix-->
     <jQueryPackageVersion>3.7.1</jQueryPackageVersion>
-    <MessagePackPackageVersion>2.5.192</MessagePackPackageVersion>
+    <MessagePackPackageVersion>3.1.7</MessagePackPackageVersion>
     <SystemNetHttpPackageVersion>4.3.4</SystemNetHttpPackageVersion>
     <SystemTextRegularExpressionsPackageVersion>4.3.1</SystemTextRegularExpressionsPackageVersion>
   </PropertyGroup>

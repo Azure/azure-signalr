@@ -1703,7 +1703,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
-    private sealed class TestEnumFormatter : IMessagePackFormatter<TestEnum>
+    internal sealed class TestEnumFormatter : IMessagePackFormatter<TestEnum>
     {
         public void Serialize(ref MessagePackWriter writer, TestEnum value, MessagePackSerializerOptions options)
         {
@@ -1722,7 +1722,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
-    private sealed class TestInvocationResultFormatter : IMessagePackFormatter<TestInvocationResult>
+    internal sealed class TestInvocationResultFormatter : IMessagePackFormatter<TestInvocationResult>
     {
         public void Serialize(ref MessagePackWriter writer, TestInvocationResult value, MessagePackSerializerOptions options)
         {
@@ -1791,7 +1791,7 @@ public class ServiceHubContextE2EFacts : VerifiableLoggedTest
         }
     }
 
-    private sealed class TestInvocationInputFormatter : IMessagePackFormatter<TestInvocationInput>
+    internal sealed class TestInvocationInputFormatter : IMessagePackFormatter<TestInvocationInput>
     {
         public void Serialize(ref MessagePackWriter writer, TestInvocationInput value, MessagePackSerializerOptions options)
         {
