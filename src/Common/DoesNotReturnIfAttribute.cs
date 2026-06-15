@@ -1,4 +1,5 @@
-// Licensed under the MIT License.
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // Polyfill for System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute, which is
 // referenced by the vendored MessagePack source but is not available on netstandard2.0.
