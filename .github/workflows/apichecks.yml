@@ -27,6 +27,9 @@ jobs:
             - '**.csproj'
             - '**.targets'
             - '*.sln'
+      - name: Enable git long paths
+        if: steps.filter.outputs.src == 'true'
+        run: git config --global core.longpaths true
       - name: Update SubModules
         if: steps.filter.outputs.src == 'true'
         run: git submodule update --init --recursive
