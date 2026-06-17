@@ -787,6 +787,17 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     new System.Security.Claims.Claim("role", "reader"),
                 }, new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero), 1),
                 binary: "limlY29ubjGBpHJvbGWmcmVhZGVy1v9lkgCAAYA="),
+            new ProtocolTestData(
+                name: "GetConnectionClaimsMessage",
+                message: new GetConnectionClaimsMessage("conn1", 1),
+                binary: "lCqlY29ubjEBgA=="),
+            new ProtocolTestData(
+                name: "UpdateConnectionClaimsMessage",
+                message: new UpdateConnectionClaimsMessage("conn1", new[]
+                {
+                    new System.Security.Claims.Claim("role", "reader"),
+                }),
+                binary: "lCulY29ubjGBpHJvbGWmcmVhZGVygA=="),
         }.ToDictionary(t => t.Name);
 
 #pragma warning restore CS0618 // Type or member is obsolete

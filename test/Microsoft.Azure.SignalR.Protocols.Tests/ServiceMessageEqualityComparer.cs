@@ -108,6 +108,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return GroupMemberQueryMessageEqual(groupMemberQueryMessage, (GroupMemberQueryMessage)y);
                 case RefreshAuthMessage refreshAuthMessage:
                     return RefreshAuthMessageEqual(refreshAuthMessage, (RefreshAuthMessage)y);
+                case GetConnectionClaimsMessage getConnectionClaimsMessage:
+                    return GetConnectionClaimsMessageEqual(getConnectionClaimsMessage, (GetConnectionClaimsMessage)y);
+                case UpdateConnectionClaimsMessage updateConnectionClaimsMessage:
+                    return UpdateConnectionClaimsMessageEqual(updateConnectionClaimsMessage, (UpdateConnectionClaimsMessage)y);
                 default:
                     throw new InvalidOperationException($"Unknown message type: {x.GetType().FullName}");
             }
@@ -418,6 +422,18 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 x.AckId == y.AckId &&
                 ClaimsEqual(x.Claims, y.Claims) &&
                 x.ExpireTime.UtcDateTime == y.ExpireTime.UtcDateTime;
+        }
+
+        private static bool GetConnectionClaimsMessageEqual(GetConnectionClaimsMessage x, GetConnectionClaimsMessage y)
+        {
+            return StringEqual(x.ConnectionToken, y.ConnectionToken) &&
+                x.AckId == y.AckId;
+        }
+
+        private static bool UpdateConnectionClaimsMessageEqual(UpdateConnectionClaimsMessage x, UpdateConnectionClaimsMessage y)
+        {
+            return StringEqual(x.ConnectionId, y.ConnectionId) &&
+                ClaimsEqual(x.Claims, y.Claims);
         }
 
         private static bool StringEqual(string x, string y)

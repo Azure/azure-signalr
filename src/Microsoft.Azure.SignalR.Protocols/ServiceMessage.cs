@@ -366,6 +366,60 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
+    /// A read-only message to fetch the current user claims of an existing client connection.
+    /// </summary>
+    public class GetConnectionClaimsMessage : ExtensibleServiceMessage, IAckableMessage
+    {
+        /// <summary>
+        /// Gets or sets the connection token that identifies the live client connection whose claims are being fetched.
+        /// </summary>
+        public string ConnectionToken { get; set; }
+
+        /// <summary>
+        /// Gets or sets the protocol correlation id used to acknowledge this read operation.
+        /// </summary>
+        public int AckId { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GetConnectionClaimsMessage"/> class.
+        /// </summary>
+        /// <param name="connectionToken">The connection token that identifies the live client connection.</param>
+        /// <param name="ackId">The protocol correlation id used to acknowledge this read operation.</param>
+        public GetConnectionClaimsMessage(string connectionToken, int ackId)
+        {
+            ConnectionToken = connectionToken ?? throw new ArgumentNullException(nameof(connectionToken));
+            AckId = ackId;
+        }
+    }
+
+    /// <summary>
+    /// A server-bound message that pushes refreshed user claims of a client connection to its owning app server.
+    /// </summary>
+    public class UpdateConnectionClaimsMessage : ExtensibleServiceMessage
+    {
+        /// <summary>
+        /// Gets or sets the connection id of the live client connection whose claims are being updated.
+        /// </summary>
+        public string ConnectionId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the refreshed user claims to apply on the owning app server.
+        /// </summary>
+        public System.Security.Claims.Claim[]? Claims { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UpdateConnectionClaimsMessage"/> class.
+        /// </summary>
+        /// <param name="connectionId">The connection id of the live client connection.</param>
+        /// <param name="claims">The refreshed user claims to apply on the owning app server.</param>
+        public UpdateConnectionClaimsMessage(string connectionId, System.Security.Claims.Claim[]? claims)
+        {
+            ConnectionId = connectionId ?? throw new ArgumentNullException(nameof(connectionId));
+            Claims = claims;
+        }
+    }
+
+    /// <summary>
     /// A handshake request message.
     /// </summary>
     public class HandshakeRequestMessage : ExtensibleServiceMessage
