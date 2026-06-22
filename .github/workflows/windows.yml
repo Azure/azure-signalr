@@ -33,6 +33,9 @@ jobs:
           - '**.targets'
           - '*.sh'
           - '*.sln'
+    - name: Enable git long paths
+      run: git config --global core.longpaths true
+      if: steps.filter.outputs.src == 'true'
     - name: Update SubModules
       run: git submodule update --init --recursive
       if: steps.filter.outputs.src == 'true'
