@@ -7,15 +7,27 @@
       $(MSBuildThisFileDirectory)packages;
       https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json;
     </RestoreSources>
-    <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
+    <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true' AND '$(TF_BUILD)' != ''">
+      $(RestoreSources);
+      https://pkgs.dev.azure.com/mseng/VSJava/_packaging/azure-signalr-server-sdk/nuget/v3/index.json;
+    </RestoreSources>
+    <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true' AND '$(TF_BUILD)' == ''">
       $(RestoreSources);
       https://api.nuget.org/v3/index.json;
     </RestoreSources>
-    <RestoreSources Condition="'$(UseLocalFeed)' == 'true'">
+    <RestoreSources Condition="'$(UseLocalFeed)' == 'true' AND '$(TF_BUILD)' != ''">
+      $(LocalFeed);
+      https://pkgs.dev.azure.com/mseng/VSJava/_packaging/azure-signalr-server-sdk/nuget/v3/index.json;
+    </RestoreSources>
+    <RestoreSources Condition="'$(UseLocalFeed)' == 'true' AND '$(TF_BUILD)' == ''">
       $(LocalFeed);
       https://api.nuget.org/v3/index.json;
     </RestoreSources>
-    <RestoreSources Condition="'$(AzureSignalRSDKE2ETest)' == 'true'">
+    <RestoreSources Condition="'$(AzureSignalRSDKE2ETest)' == 'true' AND '$(TF_BUILD)' != ''">
+      $(MSBuildThisFileDirectory)packages;
+      https://pkgs.dev.azure.com/mseng/VSJava/_packaging/azure-signalr-server-sdk/nuget/v3/index.json;
+    </RestoreSources>
+    <RestoreSources Condition="'$(AzureSignalRSDKE2ETest)' == 'true' AND '$(TF_BUILD)' == ''">
       $(MSBuildThisFileDirectory)packages;
       https://www.myget.org/F/azure-signalr-dev/api/v3/index.json;
       https://api.nuget.org/v3/index.json;

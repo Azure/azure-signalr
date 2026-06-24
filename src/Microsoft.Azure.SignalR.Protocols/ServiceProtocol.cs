@@ -159,6 +159,10 @@ public class ServiceProtocol : IServiceProtocol
                 return CreateGroupMemberQueryMessage(ref reader, arrayLength);
             case ServiceProtocolConstants.RefreshAuthMessageType:
                 return CreateRefreshAuthMessage(ref reader, arrayLength);
+            case ServiceProtocolConstants.GetConnectionClaimsMessageType:
+                return CreateGetConnectionClaimsMessage(ref reader, arrayLength);
+            case ServiceProtocolConstants.UpdateConnectionClaimsMessageType:
+                return CreateUpdateConnectionClaimsMessage(ref reader, arrayLength);
             default:
                 // Future protocol changes can add message types, old clients can ignore them
                 return null;
@@ -347,6 +351,12 @@ public class ServiceProtocol : IServiceProtocol
                 break;
             case RefreshAuthMessage refreshAuthMessage:
                 WriteRefreshAuthMessage(ref writer, refreshAuthMessage);
+                break;
+            case GetConnectionClaimsMessage getConnectionClaimsMessage:
+                WriteGetConnectionClaimsMessage(ref writer, getConnectionClaimsMessage);
+                break;
+            case UpdateConnectionClaimsMessage updateConnectionClaimsMessage:
+                WriteUpdateConnectionClaimsMessage(ref writer, updateConnectionClaimsMessage);
                 break;
             default:
                 throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
@@ -793,7 +803,7 @@ public class ServiceProtocol : IServiceProtocol
     {
         writer.WriteArrayHeader(6);
         writer.Write(ServiceProtocolConstants.RefreshAuthMessageType);
-        writer.Write(message.ConnectionIdOrToken);
+        writer.Write(message.ConnectionToken);
         if (message.Claims?.Length > 0)
         {
             writer.WriteMapHeader(message.Claims.Length);
@@ -809,6 +819,36 @@ public class ServiceProtocol : IServiceProtocol
         }
         writer.Write(message.ExpireTime.UtcDateTime);
         writer.Write(message.AckId);
+        message.WriteExtensionMembers(ref writer);
+    }
+
+    private static void WriteGetConnectionClaimsMessage(ref MessagePackWriter writer, GetConnectionClaimsMessage message)
+    {
+        writer.WriteArrayHeader(4);
+        writer.Write(ServiceProtocolConstants.GetConnectionClaimsMessageType);
+        writer.Write(message.ConnectionToken);
+        writer.Write(message.AckId);
+        message.WriteExtensionMembers(ref writer);
+    }
+
+    private static void WriteUpdateConnectionClaimsMessage(ref MessagePackWriter writer, UpdateConnectionClaimsMessage message)
+    {
+        writer.WriteArrayHeader(4);
+        writer.Write(ServiceProtocolConstants.UpdateConnectionClaimsMessageType);
+        writer.Write(message.ConnectionId);
+        if (message.Claims?.Length > 0)
+        {
+            writer.WriteMapHeader(message.Claims.Length);
+            foreach (var claim in message.Claims)
+            {
+                writer.Write(claim.Type);
+                writer.Write(claim.Value);
+            }
+        }
+        else
+        {
+            writer.WriteMapHeader(0);
+        }
         message.WriteExtensionMembers(ref writer);
     }
 
@@ -1450,15 +1490,33 @@ public class ServiceProtocol : IServiceProtocol
 
     private static RefreshAuthMessage CreateRefreshAuthMessage(ref MessagePackReader reader, int arrayLength)
     {
-        var connectionIdOrToken = ReadStringNotNull(ref reader, "connectionIdOrToken");
+        var connectionToken = ReadStringNotNull(ref reader, "connectionToken");
         var claims = ReadClaims(ref reader);
         var expireTime = reader.ReadDateTime();
         var ackId = ReadInt32(ref reader, "ackId");
         var message = new RefreshAuthMessage(
-            connectionIdOrToken,
+            connectionToken,
             claims,
             new DateTimeOffset(expireTime, TimeSpan.Zero),
             ackId);
+        message.ReadExtensionMembers(ref reader);
+        return message;
+    }
+
+    private static GetConnectionClaimsMessage CreateGetConnectionClaimsMessage(ref MessagePackReader reader, int arrayLength)
+    {
+        var connectionToken = ReadStringNotNull(ref reader, "connectionToken");
+        var ackId = ReadInt32(ref reader, "ackId");
+        var message = new GetConnectionClaimsMessage(connectionToken, ackId);
+        message.ReadExtensionMembers(ref reader);
+        return message;
+    }
+
+    private static UpdateConnectionClaimsMessage CreateUpdateConnectionClaimsMessage(ref MessagePackReader reader, int arrayLength)
+    {
+        var connectionId = ReadStringNotNull(ref reader, "connectionId");
+        var claims = ReadClaims(ref reader);
+        var message = new UpdateConnectionClaimsMessage(connectionId, claims);
         message.ReadExtensionMembers(ref reader);
         return message;
     }

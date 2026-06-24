@@ -3,7 +3,8 @@
     <!--For tests and samples: always try the latest version-->
     <SystemIdentityModelTokensJwtPackageVersion>8.0.1</SystemIdentityModelTokensJwtPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>8.0.8</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>8.0.8</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
+    <!-- 8.0.28 patches CVE-2026-45591 (GHSA-f8h2-vmm9-qhj6): MessagePack hub protocol DoS -->
+    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>8.0.28</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
     <MicrosoftAspNetCoreSignalRProtocolsJsonPackageVersion>8.0.7</MicrosoftAspNetCoreSignalRProtocolsJsonPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>8.0.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftNETTestSdkPackageVersion>17.11.0</MicrosoftNETTestSdkPackageVersion>

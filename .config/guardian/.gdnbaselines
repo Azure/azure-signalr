@@ -1,0 +1,167 @@
+{
+  "properties": {
+    "helpUri": "https://eng.ms/docs/microsoft-security/security/azure-security/cloudai-security-fundamentals-engineering/security-integration/guardian-wiki/microsoft-guardian/general/baselines"
+  },
+  "version": "1.0.0",
+  "baselines": {
+    "default": {
+      "name": "default",
+      "createdDate": "2026-05-28 03:53:50Z",
+      "lastUpdatedDate": "2026-05-28 03:53:50Z"
+    }
+  },
+  "results": {
+    "93ec79b7ec2e2a8a67bf21ad02cbb5fcaa877a2f8203e105694eb371912f0bf8": {
+      "signature": "93ec79b7ec2e2a8a67bf21ad02cbb5fcaa877a2f8203e105694eb371912f0bf8",
+      "alternativeSignatures": [
+        "b6b13f98a709c8535eb67822e095bce2d47eaf345a1291c5902b8dcc880485c2",
+        "2a8fe099c25119eef9c2bcc2bc40167db142d84e9e1cb3063e4434df80dcc4c3",
+        "85b2bd7a96492756c2f2f44985840695e8dc4b4038e903f527038755b82c22e8"
+      ],
+      "target": "src/Microsoft.Azure.SignalR/HubHost/NegotiateHandler.cs",
+      "line": 134,
+      "uriBaseId": "file:///D:/a/_work/1/s/",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "roslynanalyzers",
+      "ruleId": "CA1310",
+      "createdDate": "2026-05-28 03:53:50Z",
+      "expirationDate": "2026-11-14 04:02:02Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2026-05-28 04:02:02Z"
+    },
+    "389c1199d1b695644ef05844ca6b7a520a666e2681cefed3eec0ab725d5554e0": {
+      "signature": "389c1199d1b695644ef05844ca6b7a520a666e2681cefed3eec0ab725d5554e0",
+      "alternativeSignatures": [
+        "8a8db58b84fe6326812c3c7fd22ed42531392782b1b5e1fd16bf6e123fde6c5e",
+        "8d30cce7871a294d8cd380ec34eb6adba39aadfbb3e89e5b02055d76a23fb6cf",
+        "eae727ecd9a4eb3c507275ef364302ff3e8b7921570265325efc7547a8c40650"
+      ],
+      "target": "src/Microsoft.Azure.SignalR.Common/Exceptions/ExceptionExtensions.cs",
+      "line": 18,
+      "uriBaseId": "file:///D:/a/_work/1/s/",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "roslynanalyzers",
+      "ruleId": "CA1310",
+      "createdDate": "2026-05-28 03:53:50Z",
+      "expirationDate": "2026-11-14 04:02:02Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2026-05-28 04:02:02Z"
+    },
+    "03cd9d25e690d7d758a97076db7d05f9595bd172182a11c065c74e45450cd2b9": {
+      "signature": "03cd9d25e690d7d758a97076db7d05f9595bd172182a11c065c74e45450cd2b9",
+      "alternativeSignatures": [
+        "ba4106ee2029edd5eba16f9625b84fec98c74422ed9781a614aa29efedda7bf9",
+        "4a2429e034b2c36ce514bc9b87d8151295b2e3e8aef1cbfb463d71a6c864ba6e",
+        "e2c89bf4b06df632d47bab64f538a1eca1207a714d9d69c4deea6f689b90b226"
+      ],
+      "target": "src/Microsoft.Azure.SignalR.Common/ServiceMessages/RuntimeServicePingMessages.cs",
+      "line": 150,
+      "uriBaseId": "file:///D:/a/_work/1/s/",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "roslynanalyzers",
+      "ruleId": "CA1310",
+      "createdDate": "2026-05-28 03:53:50Z",
+      "expirationDate": "2026-11-14 04:02:02Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2026-05-28 04:02:02Z"
+    },
+    "72286843208e702387d9506c4dba23e84cb051bb8c2897785603c30410fed949": {
+      "signature": "72286843208e702387d9506c4dba23e84cb051bb8c2897785603c30410fed949",
+      "alternativeSignatures": [
+        "0a85ab4d8e0168ba03d74115a2aa9be45db7cdffb9d071de6c38a2d14c198647",
+        "bc8f00ed7edd6307cc397e2ef321fe35a46b1a2e293cb77cc566541eb6623375",
+        "9ca463aa2be783bcfc21b77cb9061da21745560a6af4e211ce8d74acb5715232"
+      ],
+      "target": "src/Microsoft.Azure.SignalR.Common/Utilities/ClaimsUtility.cs",
+      "line": 204,
+      "uriBaseId": "file:///D:/a/_work/1/s/",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "roslynanalyzers",
+      "ruleId": "CA1310",
+      "createdDate": "2026-05-28 03:53:50Z",
+      "expirationDate": "2026-11-14 04:02:02Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2026-05-28 04:02:02Z"
+    },
+    "dbe98d4da6b0a8cff775ca1047c582ec56246376dac470555e2ffb040ddb1c90": {
+      "signature": "dbe98d4da6b0a8cff775ca1047c582ec56246376dac470555e2ffb040ddb1c90",
+      "alternativeSignatures": [
+        "f665b6c44bcb92a7cb59aa9c9cc346b3f0c39b45acf51207efa3a23eabbba453",
+        "cd29780c3b6510c243132b45f627dd3ac12b7ff15d3d923e8bb3ac851e867206",
+        "6f344be27211bb6079c2bf03da2f6889af80b7b4807278961c511fa3ed523d3e"
+      ],
+      "target": "src/Microsoft.Azure.SignalR.Common/Utilities/ClaimsUtility.cs",
+      "line": 209,
+      "uriBaseId": "file:///D:/a/_work/1/s/",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "roslynanalyzers",
+      "ruleId": "CA1310",
+      "createdDate": "2026-05-28 03:53:50Z",
+      "expirationDate": "2026-11-14 04:02:02Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2026-05-28 04:02:02Z"
+    },
+    "2c6b026ab87823b4c06326276af2305decddf1bd100aa22c74d862418dff39c7": {
+      "signature": "2c6b026ab87823b4c06326276af2305decddf1bd100aa22c74d862418dff39c7",
+      "alternativeSignatures": [
+        "ceed4f55d1f52c2cb4e438c51ed976f01009b16887a6078a8443ad562306edbf",
+        "639654282ff4f48dbaeb5cf8898b39cdeb5b5ad1d6703ba857ee2386b65afa3a",
+        "1b35fe0a1bbea121a02c32a17c628a07b20e53210d55b0b35e7958ac4469155f"
+      ],
+      "target": "test/Microsoft.Azure.SignalR.Common.Tests/Auth/MicrosoftEntraApplicationTests.cs",
+      "line": 56,
+      "uriBaseId": "file:///D:/a/_work/1/s/",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "roslynanalyzers",
+      "ruleId": "CA1310",
+      "createdDate": "2026-05-28 03:53:50Z",
+      "expirationDate": "2026-11-14 04:02:02Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2026-05-28 04:02:02Z"
+    },
+    "4cf1fd3f7c4b31a438e3e9d7f21cad6b771a5f70a71317d340d607770d719817": {
+      "signature": "4cf1fd3f7c4b31a438e3e9d7f21cad6b771a5f70a71317d340d607770d719817",
+      "alternativeSignatures": [
+        "b9b1d64fe665022cadd6d6b677324987800acefaca071ac7ac407a72b3abf458",
+        "cea22bf2d832b54dc693c5bfcfd8e1cdb07bc8211e299f2e766de3cfc0fdf1c9",
+        "7081ec034e4934666826c45b8f1e0cb249c3655080b776bf0941db597db70e54"
+      ],
+      "target": "test/Microsoft.Azure.SignalR.IntegrationTests/MockService/ConnectionTrackingMockService.cs",
+      "line": 71,
+      "uriBaseId": "file:///D:/a/_work/1/s/",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "roslynanalyzers",
+      "ruleId": "CA1310",
+      "createdDate": "2026-05-28 03:53:50Z",
+      "expirationDate": "2026-11-14 04:02:02Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2026-05-28 04:02:02Z"
+    },
+    "b4dd1ecbe62c366d9ffb72a3ad93be1b2be9b5a0fd4c494b25952eadaad490a2": {
+      "signature": "b4dd1ecbe62c366d9ffb72a3ad93be1b2be9b5a0fd4c494b25952eadaad490a2",
+      "alternativeSignatures": [
+        "b84091a2a11396f63e74c096f4cc711562270a8056322fda956c294497b1ed44",
+        "b842ffaeada589b6a3cf412c28e12816d9b69cff0f05b11866e14133db193df7",
+        "efe848ce9507b10f0c974a1b94cecc76492db9ca0264561d96e85821df1829a9"
+      ],
+      "target": "test/Microsoft.Azure.SignalR.IntegrationTests/MockService/ConnectionTrackingMockService.cs",
+      "line": 73,
+      "uriBaseId": "file:///D:/a/_work/1/s/",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "roslynanalyzers",
+      "ruleId": "CA1310",
+      "createdDate": "2026-05-28 03:53:50Z",
+      "expirationDate": "2026-11-14 04:02:02Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2026-05-28 04:02:02Z"
+    }
+  }
+}

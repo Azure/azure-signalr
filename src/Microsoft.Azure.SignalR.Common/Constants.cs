@@ -140,6 +140,8 @@ internal static class Constants
         public const string AsrsMessageTracingId = AsrsInternalHeaderPrefix + "Message-Tracing-Id";
 
         public const string MicrosoftErrorCode = "x-ms-error-code";
+
+        public const string AsrsManagementSDKClientInvocationProtocol = AsrsInternalHeaderPrefix + "Protocol";
     }
 
     public static class ErrorCodes
