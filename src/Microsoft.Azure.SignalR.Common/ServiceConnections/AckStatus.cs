@@ -12,4 +12,6 @@ internal enum AckStatus
     Timeout = 3,
 
     InternalServerError = 4,
+
+    Forbidden = 5,
 }

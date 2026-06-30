@@ -63,6 +63,18 @@ internal sealed class AckHandler : IDisposable
         return info.Task.ContinueWith(task => task.Result, TaskScheduler.Default);
     }
 
+    public Task<(AckStatus Status, T? Payload)> CreateSingleAckWithPayload<T>(out int id, TimeSpan? ackTimeout = default, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        id = NextId();
+        if (_disposed)
+        {
+            throw new InvalidOperationException($"AckHandler is disposed.");
+        }
+        var info = (SingleStatusWithPayloadAck<T>)_acks.GetOrAdd(id, _ => new SingleStatusWithPayloadAck<T>(ackTimeout ?? _defaultAckTimeout));
+        cancellationToken.Register(info.Cancel);
+        return info.Task.ContinueWith(task => task.Result, TaskScheduler.Default);
+    }
+
     public static bool HandleAckStatus(IAckableMessage message, AckStatus status)
     {
         return status switch
@@ -234,6 +246,32 @@ internal sealed class AckHandler : IDisposable
             {
                 return _tcs.TrySetException(e);
             }
+        }
+    }
+
+    private sealed class SingleStatusWithPayloadAck<T> : SingleAckInfo<(AckStatus Status, T? Payload)> where T : class, new()
+    {
+        public SingleStatusWithPayloadAck(TimeSpan timeout) : base(timeout) { }
+
+        public override bool Ack(AckStatus status, ReadOnlySequence<byte>? payload = null)
+        {
+            if (status == AckStatus.Timeout)
+            {
+                return _tcs.TrySetException(new TimeoutException($"Waiting for a {typeof(T).Name} response timed out."));
+            }
+            if (status == AckStatus.Ok && payload != null)
+            {
+                try
+                {
+                    var result = _serviceProtocol.ParseMessagePayload<T>(payload.Value);
+                    return _tcs.TrySetResult((status, result));
+                }
+                catch (Exception e)
+                {
+                    return _tcs.TrySetException(e);
+                }
+            }
+            return _tcs.TrySetResult((status, null));
         }
     }
 

@@ -84,6 +84,18 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
         return Task.FromResult(true);
     }
 
+    public Task<AckStatus> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+    {
+        _validator?.Invoke((message, this));
+        return Task.FromResult(AckStatus.Ok);
+    }
+
+    public Task<(AckStatus Status, IReadOnlyList<System.Security.Claims.Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+    {
+        _validator?.Invoke((message, this));
+        return Task.FromResult((AckStatus.Ok, (IReadOnlyList<System.Security.Claims.Claim>)Array.Empty<System.Security.Claims.Claim>()));
+    }
+
     public Task StopAsync()
     {
         return Task.CompletedTask;

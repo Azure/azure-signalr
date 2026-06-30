@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -155,6 +156,57 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
     public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
     {
         return CreateMessageWriter(serviceMessage).WriteAckableMessageAsync(serviceMessage, cancellationToken);
+    }
+
+    // TODO: multi-endpoint sharding
+    public async Task<AckStatus> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+    {
+        var endpoints = GetOnlineEndpoints().ToArray();
+        if (endpoints.Length == 0)
+        {
+            return AckStatus.NotFound;
+        }
+        if (endpoints.Length == 1)
+        {
+            return await endpoints[0].ConnectionContainer.RefreshConnectionAuthAsync(message, cancellationToken);
+        }
+
+        var statuses = await Task.WhenAll(endpoints.Select(e =>
+            e.ConnectionContainer.RefreshConnectionAuthAsync((RefreshAuthMessage)message.Clone(), cancellationToken)));
+
+        foreach (var status in statuses)
+        {
+            if (status != AckStatus.NotFound)
+            {
+                return status;
+            }
+        }
+        return AckStatus.NotFound;
+    }
+
+    public async Task<(AckStatus Status, IReadOnlyList<Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+    {
+        var endpoints = GetOnlineEndpoints().ToArray();
+        if (endpoints.Length == 0)
+        {
+            return (AckStatus.NotFound, null);
+        }
+        if (endpoints.Length == 1)
+        {
+            return await endpoints[0].ConnectionContainer.GetConnectionClaimsAsync(message, cancellationToken);
+        }
+
+        var results = await Task.WhenAll(endpoints.Select(e =>
+            e.ConnectionContainer.GetConnectionClaimsAsync((GetConnectionClaimsMessage)message.Clone(), cancellationToken)));
+
+        foreach (var result in results)
+        {
+            if (result.Status != AckStatus.NotFound)
+            {
+                return result;
+            }
+        }
+        return (AckStatus.NotFound, null);
     }
 
     public IAsyncEnumerable<Page<SignalRGroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default)

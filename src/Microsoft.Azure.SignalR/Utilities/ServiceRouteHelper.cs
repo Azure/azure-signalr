@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -84,6 +84,14 @@ namespace Microsoft.Azure.SignalR
                 writer.Reset();
             }
         }
+
+#if NET11_0_OR_GREATER
+        public static Task RefreshToService<THub>(HttpContext context) where THub : Hub
+        {
+            var handler = context.RequestServices.GetRequiredService<RefreshHandler<THub>>();
+            return handler.ProcessAsync(context);
+        }
+#endif
 
         private static class Log
         {

@@ -108,6 +108,10 @@ public static class AzureSignalRDependencyInjectionExtensions
             .AddSingleton<IHostedService, HeartBeat>()
             .AddSingleton(typeof(NegotiateHandler<>));
 
+#if NET11_0_OR_GREATER
+        builder.Services.AddSingleton(typeof(RefreshHandler<>));
+#endif
+
         // If a custom router is added, do not add the default router
         builder.Services.TryAddSingleton(typeof(IEndpointRouter), typeof(DefaultEndpointRouter));
         builder.Services.TryAddSingleton(typeof(IConnectionRequestIdProvider), typeof(DefaultConnectionRequestIdProvider));
@@ -127,6 +131,9 @@ public static class AzureSignalRDependencyInjectionExtensions
         builder.Services.TryAddSingleton<AzureSignalRHostedService>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IStartupFilter, AzureSignalRStartupFilter>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<MatcherPolicy, NegotiateMatcherPolicy>());
+#endif
+#if NET11_0_OR_GREATER
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<MatcherPolicy, AuthRefreshMatcherPolicy>());
 #endif
 
         return builder;

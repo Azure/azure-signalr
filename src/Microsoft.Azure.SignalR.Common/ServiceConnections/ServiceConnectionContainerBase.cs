@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -252,6 +253,29 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         return AckHandler.HandleAckStatus(ackableMessage, status);
     }
 
+#nullable enable
+    public async Task<AckStatus> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+    {
+        var task = _ackHandler.CreateSingleAck(out var id, null, cancellationToken);
+        message.AckId = id;
+
+        await WriteMessageAsync(message);
+
+        return await task;
+    }
+
+    public async Task<(AckStatus Status, IReadOnlyList<Claim>? Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+    {
+        var task = _ackHandler.CreateSingleAckWithPayload<ConnectionClaimsResponse>(out var id, null, cancellationToken);
+        message.AckId = id;
+
+        await WriteMessageAsync(message);
+
+        var (status, payload) = await task;
+        return (status, payload?.Claims);
+    }
+#nullable restore
+
     public async IAsyncEnumerable<Page<SignalRGroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, [EnumeratorCancellation] CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(groupName))
@@ -292,7 +316,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
     }
 
     /// <summary>
-    /// <see cref="WriteAckableMessageAsync(ServiceMessage, CancellationToken)"/> only checks <see cref="AckMessage.Status"/> as the response, 
+    /// <see cref="WriteAckableMessageAsync(ServiceMessage, CancellationToken)"/> only checks <see cref="AckMessage.Status"/> as the response,
     /// while this method checks <see cref="AckMessage.Payload"/> and deserialize it to <typeparamref name="T"/>.
     /// </summary>
     /// Made "interval virtual" for testing
