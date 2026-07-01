@@ -158,7 +158,8 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         return CreateMessageWriter(serviceMessage).WriteAckableMessageAsync(serviceMessage, cancellationToken);
     }
 
-    // TODO: multi-endpoint sharding
+    // Refresh mutates an existing connection on its owning ServiceEndpoint; it never negotiates a new endpoint or rebalances.
+    // Exactly one endpoint should own the connection; multiple owners are treated as an ambiguous-sharding failure rather than picking one.
     public async Task<AckStatus> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
     {
         var endpoints = GetOnlineEndpoints().ToArray();
@@ -171,17 +172,31 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
             return await endpoints[0].ConnectionContainer.RefreshConnectionAuthAsync(message, cancellationToken);
         }
 
-        var statuses = await Task.WhenAll(endpoints.Select(e =>
-            e.ConnectionContainer.RefreshConnectionAuthAsync((RefreshAuthMessage)message.Clone(), cancellationToken)));
-
-        foreach (var status in statuses)
+        var statuses = await Task.WhenAll(endpoints.Select(async e =>
         {
-            if (status != AckStatus.NotFound)
+            try
             {
-                return status;
+                return await e.ConnectionContainer.RefreshConnectionAuthAsync((RefreshAuthMessage)message.Clone(), cancellationToken);
             }
+            catch (TimeoutException)
+            {
+                return AckStatus.Timeout;
+            }
+        }));
+
+        // Owners are endpoints that resolved the connection.
+        var resolved = statuses.Where(s => s != AckStatus.NotFound && s != AckStatus.Timeout).ToArray();
+        if (resolved.Length == 1)
+        {
+            return resolved[0];
         }
-        return AckStatus.NotFound;
+        if (resolved.Length > 1)
+        {
+            Log.AmbiguousShardingOwnership(_logger, resolved.Length);
+            return AckStatus.InternalServerError;
+        }
+        // No endpoint owned the connection: surface Timeout if any was inconclusive, otherwise NotFound.
+        return statuses.Any(s => s == AckStatus.Timeout) ? AckStatus.Timeout : AckStatus.NotFound;
     }
 
     public async Task<(AckStatus Status, IReadOnlyList<Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
@@ -196,17 +211,29 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
             return await endpoints[0].ConnectionContainer.GetConnectionClaimsAsync(message, cancellationToken);
         }
 
-        var results = await Task.WhenAll(endpoints.Select(e =>
-            e.ConnectionContainer.GetConnectionClaimsAsync((GetConnectionClaimsMessage)message.Clone(), cancellationToken)));
-
-        foreach (var result in results)
+        var results = await Task.WhenAll(endpoints.Select(async e =>
         {
-            if (result.Status != AckStatus.NotFound)
+            try
             {
-                return result;
+                return await e.ConnectionContainer.GetConnectionClaimsAsync((GetConnectionClaimsMessage)message.Clone(), cancellationToken);
             }
+            catch (TimeoutException)
+            {
+                return (Status: AckStatus.Timeout, Claims: (IReadOnlyList<Claim>)null);
+            }
+        }));
+
+        var resolved = results.Where(r => r.Status != AckStatus.NotFound && r.Status != AckStatus.Timeout).ToArray();
+        if (resolved.Length == 1)
+        {
+            return resolved[0];
         }
-        return (AckStatus.NotFound, null);
+        if (resolved.Length > 1)
+        {
+            Log.AmbiguousShardingOwnership(_logger, resolved.Length);
+            return (AckStatus.InternalServerError, null);
+        }
+        return (results.Any(r => r.Status == AckStatus.Timeout) ? AckStatus.Timeout : AckStatus.NotFound, null);
     }
 
     public IAsyncEnumerable<Page<SignalRGroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
@@ -526,6 +553,9 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         private static readonly Action<ILogger, string, Exception> FailedRemovingConnectionForEndpointAction =
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(10, "FailedRemovingConnectionForEndpoint"), "Fail to stop server connections for endpoint {endpoint}.");
 
+        private static readonly Action<ILogger, int, Exception> AmbiguousShardingOwnershipAction =
+            LoggerMessage.Define<int>(LogLevel.Error, new EventId(11, "AmbiguousShardingOwnership"), "Auth refresh resolved to {count} owning endpoints for a single connection; treating as ambiguous sharding and failing the refresh.");
+
         public static void StartingConnection(ILogger logger, string endpoint)
         {
             StartingConnectionAction(logger, endpoint, null);
@@ -559,6 +589,11 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         public static void FailedRemovingConnectionForEndpoint(ILogger logger, string endpoint, Exception ex)
         {
             FailedRemovingConnectionForEndpointAction(logger, endpoint, ex);
+        }
+
+        public static void AmbiguousShardingOwnership(ILogger logger, int count)
+        {
+            AmbiguousShardingOwnershipAction(logger, count, null);
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -150,6 +151,158 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
     public MultiEndpointServiceConnectionContainerTests(ITestOutputHelper output) : base(output)
     {
+    }
+
+    [Fact]
+    public async Task RefreshConnectionAuth_SingleOwner_ReturnsOwnerStatus()
+    {
+        var container = CreateRefreshContainer(
+            ("1", AckStatus.NotFound),
+            ("2", AckStatus.Ok));
+
+        var status = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+
+        Assert.Equal(AckStatus.Ok, status);
+    }
+
+    [Fact]
+    public async Task RefreshConnectionAuth_SingleOwnerForbidden_ReturnsForbidden()
+    {
+        var container = CreateRefreshContainer(
+            ("1", AckStatus.NotFound),
+            ("2", AckStatus.Forbidden));
+
+        var status = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+
+        Assert.Equal(AckStatus.Forbidden, status);
+    }
+
+    [Fact]
+    public async Task RefreshConnectionAuth_NoOwner_ReturnsNotFound()
+    {
+        var container = CreateRefreshContainer(
+            ("1", AckStatus.NotFound),
+            ("2", AckStatus.NotFound));
+
+        var status = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+
+        Assert.Equal(AckStatus.NotFound, status);
+    }
+
+    [Fact]
+    public async Task RefreshConnectionAuth_MultipleOwners_ReturnsAmbiguousShardingFailure()
+    {
+        // Two endpoints both claim the connection -> ambiguous sharding, must not pick one arbitrarily.
+        var container = CreateRefreshContainer(
+            ("1", AckStatus.Ok),
+            ("2", AckStatus.Ok));
+
+        var status = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+
+        Assert.Equal(AckStatus.InternalServerError, status);
+    }
+
+    [Fact]
+    public async Task GetConnectionClaims_SingleOwner_ReturnsOwnerClaims()
+    {
+        var claims = new List<Claim> { new("role", "admin") };
+        var container = CreateRefreshContainer(
+            ("1", (AckStatus.NotFound, (IReadOnlyList<Claim>)null)),
+            ("2", (AckStatus.Ok, claims)));
+
+        var (status, returned) = await container.GetConnectionClaimsAsync(new GetConnectionClaimsMessage("connection-token", 0));
+
+        Assert.Equal(AckStatus.Ok, status);
+        Assert.Same(claims, returned);
+    }
+
+    [Fact]
+    public async Task GetConnectionClaims_MultipleOwners_ReturnsAmbiguousShardingFailure()
+    {
+        var container = CreateRefreshContainer(
+            ("1", (AckStatus.Ok, (IReadOnlyList<Claim>)new List<Claim> { new("role", "a") })),
+            ("2", (AckStatus.Ok, (IReadOnlyList<Claim>)new List<Claim> { new("role", "b") })));
+
+        var (status, returned) = await container.GetConnectionClaimsAsync(new GetConnectionClaimsMessage("connection-token", 0));
+
+        Assert.Equal(AckStatus.InternalServerError, status);
+        Assert.Null(returned);
+    }
+
+    private static RefreshAuthMessage NewRefreshMessage() =>
+        new("connection-token", null, DateTimeOffset.UtcNow.AddMinutes(30), 0);
+
+    private static TestMultiEndpointServiceConnectionContainer CreateRefreshContainer(params (string Name, AckStatus RefreshStatus)[] endpoints)
+    {
+        return CreateRefreshContainer(endpoints.Select(e => (e.Name, e.RefreshStatus, (AckStatus.NotFound, (IReadOnlyList<Claim>)null))).ToArray());
+    }
+
+    private static TestMultiEndpointServiceConnectionContainer CreateRefreshContainer(params (string Name, (AckStatus Status, IReadOnlyList<Claim> Claims) ClaimsResult)[] endpoints)
+    {
+        return CreateRefreshContainer(endpoints.Select(e => (e.Name, AckStatus.NotFound, e.ClaimsResult)).ToArray());
+    }
+
+    private static TestMultiEndpointServiceConnectionContainer CreateRefreshContainer((string Name, AckStatus RefreshStatus, (AckStatus Status, IReadOnlyList<Claim> Claims) ClaimsResult)[] endpoints)
+    {
+        var connectionStrings = new[] { ConnectionString1, ConnectionString2, ConnectionString3 };
+        var serviceEndpoints = endpoints
+            .Select((e, i) => new ServiceEndpoint(connectionStrings[i], EndpointType.Primary, e.Name))
+            .ToArray();
+        var sem = new TestServiceEndpointManager(serviceEndpoints);
+        var router = new TestEndpointRouter();
+        var byName = endpoints.ToDictionary(e => e.Name, e => e);
+        return new TestMultiEndpointServiceConnectionContainer("hub",
+            e => new RefreshResultContainer(byName[e.Name].RefreshStatus, byName[e.Name].ClaimsResult),
+            sem, router, NullLoggerFactory.Instance);
+    }
+
+    private sealed class RefreshResultContainer : IServiceConnectionContainer
+    {
+        private readonly AckStatus _refreshStatus;
+
+        private readonly (AckStatus Status, IReadOnlyList<Claim> Claims) _claimsResult;
+
+        public RefreshResultContainer(AckStatus refreshStatus, (AckStatus Status, IReadOnlyList<Claim> Claims) claimsResult)
+        {
+            _refreshStatus = refreshStatus;
+            _claimsResult = claimsResult;
+        }
+
+        public Task<AckStatus> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+            => Task.FromResult(_refreshStatus);
+
+        public Task<(AckStatus Status, IReadOnlyList<Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+            => Task.FromResult(_claimsResult);
+
+        public ServiceConnectionStatus Status => ServiceConnectionStatus.Connected;
+
+        public Task ConnectionInitializedTask => Task.CompletedTask;
+
+        public string ServersTag => string.Empty;
+
+        public bool HasClients => false;
+
+        public Task StartGetServersPing() => Task.CompletedTask;
+
+        public Task StopGetServersPing() => Task.CompletedTask;
+
+        public Task StartAsync() => Task.CompletedTask;
+
+        public Task StopAsync() => Task.CompletedTask;
+
+        public Task OfflineAsync(GracefulShutdownMode mode, CancellationToken token) => Task.CompletedTask;
+
+        public Task CloseClientConnections(CancellationToken token) => Task.CompletedTask;
+
+        public Task WriteAsync(ServiceMessage serviceMessage) => Task.CompletedTask;
+
+        public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default) => Task.FromResult(true);
+
+        public System.Collections.Generic.IAsyncEnumerable<global::Azure.Page<SignalRGroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default) => throw new NotSupportedException();
+
+        public void Dispose()
+        {
+        }
     }
 
     private enum EndpointStatus
