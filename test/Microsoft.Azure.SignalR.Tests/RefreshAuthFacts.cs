@@ -12,6 +12,7 @@ using Azure;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Common;
 
 using Xunit;
 
@@ -21,6 +22,59 @@ public class RefreshAuthFacts
 {
     private sealed class TestHub : Hub
     {
+    }
+
+    [Fact]
+    public async Task ServiceConnection_UpdateConnectionClaims_UpdatesLiveConnectionUser()
+    {
+        var connectionId = Guid.NewGuid().ToString("N");
+
+        var proxy = new ServiceConnectionProxy();
+        var serverTask = proxy.WaitForServerConnectionAsync(1);
+        _ = proxy.StartAsync();
+        await serverTask.OrTimeout();
+
+        // Open a live client connection with an initial claim.
+        var connectionTask = proxy.WaitForConnectionAsync(connectionId);
+        await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, new[] { new Claim("my-claim", "original") }));
+        var connection = (ClientConnectionContext)await connectionTask.OrTimeout();
+
+        Assert.Equal("original", connection.User.FindFirst("my-claim")?.Value);
+
+        // The service pushes refreshed claims for the live client connection.
+        await proxy.WriteMessageAsync(new UpdateConnectionClaimsMessage(connectionId, new[] { new Claim("my-claim", "updated") }));
+
+        // The message is dispatched asynchronously; poll until the user is updated.
+        var updated = false;
+        for (var i = 0; i < 100 && !updated; i++)
+        {
+            if (connection.User?.FindFirst("my-claim")?.Value == "updated")
+            {
+                updated = true;
+                break;
+            }
+            await Task.Delay(20);
+        }
+
+        Assert.True(updated, "The client connection user was not updated by UpdateConnectionClaimsMessage.");
+
+        proxy.Stop();
+    }
+
+    [Fact]
+    public async Task ServiceConnection_UpdateConnectionClaims_ForUnknownConnection_IsIgnored()
+    {
+        var proxy = new ServiceConnectionProxy();
+        var serverTask = proxy.WaitForServerConnectionAsync(1);
+        _ = proxy.StartAsync();
+        await serverTask.OrTimeout();
+
+        // Dispatching for a non-existent connection should be a no-op and must not throw.
+        await proxy.WriteMessageAsync(new UpdateConnectionClaimsMessage(Guid.NewGuid().ToString("N"), new[] { new Claim("my-claim", "updated") }));
+
+        Assert.Empty(proxy.ClientConnectionManager.ClientConnections);
+
+        proxy.Stop();
     }
 
     [Fact]
