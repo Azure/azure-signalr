@@ -139,12 +139,12 @@ public class ServiceHubDispatcherTests
             throw new NotImplementedException();
         }
 
-        public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+        public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
-        public Task<(AckStatus Status, IReadOnlyList<System.Security.Claims.Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+        public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }

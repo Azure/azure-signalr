@@ -74,15 +74,19 @@ internal class RefreshHandler<THub> where THub : Hub
 
         var newExpiration = _negotiateHandler.GetRefreshExpiration(context);
 
-        // When an OnAuthenticationRefresh callback is configured, fetch PreviousUser from the runtime
+        // When an OnAuthenticationRefresh callback is configured, fetch PreviousUser from the runtime.
+        // The endpoint that answers the read is remembered so the refresh below can be pinned to it
+        // instead of fanning out to every endpoint a second time.
+        HubServiceEndpoint owningEndpoint = null;
         var callback = _negotiateHandler.AuthenticationRefreshCallback;
         if (callback != null)
         {
-            var (claimsStatus, previousClaims) = await _serviceConnectionManager.GetConnectionClaimsAsync(
+            var (claimsStatus, previousClaims, answeringEndpoint) = await _serviceConnectionManager.GetConnectionClaimsAsync(
                 new GetConnectionClaimsMessage(connectionToken, 0), context.RequestAborted);
             switch (claimsStatus)
             {
                 case AckStatus.Ok:
+                    owningEndpoint = answeringEndpoint;
                     break;
                 case AckStatus.NotFound:
                     await WriteErrorAsync(context, StatusCodes.Status404NotFound, "connection_not_found");
@@ -118,7 +122,7 @@ internal class RefreshHandler<THub> where THub : Hub
         try
         {
             refreshResult = await _serviceConnectionManager.RefreshConnectionAuthAsync(
-                new RefreshAuthMessage(connectionToken, claims, newExpiration, 0), context.RequestAborted);
+                new RefreshAuthMessage(connectionToken, claims, newExpiration, 0), owningEndpoint, context.RequestAborted);
         }
         catch (Exception ex)
         {
@@ -144,8 +148,8 @@ internal class RefreshHandler<THub> where THub : Hub
                 return;
         }
 
-        // Mint the refreshed access token only after ASRS confirms the refresh
-        if (refreshResult.Claims == null || refreshResult.OwningEndpoint == null)
+        // Mint the refreshed access token only after ASRS confirms the refresh.
+        if (refreshResult.Claims == null || refreshResult.Claims.Count == 0 || refreshResult.OwningEndpoint == null)
         {
             Log.RefreshMissingClaimPayload(_logger, connectionToken);
             await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, "internal_server_error");
@@ -155,7 +159,7 @@ internal class RefreshHandler<THub> where THub : Hub
         try
         {
             var (accessToken, tokenLifetimeSeconds) = await _negotiateHandler.GenerateRefreshedAccessTokenAsync(
-                refreshResult.OwningEndpoint, refreshResult.Claims, newExpiration);
+                refreshResult.OwningEndpoint, refreshResult.Claims);
             await WriteSuccessAsync(context, accessToken, tokenLifetimeSeconds);
         }
         catch (Exception ex)
@@ -222,6 +226,10 @@ internal class RefreshHandler<THub> where THub : Hub
 
     private static Task WriteSuccessAsync(HttpContext context, string accessToken, int tokenLifetimeSeconds)
     {
+        if (context.Response.HasStarted)
+        {
+            return Task.CompletedTask;
+        }
         context.Response.ContentType = "application/json";
         return context.Response.WriteAsync(JsonSerializer.Serialize(new RefreshSuccessResponse
         {

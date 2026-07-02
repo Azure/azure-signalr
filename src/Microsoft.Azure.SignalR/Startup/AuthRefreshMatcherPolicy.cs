@@ -56,7 +56,10 @@ namespace Microsoft.Azure.SignalR
                     // Only replace the refresh endpoint, leaving negotiate/connect endpoints untouched.
                     if (refreshMetadata != null && hubMetadata != null)
                     {
-                        var newEndpoint = _refreshEndpointCache.GetOrAdd(hubMetadata.HubType, CreateRefreshEndpoint(hubMetadata.HubType, routeEndpoint));
+                        if (!_refreshEndpointCache.TryGetValue(hubMetadata.HubType, out var newEndpoint))
+                        {
+                            newEndpoint = _refreshEndpointCache.GetOrAdd(hubMetadata.HubType, CreateRefreshEndpoint(hubMetadata.HubType, routeEndpoint));
+                        }
 
                         candidates.ReplaceEndpoint(i, newEndpoint, candidate.Values);
                     }

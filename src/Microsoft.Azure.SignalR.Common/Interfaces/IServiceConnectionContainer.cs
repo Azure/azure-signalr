@@ -27,8 +27,8 @@ internal interface IServiceConnectionContainer : IServiceConnectionManager,  IDi
 
     Task StopGetServersPing();
 
-    Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default);
+    Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint? preferredEndpoint = null, CancellationToken cancellationToken = default);
 
-    Task<(AckStatus Status, IReadOnlyList<Claim>? Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default);
+    Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default);
 }
 

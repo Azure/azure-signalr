@@ -84,16 +84,16 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
         return Task.FromResult(true);
     }
 
-    public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+    public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
     {
         _validator?.Invoke((message, this));
         return Task.FromResult(new RefreshConnectionAuthResult(AckStatus.Ok));
     }
 
-    public Task<(AckStatus Status, IReadOnlyList<System.Security.Claims.Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+    public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
     {
         _validator?.Invoke((message, this));
-        return Task.FromResult((AckStatus.Ok, (IReadOnlyList<System.Security.Claims.Claim>)Array.Empty<System.Security.Claims.Claim>()));
+        return Task.FromResult(new GetConnectionClaimsResult(AckStatus.Ok, Array.Empty<System.Security.Claims.Claim>()));
     }
 
     public Task StopAsync()

@@ -48,18 +48,18 @@ internal sealed class TestServiceConnectionManager<THub> : IServiceConnectionMan
         return true;
     }
 
-    public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+    public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
     {
         _writeAsyncCallCount.AddOrUpdate(message.GetType(), 1, (_, value) => value + 1);
         ServiceMessage = message;
         return Task.FromResult(new RefreshConnectionAuthResult(AckStatus.Ok));
     }
 
-    public Task<(AckStatus Status, IReadOnlyList<System.Security.Claims.Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+    public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
     {
         _writeAsyncCallCount.AddOrUpdate(message.GetType(), 1, (_, value) => value + 1);
         ServiceMessage = message;
-        return Task.FromResult((AckStatus.Ok, (IReadOnlyList<System.Security.Claims.Claim>)Array.Empty<System.Security.Claims.Claim>()));
+        return Task.FromResult(new GetConnectionClaimsResult(AckStatus.Ok, Array.Empty<System.Security.Claims.Claim>()));
     }
 
     public int GetCallCount(Type type)

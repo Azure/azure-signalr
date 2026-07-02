@@ -254,8 +254,9 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
     }
 
 #nullable enable
-    public async Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+    public async Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint? preferredEndpoint = null, CancellationToken cancellationToken = default)
     {
+        // A single-endpoint container always owns its connections; the preferred endpoint hint is only meaningful for the multi-endpoint router.
         var task = _ackHandler.CreateSingleAckWithPayload<ConnectionClaimsResponse>(out var id, null, cancellationToken);
         message.AckId = id;
 
@@ -265,7 +266,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         return new RefreshConnectionAuthResult(status, payload?.Claims, Endpoint);
     }
 
-    public async Task<(AckStatus Status, IReadOnlyList<Claim>? Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+    public async Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
     {
         var task = _ackHandler.CreateSingleAckWithPayload<ConnectionClaimsResponse>(out var id, null, cancellationToken);
         message.AckId = id;
@@ -273,7 +274,7 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
         await WriteMessageAsync(message);
 
         var (status, payload) = await task;
-        return (status, payload?.Claims);
+        return new GetConnectionClaimsResult(status, payload?.Claims, Endpoint);
     }
 #nullable restore
 

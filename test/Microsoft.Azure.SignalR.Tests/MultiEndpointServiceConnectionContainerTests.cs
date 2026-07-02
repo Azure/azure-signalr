@@ -229,6 +229,28 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         Assert.Null(returned);
     }
 
+    [Fact]
+    public async Task RefreshConnectionAuth_PinnedToAnsweringEndpoint_SkipsSecondFanOut()
+    {
+        // Endpoint "2" owns the connection for the claims read; endpoint "1" reports NotFound.
+        var container = CreateRefreshContainer(new[]
+        {
+            ("1", AckStatus.Ok, (AckStatus.NotFound, (IReadOnlyList<Claim>)null)),
+            ("2", AckStatus.Ok, (AckStatus.Ok, (IReadOnlyList<Claim>)new List<Claim> { new("role", "admin") })),
+        });
+
+        var claims = await container.GetConnectionClaimsAsync(new GetConnectionClaimsMessage("connection-token", 0));
+        Assert.Equal(AckStatus.Ok, claims.Status);
+        Assert.NotNull(claims.OwningEndpoint);
+
+        var pinned = await container.RefreshConnectionAuthAsync(NewRefreshMessage(), claims.OwningEndpoint);
+        Assert.Equal(AckStatus.Ok, pinned.Status);
+
+        // Both endpoints would ack the refresh with Ok, so a second fan-out would resolve two owners and fail as ambiguous.
+        var fannedOut = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+        Assert.Equal(AckStatus.InternalServerError, fannedOut.Status);
+    }
+
     private static RefreshAuthMessage NewRefreshMessage() =>
         new("connection-token", null, DateTimeOffset.UtcNow.AddMinutes(30), 0);
 
@@ -268,11 +290,11 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             _claimsResult = claimsResult;
         }
 
-        public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+        public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
             => Task.FromResult(new RefreshConnectionAuthResult(_refreshStatus));
 
-        public Task<(AckStatus Status, IReadOnlyList<Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
-            => Task.FromResult(_claimsResult);
+        public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+            => Task.FromResult(new GetConnectionClaimsResult(_claimsResult.Status, _claimsResult.Claims));
 
         public ServiceConnectionStatus Status => ServiceConnectionStatus.Connected;
 

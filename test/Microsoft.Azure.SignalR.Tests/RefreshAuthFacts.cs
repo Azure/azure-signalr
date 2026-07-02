@@ -159,15 +159,15 @@ public class RefreshAuthFacts
 
         public RefreshAuthMessage LastRefreshMessage { get; private set; }
 
-        public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+        public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
         {
             LastRefreshMessage = message;
             return Task.FromResult(new RefreshConnectionAuthResult(RefreshResult));
         }
 
-        public Task<(AckStatus Status, IReadOnlyList<Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+        public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(ClaimsResult);
+            return Task.FromResult(new GetConnectionClaimsResult(ClaimsResult.Status, ClaimsResult.Claims));
         }
 
         public ServiceConnectionStatus Status => ServiceConnectionStatus.Connected;

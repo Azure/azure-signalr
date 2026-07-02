@@ -150,7 +150,7 @@ internal class NegotiateHandler<THub> where THub : Hub
     /// Mints a refreshed client access token from the runtime-returned post-refresh claim set for the connection's owning endpoint.
     /// </summary>
     public async Task<(string AccessToken, int TokenLifetimeSeconds)> GenerateRefreshedAccessTokenAsync(
-        HubServiceEndpoint endpoint, IReadOnlyList<Claim> claims, DateTimeOffset newExpiration)
+        HubServiceEndpoint endpoint, IReadOnlyList<Claim> claims)
     {
         var provider = _endpointManager.GetEndpointProvider(endpoint);
         if (provider == null)
@@ -158,22 +158,22 @@ internal class NegotiateHandler<THub> where THub : Hub
             throw new AzureSignalRNotConnectedException();
         }
 
-        var tokenClaims = ApplyRefreshedExpiration(claims, newExpiration);
-        var accessToken = await provider.GenerateClientAccessTokenAsync(_hubName, tokenClaims);
-        var tokenLifetimeSeconds = ComputeTokenLifetimeSeconds(newExpiration);
+        var accessToken = await provider.GenerateClientAccessTokenAsync(_hubName, claims);
+        var tokenLifetimeSeconds = ComputeTokenLifetimeSeconds(GetAuthExpiresOnFromClaims(claims));
         return (accessToken, tokenLifetimeSeconds);
     }
 
-    private static IReadOnlyList<Claim> ApplyRefreshedExpiration(IReadOnlyList<Claim> claims, DateTimeOffset newExpiration)
+    private static DateTimeOffset? GetAuthExpiresOnFromClaims(IReadOnlyList<Claim> claims)
     {
-        var result = new List<Claim>(claims.Count);
         foreach (var claim in claims)
         {
-            result.Add(claim.Type == Constants.ClaimType.AuthExpiresOn
-                ? new Claim(Constants.ClaimType.AuthExpiresOn, newExpiration.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture))
-                : claim);
+            if (claim.Type == Constants.ClaimType.AuthExpiresOn
+                && long.TryParse(claim.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var unixSeconds))
+            {
+                return DateTimeOffset.FromUnixTimeSeconds(unixSeconds);
+            }
         }
-        return result;
+        return null;
     }
 
     private int ComputeTokenLifetimeSeconds(DateTimeOffset? authenticationExpiresOn)

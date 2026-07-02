@@ -65,17 +65,17 @@ internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionM
         return _serviceConnection.WriteAckableMessageAsync(seviceMessage, cancellationToken);
     }
 
-    public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+    public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint? preferredEndpoint = null, CancellationToken cancellationToken = default)
     {
         if (_serviceConnection == null)
         {
             throw new AzureSignalRNotConnectedException();
         }
 
-        return _serviceConnection.RefreshConnectionAuthAsync(message, cancellationToken);
+        return _serviceConnection.RefreshConnectionAuthAsync(message, preferredEndpoint, cancellationToken);
     }
 
-    public Task<(AckStatus Status, IReadOnlyList<Claim>? Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+    public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
     {
         if (_serviceConnection == null)
         {

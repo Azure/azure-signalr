@@ -160,23 +160,33 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
 
     // Refresh mutates an existing connection on its owning ServiceEndpoint; it never negotiates a new endpoint or rebalances.
     // Exactly one endpoint should own the connection; multiple owners are treated as an ambiguous-sharding failure rather than picking one.
-    public async Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+    public async Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
     {
         var endpoints = GetOnlineEndpoints().ToArray();
         if (endpoints.Length == 0)
         {
             return new RefreshConnectionAuthResult(AckStatus.NotFound);
         }
+        // When GetConnectionClaims already resolved the owning endpoint, pin the refresh to it and skip the second fan-out.
+        if (preferredEndpoint != null)
+        {
+            var pinned = Array.Find(endpoints, e => ReferenceEquals(e, preferredEndpoint));
+            if (pinned != null)
+            {
+                return await pinned.ConnectionContainer.RefreshConnectionAuthAsync(message, cancellationToken: cancellationToken);
+            }
+            // The owning endpoint went offline between the read and the refresh; fall back to fanning out.
+        }
         if (endpoints.Length == 1)
         {
-            return await endpoints[0].ConnectionContainer.RefreshConnectionAuthAsync(message, cancellationToken);
+            return await endpoints[0].ConnectionContainer.RefreshConnectionAuthAsync(message, cancellationToken: cancellationToken);
         }
 
         var results = await Task.WhenAll(endpoints.Select(async e =>
         {
             try
             {
-                return await e.ConnectionContainer.RefreshConnectionAuthAsync((RefreshAuthMessage)message.Clone(), cancellationToken);
+                return await e.ConnectionContainer.RefreshConnectionAuthAsync((RefreshAuthMessage)message.Clone(), cancellationToken: cancellationToken);
             }
             catch (TimeoutException)
             {
@@ -199,41 +209,44 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         return new RefreshConnectionAuthResult(results.Any(r => r.Status == AckStatus.Timeout) ? AckStatus.Timeout : AckStatus.NotFound);
     }
 
-    public async Task<(AckStatus Status, IReadOnlyList<Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+    public async Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
     {
         var endpoints = GetOnlineEndpoints().ToArray();
         if (endpoints.Length == 0)
         {
-            return (AckStatus.NotFound, null);
+            return new GetConnectionClaimsResult(AckStatus.NotFound);
         }
         if (endpoints.Length == 1)
         {
-            return await endpoints[0].ConnectionContainer.GetConnectionClaimsAsync(message, cancellationToken);
+            var single = await endpoints[0].ConnectionContainer.GetConnectionClaimsAsync(message, cancellationToken);
+            // Surface the queried endpoint so the caller can pin a follow-up refresh to it.
+            return new GetConnectionClaimsResult(single.Status, single.Claims, endpoints[0]);
         }
 
         var results = await Task.WhenAll(endpoints.Select(async e =>
         {
             try
             {
-                return await e.ConnectionContainer.GetConnectionClaimsAsync((GetConnectionClaimsMessage)message.Clone(), cancellationToken);
+                var r = await e.ConnectionContainer.GetConnectionClaimsAsync((GetConnectionClaimsMessage)message.Clone(), cancellationToken);
+                return (Endpoint: e, r.Status, r.Claims);
             }
             catch (TimeoutException)
             {
-                return (Status: AckStatus.Timeout, Claims: (IReadOnlyList<Claim>)null);
+                return (Endpoint: e, Status: AckStatus.Timeout, Claims: (IReadOnlyList<Claim>)null);
             }
         }));
 
         var resolved = results.Where(r => r.Status != AckStatus.NotFound && r.Status != AckStatus.Timeout).ToArray();
         if (resolved.Length == 1)
         {
-            return resolved[0];
+            return new GetConnectionClaimsResult(resolved[0].Status, resolved[0].Claims, resolved[0].Endpoint);
         }
         if (resolved.Length > 1)
         {
             Log.AmbiguousShardingOwnership(_logger, resolved.Length);
-            return (AckStatus.InternalServerError, null);
+            return new GetConnectionClaimsResult(AckStatus.InternalServerError);
         }
-        return (results.Any(r => r.Status == AckStatus.Timeout) ? AckStatus.Timeout : AckStatus.NotFound, null);
+        return new GetConnectionClaimsResult(results.Any(r => r.Status == AckStatus.Timeout) ? AckStatus.Timeout : AckStatus.NotFound);
     }
 
     public IAsyncEnumerable<Page<SignalRGroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
