@@ -114,9 +114,10 @@ internal class RefreshHandler<THub> where THub : Hub
         var claims = projectedClaims.Length == 0 ? null : projectedClaims;
 
         AckStatus refreshStatus;
+        RefreshConnectionAuthResult refreshResult;
         try
         {
-            refreshStatus = await _serviceConnectionManager.RefreshConnectionAuthAsync(
+            refreshResult = await _serviceConnectionManager.RefreshConnectionAuthAsync(
                 new RefreshAuthMessage(connectionToken, claims, newExpiration, 0), context.RequestAborted);
         }
         catch (Exception ex)
@@ -126,6 +127,7 @@ internal class RefreshHandler<THub> where THub : Hub
             return;
         }
 
+        refreshStatus = refreshResult.Status;
         switch (refreshStatus)
         {
             case AckStatus.Ok:
@@ -143,9 +145,17 @@ internal class RefreshHandler<THub> where THub : Hub
         }
 
         // Mint the refreshed access token only after ASRS confirms the refresh
+        if (refreshResult.Claims == null || refreshResult.OwningEndpoint == null)
+        {
+            Log.RefreshMissingClaimPayload(_logger, connectionToken);
+            await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, "internal_server_error");
+            return;
+        }
+
         try
         {
-            var (accessToken, tokenLifetimeSeconds) = await _negotiateHandler.GenerateRefreshedAccessTokenAsync(context);
+            var (accessToken, tokenLifetimeSeconds) = await _negotiateHandler.GenerateRefreshedAccessTokenAsync(
+                refreshResult.OwningEndpoint, refreshResult.Claims, newExpiration);
             await WriteSuccessAsync(context, accessToken, tokenLifetimeSeconds);
         }
         catch (Exception ex)
@@ -246,11 +256,16 @@ internal class RefreshHandler<THub> where THub : Hub
         private static readonly Action<ILogger, Exception> _refreshTokenGenerationFailed =
             LoggerMessage.Define(LogLevel.Error, new EventId(3, "RefreshAuthTokenGenerationFailed"), "Failed to generate the refreshed access token after the service confirmed the refresh.");
 
+        private static readonly Action<ILogger, string, Exception> _refreshMissingClaimPayload =
+            LoggerMessage.Define<string>(LogLevel.Error, new EventId(4, "RefreshAuthMissingClaimPayload"), "The service confirmed the refresh for connection token {ConnectionToken} but returned no claim payload; the runtime does not understand the refresh contract. Rejecting.");
+
         public static void RefreshFailed(ILogger logger, string connectionToken, AckStatus status) => _refreshFailed(logger, connectionToken, status, null);
 
         public static void RefreshServiceCallFailed(ILogger logger, Exception ex) => _refreshServiceCallFailed(logger, ex);
 
         public static void RefreshTokenGenerationFailed(ILogger logger, Exception ex) => _refreshTokenGenerationFailed(logger, ex);
+
+        public static void RefreshMissingClaimPayload(ILogger logger, string connectionToken) => _refreshMissingClaimPayload(logger, connectionToken, null);
     }
 }
 #endif

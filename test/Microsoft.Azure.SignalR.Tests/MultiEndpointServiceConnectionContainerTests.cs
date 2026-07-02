@@ -160,9 +160,9 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             ("1", AckStatus.NotFound),
             ("2", AckStatus.Ok));
 
-        var status = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+        var result = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
 
-        Assert.Equal(AckStatus.Ok, status);
+        Assert.Equal(AckStatus.Ok, result.Status);
     }
 
     [Fact]
@@ -172,9 +172,9 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             ("1", AckStatus.NotFound),
             ("2", AckStatus.Forbidden));
 
-        var status = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+        var result = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
 
-        Assert.Equal(AckStatus.Forbidden, status);
+        Assert.Equal(AckStatus.Forbidden, result.Status);
     }
 
     [Fact]
@@ -184,9 +184,9 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             ("1", AckStatus.NotFound),
             ("2", AckStatus.NotFound));
 
-        var status = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+        var result = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
 
-        Assert.Equal(AckStatus.NotFound, status);
+        Assert.Equal(AckStatus.NotFound, result.Status);
     }
 
     [Fact]
@@ -197,9 +197,9 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             ("1", AckStatus.Ok),
             ("2", AckStatus.Ok));
 
-        var status = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+        var result = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
 
-        Assert.Equal(AckStatus.InternalServerError, status);
+        Assert.Equal(AckStatus.InternalServerError, result.Status);
     }
 
     [Fact]
@@ -268,8 +268,8 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             _claimsResult = claimsResult;
         }
 
-        public Task<AckStatus> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
-            => Task.FromResult(_refreshStatus);
+        public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+            => Task.FromResult(new RefreshConnectionAuthResult(_refreshStatus));
 
         public Task<(AckStatus Status, IReadOnlyList<Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
             => Task.FromResult(_claimsResult);

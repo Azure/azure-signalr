@@ -65,7 +65,7 @@ internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionM
         return _serviceConnection.WriteAckableMessageAsync(seviceMessage, cancellationToken);
     }
 
-    public Task<AckStatus> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+    public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
     {
         if (_serviceConnection == null)
         {

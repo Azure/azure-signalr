@@ -160,19 +160,19 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
 
     // Refresh mutates an existing connection on its owning ServiceEndpoint; it never negotiates a new endpoint or rebalances.
     // Exactly one endpoint should own the connection; multiple owners are treated as an ambiguous-sharding failure rather than picking one.
-    public async Task<AckStatus> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+    public async Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
     {
         var endpoints = GetOnlineEndpoints().ToArray();
         if (endpoints.Length == 0)
         {
-            return AckStatus.NotFound;
+            return new RefreshConnectionAuthResult(AckStatus.NotFound);
         }
         if (endpoints.Length == 1)
         {
             return await endpoints[0].ConnectionContainer.RefreshConnectionAuthAsync(message, cancellationToken);
         }
 
-        var statuses = await Task.WhenAll(endpoints.Select(async e =>
+        var results = await Task.WhenAll(endpoints.Select(async e =>
         {
             try
             {
@@ -180,12 +180,12 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
             }
             catch (TimeoutException)
             {
-                return AckStatus.Timeout;
+                return new RefreshConnectionAuthResult(AckStatus.Timeout);
             }
         }));
 
-        // Owners are endpoints that resolved the connection.
-        var resolved = statuses.Where(s => s != AckStatus.NotFound && s != AckStatus.Timeout).ToArray();
+        // Owners are endpoints that resolved the connection. Each carries its own claims + owning endpoint.
+        var resolved = results.Where(r => r.Status != AckStatus.NotFound && r.Status != AckStatus.Timeout).ToArray();
         if (resolved.Length == 1)
         {
             return resolved[0];
@@ -193,10 +193,10 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         if (resolved.Length > 1)
         {
             Log.AmbiguousShardingOwnership(_logger, resolved.Length);
-            return AckStatus.InternalServerError;
+            return new RefreshConnectionAuthResult(AckStatus.InternalServerError);
         }
         // No endpoint owned the connection: surface Timeout if any was inconclusive, otherwise NotFound.
-        return statuses.Any(s => s == AckStatus.Timeout) ? AckStatus.Timeout : AckStatus.NotFound;
+        return new RefreshConnectionAuthResult(results.Any(r => r.Status == AckStatus.Timeout) ? AckStatus.Timeout : AckStatus.NotFound);
     }
 
     public async Task<(AckStatus Status, IReadOnlyList<Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)

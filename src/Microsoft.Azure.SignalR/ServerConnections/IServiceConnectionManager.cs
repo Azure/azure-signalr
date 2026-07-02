@@ -17,7 +17,7 @@ internal interface IServiceConnectionManager<THub> : IServiceConnectionManager w
 {
     void SetServiceConnection(IServiceConnectionContainer serviceConnection);
 
-    Task<AckStatus> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default);
+    Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default);
 
     Task<(AckStatus Status, IReadOnlyList<Claim>? Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default);
 }

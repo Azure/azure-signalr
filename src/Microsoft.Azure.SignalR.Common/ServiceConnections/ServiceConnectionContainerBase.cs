@@ -254,14 +254,15 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
     }
 
 #nullable enable
-    public async Task<AckStatus> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+    public async Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
     {
-        var task = _ackHandler.CreateSingleAck(out var id, null, cancellationToken);
+        var task = _ackHandler.CreateSingleAckWithPayload<ConnectionClaimsResponse>(out var id, null, cancellationToken);
         message.AckId = id;
 
         await WriteMessageAsync(message);
 
-        return await task;
+        var (status, payload) = await task;
+        return new RefreshConnectionAuthResult(status, payload?.Claims, Endpoint);
     }
 
     public async Task<(AckStatus Status, IReadOnlyList<Claim>? Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)

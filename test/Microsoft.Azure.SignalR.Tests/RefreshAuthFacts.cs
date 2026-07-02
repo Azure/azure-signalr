@@ -102,9 +102,9 @@ public class RefreshAuthFacts
         manager.SetServiceConnection(container);
 
         var message = new RefreshAuthMessage("connection-token", null, DateTimeOffset.UtcNow.AddMinutes(30), 0);
-        var status = await manager.RefreshConnectionAuthAsync(message);
+        var result = await manager.RefreshConnectionAuthAsync(message);
 
-        Assert.Equal(expected, status);
+        Assert.Equal(expected, result.Status);
         Assert.Same(message, container.LastRefreshMessage);
     }
 
@@ -159,10 +159,10 @@ public class RefreshAuthFacts
 
         public RefreshAuthMessage LastRefreshMessage { get; private set; }
 
-        public Task<AckStatus> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
+        public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default)
         {
             LastRefreshMessage = message;
-            return Task.FromResult(RefreshResult);
+            return Task.FromResult(new RefreshConnectionAuthResult(RefreshResult));
         }
 
         public Task<(AckStatus Status, IReadOnlyList<Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)

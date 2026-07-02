@@ -128,7 +128,7 @@ namespace Microsoft.Azure.SignalR.Management
             public Task CloseClientConnections(CancellationToken token) => throw new NotSupportedException();
 
             // TODO: Serverless refresh support.
-            public Task<AckStatus> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+            public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
             public Task<(AckStatus Status, IReadOnlyList<System.Security.Claims.Claim> Claims)> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
