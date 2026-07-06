@@ -40,9 +40,15 @@ jobs:
       run: git submodule update --init --recursive
       if: steps.filter.outputs.src == 'true'
     - name: Setup dotnet ${{ matrix.dotnet-version }}
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ matrix.dotnet-version }}
+    # Remove it when .NET 11 is GA.
+    - name: Setup .NET 11 daily SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '11.0.x'
+        dotnet-quality: 'daily'
     - name: Display dotnet version
       run: dotnet --version
     - name: Build with dotnet
