@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
@@ -311,6 +314,164 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 () => _manager.InvokeConnectionAsync<string>(connectionId, methodName, args));
 
             Assert.Equal("Response payload is empty.", ex.Message);
+        }
+
+        [Fact]
+        public async Task RefreshAuthAsync_NullOrEmptyConnectionToken_ThrowsArgumentException()
+        {
+            var exception = await Assert.ThrowsAsync<ArgumentException>(
+                async () => await _manager.RefreshAuthAsync(null!, DateTimeOffset.UtcNow, null, default));
+            Assert.Equal("connectionToken", exception.ParamName);
+
+            exception = await Assert.ThrowsAsync<ArgumentException>(
+                async () => await _manager.RefreshAuthAsync("", DateTimeOffset.UtcNow, null, default));
+            Assert.Equal("connectionToken", exception.ParamName);
+        }
+
+        [Fact]
+        public async Task RefreshAuthAsync_Ok_PostsRefreshAuthRequest_ReturnsOkWithClaims()
+        {
+            var connectionToken = "conn-token-1";
+            var expireTime = new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero);
+            HttpRequestMessage? capturedRequest = null;
+            string? capturedBody = null;
+
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .Callback<HttpRequestMessage, CancellationToken>((request, _) =>
+                {
+                    capturedRequest = request;
+                    capturedBody = request.Content!.ReadAsStringAsync(CancellationToken.None).Result;
+                })
+                .ReturnsAsync(() => ClaimsResponse(HttpStatusCode.OK, ("role", "admin")));
+
+            var result = await _manager.RefreshAuthAsync(
+                connectionToken, expireTime, new[] { new Claim("role", "admin") }, default);
+
+            // Verify the request targeted the token-keyed :refreshAuth collection endpoint via POST.
+            Assert.NotNull(capturedRequest);
+            Assert.Equal(HttpMethod.Post, capturedRequest!.Method);
+            var uri = capturedRequest.RequestUri!.ToString();
+            Assert.Contains("/connections/:refreshAuth", uri);
+            Assert.Contains("api-version=2026-07-01", uri);
+
+            // The connection token rides in the body (out of the URL / access logs), with expireTime + claims.
+            Assert.NotNull(capturedBody);
+            Assert.Contains("\"connectionToken\":\"conn-token-1\"", capturedBody);
+            Assert.Contains("expireTime", capturedBody);
+            Assert.Contains("\"type\":\"role\"", capturedBody);
+            Assert.Contains("\"value\":\"admin\"", capturedBody);
+            Assert.DoesNotContain("conn-token-1", uri);
+
+            Assert.Equal(AckStatus.Ok, result.Status);
+            var claim = Assert.Single(result.Claims!);
+            Assert.Equal("role", claim.Type);
+            Assert.Equal("admin", claim.Value);
+        }
+
+        [Fact]
+        public async Task RefreshAuthAsync_Forbidden_ReturnsForbiddenStatus()
+        {
+            SetupResponse(HttpStatusCode.Forbidden);
+
+            var result = await _manager.RefreshAuthAsync("conn-token-1", DateTimeOffset.UtcNow, null, default);
+
+            Assert.Equal(AckStatus.Forbidden, result.Status);
+            Assert.Null(result.Claims);
+        }
+
+        [Fact]
+        public async Task RefreshAuthAsync_NotFound_ReturnsNotFoundStatus()
+        {
+            SetupResponse(HttpStatusCode.NotFound);
+
+            var result = await _manager.RefreshAuthAsync("conn-token-1", DateTimeOffset.UtcNow, null, default);
+
+            Assert.Equal(AckStatus.NotFound, result.Status);
+            Assert.Null(result.Claims);
+        }
+
+        [Fact]
+        public async Task GetConnectionClaimsAsync_NullOrEmptyConnectionToken_ThrowsArgumentException()
+        {
+            var exception = await Assert.ThrowsAsync<ArgumentException>(
+                async () => await _manager.GetConnectionClaimsAsync(null!, default));
+            Assert.Equal("connectionToken", exception.ParamName);
+
+            exception = await Assert.ThrowsAsync<ArgumentException>(
+                async () => await _manager.GetConnectionClaimsAsync("", default));
+            Assert.Equal("connectionToken", exception.ParamName);
+        }
+
+        [Fact]
+        public async Task GetConnectionClaimsAsync_Ok_PostsGetClaimsRequest_ReturnsClaims()
+        {
+            HttpRequestMessage? capturedRequest = null;
+            string? capturedBody = null;
+
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .Callback<HttpRequestMessage, CancellationToken>((request, _) =>
+                {
+                    capturedRequest = request;
+                    capturedBody = request.Content!.ReadAsStringAsync(CancellationToken.None).Result;
+                })
+                .ReturnsAsync(() => ClaimsResponse(HttpStatusCode.OK, ("role", "user"), ("tenant", "contoso")));
+
+            var result = await _manager.GetConnectionClaimsAsync("conn-token-1", default);
+
+            // Read-only :getClaims is a POST with the token in the body, mirroring :refreshAuth.
+            Assert.NotNull(capturedRequest);
+            Assert.Equal(HttpMethod.Post, capturedRequest!.Method);
+            var uri = capturedRequest.RequestUri!.ToString();
+            Assert.Contains("/connections/:getClaims", uri);
+            Assert.Contains("api-version=2026-07-01", uri);
+            Assert.Contains("\"connectionToken\":\"conn-token-1\"", capturedBody);
+            Assert.DoesNotContain("conn-token-1", uri);
+
+            Assert.Equal(AckStatus.Ok, result.Status);
+            Assert.Equal(2, result.Claims!.Count);
+            Assert.Contains(result.Claims!, c => c.Type == "tenant" && c.Value == "contoso");
+        }
+
+        [Fact]
+        public async Task GetConnectionClaimsAsync_NotFound_ReturnsNotFoundStatus()
+        {
+            SetupResponse(HttpStatusCode.NotFound);
+
+            var result = await _manager.GetConnectionClaimsAsync("conn-token-1", default);
+
+            Assert.Equal(AckStatus.NotFound, result.Status);
+            Assert.Null(result.Claims);
+        }
+
+        private void SetupResponse(HttpStatusCode statusCode) =>
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() => new HttpResponseMessage(statusCode));
+
+        private static HttpResponseMessage ClaimsResponse(HttpStatusCode statusCode, params (string Type, string Value)[] claims)
+        {
+            var body = JsonSerializer.Serialize(new
+            {
+                claims = claims.Select(c => new { type = c.Type, value = c.Value }).ToArray(),
+            });
+            return new HttpResponseMessage(statusCode)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json"),
+            };
         }
 #endif
 

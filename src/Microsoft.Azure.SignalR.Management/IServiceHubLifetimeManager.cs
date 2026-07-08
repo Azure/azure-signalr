@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,6 +24,10 @@ internal interface IServiceHubLifetimeManager : IHubLifetimeManager, IUserGroupH
     Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken);
 
     Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken);
+
+    Task<RefreshConnectionAuthResult> RefreshAuthAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken);
+
+    Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(string connectionToken, CancellationToken cancellationToken);
 
     AsyncPageable<SignalRGroupMember> ListConnectionsInGroup(string groupName, int? top = null, CancellationToken token = default);
 }

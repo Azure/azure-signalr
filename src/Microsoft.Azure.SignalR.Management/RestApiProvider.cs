@@ -14,6 +14,8 @@ internal class RestApiProvider
     internal const string Version = "2024-12-01";
     public const string HealthApiPath = $"api/health?api-version={Version}";
 
+    internal const string RefreshApiVersion = "2026-07-01";
+
     private readonly string _serverEndpoint;
 
     public RestApiProvider(ServiceEndpoint endpoint)
@@ -110,12 +112,22 @@ internal class RestApiProvider
         return GenerateRestApiEndpoint(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}/:invoke");
     }
 
-    private RestApiEndpoint GenerateRestApiEndpoint(string appName, string hubName, string pathAfterHub, IDictionary<string, StringValues> queries = null)
+    public RestApiEndpoint GetRefreshConnectionAuthEndpoint(string appName, string hubName)
+    {
+        return GenerateRestApiEndpoint(appName, hubName, "/connections/:refreshAuth", apiVersion: RefreshApiVersion);
+    }
+
+    public RestApiEndpoint GetConnectionClaimsEndpoint(string appName, string hubName)
+    {
+        return GenerateRestApiEndpoint(appName, hubName, "/connections/:getClaims", apiVersion: RefreshApiVersion);
+    }
+
+    private RestApiEndpoint GenerateRestApiEndpoint(string appName, string hubName, string pathAfterHub, IDictionary<string, StringValues> queries = null, string apiVersion = Version)
     {
         var requestPrefixWithHub = $"{_serverEndpoint}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
         pathAfterHub = string.IsNullOrEmpty(appName)
-            ? $"{pathAfterHub}?api-version={Version}"
-            : $"{pathAfterHub}?application={Uri.EscapeDataString(appName.ToLowerInvariant())}&api-version={Version}";
+            ? $"{pathAfterHub}?api-version={apiVersion}"
+            : $"{pathAfterHub}?application={Uri.EscapeDataString(appName.ToLowerInvariant())}&api-version={apiVersion}";
         return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}") { Query = queries };
     }
 }

@@ -11,7 +11,6 @@ namespace Microsoft.Azure.SignalR.Protocol;
 #nullable enable
 
 /// <summary>
-/// Wire model for the <see cref="GetConnectionClaimsMessage"/> ack payload.
 /// The payload is either nil (no claims) or a MessagePack map of claim type to claim value.
 /// </summary>
 internal sealed class ConnectionClaimsResponse : IMessagePackSerializable
