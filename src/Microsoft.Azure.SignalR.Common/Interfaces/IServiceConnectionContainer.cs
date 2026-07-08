@@ -2,9 +2,16 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.Azure.SignalR.Protocol;
+
 namespace Microsoft.Azure.SignalR;
+
+#nullable enable
 
 internal interface IServiceConnectionContainer : IServiceConnectionManager,  IDisposable
 {
@@ -19,4 +26,9 @@ internal interface IServiceConnectionContainer : IServiceConnectionManager,  IDi
     Task StartGetServersPing();
 
     Task StopGetServersPing();
+
+    Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint? preferredEndpoint = null, CancellationToken cancellationToken = default);
+
+    Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default);
 }
+

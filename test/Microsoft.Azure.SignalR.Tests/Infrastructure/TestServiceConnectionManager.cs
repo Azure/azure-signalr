@@ -48,6 +48,20 @@ internal sealed class TestServiceConnectionManager<THub> : IServiceConnectionMan
         return true;
     }
 
+    public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
+    {
+        _writeAsyncCallCount.AddOrUpdate(message.GetType(), 1, (_, value) => value + 1);
+        ServiceMessage = message;
+        return Task.FromResult(new RefreshConnectionAuthResult(AckStatus.Ok));
+    }
+
+    public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+    {
+        _writeAsyncCallCount.AddOrUpdate(message.GetType(), 1, (_, value) => value + 1);
+        ServiceMessage = message;
+        return Task.FromResult(new GetConnectionClaimsResult(AckStatus.Ok, Array.Empty<System.Security.Claims.Claim>()));
+    }
+
     public int GetCallCount(Type type)
     {
         return _writeAsyncCallCount.TryGetValue(type, out var count) ? count : 0;

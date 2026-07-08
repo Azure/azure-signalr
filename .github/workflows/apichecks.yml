@@ -34,9 +34,15 @@ jobs:
         if: steps.filter.outputs.src == 'true'
         run: git submodule update --init --recursive
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'  # Adjust as needed
+          dotnet-version: '8.0.x'
+      # Remove it when .NET 11 is GA.
+      - name: Setup .NET 11 daily SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+          dotnet-quality: 'daily'
       - name: Restore dependencies
         run: dotnet restore
 

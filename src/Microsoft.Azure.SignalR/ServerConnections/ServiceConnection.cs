@@ -280,8 +280,24 @@ internal partial class ServiceConnection : ServiceConnectionBase
             ClientCompletionMessage clientCompletionMessage => OnClientCompletionAsync(clientCompletionMessage),
             ErrorCompletionMessage errorCompletionMessage => OnErrorCompletionAsync(errorCompletionMessage),
             ConnectionReconnectMessage connectionReconnectMessage => OnConnectionReconnectAsync(connectionReconnectMessage),
+            UpdateConnectionClaimsMessage updateConnectionClaimsMessage => OnUpdateConnectionClaimsAsync(updateConnectionClaimsMessage),
             _ => base.DispatchMessageAsync(message)
         };
+    }
+
+    private Task OnUpdateConnectionClaimsAsync(UpdateConnectionClaimsMessage updateConnectionClaimsMessage)
+    {
+        if (_clientConnectionManager.TryGetClientConnection(updateConnectionClaimsMessage.ConnectionId, out var connection)
+            && connection is ClientConnectionContext clientConnection)
+        {
+            var user = ClaimsUtility.GetUserPrincipal(updateConnectionClaimsMessage.Claims);
+            clientConnection.UpdateUser(user);
+        }
+        else
+        {
+            Log.ReceivedMessageForNonExistentConnection(Logger, updateConnectionClaimsMessage.ConnectionId);
+        }
+        return Task.CompletedTask;
     }
 
     protected override Task OnPingMessageAsync(PingMessage pingMessage)
