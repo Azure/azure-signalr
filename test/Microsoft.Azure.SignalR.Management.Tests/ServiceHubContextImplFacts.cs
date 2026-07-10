@@ -71,6 +71,19 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
+        public async Task RefreshAuthAsync_OkWithEmptyClaims_ThrowsAzureSignalRException()
+        {
+            // An empty claim set (like a null one) can't mint a valid token — it would drop the connect-time asrs.s.* system claims. Reject it instead of minting a corrupt token.
+            _lifetimeManagerMock
+                .Setup(m => m.RefreshAuthAsync(ConnectionToken, It.IsAny<DateTimeOffset>(), It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new RefreshConnectionAuthResult(AckStatus.Ok, claims: Array.Empty<Claim>()));
+            var hubContext = CreateHubContext();
+
+            await Assert.ThrowsAsync<AzureSignalRException>(
+                () => hubContext.RefreshAuthAsync(ConnectionToken, DateTimeOffset.UtcNow));
+        }
+
+        [Fact]
         public async Task RefreshAuthAsync_Ok_MintsTokenForOwningEndpoint_AndComputesLifetime()
         {
             var expireTime = DateTimeOffset.UtcNow.AddMinutes(10);

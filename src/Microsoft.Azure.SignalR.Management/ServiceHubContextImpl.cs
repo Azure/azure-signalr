@@ -70,7 +70,7 @@ namespace Microsoft.Azure.SignalR.Management
             var result = await _lifetimeManager.RefreshAuthAsync(connectionToken, expireTime, claims, cancellationToken);
             ThrowOnNonSuccess(result.Status);
 
-            if (result.Claims == null)
+            if (result.Claims == null || result.Claims.Count == 0)
             {
                 throw new AzureSignalRException("The service did not return the post-refresh claim set required to mint the refreshed access token.");
             }
