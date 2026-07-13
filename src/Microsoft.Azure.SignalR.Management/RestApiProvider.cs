@@ -119,7 +119,7 @@ internal class RestApiProvider
 
     public RestApiEndpoint GetConnectionClaimsEndpoint(string appName, string hubName)
     {
-        return GenerateRestApiEndpoint(appName, hubName, "/connections/:getClaims", apiVersion: RefreshApiVersion);
+        return GenerateRestApiEndpoint(appName, hubName, "/connections/claims", apiVersion: RefreshApiVersion);
     }
 
     private RestApiEndpoint GenerateRestApiEndpoint(string appName, string hubName, string pathAfterHub, IDictionary<string, StringValues> queries = null, string apiVersion = Version)

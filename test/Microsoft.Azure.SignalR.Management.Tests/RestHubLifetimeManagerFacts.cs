@@ -428,11 +428,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             var result = await _manager.GetConnectionClaimsAsync("conn-token-1", default);
 
-            // Read-only :getClaims uses the HTTP QUERY method (RFC 10008) with the token in the body.
+            // Read-only claims endpoint uses the HTTP QUERY method (RFC 10008) with the token in the body.
             Assert.NotNull(capturedRequest);
             Assert.Equal("QUERY", capturedRequest!.Method.Method);
             var uri = capturedRequest.RequestUri!.ToString();
-            Assert.Contains("/connections/:getClaims", uri);
+            Assert.Contains("/connections/claims", uri);
             Assert.Contains("api-version=2026-07-01", uri);
             Assert.Contains("\"connectionToken\":\"conn-token-1\"", capturedBody);
             Assert.DoesNotContain("conn-token-1", uri);
