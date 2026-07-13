@@ -408,7 +408,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task GetConnectionClaimsAsync_Ok_PostsGetClaimsRequest_ReturnsClaims()
+        public async Task GetConnectionClaimsAsync_Ok_SendsQueryGetClaimsRequest_ReturnsClaims()
         {
             HttpRequestMessage? capturedRequest = null;
             string? capturedBody = null;
@@ -428,9 +428,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             var result = await _manager.GetConnectionClaimsAsync("conn-token-1", default);
 
-            // Read-only :getClaims is a POST with the token in the body, mirroring :refreshAuth.
+            // Read-only :getClaims uses the HTTP QUERY method (RFC 10008) with the token in the body.
             Assert.NotNull(capturedRequest);
-            Assert.Equal(HttpMethod.Post, capturedRequest!.Method);
+            Assert.Equal("QUERY", capturedRequest!.Method.Method);
             var uri = capturedRequest.RequestUri!.ToString();
             Assert.Contains("/connections/:getClaims", uri);
             Assert.Contains("api-version=2026-07-01", uri);
