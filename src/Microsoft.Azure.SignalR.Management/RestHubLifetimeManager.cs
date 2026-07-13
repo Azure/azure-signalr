@@ -35,6 +35,9 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
     private const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
     private const string TtlOutOfRangeErrorMessage = "Ttl cannot be less than 0.";
 
+    // HttpMethod.Query only exists on .NET 10+, so use a shared instance for the netstandard2.0/net8.0 targets.
+    private static readonly HttpMethod QueryMethod = new("QUERY");
+
     private readonly RestClient _restClient;
     private readonly RestApiProvider _restApiProvider;
     private readonly string _hubName;
@@ -349,7 +352,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         var status = AckStatus.InternalServerError;
         IReadOnlyList<Claim>? resultClaims = null;
         using var content = CreateJsonContent(requestBody);
-        await _restClient.SendWithRetryAsync(api, HttpMethod.Post, content, async response =>
+        await _restClient.SendWithRetryAsync(api, QueryMethod, content, async response =>
         {
             switch (response.StatusCode)
             {
