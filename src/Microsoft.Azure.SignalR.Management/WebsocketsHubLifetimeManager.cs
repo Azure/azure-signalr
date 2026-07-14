@@ -191,7 +191,7 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
         return WriteAckableMessageAsync(message, cancellationToken);
     }
 
-    public Task<RefreshConnectionAuthResult> RefreshAuthAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken = default)
+    public Task<RefreshConnectionAuthResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(connectionToken))
         {

@@ -68,5 +68,21 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new AzureSignalRException(ErrorMsg, e);
             }
         }
+
+        /// <summary>
+        /// Negotiates and additionally returns the client access token lifetime seconds.
+        /// </summary>
+        public async Task<NegotiationResult> NegotiateWithTokenLifetimeAsync(string hubName, NegotiationOptions negotiationOptions, CancellationToken cancellationToken = default)
+        {
+            negotiationOptions ??= NegotiationOptions.Default;
+            var response = await NegotiateAsync(hubName, negotiationOptions, cancellationToken);
+            return new NegotiationResult(response.Url, response.AccessToken, ComputeTokenLifetimeSeconds(negotiationOptions));
+        }
+
+        private static int ComputeTokenLifetimeSeconds(NegotiationOptions negotiationOptions)
+        {
+            var seconds = Math.Max(0, negotiationOptions.TokenLifetime.TotalSeconds);
+            return seconds > int.MaxValue ? int.MaxValue : (int)seconds;
+        }
     }
 }

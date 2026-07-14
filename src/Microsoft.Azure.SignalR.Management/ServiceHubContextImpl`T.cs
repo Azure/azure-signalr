@@ -41,6 +41,8 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override ValueTask<NegotiationResponse> NegotiateAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => new(_negotiateProcessor.NegotiateAsync(_hubName, negotiationOptions, cancellationToken));
 
+        public override Task<NegotiationResult> NegotiateWithTokenLifetimeAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => _negotiateProcessor.NegotiateWithTokenLifetimeAsync(_hubName, negotiationOptions, cancellationToken);
+
         public override async ValueTask DisposeAsync()
         {
             // check _disposed to avoid being dispose twice.

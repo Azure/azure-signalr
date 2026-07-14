@@ -40,6 +40,11 @@ namespace Microsoft.Azure.SignalR.Management
         public virtual ValueTask<NegotiationResponse> NegotiateAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         /// <summary>
+        /// Performs a negotiation that also returns the client access token's lifetime seconds.
+        /// </summary>
+        public virtual Task<NegotiationResult> NegotiateWithTokenLifetimeAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
+        /// <summary>
         /// Refreshes the authentication expiration and the application claims of a live client connection without reconnecting,
         /// then returns a refreshed service access token for the client.
         /// </summary>
@@ -47,10 +52,10 @@ namespace Microsoft.Azure.SignalR.Management
         /// <param name="expireTime">The new authentication expiration deadline (UTC).</param>
         /// <param name="claims">The projected application claim set; applied after the same-user check passes. When null, the refresh is expiration-only.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        public virtual Task<RefreshAuthResult> RefreshAuthAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim> claims = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public virtual Task<RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim> claims = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         /// <summary>
-        /// Reads the current claim set of a live client connection. 
+        /// Reads the current claim set of a live client connection.
         /// </summary>
         /// <param name="connectionToken">The connection token (the <c>id</c> from the client-facing refresh endpoint).</param>
         /// <param name="cancellationToken">The cancellation token.</param>

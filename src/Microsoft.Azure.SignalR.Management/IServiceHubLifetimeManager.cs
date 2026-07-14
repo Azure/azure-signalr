@@ -25,7 +25,7 @@ internal interface IServiceHubLifetimeManager : IHubLifetimeManager, IUserGroupH
 
     Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken);
 
-    Task<RefreshConnectionAuthResult> RefreshAuthAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken);
+    Task<RefreshConnectionAuthResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken);
 
     Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(string connectionToken, CancellationToken cancellationToken);
 

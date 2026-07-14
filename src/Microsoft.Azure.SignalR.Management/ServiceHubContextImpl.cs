@@ -60,14 +60,19 @@ namespace Microsoft.Azure.SignalR.Management
             return new ValueTask<NegotiationResponse>(_negotiateProcessor.NegotiateAsync(_hubName, options, cancellationToken));
         }
 
-        public override async Task<RefreshAuthResult> RefreshAuthAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim> claims = null, CancellationToken cancellationToken = default)
+        public override Task<NegotiationResult> NegotiateWithTokenLifetimeAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default)
+        {
+            return _negotiateProcessor.NegotiateWithTokenLifetimeAsync(_hubName, negotiationOptions, cancellationToken);
+        }
+
+        public override async Task<RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim> claims = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(connectionToken))
             {
                 throw new ArgumentException("Argument cannot be null or empty.", nameof(connectionToken));
             }
 
-            var result = await _lifetimeManager.RefreshAuthAsync(connectionToken, expireTime, claims, cancellationToken);
+            var result = await _lifetimeManager.RefreshConnectionAuthenticationAsync(connectionToken, expireTime, claims, cancellationToken);
             ThrowOnNonSuccess(result.Status);
 
             if (result.Claims == null || result.Claims.Count == 0)
@@ -90,7 +95,7 @@ namespace Microsoft.Azure.SignalR.Management
             var accessToken = await provider.GenerateClientAccessTokenAsync(_hubName, result.Claims, accessTokenLifetime);
             var remainingSeconds = (expireTime - DateTimeOffset.UtcNow).TotalSeconds;
             var tokenLifetimeSeconds = (int)Math.Max(0, Math.Min(accessTokenLifetime.TotalSeconds, remainingSeconds));
-            return new RefreshAuthResult(accessToken, tokenLifetimeSeconds);
+            return new RefreshConnectionAuthenticationResult(accessToken, tokenLifetimeSeconds);
         }
 
         public override async Task<ConnectionClaimsResult> GetConnectionClaimsAsync(string connectionToken, CancellationToken cancellationToken = default)
@@ -193,7 +198,7 @@ namespace Microsoft.Azure.SignalR.Management
 
             public Task CloseClientConnections(CancellationToken token) => throw new NotSupportedException();
 
-            // TODO: Serverless refresh support.
+            // This send-only WithEndpoints wrapper never handles token-keyed refresh/get-claims (those run on the root context).
             public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
             public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default) => throw new NotSupportedException();

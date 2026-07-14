@@ -44,6 +44,11 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>A negotiation response object that contains an endpoint url and an access token for the client to connect to the Azure SignalR instance. </returns>
         public abstract ValueTask<NegotiationResponse> NegotiateAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Performs a negotiation that also returns the client access token's lifetime seconds.
+        /// </summary>
+        public virtual Task<NegotiationResult> NegotiateWithTokenLifetimeAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
         public abstract ValueTask DisposeAsync();
 
         public abstract void Dispose();

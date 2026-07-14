@@ -299,7 +299,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         return exists;
     }
 
-    public async Task<RefreshConnectionAuthResult> RefreshAuthAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken)
+    public async Task<RefreshConnectionAuthResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(connectionToken))
         {

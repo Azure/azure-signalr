@@ -28,68 +28,68 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private readonly Mock<IServiceEndpointManager> _endpointManagerMock = new();
 
         [Fact]
-        public async Task RefreshAuthAsync_NullOrEmptyConnectionToken_ThrowsArgumentException()
+        public async Task RefreshConnectionAuthenticationAsync_NullOrEmptyConnectionToken_ThrowsArgumentException()
         {
             var hubContext = CreateHubContext();
 
             var exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => hubContext.RefreshAuthAsync(null!, DateTimeOffset.UtcNow));
+                () => hubContext.RefreshConnectionAuthenticationAsync(null!, DateTimeOffset.UtcNow));
             Assert.Equal("connectionToken", exception.ParamName);
 
             exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => hubContext.RefreshAuthAsync(string.Empty, DateTimeOffset.UtcNow));
+                () => hubContext.RefreshConnectionAuthenticationAsync(string.Empty, DateTimeOffset.UtcNow));
             Assert.Equal("connectionToken", exception.ParamName);
         }
 
         [Fact]
-        public async Task RefreshAuthAsync_NonSuccessStatus_ThrowsAzureSignalRException()
+        public async Task RefreshConnectionAuthenticationAsync_NonSuccessStatus_ThrowsAzureSignalRException()
         {
             foreach (var status in new[] { AckStatus.Forbidden, AckStatus.NotFound, AckStatus.InternalServerError })
             {
                 _lifetimeManagerMock
-                    .Setup(m => m.RefreshAuthAsync(ConnectionToken, It.IsAny<DateTimeOffset>(), It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
+                    .Setup(m => m.RefreshConnectionAuthenticationAsync(ConnectionToken, It.IsAny<DateTimeOffset>(), It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new RefreshConnectionAuthResult(status));
                 var hubContext = CreateHubContext();
 
                 await Assert.ThrowsAsync<AzureSignalRException>(
-                    () => hubContext.RefreshAuthAsync(ConnectionToken, DateTimeOffset.UtcNow));
+                    () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, DateTimeOffset.UtcNow));
             }
         }
 
         [Fact]
-        public async Task RefreshAuthAsync_OkWithoutClaims_ThrowsAzureSignalRException()
+        public async Task RefreshConnectionAuthenticationAsync_OkWithoutClaims_ThrowsAzureSignalRException()
         {
             // On success ASRS must return the post-refresh claim set the SDK mints the token from;
             // a missing claim set is a protocol error, not a silent success.
             _lifetimeManagerMock
-                .Setup(m => m.RefreshAuthAsync(ConnectionToken, It.IsAny<DateTimeOffset>(), It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.RefreshConnectionAuthenticationAsync(ConnectionToken, It.IsAny<DateTimeOffset>(), It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new RefreshConnectionAuthResult(AckStatus.Ok, claims: null));
             var hubContext = CreateHubContext();
 
             await Assert.ThrowsAsync<AzureSignalRException>(
-                () => hubContext.RefreshAuthAsync(ConnectionToken, DateTimeOffset.UtcNow));
+                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, DateTimeOffset.UtcNow));
         }
 
         [Fact]
-        public async Task RefreshAuthAsync_OkWithEmptyClaims_ThrowsAzureSignalRException()
+        public async Task RefreshConnectionAuthenticationAsync_OkWithEmptyClaims_ThrowsAzureSignalRException()
         {
             // An empty claim set (like a null one) can't mint a valid token — it would drop the connect-time asrs.s.* system claims. Reject it instead of minting a corrupt token.
             _lifetimeManagerMock
-                .Setup(m => m.RefreshAuthAsync(ConnectionToken, It.IsAny<DateTimeOffset>(), It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.RefreshConnectionAuthenticationAsync(ConnectionToken, It.IsAny<DateTimeOffset>(), It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new RefreshConnectionAuthResult(AckStatus.Ok, claims: Array.Empty<Claim>()));
             var hubContext = CreateHubContext();
 
             await Assert.ThrowsAsync<AzureSignalRException>(
-                () => hubContext.RefreshAuthAsync(ConnectionToken, DateTimeOffset.UtcNow));
+                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, DateTimeOffset.UtcNow));
         }
 
         [Fact]
-        public async Task RefreshAuthAsync_Ok_MintsTokenForOwningEndpoint_AndComputesLifetime()
+        public async Task RefreshConnectionAuthenticationAsync_Ok_MintsTokenForOwningEndpoint_AndComputesLifetime()
         {
             var expireTime = DateTimeOffset.UtcNow.AddMinutes(10);
             var postRefreshClaims = new[] { new Claim("role", "admin") };
             _lifetimeManagerMock
-                .Setup(m => m.RefreshAuthAsync(ConnectionToken, expireTime, It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.RefreshConnectionAuthenticationAsync(ConnectionToken, expireTime, It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new RefreshConnectionAuthResult(AckStatus.Ok, postRefreshClaims));
 
             var providerMock = new Mock<IServiceEndpointProvider>();
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             var hubContext = CreateHubContext();
 
-            var result = await hubContext.RefreshAuthAsync(ConnectionToken, expireTime, postRefreshClaims);
+            var result = await hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, expireTime, postRefreshClaims);
 
             Assert.Equal("minted-token", result.AccessToken);
             // min(AccessTokenLifetime, expireTime - now) -> capped by the ~10 min expireTime here.
@@ -112,16 +112,16 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task RefreshAuthAsync_Ok_NoServiceEndpoint_ThrowsAzureSignalRException()
+        public async Task RefreshConnectionAuthenticationAsync_Ok_NoServiceEndpoint_ThrowsAzureSignalRException()
         {
             _lifetimeManagerMock
-                .Setup(m => m.RefreshAuthAsync(ConnectionToken, It.IsAny<DateTimeOffset>(), It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.RefreshConnectionAuthenticationAsync(ConnectionToken, It.IsAny<DateTimeOffset>(), It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new RefreshConnectionAuthResult(AckStatus.Ok, new[] { new Claim("role", "admin") }));
             _endpointManagerMock.Setup(m => m.GetEndpoints(HubName)).Returns(new List<HubServiceEndpoint>());
             var hubContext = CreateHubContext();
 
             await Assert.ThrowsAsync<AzureSignalRException>(
-                () => hubContext.RefreshAuthAsync(ConnectionToken, DateTimeOffset.UtcNow.AddMinutes(10)));
+                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, DateTimeOffset.UtcNow.AddMinutes(10)));
         }
 
         [Fact]

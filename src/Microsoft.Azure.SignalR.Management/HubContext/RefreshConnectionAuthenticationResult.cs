@@ -4,24 +4,23 @@
 namespace Microsoft.Azure.SignalR.Management
 {
     /// <summary>
-    /// The result of a successful <see cref="ServiceHubContext.RefreshAuthAsync"/> call.
+    /// The result of a successful <see cref="ServiceHubContext.RefreshConnectionAuthenticationAsync"/> call.
     /// </summary>
-    public sealed class RefreshAuthResult
+    public sealed class RefreshConnectionAuthenticationResult
     {
-        internal RefreshAuthResult(string accessToken, int tokenLifetimeSeconds)
+        internal RefreshConnectionAuthenticationResult(string accessToken, int tokenLifetimeSeconds)
         {
             AccessToken = accessToken;
             TokenLifetimeSeconds = tokenLifetimeSeconds;
         }
 
         /// <summary>
-        /// The refreshed service access token to return to the client. It is minted locally from the
-        /// post-refresh claim set the service returns, for the connection's owning endpoint.
+        /// The refreshed service access token to return to the client.
         /// </summary>
         public string AccessToken { get; }
 
         /// <summary>
-        /// Seconds until the client should refresh again: <c>min(AccessTokenLifetime, expireTime - now)</c>.
+        /// Seconds until the client should refresh again.
         /// </summary>
         public int TokenLifetimeSeconds { get; }
     }

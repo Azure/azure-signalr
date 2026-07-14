@@ -69,14 +69,21 @@ namespace Microsoft.Azure.SignalR.Management
         public Microsoft.AspNetCore.Http.Connections.HttpTransportType? Transports { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
         public string UserId { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
     }
+    public sealed partial class NegotiationResult
+    {
+        internal NegotiationResult() { }
+        public string AccessToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public int TokenLifetimeSeconds { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public string Url { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+    }
     public partial class NewtonsoftServiceHubProtocolOptions
     {
         public NewtonsoftServiceHubProtocolOptions() { }
         public Newtonsoft.Json.JsonSerializerSettings PayloadSerializerSettings { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
     }
-    public sealed partial class RefreshAuthResult
+    public sealed partial class RefreshConnectionAuthenticationResult
     {
-        internal RefreshAuthResult() { }
+        internal RefreshConnectionAuthenticationResult() { }
         public string AccessToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public int TokenLifetimeSeconds { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
     }
@@ -96,7 +103,8 @@ namespace Microsoft.Azure.SignalR.Management
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual System.Collections.Generic.IEnumerable<Microsoft.Azure.SignalR.ServiceEndpoint> GetServiceEndpoints() { throw null; }
         public virtual System.Threading.Tasks.ValueTask<Microsoft.AspNetCore.Http.Connections.NegotiationResponse> NegotiateAsync(Microsoft.Azure.SignalR.Management.NegotiationOptions negotiationOptions = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public virtual System.Threading.Tasks.Task<Microsoft.Azure.SignalR.Management.RefreshAuthResult> RefreshAuthAsync(string connectionToken, System.DateTimeOffset expireTime, System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public virtual System.Threading.Tasks.Task<Microsoft.Azure.SignalR.Management.NegotiationResult> NegotiateWithTokenLifetimeAsync(Microsoft.Azure.SignalR.Management.NegotiationOptions negotiationOptions = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public virtual System.Threading.Tasks.Task<Microsoft.Azure.SignalR.Management.RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, System.DateTimeOffset expireTime, System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual Microsoft.Azure.SignalR.Management.ServiceHubContext WithEndpoints(System.Collections.Generic.IEnumerable<Microsoft.Azure.SignalR.ServiceEndpoint> endpoints) { throw null; }
     }
@@ -111,6 +119,7 @@ namespace Microsoft.Azure.SignalR.Management
         public abstract void Dispose();
         public abstract System.Threading.Tasks.ValueTask DisposeAsync();
         public abstract System.Threading.Tasks.ValueTask<Microsoft.AspNetCore.Http.Connections.NegotiationResponse> NegotiateAsync(Microsoft.Azure.SignalR.Management.NegotiationOptions negotiationOptions = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        public virtual System.Threading.Tasks.Task<Microsoft.Azure.SignalR.Management.NegotiationResult> NegotiateWithTokenLifetimeAsync(Microsoft.Azure.SignalR.Management.NegotiationOptions negotiationOptions = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public abstract partial class ServiceManager : System.IDisposable
     {
