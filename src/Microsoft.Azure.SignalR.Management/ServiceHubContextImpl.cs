@@ -65,67 +65,11 @@ namespace Microsoft.Azure.SignalR.Management
             return _negotiateProcessor.NegotiateWithTokenLifetimeAsync(_hubName, negotiationOptions, cancellationToken);
         }
 
-        public override async Task<RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim> claims = null, CancellationToken cancellationToken = default)
-        {
-            if (string.IsNullOrEmpty(connectionToken))
-            {
-                throw new ArgumentException("Argument cannot be null or empty.", nameof(connectionToken));
-            }
+        public override Task<RefreshResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim> claims = null, CancellationToken cancellationToken = default) =>
+            ConnectionAuthenticationHelper.RefreshConnectionAuthenticationAsync(_hubName, _lifetimeManager, _endpointManager, connectionToken, expireTime, claims, cancellationToken);
 
-            var result = await _lifetimeManager.RefreshConnectionAuthenticationAsync(connectionToken, expireTime, claims, cancellationToken);
-            ThrowOnNonSuccess(result.Status);
-
-            if (result.Claims == null || result.Claims.Count == 0)
-            {
-                throw new AzureSignalRException("The service did not return the post-refresh claim set required to mint the refreshed access token.");
-            }
-
-            var accessTokenLifetime = Constants.Periods.DefaultAccessTokenLifetime;
-            ServiceEndpoint owningEndpoint = result.OwningEndpoint;
-            if (owningEndpoint == null)
-            {
-                var endpoints = _endpointManager.GetEndpoints(_hubName);
-                if (endpoints.Count == 0)
-                {
-                    throw new AzureSignalRException("No service endpoint is available to mint the refreshed access token.");
-                }
-                owningEndpoint = endpoints[0];
-            }
-            var provider = _endpointManager.GetEndpointProvider(owningEndpoint);
-            var accessToken = await provider.GenerateClientAccessTokenAsync(_hubName, result.Claims, accessTokenLifetime);
-            var remainingSeconds = (expireTime - DateTimeOffset.UtcNow).TotalSeconds;
-            var tokenLifetimeSeconds = (int)Math.Max(0, Math.Min(accessTokenLifetime.TotalSeconds, remainingSeconds));
-            return new RefreshConnectionAuthenticationResult(accessToken, tokenLifetimeSeconds);
-        }
-
-        public override async Task<ConnectionClaimsResult> GetConnectionClaimsAsync(string connectionToken, CancellationToken cancellationToken = default)
-        {
-            if (string.IsNullOrEmpty(connectionToken))
-            {
-                throw new ArgumentException("Argument cannot be null or empty.", nameof(connectionToken));
-            }
-
-            var result = await _lifetimeManager.GetConnectionClaimsAsync(connectionToken, cancellationToken);
-            ThrowOnNonSuccess(result.Status);
-            return new ConnectionClaimsResult(result.Claims ?? Array.Empty<Claim>());
-        }
-
-        private static void ThrowOnNonSuccess(AckStatus status)
-        {
-            switch (status)
-            {
-                case AckStatus.Ok:
-                    return;
-                case AckStatus.Forbidden:
-                    throw new AzureSignalRException("The refreshed token resolves to a different user (ConnectionUserMismatch).");
-                case AckStatus.NotFound:
-                    throw new AzureSignalRException("The target connection was not found, is disconnected, or uses an unsupported negotiate version.");
-                case AckStatus.Timeout:
-                    throw new AzureSignalRException("The operation timed out before the service acknowledged it.");
-                default:
-                    throw new AzureSignalRException("An unexpected error occurred while processing the request.");
-            }
-        }
+        public override Task<ConnectionClaims> GetConnectionClaimsAsync(string connectionToken, CancellationToken cancellationToken = default) =>
+            ConnectionAuthenticationHelper.GetConnectionClaimsAsync(_lifetimeManager, connectionToken, cancellationToken);
 
         public override IEnumerable<ServiceEndpoint> GetServiceEndpoints() => _endpointManager.GetEndpoints(_hubName);
 

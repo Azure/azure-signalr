@@ -35,6 +35,10 @@ namespace Microsoft.Azure.SignalR.Management
             var isDiagnosticClient = negotiationOptions.IsDiagnosticClient;
             var enableDetailedErrors = negotiationOptions.EnableDetailedErrors;
             var lifetime = negotiationOptions.TokenLifetime;
+            if (lifetime <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(negotiationOptions), $"{nameof(NegotiationOptions.TokenLifetime)} must be a positive value.");
+            }
             try
             {
                 if (cancellationToken == default && httpContext != null)

@@ -10,7 +10,6 @@ using System.Net.Http;
 
 using System.Security.Claims;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -296,7 +295,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         return exists;
     }
 
-    public async Task<RefreshConnectionAuthResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken)
+    public async Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(connectionToken))
         {
@@ -308,19 +307,19 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         {
             ConnectionToken = connectionToken,
             ExpireTime = expireTime,
-            Claims = ToClaimDtos(claims),
+            Claims = RestClaimSerializer.ToClaimDtos(claims),
         };
 
         var status = AckStatus.InternalServerError;
         IReadOnlyList<Claim>? resultClaims = null;
-        using var content = CreateJsonContent(requestBody);
+        using var content = new StringContent(JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json");
         await _restClient.SendWithRetryAsync(api, HttpMethod.Post, content, async response =>
         {
             switch (response.StatusCode)
             {
                 case HttpStatusCode.OK:
                     status = AckStatus.Ok;
-                    resultClaims = await ReadClaimsAsync(response);
+                    resultClaims = await RestClaimSerializer.ReadClaimsAsync(response);
                     return true;
                 case HttpStatusCode.Forbidden:
                     status = AckStatus.Forbidden;
@@ -348,14 +347,14 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
         var status = AckStatus.InternalServerError;
         IReadOnlyList<Claim>? resultClaims = null;
-        using var content = CreateJsonContent(requestBody);
+        using var content = new StringContent(JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json");
         await _restClient.SendWithRetryAsync(api, HttpMethod.Post, content, async response =>
         {
             switch (response.StatusCode)
             {
                 case HttpStatusCode.OK:
                     status = AckStatus.Ok;
-                    resultClaims = await ReadClaimsAsync(response);
+                    resultClaims = await RestClaimSerializer.ReadClaimsAsync(response);
                     return true;
                 case HttpStatusCode.NotFound:
                     status = AckStatus.NotFound;
@@ -366,73 +365,6 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         }, cancellationToken: cancellationToken);
 
         return new GetConnectionClaimsResult(status, resultClaims);
-    }
-
-    private static HttpContent CreateJsonContent<T>(T body) =>
-        new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json");
-
-    private static async Task<IReadOnlyList<Claim>> ReadClaimsAsync(HttpResponseMessage response)
-    {
-        using var stream = await response.Content.ReadAsStreamAsync();
-        var body = await JsonSerializer.DeserializeAsync<ClaimsResponseBody>(stream);
-        var dtos = body?.Claims;
-        if (dtos == null || dtos.Length == 0)
-        {
-            return Array.Empty<Claim>();
-        }
-        var result = new Claim[dtos.Length];
-        for (var i = 0; i < dtos.Length; i++)
-        {
-            result[i] = new Claim(dtos[i].Type, dtos[i].Value);
-        }
-        return result;
-    }
-
-    private static ClaimDto[]? ToClaimDtos(IEnumerable<Claim>? claims)
-    {
-        if (claims == null)
-        {
-            return null;
-        }
-        var list = new List<ClaimDto>();
-        foreach (var claim in claims)
-        {
-            list.Add(new ClaimDto { Type = claim.Type, Value = claim.Value });
-        }
-        return list.Count == 0 ? null : list.ToArray();
-    }
-
-    private sealed class RefreshConnectionAuthRequestBody
-    {
-        [JsonPropertyName("connectionToken")]
-        public string ConnectionToken { get; set; } = string.Empty;
-
-        [JsonPropertyName("expireTime")]
-        public DateTimeOffset ExpireTime { get; set; }
-
-        [JsonPropertyName("claims")]
-        public ClaimDto[]? Claims { get; set; }
-    }
-
-    private sealed class GetConnectionClaimsRequestBody
-    {
-        [JsonPropertyName("connectionToken")]
-        public string ConnectionToken { get; set; } = string.Empty;
-    }
-
-    private sealed class ClaimsResponseBody
-    {
-        [JsonPropertyName("claims")]
-        public ClaimDto[]? Claims { get; set; }
-    }
-
-    private sealed class ClaimDto
-    {
-        [JsonPropertyName("type")]
-        public string Type { get; set; } = string.Empty;
-
-        [JsonPropertyName("value")]
-        public string Value { get; set; } = string.Empty;
     }
 
     public async Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default)

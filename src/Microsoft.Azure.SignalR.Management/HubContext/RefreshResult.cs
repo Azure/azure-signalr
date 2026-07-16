@@ -6,9 +6,9 @@ namespace Microsoft.Azure.SignalR.Management
     /// <summary>
     /// The result of a successful <see cref="ServiceHubContext.RefreshConnectionAuthenticationAsync"/> call.
     /// </summary>
-    public sealed class RefreshConnectionAuthenticationResult
+    public sealed class RefreshResult
     {
-        internal RefreshConnectionAuthenticationResult(string accessToken, int tokenLifetimeSeconds)
+        internal RefreshResult(string accessToken, int tokenLifetimeSeconds)
         {
             AccessToken = accessToken;
             TokenLifetimeSeconds = tokenLifetimeSeconds;

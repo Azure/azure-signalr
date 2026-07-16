@@ -9,9 +9,9 @@ namespace Microsoft.Azure.SignalR.Management
     /// <summary>
     /// The result of a <see cref="ServiceHubContext.GetConnectionClaimsAsync"/> call.
     /// </summary>
-    public sealed class ConnectionClaimsResult
+    public sealed class ConnectionClaims
     {
-        internal ConnectionClaimsResult(IReadOnlyList<Claim> claims)
+        internal ConnectionClaims(IReadOnlyList<Claim> claims)
         {
             Claims = claims;
         }

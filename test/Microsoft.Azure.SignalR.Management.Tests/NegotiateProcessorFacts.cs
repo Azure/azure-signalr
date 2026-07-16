@@ -153,6 +153,24 @@ public class NegotiateProcessorFacts
         Assert.Equal("6", token.Claims.Single(c => c.Type == Constants.ClaimType.HttpTransportType).Value);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task NegotiateWithNonPositiveTokenLifetimeThrows(int lifetimeSeconds)
+    {
+        var endpoints = FakeEndpointUtils.GetFakeEndpoint(1).ToArray();
+        var provider = new ServiceCollection().AddSignalRServiceManager()
+        .Configure<ServiceManagerOptions>(o =>
+        {
+            o.ServiceEndpoints = endpoints;
+            o.ServiceTransportType = ServiceTransportType.Persistent;
+        }).BuildServiceProvider();
+        var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
+        var exception = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => negotiateProcessor.NegotiateAsync(HubName, new NegotiationOptions { TokenLifetime = TimeSpan.FromSeconds(lifetimeSeconds) }));
+        Assert.Contains(nameof(NegotiationOptions.TokenLifetime), exception.Message);
+    }
+
     [Fact]
     internal async Task GenerateClientEndpointTestWithClientEndpoint()
     {

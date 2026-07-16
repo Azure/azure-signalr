@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,6 +18,8 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private readonly string _hubName;
         private readonly NegotiateProcessor _negotiateProcessor;
+        private readonly IServiceHubLifetimeManager _lifetimeManager;
+        private readonly IServiceEndpointManager _endpointManager;
         private bool _disposing;
 
         internal IServiceProvider ServiceProvider { get; }
@@ -28,10 +32,12 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override ClientManager ClientManager { get; }
 
-        public ServiceHubContextImpl(string hubName, IHubContext<Hub<T>, T> typedHubContext, NegotiateProcessor negotiateProcessor, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider)
+        public ServiceHubContextImpl(string hubName, IHubContext<Hub<T>, T> typedHubContext, NegotiateProcessor negotiateProcessor, IServiceHubLifetimeManager lifetimeManager, IServiceEndpointManager endpointManager, IServiceProvider serviceProvider)
         {
             _hubName = hubName;
             _negotiateProcessor = negotiateProcessor;
+            _lifetimeManager = lifetimeManager;
+            _endpointManager = endpointManager;
             ServiceProvider = serviceProvider;
             Clients = typedHubContext.Clients;
             Groups = new GroupManagerAdapter(lifetimeManager);
@@ -42,6 +48,12 @@ namespace Microsoft.Azure.SignalR.Management
         public override ValueTask<NegotiationResponse> NegotiateAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => new(_negotiateProcessor.NegotiateAsync(_hubName, negotiationOptions, cancellationToken));
 
         public override Task<NegotiationResult> NegotiateWithTokenLifetimeAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => _negotiateProcessor.NegotiateWithTokenLifetimeAsync(_hubName, negotiationOptions, cancellationToken);
+
+        public override Task<RefreshResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim> claims = null, CancellationToken cancellationToken = default) =>
+            ConnectionAuthenticationHelper.RefreshConnectionAuthenticationAsync(_hubName, _lifetimeManager, _endpointManager, connectionToken, expireTime, claims, cancellationToken);
+
+        public override Task<ConnectionClaims> GetConnectionClaimsAsync(string connectionToken, CancellationToken cancellationToken = default) =>
+            ConnectionAuthenticationHelper.GetConnectionClaimsAsync(_lifetimeManager, connectionToken, cancellationToken);
 
         public override async ValueTask DisposeAsync()
         {

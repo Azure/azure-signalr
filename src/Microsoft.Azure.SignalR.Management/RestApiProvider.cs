@@ -11,10 +11,8 @@ namespace Microsoft.Azure.SignalR.Management;
 
 internal class RestApiProvider
 {
-    internal const string Version = "2024-12-01";
+    internal const string Version = "2026-07-01";
     public const string HealthApiPath = $"api/health?api-version={Version}";
-
-    internal const string RefreshApiVersion = "2026-07-01";
 
     private readonly string _serverEndpoint;
 
@@ -114,12 +112,12 @@ internal class RestApiProvider
 
     public RestApiEndpoint GetRefreshConnectionAuthEndpoint(string appName, string hubName)
     {
-        return GenerateRestApiEndpoint(appName, hubName, "/connections/:refreshAuth", apiVersion: RefreshApiVersion);
+        return GenerateRestApiEndpoint(appName, hubName, "/connections/:refreshAuth");
     }
 
     public RestApiEndpoint GetConnectionClaimsEndpoint(string appName, string hubName)
     {
-        return GenerateRestApiEndpoint(appName, hubName, "/connections/claims", apiVersion: RefreshApiVersion);
+        return GenerateRestApiEndpoint(appName, hubName, "/connections/claims");
     }
 
     private RestApiEndpoint GenerateRestApiEndpoint(string appName, string hubName, string pathAfterHub, IDictionary<string, StringValues> queries = null, string apiVersion = Version)
