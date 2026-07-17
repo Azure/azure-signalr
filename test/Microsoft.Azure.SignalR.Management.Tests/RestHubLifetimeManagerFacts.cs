@@ -317,19 +317,19 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task RefreshConnectionAuthAsync_NullOrEmptyConnectionToken_ThrowsArgumentException()
+        public async Task RefreshAuthAsync_NullOrEmptyConnectionToken_ThrowsArgumentException()
         {
             var exception = await Assert.ThrowsAsync<ArgumentException>(
-                async () => await _manager.RefreshConnectionAuthAsync(null!, DateTimeOffset.UtcNow, null, default));
+                async () => await _manager.RefreshAuthAsync(null!, DateTimeOffset.UtcNow, null, default));
             Assert.Equal("connectionToken", exception.ParamName);
 
             exception = await Assert.ThrowsAsync<ArgumentException>(
-                async () => await _manager.RefreshConnectionAuthAsync("", DateTimeOffset.UtcNow, null, default));
+                async () => await _manager.RefreshAuthAsync("", DateTimeOffset.UtcNow, null, default));
             Assert.Equal("connectionToken", exception.ParamName);
         }
 
         [Fact]
-        public async Task RefreshConnectionAuthAsync_Ok_PostsRefreshAuthRequest_ReturnsOkWithClaims()
+        public async Task RefreshAuthAsync_Ok_PostsRefreshAuthRequest_ReturnsOkWithClaims()
         {
             var connectionToken = "conn-token-1";
             var expireTime = new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -349,7 +349,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 })
                 .ReturnsAsync(() => ClaimsResponse(HttpStatusCode.OK, ("role", "admin")));
 
-            var result = await _manager.RefreshConnectionAuthAsync(
+            var result = await _manager.RefreshAuthAsync(
                 connectionToken, expireTime, new[] { new Claim("role", "admin") }, default);
 
             // Verify the request targeted the token-keyed :refreshAuth collection endpoint via POST.
@@ -374,22 +374,22 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task RefreshConnectionAuthAsync_Forbidden_ReturnsForbiddenStatus()
+        public async Task RefreshAuthAsync_Forbidden_ReturnsForbiddenStatus()
         {
             SetupResponse(HttpStatusCode.Forbidden);
 
-            var result = await _manager.RefreshConnectionAuthAsync("conn-token-1", DateTimeOffset.UtcNow, null, default);
+            var result = await _manager.RefreshAuthAsync("conn-token-1", DateTimeOffset.UtcNow, null, default);
 
             Assert.Equal(AckStatus.Forbidden, result.Status);
             Assert.Null(result.Claims);
         }
 
         [Fact]
-        public async Task RefreshConnectionAuthAsync_NotFound_ReturnsNotFoundStatus()
+        public async Task RefreshAuthAsync_NotFound_ReturnsNotFoundStatus()
         {
             SetupResponse(HttpStatusCode.NotFound);
 
-            var result = await _manager.RefreshConnectionAuthAsync("conn-token-1", DateTimeOffset.UtcNow, null, default);
+            var result = await _manager.RefreshAuthAsync("conn-token-1", DateTimeOffset.UtcNow, null, default);
 
             Assert.Equal(AckStatus.NotFound, result.Status);
             Assert.Null(result.Claims);

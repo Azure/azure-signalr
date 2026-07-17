@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <param name="expireTime">The new authentication expiration deadline (UTC).</param>
         /// <param name="claims">The projected application claim set; applied after the same-user check passes. When null, the refresh is expiration-only.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        public virtual Task<RefreshResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim> claims = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public virtual Task<RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim> claims = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         /// <summary>
         /// Reads the current claim set of a live client connection.

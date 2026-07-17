@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Management;
 /// </summary>
 internal static class ConnectionAuthenticationHelper
 {
-    public static async Task<RefreshResult> RefreshConnectionAuthenticationAsync(
+    public static async Task<RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(
         string hubName,
         IServiceHubLifetimeManager lifetimeManager,
         IServiceEndpointManager endpointManager,
@@ -32,7 +32,7 @@ internal static class ConnectionAuthenticationHelper
             throw new ArgumentException("Argument cannot be null or empty.", nameof(connectionToken));
         }
 
-        var result = await lifetimeManager.RefreshConnectionAuthAsync(connectionToken, expireTime, claims, cancellationToken);
+        var result = await lifetimeManager.RefreshAuthAsync(connectionToken, expireTime, claims, cancellationToken);
         ThrowOnNonSuccess(result.Status);
 
         if (result.Claims == null || result.Claims.Count == 0)
@@ -55,7 +55,7 @@ internal static class ConnectionAuthenticationHelper
         var accessToken = await provider.GenerateClientAccessTokenAsync(hubName, result.Claims, accessTokenLifetime);
         var remainingSeconds = (expireTime - DateTimeOffset.UtcNow).TotalSeconds;
         var tokenLifetimeSeconds = (int)Math.Max(0, Math.Min(accessTokenLifetime.TotalSeconds, remainingSeconds));
-        return new RefreshResult(accessToken, tokenLifetimeSeconds);
+        return new RefreshConnectionAuthenticationResult(accessToken, tokenLifetimeSeconds);
     }
 
     public static async Task<ConnectionClaims> GetConnectionClaimsAsync(

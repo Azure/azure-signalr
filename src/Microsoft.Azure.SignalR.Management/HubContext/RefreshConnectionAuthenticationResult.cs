@@ -4,11 +4,11 @@
 namespace Microsoft.Azure.SignalR.Management
 {
     /// <summary>
-    /// The result of a successful <see cref="ServiceHubContext.RefreshConnectionAuthenticationAsync"/> call.
+    /// Public SDK result returned after <see cref="ServiceHubContext.RefreshConnectionAuthenticationAsync"/> successfully applies the service-side refresh and locally mints a refreshed client access token.
     /// </summary>
-    public sealed class RefreshResult
+    public sealed class RefreshConnectionAuthenticationResult
     {
-        internal RefreshResult(string accessToken, int tokenLifetimeSeconds)
+        internal RefreshConnectionAuthenticationResult(string accessToken, int tokenLifetimeSeconds)
         {
             AccessToken = accessToken;
             TokenLifetimeSeconds = tokenLifetimeSeconds;

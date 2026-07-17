@@ -69,33 +69,33 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task RefreshConnectionAuthAsync_NullOrEmptyConnectionToken_ThrowsArgumentException()
+        public async Task RefreshAuthAsync_NullOrEmptyConnectionToken_ThrowsArgumentException()
         {
             var manager = CreateManager();
 
             var exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => manager.RefreshConnectionAuthAsync(null!, DateTimeOffset.UtcNow, null, default));
+                () => manager.RefreshAuthAsync(null!, DateTimeOffset.UtcNow, null, default));
             Assert.Equal("connectionToken", exception.ParamName);
 
             exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => manager.RefreshConnectionAuthAsync(string.Empty, DateTimeOffset.UtcNow, null, default));
+                () => manager.RefreshAuthAsync(string.Empty, DateTimeOffset.UtcNow, null, default));
             Assert.Equal("connectionToken", exception.ParamName);
         }
 
         [Fact]
-        public async Task RefreshConnectionAuthAsync_DelegatesTokenKeyedMessageToContainer_ReturnsResult()
+        public async Task RefreshAuthAsync_DelegatesTokenKeyedMessageToContainer_ReturnsResult()
         {
             var manager = CreateManager();
             var expireTime = new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero);
             RefreshAuthMessage captured = null;
-            var expected = new RefreshConnectionAuthResult(AckStatus.Ok, new[] { new Claim("role", "admin") });
+            var expected = new RefreshAuthResult(AckStatus.Ok, new[] { new Claim("role", "admin") });
 
             _serviceConnectionManagerMock
-                .Setup(m => m.RefreshConnectionAuthAsync(It.IsAny<RefreshAuthMessage>(), It.IsAny<HubServiceEndpoint>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.RefreshAuthAsync(It.IsAny<RefreshAuthMessage>(), It.IsAny<HubServiceEndpoint>(), It.IsAny<CancellationToken>()))
                 .Callback<RefreshAuthMessage, HubServiceEndpoint, CancellationToken>((message, _, _) => captured = message)
                 .ReturnsAsync(expected);
 
-            var result = await manager.RefreshConnectionAuthAsync("conn-token-1", expireTime, new[] { new Claim("role", "admin") }, default);
+            var result = await manager.RefreshAuthAsync("conn-token-1", expireTime, new[] { new Claim("role", "admin") }, default);
 
             // The Persistent transport builds a token-keyed RefreshAuthMessage and delegates to the container.
             Assert.NotNull(captured);
@@ -110,17 +110,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task RefreshConnectionAuthAsync_NoClaims_SendsNullClaims()
+        public async Task RefreshAuthAsync_NoClaims_SendsNullClaims()
         {
             var manager = CreateManager();
             RefreshAuthMessage captured = null;
 
             _serviceConnectionManagerMock
-                .Setup(m => m.RefreshConnectionAuthAsync(It.IsAny<RefreshAuthMessage>(), It.IsAny<HubServiceEndpoint>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.RefreshAuthAsync(It.IsAny<RefreshAuthMessage>(), It.IsAny<HubServiceEndpoint>(), It.IsAny<CancellationToken>()))
                 .Callback<RefreshAuthMessage, HubServiceEndpoint, CancellationToken>((message, _, _) => captured = message)
-                .ReturnsAsync(new RefreshConnectionAuthResult(AckStatus.Ok));
+                .ReturnsAsync(new RefreshAuthResult(AckStatus.Ok));
 
-            await manager.RefreshConnectionAuthAsync("conn-token-1", DateTimeOffset.UtcNow, null, default);
+            await manager.RefreshAuthAsync("conn-token-1", DateTimeOffset.UtcNow, null, default);
 
             Assert.NotNull(captured);
             Assert.Null(captured!.Claims);

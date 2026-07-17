@@ -191,7 +191,7 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
         return WriteAckableMessageAsync(message, cancellationToken);
     }
 
-    public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken = default)
+    public Task<RefreshAuthResult> RefreshAuthAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(connectionToken))
         {
@@ -199,7 +199,7 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
         }
 
         var message = new RefreshAuthMessage(connectionToken, ToClaimArray(claims), expireTime, 0);
-        return ServiceConnectionContainer.RefreshConnectionAuthAsync(message, cancellationToken: cancellationToken);
+        return ServiceConnectionContainer.RefreshAuthAsync(message, cancellationToken: cancellationToken);
     }
 
     public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(string connectionToken, CancellationToken cancellationToken = default)

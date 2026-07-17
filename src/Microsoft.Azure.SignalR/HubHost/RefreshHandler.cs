@@ -118,10 +118,10 @@ internal class RefreshHandler<THub> where THub : Hub
         var claims = projectedClaims.Length == 0 ? null : projectedClaims;
 
         AckStatus refreshStatus;
-        RefreshConnectionAuthResult refreshResult;
+        RefreshAuthResult refreshResult;
         try
         {
-            refreshResult = await _serviceConnectionManager.RefreshConnectionAuthAsync(
+            refreshResult = await _serviceConnectionManager.RefreshAuthAsync(
                 new RefreshAuthMessage(connectionToken, claims, newExpiration, 0), owningEndpoint, context.RequestAborted);
         }
         catch (Exception ex)
