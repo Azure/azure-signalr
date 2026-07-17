@@ -7,7 +7,6 @@ namespace Microsoft.Azure.SignalR
     }
     public static partial class CancellationTokenExtensions
     {
-        [System.Diagnostics.DebuggerStepThroughAttribute]
         public static System.Threading.Tasks.Task AsTask(this System.Threading.CancellationToken cancellationToken) { throw null; }
         public static Microsoft.Azure.SignalR.CancellationTokenExtensions.CancellationTokenAwaiter GetAwaiter(this System.Threading.CancellationToken cancellationToken) { throw null; }
         public partial class CancellationTokenAwaiter : System.Runtime.CompilerServices.INotifyCompletion
