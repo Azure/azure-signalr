@@ -120,12 +120,12 @@ internal class RestApiProvider
         return GenerateRestApiEndpoint(appName, hubName, "/connections/claims");
     }
 
-    private RestApiEndpoint GenerateRestApiEndpoint(string appName, string hubName, string pathAfterHub, IDictionary<string, StringValues> queries = null, string apiVersion = Version)
+    private RestApiEndpoint GenerateRestApiEndpoint(string appName, string hubName, string pathAfterHub, IDictionary<string, StringValues> queries = null)
     {
         var requestPrefixWithHub = $"{_serverEndpoint}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
         pathAfterHub = string.IsNullOrEmpty(appName)
-            ? $"{pathAfterHub}?api-version={apiVersion}"
-            : $"{pathAfterHub}?application={Uri.EscapeDataString(appName.ToLowerInvariant())}&api-version={apiVersion}";
+            ? $"{pathAfterHub}?api-version={Version}"
+            : $"{pathAfterHub}?application={Uri.EscapeDataString(appName.ToLowerInvariant())}&api-version={Version}";
         return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}") { Query = queries };
     }
 }

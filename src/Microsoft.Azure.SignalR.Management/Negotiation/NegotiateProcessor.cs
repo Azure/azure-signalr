@@ -85,7 +85,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         private static int ComputeTokenLifetimeSeconds(NegotiationOptions negotiationOptions)
         {
-            var seconds = Math.Max(0, negotiationOptions.TokenLifetime.TotalSeconds);
+            var seconds = negotiationOptions.TokenLifetime.TotalSeconds;
             return seconds > int.MaxValue ? int.MaxValue : (int)seconds;
         }
     }

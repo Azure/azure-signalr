@@ -41,16 +41,8 @@ internal static class ConnectionAuthenticationHelper
         }
 
         var accessTokenLifetime = Constants.Periods.DefaultAccessTokenLifetime;
-        ServiceEndpoint owningEndpoint = result.OwningEndpoint;
-        if (owningEndpoint == null)
-        {
-            var endpoints = endpointManager.GetEndpoints(hubName);
-            if (endpoints.Count == 0)
-            {
-                throw new AzureSignalRException("No service endpoint is available to mint the refreshed access token.");
-            }
-            owningEndpoint = endpoints[0];
-        }
+        var owningEndpoint = result.OwningEndpoint
+            ?? throw new AzureSignalRException("Unexpected refresh result: The owning endpoint was not provided.");
         var provider = endpointManager.GetEndpointProvider(owningEndpoint);
         var accessToken = await provider.GenerateClientAccessTokenAsync(hubName, result.Claims, accessTokenLifetime);
         var remainingSeconds = (expireTime - DateTimeOffset.UtcNow).TotalSeconds;

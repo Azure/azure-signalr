@@ -19,8 +19,6 @@ using Microsoft.Azure.SignalR.Tests.Common;
 
 using Xunit;
 
-#pragma warning disable CS0618 // IServiceManager exposes direct client endpoint/token generation used by these E2E tests.
-
 namespace Microsoft.Azure.SignalR.Management.Tests;
 
 public class RefreshAuthE2ETests
@@ -43,15 +41,18 @@ public class RefreshAuthE2ETests
         var initialMarker = $"initial-{Guid.NewGuid():N}";
         var refreshedMarker = $"refreshed-{Guid.NewGuid():N}";
         using var serviceManager = GenerateServiceManager(serviceTransportType);
-        var hubContext = (ServiceHubContext)await serviceManager.CreateHubContextAsync(HubName);
+        var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
         var tokenCapture = new ConnectionTokenCaptureHandler();
-        var accessToken = serviceManager.GenerateClientAccessToken(
-            HubName,
-            UserId,
-            CreateClaims(UserId, "user", initialMarker));
+        var negotiation = await hubContext.NegotiateAsync(
+            new NegotiationOptions
+            {
+                UserId = UserId,
+                Claims = CreateClaims(UserId, "user", initialMarker),
+            },
+            default).OrTimeout();
         var connection = CreateHubConnection(
-            serviceManager.GetClientEndpoint(HubName),
-            accessToken,
+            negotiation.Url,
+            negotiation.AccessToken,
             tokenCapture);
 
         try
@@ -109,15 +110,18 @@ public class RefreshAuthE2ETests
     {
         var initialMarker = $"initial-{Guid.NewGuid():N}";
         using var serviceManager = GenerateServiceManager(serviceTransportType);
-        var hubContext = (ServiceHubContext)await serviceManager.CreateHubContextAsync(HubName);
+        var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
         var tokenCapture = new ConnectionTokenCaptureHandler();
-        var accessToken = serviceManager.GenerateClientAccessToken(
-            HubName,
-            UserId,
-            CreateClaims(UserId, "user", initialMarker));
+        var negotiation = await hubContext.NegotiateAsync(
+            new NegotiationOptions
+            {
+                UserId = UserId,
+                Claims = CreateClaims(UserId, "user", initialMarker),
+            },
+            default).OrTimeout();
         var connection = CreateHubConnection(
-            serviceManager.GetClientEndpoint(HubName),
-            accessToken,
+            negotiation.Url,
+            negotiation.AccessToken,
             tokenCapture);
 
         try
@@ -158,15 +162,18 @@ public class RefreshAuthE2ETests
     {
         var initialMarker = $"initial-{Guid.NewGuid():N}";
         using var serviceManager = GenerateServiceManager(serviceTransportType);
-        var hubContext = (ServiceHubContext)await serviceManager.CreateHubContextAsync(HubName);
+        var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
         var tokenCapture = new ConnectionTokenCaptureHandler();
-        var accessToken = serviceManager.GenerateClientAccessToken(
-            HubName,
-            UserId,
-            CreateClaims(UserId, "user", initialMarker));
+        var negotiation = await hubContext.NegotiateAsync(
+            new NegotiationOptions
+            {
+                UserId = UserId,
+                Claims = CreateClaims(UserId, "user", initialMarker),
+            },
+            default).OrTimeout();
         var connection = CreateHubConnection(
-            serviceManager.GetClientEndpoint(HubName),
-            accessToken,
+            negotiation.Url,
+            negotiation.AccessToken,
             tokenCapture);
 
         try
@@ -206,7 +213,7 @@ public class RefreshAuthE2ETests
     public async Task TestRefreshConnectionAuthenticationForUnknownConnection(ServiceTransportType serviceTransportType)
     {
         using var serviceManager = GenerateServiceManager(serviceTransportType);
-        var hubContext = (ServiceHubContext)await serviceManager.CreateHubContextAsync(HubName);
+        var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
 
         try
         {
@@ -231,7 +238,7 @@ public class RefreshAuthE2ETests
         new Claim(MarkerClaimType, marker),
     ];
 
-    private static IServiceManager GenerateServiceManager(ServiceTransportType serviceTransportType) =>
+    private static ServiceManager GenerateServiceManager(ServiceTransportType serviceTransportType) =>
         new ServiceManagerBuilder()
             .WithOptions(options =>
             {
@@ -239,7 +246,7 @@ public class RefreshAuthE2ETests
                 options.ServiceTransportType = serviceTransportType;
             })
             .WithCallingAssembly()
-            .Build();
+            .BuildServiceManager();
 
     private static HubConnection CreateHubConnection(
         string endpoint,

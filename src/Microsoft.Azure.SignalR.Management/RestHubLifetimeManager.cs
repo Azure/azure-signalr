@@ -36,13 +36,15 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
     private readonly RestClient _restClient;
     private readonly RestApiProvider _restApiProvider;
+    private readonly HubServiceEndpoint _endpoint;
     private readonly string _hubName;
     private readonly string _appName;
     private readonly IHubProtocolResolver _protocolResolver;
 
-    public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string appName, RestClient restClient, IHubProtocolResolver protocolResolver)
+    public RestHubLifetimeManager(string hubName, HubServiceEndpoint endpoint, string appName, RestClient restClient, IHubProtocolResolver protocolResolver)
     {
         _restApiProvider = new RestApiProvider(endpoint);
+        _endpoint = endpoint;
         _appName = appName;
         _hubName = hubName;
         _restClient = restClient;
@@ -332,7 +334,7 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             }
         }, cancellationToken: cancellationToken);
 
-        return new RefreshAuthResult(status, resultClaims);
+        return new RefreshAuthResult(status, resultClaims, status == AckStatus.Ok ? _endpoint : null);
     }
 
     public async Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(string connectionToken, CancellationToken cancellationToken)

@@ -30,6 +30,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private readonly HttpClient _httpClient;
         private readonly string _hubName = "TestHub";
         private readonly string _appName = "TestApp";
+        private readonly HubServiceEndpoint _endpoint;
         private readonly RestHubLifetimeManager<TestHub> _manager;
 
         private readonly Mock<HttpMessageHandler> _httpMessageHandlerMock;
@@ -47,9 +48,14 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             var restClient = new RestClient(_httpClientFactoryMock.Object);
 
+            _endpoint = new HubServiceEndpoint(
+                _hubName,
+                Mock.Of<IServiceEndpointProvider>(),
+                new ServiceEndpoint(FakeEndpointUtils.GetFakeConnectionString(1).First()));
+
             _manager = new RestHubLifetimeManager<TestHub>(
                 _hubName,
-                new(FakeEndpointUtils.GetFakeConnectionString(1).First()),
+                _endpoint,
                 _appName,
                 restClient,
                 new DefaultHubProtocolResolver(new IHubProtocol[]
@@ -368,6 +374,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.DoesNotContain("conn-token-1", uri);
 
             Assert.Equal(AckStatus.Ok, result.Status);
+            Assert.Same(_endpoint, result.OwningEndpoint);
             var claim = Assert.Single(result.Claims!);
             Assert.Equal("role", claim.Type);
             Assert.Equal("admin", claim.Value);
@@ -382,6 +389,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             Assert.Equal(AckStatus.Forbidden, result.Status);
             Assert.Null(result.Claims);
+            Assert.Null(result.OwningEndpoint);
         }
 
         [Fact]
@@ -393,6 +401,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             Assert.Equal(AckStatus.NotFound, result.Status);
             Assert.Null(result.Claims);
+            Assert.Null(result.OwningEndpoint);
         }
 
         [Fact]

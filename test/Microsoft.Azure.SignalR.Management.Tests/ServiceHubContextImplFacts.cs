@@ -88,17 +88,15 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var expireTime = DateTimeOffset.UtcNow.AddMinutes(10);
             var postRefreshClaims = new[] { new Claim("role", "admin") };
-            _lifetimeManagerMock
-                .Setup(m => m.RefreshAuthAsync(ConnectionToken, expireTime, It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new RefreshAuthResult(AckStatus.Ok, postRefreshClaims));
-
             var providerMock = new Mock<IServiceEndpointProvider>();
             providerMock
                 .Setup(p => p.GenerateClientAccessTokenAsync(HubName, It.IsAny<IEnumerable<Claim>>(), It.IsAny<TimeSpan?>()))
                 .ReturnsAsync("minted-token");
 
             var endpoint = new HubServiceEndpoint(HubName, providerMock.Object, new ServiceEndpoint(FakeEndpointUtils.GetFakeConnectionString(1).First()));
-            _endpointManagerMock.Setup(m => m.GetEndpoints(HubName)).Returns(new List<HubServiceEndpoint> { endpoint });
+            _lifetimeManagerMock
+                .Setup(m => m.RefreshAuthAsync(ConnectionToken, expireTime, It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new RefreshAuthResult(AckStatus.Ok, postRefreshClaims, endpoint));
             _endpointManagerMock.Setup(m => m.GetEndpointProvider(It.IsAny<ServiceEndpoint>())).Returns(providerMock.Object);
 
             var hubContext = CreateHubContext();
@@ -112,16 +110,16 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task RefreshConnectionAuthenticationAsync_Ok_NoServiceEndpoint_ThrowsAzureSignalRException()
+        public async Task RefreshConnectionAuthenticationAsync_OkWithoutOwningEndpoint_ThrowsAzureSignalRException()
         {
             _lifetimeManagerMock
                 .Setup(m => m.RefreshAuthAsync(ConnectionToken, It.IsAny<DateTimeOffset>(), It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new RefreshAuthResult(AckStatus.Ok, new[] { new Claim("role", "admin") }));
-            _endpointManagerMock.Setup(m => m.GetEndpoints(HubName)).Returns(new List<HubServiceEndpoint>());
             var hubContext = CreateHubContext();
 
-            await Assert.ThrowsAsync<AzureSignalRException>(
+            var exception = await Assert.ThrowsAsync<AzureSignalRException>(
                 () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, DateTimeOffset.UtcNow.AddMinutes(10)));
+            Assert.Contains("did not identify", exception.Message);
         }
 
         [Fact]
