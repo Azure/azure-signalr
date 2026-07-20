@@ -32,6 +32,11 @@ internal static class ConnectionAuthenticationHelper
             throw new ArgumentException("Argument cannot be null or empty.", nameof(connectionToken));
         }
 
+        if (expireTime <= DateTimeOffset.UtcNow)
+        {
+            throw new ArgumentOutOfRangeException(nameof(expireTime), "The expiration time must be in the future.");
+        }
+
         var result = await lifetimeManager.RefreshAuthAsync(connectionToken, expireTime, claims, cancellationToken);
         ThrowOnNonSuccess(result.Status);
 
