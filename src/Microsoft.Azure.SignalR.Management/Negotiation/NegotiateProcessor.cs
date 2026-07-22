@@ -28,6 +28,12 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task<NegotiationResponse> NegotiateAsync(string hubName, NegotiationOptions negotiationOptions, CancellationToken cancellationToken = default)
         {
+            var (response, _) = await NegotiateCoreAsync(hubName, negotiationOptions, cancellationToken);
+            return response;
+        }
+
+        private async Task<(NegotiationResponse Response, TimeSpan EffectiveTokenLifetime)> NegotiateCoreAsync(string hubName, NegotiationOptions negotiationOptions, CancellationToken cancellationToken)
+        {
             negotiationOptions ??= NegotiationOptions.Default;
             var httpContext = negotiationOptions.HttpContext;
             var userId = negotiationOptions.UserId;
@@ -38,6 +44,36 @@ namespace Microsoft.Azure.SignalR.Management
             if (lifetime <= TimeSpan.Zero)
             {
                 throw new ArgumentOutOfRangeException(nameof(negotiationOptions), $"{nameof(NegotiationOptions.TokenLifetime)} must be a positive value.");
+            }
+            var authenticationExpiresOnOption = negotiationOptions.AuthenticationExpiresOn;
+            DateTimeOffset? authenticationExpiresOn;
+            if (authenticationExpiresOnOption == DateTimeOffset.MaxValue)
+            {
+                authenticationExpiresOn = null;
+            }
+            else if (authenticationExpiresOnOption.HasValue)
+            {
+                authenticationExpiresOn = authenticationExpiresOnOption.Value.ToUniversalTime();
+            }
+            else if (negotiationOptions.CloseOnAuthenticationExpiration)
+            {
+                authenticationExpiresOn = DateTimeOffset.UtcNow.Add(negotiationOptions.TokenLifetime);
+            }
+            else
+            {
+                authenticationExpiresOn = null;
+            }
+            if (authenticationExpiresOn.HasValue)
+            {
+                var remainingAuthenticationLifetime = authenticationExpiresOn.Value - DateTimeOffset.UtcNow;
+                if (remainingAuthenticationLifetime <= TimeSpan.Zero)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(negotiationOptions), $"{nameof(NegotiationOptions.AuthenticationExpiresOn)} must be in the future.");
+                }
+                if (negotiationOptions.EnableAuthenticationRefresh && remainingAuthenticationLifetime < lifetime)
+                {
+                    lifetime = remainingAuthenticationLifetime;
+                }
             }
             try
             {
@@ -56,16 +92,17 @@ namespace Microsoft.Azure.SignalR.Management
                     claimProvider = () => claims;
                 }
                 var closeOnAuthenticationExpiration = negotiationOptions.CloseOnAuthenticationExpiration;
-                var authenticationExpiresOn = closeOnAuthenticationExpiration ? DateTimeOffset.UtcNow.Add(negotiationOptions.TokenLifetime) : default(DateTimeOffset?);
                 var claimsWithUserId = ClaimsUtility.BuildJwtClaims(httpContext?.User, userId: userId, claimProvider, enableDetailedErrors: enableDetailedErrors, isDiagnosticClient: isDiagnosticClient, closeOnAuthenticationExpiration: closeOnAuthenticationExpiration, authenticationExpiresOn: authenticationExpiresOn, httpTransportType: negotiationOptions.Transports);
 
                 var tokenTask = provider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifetime);
                 await tokenTask.OrTimeout(cancellationToken, Timeout, GeneratingTokenTaskDescription);
-                return new NegotiationResponse
-                {
-                    Url = provider.GetClientEndpoint(hubName, null, null),
-                    AccessToken = tokenTask.Result
-                };
+                return (
+                    new NegotiationResponse
+                    {
+                        Url = provider.GetClientEndpoint(hubName, null, null),
+                        AccessToken = tokenTask.Result
+                    },
+                    lifetime);
             }
             catch (Exception e) when (e is OperationCanceledException || e is TimeoutException)
             {
@@ -79,13 +116,13 @@ namespace Microsoft.Azure.SignalR.Management
         public async Task<NegotiationResult> NegotiateWithTokenLifetimeAsync(string hubName, NegotiationOptions negotiationOptions, CancellationToken cancellationToken = default)
         {
             negotiationOptions ??= NegotiationOptions.Default;
-            var response = await NegotiateAsync(hubName, negotiationOptions, cancellationToken);
-            return new NegotiationResult(response.Url, response.AccessToken, ComputeTokenLifetimeSeconds(negotiationOptions));
+            var (response, effectiveTokenLifetime) = await NegotiateCoreAsync(hubName, negotiationOptions, cancellationToken);
+            return new NegotiationResult(response.Url, response.AccessToken, ComputeTokenLifetimeSeconds(effectiveTokenLifetime));
         }
 
-        private static int ComputeTokenLifetimeSeconds(NegotiationOptions negotiationOptions)
+        private static int ComputeTokenLifetimeSeconds(TimeSpan tokenLifetime)
         {
-            var seconds = negotiationOptions.TokenLifetime.TotalSeconds;
+            var seconds = tokenLifetime.TotalSeconds;
             return seconds > int.MaxValue ? int.MaxValue : (int)seconds;
         }
     }
