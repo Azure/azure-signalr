@@ -159,7 +159,7 @@ internal class RefreshHandler<THub> where THub : Hub
         try
         {
             var (accessToken, tokenLifetimeSeconds) = await _negotiateHandler.GenerateRefreshedAccessTokenAsync(
-                refreshResult.OwningEndpoint, refreshResult.Claims);
+                refreshResult.OwningEndpoint, refreshResult.Claims, newExpiration);
             await WriteSuccessAsync(context, accessToken, tokenLifetimeSeconds);
         }
         catch (Exception ex)

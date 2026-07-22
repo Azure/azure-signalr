@@ -125,20 +125,31 @@ internal class NegotiateHandler<THub> where THub : Hub
             _cultureFeatureManager.TryAddCultureFeature(clientRequestId, cultureFeature);
         }
 
-        var response = new NegotiationResponse
-        {
-            Url = provider.GetClientEndpoint(_hubName, originalPath, queryString),
-            AccessToken = await provider.GenerateClientAccessTokenAsync(_hubName, claims),
-            // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
-            AvailableTransports = new List<AvailableTransport>()
-        };
-
+        TimeSpan? accessTokenLifetime = null;
 #if NET11_0_OR_GREATER
         if (_dispatcherOptions.EnableAuthenticationRefresh
             && context.User?.Identity?.IsAuthenticated == true
             && !HasWindowsIdentity(context.User))
         {
-            response.TokenLifetime = TimeSpan.FromSeconds(ComputeTokenLifetimeSeconds(GetAuthenticationExpiresOn(context)));
+            accessTokenLifetime = ComputeAccessTokenLifetime(GetAuthenticationExpiresOn(context));
+        }
+#endif
+
+        var response = new NegotiationResponse
+        {
+            Url = provider.GetClientEndpoint(_hubName, originalPath, queryString),
+            AccessToken = await provider.GenerateClientAccessTokenAsync(
+                _hubName,
+                claims,
+                accessTokenLifetime),
+            // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
+            AvailableTransports = new List<AvailableTransport>()
+        };
+
+#if NET11_0_OR_GREATER
+        if (accessTokenLifetime.HasValue)
+        {
+            response.TokenLifetime = TimeSpan.FromSeconds(ComputeTokenLifetimeSeconds(accessTokenLifetime.Value));
         }
 #endif
 
@@ -150,7 +161,7 @@ internal class NegotiateHandler<THub> where THub : Hub
     /// Mints a refreshed client access token from the runtime-returned post-refresh claim set for the connection's owning endpoint.
     /// </summary>
     public async Task<(string AccessToken, int TokenLifetimeSeconds)> GenerateRefreshedAccessTokenAsync(
-        HubServiceEndpoint endpoint, IReadOnlyList<Claim> claims)
+        HubServiceEndpoint endpoint, IReadOnlyList<Claim> claims, DateTimeOffset authenticationExpiresOn)
     {
         var provider = _endpointManager.GetEndpointProvider(endpoint);
         if (provider == null)
@@ -158,8 +169,12 @@ internal class NegotiateHandler<THub> where THub : Hub
             throw new AzureSignalRNotConnectedException();
         }
 
-        var accessToken = await provider.GenerateClientAccessTokenAsync(_hubName, claims);
-        var tokenLifetimeSeconds = ComputeTokenLifetimeSeconds(GetAuthExpiresOnFromClaims(claims));
+        var accessTokenLifetime = _accessTokenLifetime;
+        var effectiveAuthenticationExpiresOn = GetAuthExpiresOnFromClaims(claims)
+            ?? (authenticationExpiresOn != DateTimeOffset.MaxValue ? authenticationExpiresOn : null);
+        accessTokenLifetime = ComputeAccessTokenLifetime(effectiveAuthenticationExpiresOn);
+        var accessToken = await provider.GenerateClientAccessTokenAsync(_hubName, claims, accessTokenLifetime);
+        var tokenLifetimeSeconds = ComputeTokenLifetimeSeconds(accessTokenLifetime);
         return (accessToken, tokenLifetimeSeconds);
     }
 
@@ -176,10 +191,10 @@ internal class NegotiateHandler<THub> where THub : Hub
         return null;
     }
 
-    private int ComputeTokenLifetimeSeconds(DateTimeOffset? authenticationExpiresOn)
+    private TimeSpan ComputeAccessTokenLifetime(DateTimeOffset? authenticationExpiresOn)
     {
         var lifetime = _accessTokenLifetime;
-        if (authenticationExpiresOn.HasValue)
+        if (authenticationExpiresOn.HasValue && authenticationExpiresOn.Value != DateTimeOffset.MaxValue)
         {
             var untilExpire = authenticationExpiresOn.Value - DateTimeOffset.UtcNow;
             if (untilExpire < lifetime)
@@ -187,6 +202,11 @@ internal class NegotiateHandler<THub> where THub : Hub
                 lifetime = untilExpire;
             }
         }
+        return lifetime > TimeSpan.Zero ? lifetime : TimeSpan.Zero;
+    }
+
+    private static int ComputeTokenLifetimeSeconds(TimeSpan lifetime)
+    {
         var seconds = (long)lifetime.TotalSeconds;
         return seconds <= 0 ? 0 : (seconds > int.MaxValue ? int.MaxValue : (int)seconds);
     }
