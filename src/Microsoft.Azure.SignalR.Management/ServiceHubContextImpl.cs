@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR.Management
             return _negotiateProcessor.NegotiateWithTokenLifetimeAsync(_hubName, negotiationOptions, cancellationToken);
         }
 
-        public override Task<RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim> claims = null, CancellationToken cancellationToken = default) =>
+        public override Task<RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset? expireTime = null, IEnumerable<Claim> claims = null, CancellationToken cancellationToken = default) =>
             ConnectionAuthenticationHelper.RefreshConnectionAuthenticationAsync(_hubName, _lifetimeManager, _endpointManager, connectionToken, expireTime, claims, cancellationToken);
 
         public override Task<ConnectionClaims> GetConnectionClaimsAsync(string connectionToken, CancellationToken cancellationToken = default) =>

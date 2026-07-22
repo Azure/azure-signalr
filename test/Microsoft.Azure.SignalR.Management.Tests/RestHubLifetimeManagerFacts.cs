@@ -381,6 +381,28 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
+        public async Task RefreshAuthAsync_MaxValueExpiration_SerializesSentinel()
+        {
+            string? capturedBody = null;
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .Callback<HttpRequestMessage, CancellationToken>((request, _) =>
+                    capturedBody = request.Content!.ReadAsStringAsync(CancellationToken.None).Result)
+                .ReturnsAsync(() => ClaimsResponse(HttpStatusCode.OK, ("role", "admin")));
+
+            await _manager.RefreshAuthAsync("conn-token-1", DateTimeOffset.MaxValue, claims: null, default);
+
+            Assert.NotNull(capturedBody);
+            using var document = JsonDocument.Parse(capturedBody);
+            var expireTime = document.RootElement.GetProperty("expireTime").GetDateTimeOffset();
+            Assert.Equal(DateTimeOffset.MaxValue, expireTime);
+        }
+
+        [Fact]
         public async Task RefreshAuthAsync_Forbidden_ReturnsForbiddenStatus()
         {
             SetupResponse(HttpStatusCode.Forbidden);

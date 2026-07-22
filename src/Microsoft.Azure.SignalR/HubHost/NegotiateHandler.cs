@@ -224,8 +224,8 @@ internal class NegotiateHandler<THub> where THub : Hub
 
     internal Claim[] BuildRefreshClaims(HttpContext context) => BuildClaims(context).ToArray();
 
-    internal DateTimeOffset GetRefreshExpiration(HttpContext context) =>
-        GetAuthenticationExpiresOn(context) ?? DateTimeOffset.UtcNow.Add(_accessTokenLifetime);
+    internal static DateTimeOffset GetRefreshExpiration(HttpContext context) =>
+        GetAuthenticationExpiresOn(context) ?? DateTimeOffset.MaxValue;
 #endif
 
     private static string GetOriginalPath(string path)

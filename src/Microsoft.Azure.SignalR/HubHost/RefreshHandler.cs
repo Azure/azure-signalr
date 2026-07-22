@@ -72,7 +72,7 @@ internal class RefreshHandler<THub> where THub : Hub
             return;
         }
 
-        var newExpiration = _negotiateHandler.GetRefreshExpiration(context);
+        var newExpiration = NegotiateHandler<THub>.GetRefreshExpiration(context);
 
         // When an OnAuthenticationRefresh callback is configured, fetch PreviousUser from the runtime.
         // The endpoint that answers the read is remembered so the refresh below can be pinned to it

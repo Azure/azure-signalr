@@ -23,7 +23,7 @@ internal static class ConnectionAuthenticationHelper
         IServiceHubLifetimeManager lifetimeManager,
         IServiceEndpointManager endpointManager,
         string connectionToken,
-        DateTimeOffset expireTime,
+        DateTimeOffset? expireTime,
         IEnumerable<Claim> claims,
         CancellationToken cancellationToken)
     {
@@ -32,12 +32,14 @@ internal static class ConnectionAuthenticationHelper
             throw new ArgumentException("Argument cannot be null or empty.", nameof(connectionToken));
         }
 
-        if (expireTime <= DateTimeOffset.UtcNow)
+        var utcExpireTime = expireTime?.ToUniversalTime() ?? DateTimeOffset.MaxValue;
+
+        if (expireTime.HasValue && utcExpireTime <= DateTimeOffset.UtcNow)
         {
             throw new ArgumentOutOfRangeException(nameof(expireTime), "The expiration time must be in the future.");
         }
 
-        var result = await lifetimeManager.RefreshAuthAsync(connectionToken, expireTime, claims, cancellationToken);
+        var result = await lifetimeManager.RefreshAuthAsync(connectionToken, utcExpireTime, claims, cancellationToken);
         ThrowOnNonSuccess(result.Status);
 
         if (result.Claims == null || result.Claims.Count == 0)
@@ -50,8 +52,8 @@ internal static class ConnectionAuthenticationHelper
             ?? throw new AzureSignalRException("Unexpected refresh result: The owning endpoint was not provided.");
         var provider = endpointManager.GetEndpointProvider(owningEndpoint);
         var accessToken = await provider.GenerateClientAccessTokenAsync(hubName, result.Claims, accessTokenLifetime);
-        var remainingSeconds = (expireTime - DateTimeOffset.UtcNow).TotalSeconds;
-        var tokenLifetimeSeconds = (int)Math.Max(0, Math.Min(accessTokenLifetime.TotalSeconds, remainingSeconds));
+        var remainingSeconds = Math.Max(0, (utcExpireTime - DateTimeOffset.UtcNow).TotalSeconds);
+        var tokenLifetimeSeconds = (int)Math.Min(accessTokenLifetime.TotalSeconds, remainingSeconds);
         return new RefreshConnectionAuthenticationResult(accessToken, tokenLifetimeSeconds);
     }
 

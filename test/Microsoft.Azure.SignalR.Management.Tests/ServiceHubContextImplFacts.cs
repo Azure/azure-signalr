@@ -56,6 +56,39 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
+        public async Task RefreshConnectionAuthenticationAsync_NullExpireTime_UsesMaxValueSentinel()
+        {
+            var claims = new[] { new Claim("role", "admin") };
+            _lifetimeManagerMock
+                .Setup(m => m.RefreshAuthAsync(ConnectionToken, DateTimeOffset.MaxValue, It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new RefreshAuthResult(AckStatus.InternalServerError));
+            var hubContext = CreateHubContext();
+
+            await Assert.ThrowsAsync<AzureSignalRException>(
+                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, claims: claims));
+
+            _lifetimeManagerMock.Verify(
+                m => m.RefreshAuthAsync(ConnectionToken, DateTimeOffset.MaxValue, claims, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task RefreshConnectionAuthenticationAsync_NullExpireTimeAndClaims_UsesMaxValueSentinel()
+        {
+            _lifetimeManagerMock
+                .Setup(m => m.RefreshAuthAsync(ConnectionToken, DateTimeOffset.MaxValue, null, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new RefreshAuthResult(AckStatus.InternalServerError));
+            var hubContext = CreateHubContext();
+
+            await Assert.ThrowsAsync<AzureSignalRException>(
+                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken));
+
+            _lifetimeManagerMock.Verify(
+                m => m.RefreshAuthAsync(ConnectionToken, DateTimeOffset.MaxValue, null, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
         public async Task RefreshConnectionAuthenticationAsync_NonSuccessStatus_ThrowsAzureSignalRException()
         {
             foreach (var status in new[] { AckStatus.Forbidden, AckStatus.NotFound, AckStatus.InternalServerError })
