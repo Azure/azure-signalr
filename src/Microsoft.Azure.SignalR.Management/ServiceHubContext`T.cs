@@ -45,12 +45,12 @@ namespace Microsoft.Azure.SignalR.Management
         /// Performs a negotiation operation asynchronously that routes a client to a Azure SignalR instance.
         /// </summary>
         /// <returns>A negotiation response object that contains an endpoint url and an access token for the client to connect to the Azure SignalR instance. </returns>
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public abstract ValueTask<NegotiationResponse> NegotiateAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Performs a negotiation that also returns the client access token's lifetime seconds.
+        /// Performs a negotiation that also returns the client access token's lifetime seconds. Requires <see cref="NegotiationOptions.EnableAuthenticationRefresh"/>.
         /// </summary>
+        /// <exception cref="ArgumentException"><see cref="NegotiationOptions.EnableAuthenticationRefresh"/> is not enabled.</exception>
         public virtual Task<NegotiationResult> NegotiateWithTokenLifetimeAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         /// <summary>

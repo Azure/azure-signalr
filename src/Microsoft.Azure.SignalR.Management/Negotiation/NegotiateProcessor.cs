@@ -115,7 +115,10 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public async Task<NegotiationResult> NegotiateWithTokenLifetimeAsync(string hubName, NegotiationOptions negotiationOptions, CancellationToken cancellationToken = default)
         {
-            negotiationOptions ??= NegotiationOptions.Default;
+            if (negotiationOptions?.EnableAuthenticationRefresh != true)
+            {
+                throw new ArgumentException($"{nameof(NegotiationOptions.EnableAuthenticationRefresh)} must be enabled.", nameof(negotiationOptions));
+            }
             var (response, effectiveTokenLifetime) = await NegotiateCoreAsync(hubName, negotiationOptions, cancellationToken);
             return new NegotiationResult(response.Url, response.AccessToken, ComputeTokenLifetimeSeconds(effectiveTokenLifetime));
         }

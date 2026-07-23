@@ -134,28 +134,19 @@ public class NegotiateProcessorFacts
     }
 
     [Fact]
-    public async Task NegotiateWithAuthenticationRefreshDisabledDoesNotCapTokenLifetime()
+    public async Task NegotiateWithAuthenticationRefreshDisabledThrows()
     {
         using var hubContext = await new ServiceManagerBuilder()
             .WithOptions(o => o.ConnectionString = "Endpoint=https://abc.service.signalr.net;AccessKey=FakeKey;Version=1.0;")
             .BuildServiceManager()
             .CreateHubContextAsync("hub", default);
-        var configuredLifetime = TimeSpan.FromMinutes(20);
-        var authenticationExpiresOn = DateTimeOffset.UtcNow.AddMinutes(10);
-
-        var result = await hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() => hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
         {
-            AuthenticationExpiresOn = authenticationExpiresOn,
             EnableAuthenticationRefresh = false,
-            CloseOnAuthenticationExpiration = true,
-            TokenLifetime = configuredLifetime,
-        });
+        }));
 
-        var token = JwtTokenHelper.JwtHandler.ReadJwtToken(result.AccessToken);
-        Assert.InRange(token.ValidTo - token.ValidFrom, configuredLifetime - TimeSpan.FromSeconds(1), configuredLifetime + TimeSpan.FromSeconds(1));
-        Assert.Equal((int)configuredLifetime.TotalSeconds, result.TokenLifetimeSeconds);
-        Assert.Contains(token.Claims, claim => claim.Type == Constants.ClaimType.CloseOnAuthExpiration && claim.Value == "true");
-        Assert.Contains(token.Claims, claim => claim.Type == Constants.ClaimType.AuthExpiresOn && claim.Value == authenticationExpiresOn.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Assert.Equal("negotiationOptions", exception.ParamName);
+        Assert.Contains(nameof(NegotiationOptions.EnableAuthenticationRefresh), exception.Message);
     }
 
     [Theory]
