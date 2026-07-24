@@ -56,7 +56,10 @@ internal static class ConnectionAuthenticationHelper
         var owningEndpoint = result.OwningEndpoint
             ?? throw new AzureSignalRException("Unexpected refresh result: The owning endpoint was not provided.");
         var provider = endpointManager.GetEndpointProvider(owningEndpoint);
-        var accessToken = await provider.GenerateClientAccessTokenAsync(hubName, result.Claims, accessTokenLifetime);
+        var accessToken = await provider.GenerateClientAccessTokenAsync(
+            hubName,
+            ClaimsUtility.PrepareClaimsForToken(result.Claims),
+            accessTokenLifetime);
         var tokenLifetimeSeconds = (int)accessTokenLifetime.TotalSeconds;
         return new RefreshConnectionAuthenticationResult(accessToken, tokenLifetimeSeconds);
     }

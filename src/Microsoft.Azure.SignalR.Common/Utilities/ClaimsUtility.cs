@@ -29,6 +29,14 @@ namespace Microsoft.Azure.SignalR
             "jti",
             "nonce",
         };
+        private static readonly HashSet<string> TokenGeneratedClaimTypes = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "aud",
+            "exp",
+            "iat",
+            "iss",
+            "nbf",
+        };
 
         private static readonly ClaimsIdentity DefaultClaimsIdentity = new ClaimsIdentity();
         private static readonly ClaimsPrincipal EmptyPrincipal = new ClaimsPrincipal(DefaultClaimsIdentity);
@@ -90,7 +98,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             // Return custom NameClaimType and RoleClaimType
-            // We can have multiple Identities, for now, choose the default one 
+            // We can have multiple Identities, for now, choose the default one
             if (user?.Identity is ClaimsIdentity identity)
             {
                 var nameType = identity.NameClaimType;
@@ -106,7 +114,7 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
-            // add claim if exists, validation is in DI  
+            // add claim if exists, validation is in DI
             if (maxPollInterval.HasValue)
             {
                 yield return new Claim(Constants.ClaimType.MaxPollInterval, maxPollInterval.Value.ToString(CultureInfo.InvariantCulture));
@@ -160,6 +168,29 @@ namespace Microsoft.Azure.SignalR
                     }
                 }
             }
+        }
+
+        internal static IReadOnlyList<Claim> PrepareClaimsForToken(IReadOnlyList<Claim> claims)
+        {
+            var preparedClaims = new List<Claim>(claims.Count);
+            var seenClaims = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var claim in claims)
+            {
+                if (TokenGeneratedClaimTypes.Contains(claim.Type))
+                {
+                    continue;
+                }
+
+                var canonicalType = ClaimTypeMapping.OutboundClaimTypeMap.TryGetValue(claim.Type, out var outboundType)
+                    ? outboundType
+                    : claim.Type;
+                var key = string.Concat(canonicalType, "\0", claim.Value, "\0", claim.ValueType);
+                if (seenClaims.Add(key))
+                {
+                    preparedClaims.Add(claim);
+                }
+            }
+            return preparedClaims;
         }
 
         public static ClaimsPrincipal GetUserPrincipal(this OpenConnectionMessage message)

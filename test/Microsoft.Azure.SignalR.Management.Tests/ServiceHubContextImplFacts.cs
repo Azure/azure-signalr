@@ -163,13 +163,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var preservedExpireTime = DateTimeOffset.UtcNow.AddMinutes(10);
             var postRefreshClaims = new[]
             {
+                new Claim(ClaimTypes.NameIdentifier, "alice"),
+                new Claim("nameid", "alice"),
+                new Claim(ClaimTypes.Role, "admin"),
                 new Claim("role", "admin"),
+                new Claim("aud", "old-audience"),
                 new Claim(Constants.ClaimType.AuthExpiresOn, preservedExpireTime.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)),
             };
             var providerMock = new Mock<IServiceEndpointProvider>();
             TimeSpan? generatedTokenLifetime = null;
             providerMock
-                .Setup(p => p.GenerateClientAccessTokenAsync(HubName, postRefreshClaims, It.IsAny<TimeSpan?>()))
+                .Setup(p => p.GenerateClientAccessTokenAsync(HubName, It.IsAny<IEnumerable<Claim>>(), It.IsAny<TimeSpan?>()))
                 .Callback<string, IEnumerable<Claim>, TimeSpan?>((_, _, lifetime) => generatedTokenLifetime = lifetime)
                 .ReturnsAsync("minted-token");
 
