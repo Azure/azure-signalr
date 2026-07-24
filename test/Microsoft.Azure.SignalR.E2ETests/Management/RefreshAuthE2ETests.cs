@@ -67,8 +67,11 @@ public class RefreshAuthE2ETests
             var expireTime = DateTimeOffset.UtcNow.AddMinutes(10);
             var refreshResult = await hubContext.RefreshConnectionAuthenticationAsync(
                 connectionToken,
-                expireTime,
-                CreateClaims(UserId, "admin", refreshedMarker)).OrTimeout();
+                new RefreshConnectionAuthenticationOptions
+                {
+                    AuthenticationExpiresOn = expireTime,
+                    Claims = CreateClaims(UserId, "admin", refreshedMarker),
+                }).OrTimeout();
 
             Assert.False(string.IsNullOrEmpty(refreshResult.AccessToken));
             Assert.InRange(refreshResult.TokenLifetimeSeconds, 1, 600);
@@ -132,8 +135,10 @@ public class RefreshAuthE2ETests
 
             var refreshResult = await hubContext.RefreshConnectionAuthenticationAsync(
                 connectionToken,
-                DateTimeOffset.UtcNow.AddMinutes(10),
-                claims: null).OrTimeout();
+                new RefreshConnectionAuthenticationOptions
+                {
+                    AuthenticationExpiresOn = DateTimeOffset.UtcNow.AddMinutes(10),
+                }).OrTimeout();
 
             Assert.False(string.IsNullOrEmpty(refreshResult.AccessToken));
             Assert.InRange(refreshResult.TokenLifetimeSeconds, 1, 600);
@@ -185,8 +190,11 @@ public class RefreshAuthE2ETests
             var exception = await Assert.ThrowsAsync<AzureSignalRException>(() =>
                 hubContext.RefreshConnectionAuthenticationAsync(
                     connectionToken,
-                    DateTimeOffset.UtcNow.AddMinutes(10),
-                    CreateClaims("bob", "admin", $"rejected-{Guid.NewGuid():N}")).OrTimeout());
+                    new RefreshConnectionAuthenticationOptions
+                    {
+                        AuthenticationExpiresOn = DateTimeOffset.UtcNow.AddMinutes(10),
+                        Claims = CreateClaims("bob", "admin", $"rejected-{Guid.NewGuid():N}"),
+                    }).OrTimeout());
 
             Assert.Contains("different user", exception.Message, StringComparison.OrdinalIgnoreCase);
             Assert.Equal(connectionId, connection.ConnectionId);
@@ -220,8 +228,11 @@ public class RefreshAuthE2ETests
             var exception = await Assert.ThrowsAsync<AzureSignalRException>(() =>
                 hubContext.RefreshConnectionAuthenticationAsync(
                     $"unknown-{Guid.NewGuid():N}",
-                    DateTimeOffset.UtcNow.AddMinutes(10),
-                    CreateClaims(UserId, "user", "unknown")).OrTimeout());
+                    new RefreshConnectionAuthenticationOptions
+                    {
+                        AuthenticationExpiresOn = DateTimeOffset.UtcNow.AddMinutes(10),
+                        Claims = CreateClaims(UserId, "user", "unknown"),
+                    }).OrTimeout());
 
             Assert.Contains("not found", exception.Message, StringComparison.OrdinalIgnoreCase);
         }
