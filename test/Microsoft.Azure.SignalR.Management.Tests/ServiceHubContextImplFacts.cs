@@ -34,11 +34,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var hubContext = CreateHubContext();
 
             var exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => hubContext.RefreshConnectionAuthenticationAsync(null!, DateTimeOffset.UtcNow));
+                () => hubContext.RefreshConnectionAuthenticationAsync(null!, new RefreshConnectionAuthenticationOptions()));
             Assert.Equal("connectionToken", exception.ParamName);
 
             exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => hubContext.RefreshConnectionAuthenticationAsync(string.Empty, DateTimeOffset.UtcNow));
+                () => hubContext.RefreshConnectionAuthenticationAsync(string.Empty, new RefreshConnectionAuthenticationOptions()));
             Assert.Equal("connectionToken", exception.ParamName);
         }
 
@@ -48,9 +48,29 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var hubContext = CreateHubContext();
 
             var exception = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, DateTimeOffset.UtcNow.AddSeconds(-1)));
+                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, new RefreshConnectionAuthenticationOptions
+                {
+                    AuthenticationExpiresOn = DateTimeOffset.UtcNow.AddSeconds(-1),
+                }));
 
-            Assert.Equal("expireTime", exception.ParamName);
+            Assert.Equal("options", exception.ParamName);
+            _lifetimeManagerMock.Verify(
+                m => m.RefreshAuthAsync(It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task RefreshConnectionAuthenticationAsync_NonPositiveTokenLifetime_ThrowsArgumentOutOfRangeException()
+        {
+            var hubContext = CreateHubContext();
+
+            var exception = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, new RefreshConnectionAuthenticationOptions
+                {
+                    TokenLifetime = TimeSpan.Zero,
+                }));
+
+            Assert.Equal("options", exception.ParamName);
             _lifetimeManagerMock.Verify(
                 m => m.RefreshAuthAsync(It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()),
                 Times.Never);
@@ -66,7 +86,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var hubContext = CreateHubContext();
 
             await Assert.ThrowsAsync<AzureSignalRException>(
-                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, claims: claims));
+                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, new RefreshConnectionAuthenticationOptions
+                {
+                    Claims = claims,
+                }));
 
             _lifetimeManagerMock.Verify(
                 m => m.RefreshAuthAsync(ConnectionToken, DateTimeOffset.MaxValue, claims, It.IsAny<CancellationToken>()),
@@ -100,7 +123,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var hubContext = CreateHubContext();
 
                 await Assert.ThrowsAsync<AzureSignalRException>(
-                    () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, DateTimeOffset.UtcNow.AddMinutes(10)));
+                    () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, new RefreshConnectionAuthenticationOptions
+                    {
+                        AuthenticationExpiresOn = DateTimeOffset.UtcNow.AddMinutes(10),
+                    }));
             }
         }
 
@@ -115,7 +141,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var hubContext = CreateHubContext();
 
             await Assert.ThrowsAsync<AzureSignalRException>(
-                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, DateTimeOffset.UtcNow.AddMinutes(10)));
+                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, new RefreshConnectionAuthenticationOptions
+                {
+                    AuthenticationExpiresOn = DateTimeOffset.UtcNow.AddMinutes(10),
+                }));
         }
 
         [Fact]
@@ -128,7 +157,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var hubContext = CreateHubContext();
 
             await Assert.ThrowsAsync<AzureSignalRException>(
-                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, DateTimeOffset.UtcNow.AddMinutes(10)));
+                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, new RefreshConnectionAuthenticationOptions
+                {
+                    AuthenticationExpiresOn = DateTimeOffset.UtcNow.AddMinutes(10),
+                }));
         }
 
         [Fact]
@@ -149,12 +181,18 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             var hubContext = CreateHubContext();
 
-            var result = await hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, expireTime, postRefreshClaims);
+            var result = await hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, new RefreshConnectionAuthenticationOptions
+            {
+                AuthenticationExpiresOn = expireTime,
+                Claims = postRefreshClaims,
+                TokenLifetime = TimeSpan.FromMinutes(5),
+            });
 
             Assert.Equal("minted-token", result.AccessToken);
-            // min(AccessTokenLifetime, expireTime - now) -> capped by the ~10 min expireTime here.
-            Assert.InRange(result.TokenLifetimeSeconds, 1, 600);
-            providerMock.Verify(p => p.GenerateClientAccessTokenAsync(HubName, It.IsAny<IEnumerable<Claim>>(), It.IsAny<TimeSpan?>()), Times.Once);
+            Assert.InRange(result.TokenLifetimeSeconds, 299, 300);
+            providerMock.Verify(
+                p => p.GenerateClientAccessTokenAsync(HubName, It.IsAny<IEnumerable<Claim>>(), It.Is<TimeSpan?>(lifetime => lifetime >= TimeSpan.FromSeconds(299) && lifetime <= TimeSpan.FromMinutes(5))),
+                Times.Once);
         }
 
         [Fact]
@@ -186,7 +224,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             var result = await hubContext.RefreshConnectionAuthenticationAsync(
                 ConnectionToken,
-                claims: new[] { new Claim("role", "admin") });
+                new RefreshConnectionAuthenticationOptions
+                {
+                    Claims = new[] { new Claim("role", "admin") },
+                });
 
             Assert.Equal("minted-token", result.AccessToken);
             Assert.InRange(result.TokenLifetimeSeconds, 594, 600);
@@ -229,7 +270,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var hubContext = CreateHubContext();
 
             var exception = await Assert.ThrowsAsync<AzureSignalRException>(
-                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, DateTimeOffset.UtcNow.AddMinutes(10)));
+                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken, new RefreshConnectionAuthenticationOptions
+                {
+                    AuthenticationExpiresOn = DateTimeOffset.UtcNow.AddMinutes(10),
+                }));
             Assert.Contains("Unexpected refresh result", exception.Message);
         }
 

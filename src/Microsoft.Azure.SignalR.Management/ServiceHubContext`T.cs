@@ -58,10 +58,9 @@ namespace Microsoft.Azure.SignalR.Management
         /// then returns a refreshed service access token for the client.
         /// </summary>
         /// <param name="connectionToken">The connection token (the <c>id</c> from the client-facing refresh endpoint).</param>
-        /// <param name="expireTime">The new authentication expiration deadline. When null, the existing authentication expiration is preserved.</param>
-        /// <param name="claims">The projected application claim set; applied after the same-user check passes. When null, the existing claims are preserved. When both this parameter and <paramref name="expireTime"/> are null, only the service access token is renewed.</param>
+        /// <param name="options">The refresh options. When null, the existing authentication expiration and claims are preserved, and the default service-token lifetime is used.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        public virtual Task<RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, DateTimeOffset? expireTime = null, IEnumerable<Claim> claims = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public virtual Task<RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, RefreshConnectionAuthenticationOptions options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         /// <summary>
         /// Reads the current claim set of a live client connection.

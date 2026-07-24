@@ -24,8 +24,7 @@ internal static class ConnectionAuthenticationHelper
         IServiceHubLifetimeManager lifetimeManager,
         IServiceEndpointManager endpointManager,
         string connectionToken,
-        DateTimeOffset? expireTime,
-        IEnumerable<Claim> claims,
+        RefreshConnectionAuthenticationOptions options,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(connectionToken))
@@ -33,14 +32,20 @@ internal static class ConnectionAuthenticationHelper
             throw new ArgumentException("Argument cannot be null or empty.", nameof(connectionToken));
         }
 
+        options ??= new RefreshConnectionAuthenticationOptions();
+        var expireTime = options.AuthenticationExpiresOn;
         var utcExpireTime = expireTime?.ToUniversalTime() ?? DateTimeOffset.MaxValue;
 
         if (expireTime.HasValue && utcExpireTime <= DateTimeOffset.UtcNow)
         {
-            throw new ArgumentOutOfRangeException(nameof(expireTime), "The expiration time must be in the future.");
+            throw new ArgumentOutOfRangeException(nameof(options), $"{nameof(RefreshConnectionAuthenticationOptions.AuthenticationExpiresOn)} must be in the future.");
+        }
+        if (options.TokenLifetime <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), $"{nameof(RefreshConnectionAuthenticationOptions.TokenLifetime)} must be a positive value.");
         }
 
-        var result = await lifetimeManager.RefreshAuthAsync(connectionToken, utcExpireTime, claims, cancellationToken);
+        var result = await lifetimeManager.RefreshAuthAsync(connectionToken, utcExpireTime, options.Claims, cancellationToken);
         ThrowOnNonSuccess(result.Status);
 
         if (result.Claims == null || result.Claims.Count == 0)
@@ -48,7 +53,7 @@ internal static class ConnectionAuthenticationHelper
             throw new AzureSignalRException("The service did not return the post-refresh claim set required to mint the refreshed access token.");
         }
 
-        var accessTokenLifetime = ComputeAccessTokenLifetime(result.Claims, utcExpireTime);
+        var accessTokenLifetime = ComputeAccessTokenLifetime(result.Claims, utcExpireTime, options.TokenLifetime);
         if (accessTokenLifetime == TimeSpan.Zero)
         {
             throw new AzureSignalRException("The effective authentication expiration elapsed before the refreshed access token could be generated.");
@@ -64,7 +69,7 @@ internal static class ConnectionAuthenticationHelper
         return new RefreshConnectionAuthenticationResult(accessToken, tokenLifetimeSeconds);
     }
 
-    private static TimeSpan ComputeAccessTokenLifetime(IReadOnlyList<Claim> claims, DateTimeOffset requestedExpireTime)
+    private static TimeSpan ComputeAccessTokenLifetime(IReadOnlyList<Claim> claims, DateTimeOffset requestedExpireTime, TimeSpan configuredTokenLifetime)
     {
         DateTimeOffset? effectiveExpireTime = null;
         foreach (var claim in claims)
@@ -82,7 +87,7 @@ internal static class ConnectionAuthenticationHelper
             effectiveExpireTime = requestedExpireTime;
         }
 
-        var lifetime = Constants.Periods.DefaultAccessTokenLifetime;
+        var lifetime = configuredTokenLifetime;
         if (effectiveExpireTime.HasValue)
         {
             lifetime = TimeSpan.FromTicks(Math.Min(lifetime.Ticks, (effectiveExpireTime.Value - DateTimeOffset.UtcNow).Ticks));

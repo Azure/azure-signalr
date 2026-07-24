@@ -83,6 +83,13 @@ namespace Microsoft.Azure.SignalR.Management
         public NewtonsoftServiceHubProtocolOptions() { }
         public Newtonsoft.Json.JsonSerializerSettings PayloadSerializerSettings { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
     }
+    public sealed partial class RefreshConnectionAuthenticationOptions
+    {
+        public RefreshConnectionAuthenticationOptions() { }
+        public System.DateTimeOffset? AuthenticationExpiresOn { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> Claims { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.TimeSpan TokenLifetime { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+    }
     public sealed partial class RefreshConnectionAuthenticationResult
     {
         internal RefreshConnectionAuthenticationResult() { }
@@ -106,7 +113,7 @@ namespace Microsoft.Azure.SignalR.Management
         public virtual System.Collections.Generic.IEnumerable<Microsoft.Azure.SignalR.ServiceEndpoint> GetServiceEndpoints() { throw null; }
         public virtual System.Threading.Tasks.ValueTask<Microsoft.AspNetCore.Http.Connections.NegotiationResponse> NegotiateAsync(Microsoft.Azure.SignalR.Management.NegotiationOptions negotiationOptions = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual System.Threading.Tasks.Task<Microsoft.Azure.SignalR.Management.NegotiationResult> NegotiateWithTokenLifetimeAsync(Microsoft.Azure.SignalR.Management.NegotiationOptions negotiationOptions = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public virtual System.Threading.Tasks.Task<Microsoft.Azure.SignalR.Management.RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, System.DateTimeOffset? expireTime = default(System.DateTimeOffset?), System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public virtual System.Threading.Tasks.Task<Microsoft.Azure.SignalR.Management.RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, Microsoft.Azure.SignalR.Management.RefreshConnectionAuthenticationOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual Microsoft.Azure.SignalR.Management.ServiceHubContext WithEndpoints(System.Collections.Generic.IEnumerable<Microsoft.Azure.SignalR.ServiceEndpoint> endpoints) { throw null; }
     }
@@ -123,7 +130,7 @@ namespace Microsoft.Azure.SignalR.Management
         public virtual System.Threading.Tasks.Task<Microsoft.Azure.SignalR.Management.ConnectionClaims> GetConnectionClaimsAsync(string connectionToken, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public abstract System.Threading.Tasks.ValueTask<Microsoft.AspNetCore.Http.Connections.NegotiationResponse> NegotiateAsync(Microsoft.Azure.SignalR.Management.NegotiationOptions negotiationOptions = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         public virtual System.Threading.Tasks.Task<Microsoft.Azure.SignalR.Management.NegotiationResult> NegotiateWithTokenLifetimeAsync(Microsoft.Azure.SignalR.Management.NegotiationOptions negotiationOptions = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public virtual System.Threading.Tasks.Task<Microsoft.Azure.SignalR.Management.RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, System.DateTimeOffset? expireTime = default(System.DateTimeOffset?), System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public virtual System.Threading.Tasks.Task<Microsoft.Azure.SignalR.Management.RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, Microsoft.Azure.SignalR.Management.RefreshConnectionAuthenticationOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public abstract partial class ServiceManager : System.IDisposable
     {
