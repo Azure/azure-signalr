@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
@@ -154,6 +155,65 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             // min(AccessTokenLifetime, expireTime - now) -> capped by the ~10 min expireTime here.
             Assert.InRange(result.TokenLifetimeSeconds, 1, 600);
             providerMock.Verify(p => p.GenerateClientAccessTokenAsync(HubName, It.IsAny<IEnumerable<Claim>>(), It.IsAny<TimeSpan?>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task RefreshConnectionAuthenticationAsync_ClaimsOnly_UsesPreservedRuntimeExpiration()
+        {
+            var preservedExpireTime = DateTimeOffset.UtcNow.AddMinutes(10);
+            var postRefreshClaims = new[]
+            {
+                new Claim("role", "admin"),
+                new Claim(Constants.ClaimType.AuthExpiresOn, preservedExpireTime.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)),
+            };
+            var providerMock = new Mock<IServiceEndpointProvider>();
+            TimeSpan? generatedTokenLifetime = null;
+            providerMock
+                .Setup(p => p.GenerateClientAccessTokenAsync(HubName, postRefreshClaims, It.IsAny<TimeSpan?>()))
+                .Callback<string, IEnumerable<Claim>, TimeSpan?>((_, _, lifetime) => generatedTokenLifetime = lifetime)
+                .ReturnsAsync("minted-token");
+
+            var endpoint = new HubServiceEndpoint(HubName, providerMock.Object, new ServiceEndpoint(FakeEndpointUtils.GetFakeConnectionString(1).First()));
+            _lifetimeManagerMock
+                .Setup(m => m.RefreshAuthAsync(ConnectionToken, DateTimeOffset.MaxValue, It.IsAny<IEnumerable<Claim>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new RefreshAuthResult(AckStatus.Ok, postRefreshClaims, endpoint));
+            _endpointManagerMock.Setup(m => m.GetEndpointProvider(It.IsAny<ServiceEndpoint>())).Returns(providerMock.Object);
+            var hubContext = CreateHubContext();
+
+            var result = await hubContext.RefreshConnectionAuthenticationAsync(
+                ConnectionToken,
+                claims: new[] { new Claim("role", "admin") });
+
+            Assert.Equal("minted-token", result.AccessToken);
+            Assert.InRange(result.TokenLifetimeSeconds, 594, 600);
+            Assert.NotNull(generatedTokenLifetime);
+            Assert.InRange(generatedTokenLifetime.Value.TotalSeconds, 594, 600);
+        }
+
+        [Fact]
+        public async Task RefreshConnectionAuthenticationAsync_ElapsedRuntimeExpiration_ThrowsBeforeMintingToken()
+        {
+            var postRefreshClaims = new[]
+            {
+                new Claim("role", "admin"),
+                new Claim(
+                    Constants.ClaimType.AuthExpiresOn,
+                    DateTimeOffset.UtcNow.AddSeconds(-1).ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)),
+            };
+            var providerMock = new Mock<IServiceEndpointProvider>();
+            var endpoint = new HubServiceEndpoint(HubName, providerMock.Object, new ServiceEndpoint(FakeEndpointUtils.GetFakeConnectionString(1).First()));
+            _lifetimeManagerMock
+                .Setup(m => m.RefreshAuthAsync(ConnectionToken, DateTimeOffset.MaxValue, null, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new RefreshAuthResult(AckStatus.Ok, postRefreshClaims, endpoint));
+            var hubContext = CreateHubContext();
+
+            var exception = await Assert.ThrowsAsync<AzureSignalRException>(
+                () => hubContext.RefreshConnectionAuthenticationAsync(ConnectionToken));
+
+            Assert.Contains("expiration elapsed", exception.Message);
+            providerMock.Verify(
+                p => p.GenerateClientAccessTokenAsync(It.IsAny<string>(), It.IsAny<IEnumerable<Claim>>(), It.IsAny<TimeSpan?>()),
+                Times.Never);
         }
 
         [Fact]

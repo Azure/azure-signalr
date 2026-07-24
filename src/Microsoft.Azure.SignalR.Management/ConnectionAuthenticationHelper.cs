@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,14 +48,43 @@ internal static class ConnectionAuthenticationHelper
             throw new AzureSignalRException("The service did not return the post-refresh claim set required to mint the refreshed access token.");
         }
 
-        var accessTokenLifetime = Constants.Periods.DefaultAccessTokenLifetime;
+        var accessTokenLifetime = ComputeAccessTokenLifetime(result.Claims, utcExpireTime);
+        if (accessTokenLifetime == TimeSpan.Zero)
+        {
+            throw new AzureSignalRException("The effective authentication expiration elapsed before the refreshed access token could be generated.");
+        }
         var owningEndpoint = result.OwningEndpoint
             ?? throw new AzureSignalRException("Unexpected refresh result: The owning endpoint was not provided.");
         var provider = endpointManager.GetEndpointProvider(owningEndpoint);
         var accessToken = await provider.GenerateClientAccessTokenAsync(hubName, result.Claims, accessTokenLifetime);
-        var remainingSeconds = Math.Max(0, (utcExpireTime - DateTimeOffset.UtcNow).TotalSeconds);
-        var tokenLifetimeSeconds = (int)Math.Min(accessTokenLifetime.TotalSeconds, remainingSeconds);
+        var tokenLifetimeSeconds = (int)accessTokenLifetime.TotalSeconds;
         return new RefreshConnectionAuthenticationResult(accessToken, tokenLifetimeSeconds);
+    }
+
+    private static TimeSpan ComputeAccessTokenLifetime(IReadOnlyList<Claim> claims, DateTimeOffset requestedExpireTime)
+    {
+        DateTimeOffset? effectiveExpireTime = null;
+        foreach (var claim in claims)
+        {
+            if (claim.Type == Constants.ClaimType.AuthExpiresOn
+                && long.TryParse(claim.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var unixSeconds))
+            {
+                effectiveExpireTime = DateTimeOffset.FromUnixTimeSeconds(unixSeconds);
+                break;
+            }
+        }
+
+        if (!effectiveExpireTime.HasValue && requestedExpireTime != DateTimeOffset.MaxValue)
+        {
+            effectiveExpireTime = requestedExpireTime;
+        }
+
+        var lifetime = Constants.Periods.DefaultAccessTokenLifetime;
+        if (effectiveExpireTime.HasValue)
+        {
+            lifetime = TimeSpan.FromTicks(Math.Min(lifetime.Ticks, (effectiveExpireTime.Value - DateTimeOffset.UtcNow).Ticks));
+        }
+        return lifetime > TimeSpan.Zero ? lifetime : TimeSpan.Zero;
     }
 
     public static async Task<ConnectionClaims> GetConnectionClaimsAsync(
