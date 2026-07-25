@@ -61,24 +61,19 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddMvc();
-        services.AddSignalR()
-            .AddAzureSignalR(option =>
-            {
-                TokenCredential credential = AuthType switch
-                {
-                    AuthTypes.VisualStudio => new VisualStudioCodeCredential(),
-                    AuthTypes.ApplicationWithCertificate => new ClientCertificateCredential(TenantId, AppClientId, "path-to-cert-file"),
-                    AuthTypes.ApplicationWithClientSecret => new ClientSecretCredential(TenantId, AppClientId, "client-secret-value"),
-                    AuthTypes.ApplicationWithFederatedIdentity => GetClientAssertionCredential(TenantId, AppClientId, MsiClientId),
-                    AuthTypes.SystemAssignedManagedIdentity => new ManagedIdentityCredential(),
-                    AuthTypes.UserAssignedManagedIdentity => new ManagedIdentityCredential(MsiClientId),
-                    _ => throw new NotImplementedException(),
-                };
+        var builder = services.AddSignalR()
+            .AddNamedAzureSignalR("signalr1");
+        builder.Services.Configure<ServiceOptions>(option =>
+        {
+            option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
+            option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(30);
 
-                option.Endpoints = [
-                    new ServiceEndpoint(new Uri(Endpoint), credential)
-                ];
-            })
+            option.GracefulShutdown.Add<ChatHub>(async (c) =>
+            {
+                await c.Clients.All.SendAsync("exit");
+            });
+        });
+        builder
             .AddMessagePackProtocol();
     }
 

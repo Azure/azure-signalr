@@ -16,33 +16,68 @@ namespace ChatSample.CSharpClient
     {
         static async Task Main(string[] args)
         {
-            var url = "http://localhost:5050";
+            var url = Environment.GetEnvironmentVariable("ServerEndpoint") ?? "http://localhost:5050";
+            var mode = Mode.Broadcast;
+            
+            // Try to parse mode from environment variable
+            var modeEnv = Environment.GetEnvironmentVariable("MODE");
+            if (!string.IsNullOrEmpty(modeEnv))
+            {
+                Enum.TryParse<Mode>(modeEnv, true, out mode);
+            }
+            
             var proxy = await ConnectAsync(url + "/chat", Console.Out).ConfigureAwait(false);
             var currentUser = Guid.NewGuid().ToString("N");
 
-            Mode mode = Mode.Broadcast;
             if (args.Length > 0)
             {
                 Enum.TryParse(args[0], true, out mode);
             }
 
             Console.WriteLine($"Logged in as user {currentUser}");
-            var input = Console.ReadLine();
-            while (!string.IsNullOrEmpty(input))
+            if (mode == Mode.Auto)
             {
-                switch (mode)
+                // auto mode - runs until process is terminated
+                using var cts = new CancellationTokenSource();
+                Console.CancelKeyPress += (s, e) => 
                 {
-                    case Mode.Broadcast:
-                        await proxy.InvokeAsync("BroadcastMessage", currentUser, input).ConfigureAwait(false);
-                        break;
-                    case Mode.Echo:
-                        await proxy.InvokeAsync("echo", input).ConfigureAwait(false);
-                        break;
-                    default:
-                        break;
+                    e.Cancel = true;
+                    cts.Cancel();
+                };
+                
+                try
+                {
+                    while (!cts.Token.IsCancellationRequested)
+                    {
+                        Console.WriteLine("Broadcasting...");
+                        await proxy.InvokeAsync("BroadcastMessage", currentUser, $"Current time: {DateTime.Now}").ConfigureAwait(false);
+                        await Task.Delay(5000, cts.Token).ConfigureAwait(false);
+                    }
                 }
+                catch (OperationCanceledException)
+                {
+                    Console.WriteLine("Auto mode cancelled.");
+                }
+            }
+            else
+            {
+                var input = Console.ReadLine();
+                while (!string.IsNullOrEmpty(input))
+                {
+                    switch (mode)
+                    {
+                        case Mode.Broadcast:
+                            await proxy.InvokeAsync("BroadcastMessage", currentUser, input).ConfigureAwait(false);
+                            break;
+                        case Mode.Echo:
+                            await proxy.InvokeAsync("echo", input).ConfigureAwait(false);
+                            break;
+                        default:
+                            break;
+                    }
 
-                input = Console.ReadLine();
+                    input = Console.ReadLine();
+                }
             }
         }
         private static async Task<HubConnection> ConnectAsync(string url, TextWriter output, CancellationToken cancellationToken = default)
@@ -105,6 +140,7 @@ namespace ChatSample.CSharpClient
         {
             Broadcast,
             Echo,
+            Auto
         }
     }
 }

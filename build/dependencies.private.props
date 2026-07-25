@@ -22,5 +22,9 @@
     <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>
     <MicrosoftConfigurationEnvironmentVariablesVersion>2.2.0</MicrosoftConfigurationEnvironmentVariablesVersion>
     <E2eTestUserSecretId>E2eTestUserSecret</E2eTestUserSecretId>
+
+    <AspireHostingAppHostPackageVersion>13.1.0</AspireHostingAppHostPackageVersion>
+    <AspireHostingAzureSignalRPackageVersion>13.1.0</AspireHostingAzureSignalRPackageVersion>
+
   </PropertyGroup>
 </Project>

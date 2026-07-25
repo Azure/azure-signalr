@@ -9,35 +9,48 @@ This sample demonstrates how to use Azure SignalR Service with ASP.NET Core Sign
 - Git (for submodule dependencies)
 - Docker (optional, for containerized deployment)
 
-## Setup
-
-1. Initialize the required submodules:
-
-```bash
-git submodule update --init --recursive
-```
-
-2. Configure your Azure SignalR Service connection string:
-
-   - Update `appsettings.json` by replacing the empty connection string:
-
-    ```json
-    {
-      "Azure": {
-        "SignalR": {
-          "ConnectionString": "<your-connection-string>"
-        }
-      }
-    }
-    ```
-
-   ⚠️ **Important**: Make sure to set your connection string before building the Docker image or running the application.
-
 ## Running the Sample
 
-### Option 1: Running Locally
+### Option 1: Run with .NET Aspire (Recommended)
 
-1. Build and run the project:
+[.NET Aspire](https://learn.microsoft.com/dotnet/aspire/get-started/aspire-overview#orchestration) is used to orchestrate the samples.
+
+To work with .NET Aspire, you need the following installed locally:
+- [.NET 8.0](https://dotnet.microsoft.com/download/dotnet/8.0)
+- .NET Aspire workload:
+  - Installed with the [Visual Studio installer](https://learn.microsoft.com/dotnet/aspire/fundamentals/setup-tooling?tabs=visual-studio#install-net-aspire) or [the .NET CLI workload](https://learn.microsoft.com/dotnet/aspire/fundamentals/setup-tooling?tabs=dotnet-cli#install-net-aspire).
+- An OCI compliant container runtime, such as:
+  - [Docker Desktop](https://www.docker.com/products/docker-desktop) or [Podman](https://podman.io/).
+ 
+In Visual Studio, set **samples/Samples.AppHost** project as the Startup Project. Right click **Connected Services** and select **Azure Resource Provisioning Settings** and select your Azure subscription, region and resource group to use.
+
+Alternatively, you could add Azure related configurations in the appsettings.json file:
+  ```json
+  {
+    "Azure": {
+      "SubscriptionId": "your subscription",
+      "Location": "your location"
+    }
+  }
+  ```
+
+Run the project and use Aspire dashboard to navigate to different samples.
+
+### Option 2: Run without Aspire
+
+Aspire helps you to automatically provision a new Azure SignalR resource and set the connection strings for the sample to use automatically. You could still use the traditional way to set the connection strings by yourself and run the sample directly. Samples now use named connection string `AddNamedAzureSignalR("signalr1")`. Set your connection string to `Azure:SignalR:signalr1:ConnectionString`, or `ConnectionStrings:signalr1`:
+
+```bash
+dotnet user-secrets set Azure:SignalR:signalr1:ConnectionString "<Your connection string>"
+```
+
+Or:
+
+```bash
+dotnet user-secrets set ConnectionStrings:signalr1 "<Your connection string>"
+```
+
+Then build and run:
 
 ```bash
 dotnet build
@@ -50,16 +63,22 @@ You can also specify a custom port:
 dotnet run --urls="http://localhost:5050"
 ```
 
-### Option 2: Running with Docker
+### Option 3: Running with Docker
 
-1. Build the Docker image:
+1. Initialize the required submodules:
+
+```bash
+git submodule update --init --recursive
+```
+
+2. Build the Docker image:
 ```bash
 docker build -t chat-app -f samples/ChatSample/ChatSample/Dockerfile .
 ```
 
-2. Run the container:
+3. Run the container:
 ```bash
-docker run -d -p 5050:5050 chat-app
+docker run -d -p 5050:5050 -e "ConnectionStrings__signalr1=<your-connection-string>" chat-app
 ```
 
 Additional Docker commands:
