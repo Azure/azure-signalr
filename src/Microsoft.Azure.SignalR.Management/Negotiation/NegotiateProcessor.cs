@@ -46,10 +46,10 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentOutOfRangeException(nameof(negotiationOptions), $"{nameof(NegotiationOptions.TokenLifetime)} must be a positive value.");
             }
             var authenticationExpiresOnOption = negotiationOptions.AuthenticationExpiresOn;
-            DateTimeOffset? authenticationExpiresOn;
+            DateTimeOffset authenticationExpiresOn;
             if (authenticationExpiresOnOption == DateTimeOffset.MaxValue)
             {
-                authenticationExpiresOn = null;
+                authenticationExpiresOn = DateTimeOffset.MaxValue;
             }
             else if (authenticationExpiresOnOption.HasValue)
             {
@@ -61,11 +61,11 @@ namespace Microsoft.Azure.SignalR.Management
             }
             else
             {
-                authenticationExpiresOn = null;
+                authenticationExpiresOn = DateTimeOffset.MaxValue;
             }
-            if (authenticationExpiresOn.HasValue)
+            if (authenticationExpiresOn != DateTimeOffset.MaxValue)
             {
-                var remainingAuthenticationLifetime = authenticationExpiresOn.Value - DateTimeOffset.UtcNow;
+                var remainingAuthenticationLifetime = authenticationExpiresOn - DateTimeOffset.UtcNow;
                 if (remainingAuthenticationLifetime <= TimeSpan.Zero)
                 {
                     throw new ArgumentOutOfRangeException(nameof(negotiationOptions), $"{nameof(NegotiationOptions.AuthenticationExpiresOn)} must be in the future.");

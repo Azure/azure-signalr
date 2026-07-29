@@ -125,7 +125,9 @@ namespace Microsoft.Azure.SignalR
                 yield return new Claim(Constants.ClaimType.HttpTransportType, ((int)httpTransportType).ToString(CultureInfo.InvariantCulture));
             }
 
-            if (closeOnAuthenticationExpiration && authenticationExpiresOn != null && authenticationExpiresOn.HasValue)
+            if (closeOnAuthenticationExpiration
+                && authenticationExpiresOn.HasValue
+                && authenticationExpiresOn != DateTimeOffset.MaxValue)
             {
                 yield return new Claim(Constants.ClaimType.CloseOnAuthExpiration, "true");
                 yield return new Claim(Constants.ClaimType.AuthExpiresOn, authenticationExpiresOn.Value.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture));
