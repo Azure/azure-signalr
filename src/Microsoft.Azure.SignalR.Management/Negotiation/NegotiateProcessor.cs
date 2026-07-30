@@ -40,6 +40,14 @@ namespace Microsoft.Azure.SignalR.Management
             var claims = negotiationOptions.Claims;
             var isDiagnosticClient = negotiationOptions.IsDiagnosticClient;
             var enableDetailedErrors = negotiationOptions.EnableDetailedErrors;
+
+            // Calculate the effective service-token lifetime in two stages:
+            // 1. TokenLifetime is the caller-supplied maximum and must be positive.
+            // 2. Normalize AuthenticationExpiresOn to UTC. MaxValue means no authentication deadline; when it is omitted, close-on-auth uses the legacy now + TokenLifetime deadline, while close-on-auth disabled also uses MaxValue.
+            // 3. For a real deadline, reject an already-expired value and cap the token maximum by the remaining authentication lifetime: min(TokenLifetime, AuthenticationExpiresOn - now).
+            // This keeps the service credential from outliving the app authentication that authorized it.
+            // Serverless applies the cap whenever a real deadline exists, even when refresh is disabled.
+            // Default mode applies the same cap only when refresh is enabled.
             var lifetime = negotiationOptions.TokenLifetime;
             if (lifetime <= TimeSpan.Zero)
             {
@@ -70,7 +78,7 @@ namespace Microsoft.Azure.SignalR.Management
                 {
                     throw new ArgumentOutOfRangeException(nameof(negotiationOptions), $"{nameof(NegotiationOptions.AuthenticationExpiresOn)} must be in the future.");
                 }
-                if (negotiationOptions.EnableAuthenticationRefresh && remainingAuthenticationLifetime < lifetime)
+                if (remainingAuthenticationLifetime < lifetime)
                 {
                     lifetime = remainingAuthenticationLifetime;
                 }
