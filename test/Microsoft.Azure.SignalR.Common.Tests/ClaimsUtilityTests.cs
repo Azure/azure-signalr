@@ -170,5 +170,58 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                 Assert.Single(prepared);
             }
         }
+
+        [Fact]
+        public void PrepareClaimsForTokenPreservesIdenticalClaimsFromSameOriginalType()
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "alice", ClaimValueTypes.String),
+                new Claim(ClaimTypes.NameIdentifier, "alice", ClaimValueTypes.String),
+                new Claim(ClaimTypes.NameIdentifier, "alice", ClaimValueTypes.String),
+            };
+
+            var prepared = ClaimsUtility.PrepareClaimsForToken(claims);
+
+            Assert.Equal(3, prepared.Count);
+            Assert.All(prepared, claim =>
+            {
+                Assert.Equal(ClaimTypes.NameIdentifier, claim.Type);
+                Assert.Equal("alice", claim.Value);
+                Assert.Equal(ClaimValueTypes.String, claim.ValueType);
+            });
+        }
+
+        [Fact]
+        public void PrepareClaimsForTokenPreservesAliasesWithDifferentValues()
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "alice"),
+                new Claim("nameid", "bob"),
+            };
+
+            var prepared = ClaimsUtility.PrepareClaimsForToken(claims);
+
+            Assert.Equal(2, prepared.Count);
+            Assert.Equal("alice", prepared[0].Value);
+            Assert.Equal("bob", prepared[1].Value);
+        }
+
+        [Fact]
+        public void PrepareClaimsForTokenPreservesAliasesWithDifferentValueTypes()
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "1", ClaimValueTypes.String),
+                new Claim("nameid", "1", ClaimValueTypes.Integer),
+            };
+
+            var prepared = ClaimsUtility.PrepareClaimsForToken(claims);
+
+            Assert.Equal(2, prepared.Count);
+            Assert.Equal(ClaimValueTypes.String, prepared[0].ValueType);
+            Assert.Equal(ClaimValueTypes.Integer, prepared[1].ValueType);
+        }
     }
 }

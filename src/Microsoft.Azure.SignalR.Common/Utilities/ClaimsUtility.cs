@@ -175,7 +175,7 @@ namespace Microsoft.Azure.SignalR
         internal static IReadOnlyList<Claim> PrepareClaimsForToken(IReadOnlyList<Claim> claims)
         {
             var preparedClaims = new List<Claim>(claims.Count);
-            var seenClaims = new HashSet<string>(StringComparer.Ordinal);
+            var claimSourceTypes = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var claim in claims)
             {
                 if (TokenGeneratedClaimTypes.Contains(claim.Type))
@@ -187,7 +187,12 @@ namespace Microsoft.Azure.SignalR
                     ? outboundType
                     : claim.Type;
                 var key = string.Concat(canonicalType, "\0", claim.Value, "\0", claim.ValueType);
-                if (seenClaims.Add(key))
+                if (!claimSourceTypes.TryGetValue(key, out var sourceType))
+                {
+                    claimSourceTypes.Add(key, claim.Type);
+                    preparedClaims.Add(claim);
+                }
+                else if (string.Equals(sourceType, claim.Type, StringComparison.Ordinal))
                 {
                     preparedClaims.Add(claim);
                 }
