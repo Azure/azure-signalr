@@ -33,6 +33,14 @@ jobs:
           - '**.targets'
           - '*.sh'
           - '*.sln'
+          emulator:
+          - '.dockerignore'
+          - 'build/**'
+          - 'Directory.Build.props'
+          - 'microsoft.png'
+          - 'version.props'
+          - 'src/Common/MemoryBufferWriter.cs'
+          - 'src/Microsoft.Azure.SignalR.Emulator/**'
     - name: Update SubModules
       run: git submodule update --init --recursive
       if: steps.filter.outputs.src == 'true'
@@ -48,6 +56,17 @@ jobs:
         dotnet-quality: 'daily'
     - name: Display dotnet version
       run: dotnet --version
+    - name: Build emulator container
+      run: |
+        emulator_version="$(dotnet msbuild src/Microsoft.Azure.SignalR.Emulator/Microsoft.Azure.SignalR.Emulator.csproj -nologo -getProperty:VersionPrefix)"
+        docker build \
+          --build-arg "SOURCE_REVISION=${{ github.sha }}" \
+          --build-arg "VERSION=${emulator_version}" \
+          --build-arg "VERSION_SUFFIX=rtm" \
+          --file src/Microsoft.Azure.SignalR.Emulator/Dockerfile \
+          --tag signalr-emulator:ci \
+          .
+      if: steps.filter.outputs.emulator == 'true'
     - name: Build with dotnet
       run:  "dotnet build AzureSignalR.sln /p:DisableNet461Tests=true"
       if: steps.filter.outputs.src == 'true'
