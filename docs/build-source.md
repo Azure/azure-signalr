@@ -48,15 +48,17 @@ docker run --rm -p 8888:8888 signalr-emulator:dev
 
 ### Releasing the emulator container
 
-When a final emulator release is queued with both `isFinalBuild` and `releaseEmulator` set to `true`, the official pipeline in `.azure/pipelines/release.yml` packs the emulator once. The container job downloads that exact pipeline artifact, reads its version from the embedded nuspec, and installs the nupkg from a local feed. The same artifact is uploaded through the existing NuGet partner-release path, so container publication does not depend on NuGet.org indexing or propagation.
+The repository previously contained the Dockerfile but no image build or publication automation. Repository history does not establish whether the 2024 MCR image was published manually or by an external pipeline. The jobs described here are the first explicit, repository-owned image publication path.
 
-The container job runs only after the partner-drop job succeeds, then pushes both the package version tag and `latest` to the `signalr/signalr-emulator` repository in the team's ACR. The existing Microsoft Artifact Registry (MAR) onboarding must syndicate that repository to `mcr.microsoft.com/signalr/signalr-emulator`; Aspire consumes its `latest` tag on port 8888.
+When a final emulator release is queued with both `isFinalBuild` and `releaseEmulator` set to `true`, the official pipeline in `.azure/pipelines/release.yml` packs the emulator once. The new container job is integrated there, rather than in a standalone image pipeline, because `Phase_1` already exposes the exact nupkg that the partner-release job publishes. The container job downloads that artifact, reads its version from the embedded nuspec, and installs the nupkg from a local feed. This guarantees package identity without depending on NuGet.org indexing or propagation.
+
+The container job runs only after the partner-drop job succeeds, then pushes both the package version tag and `latest` to the `signalr/signalr-emulator` repository in the configured ACR. A Microsoft Artifact Registry (MAR) mapping must be configured or confirmed to syndicate that repository to `mcr.microsoft.com/signalr/signalr-emulator`; Aspire consumes its `latest` tag on port 8888.
 
 The current pipeline does not produce a prebuilt OCI image artifact, so the container job creates a new image digest from the exact release nupkg; it never compiles emulator source in Docker. If a future release pipeline produces an immutable image artifact before publication, publish that artifact by retagging and pushing it instead of rebuilding it.
 
 For a previously released version whose pipeline artifact is no longer retained, queue the same pipeline with `emulatorContainerPackageVersion` set to the exact version. This backfill mode skips package production, waits up to 30 minutes for only that version to become downloadable from NuGet.org, and never resolves an unpinned or `latest` package. Use `1.6.1` for the initial image correction.
 
-The release pipeline requires the `EmulatorContainerRegistry` variable and an `EmulatorContainerRegistryServiceConnection` Azure Resource Manager service connection. Its identity needs `Contributor` on the registry, or a custom role that can read the registry and call `scheduleRun` and `listBuildSourceUploadUrl`; `AcrPush` alone cannot queue an ACR build. The registry must also allow ACR Tasks build compute through its network configuration. Configure these protected values in Azure Pipelines rather than in the repository.
+The release pipeline requires the `EmulatorContainerRegistry` variable and an `EmulatorContainerRegistryServiceConnection` Azure Resource Manager service connection. Its identity needs `Contributor` on the registry, or a custom role that can read the registry and call `scheduleRun` and `listBuildSourceUploadUrl`; `AcrPush` alone cannot queue an ACR build. The registry must also allow ACR Tasks build compute through its network configuration. No registry name, service connection identifier, or MAR configuration is checked in; configure or confirm those protected values in Azure Pipelines and the publishing environment.
 
 ## Public API changes
 
