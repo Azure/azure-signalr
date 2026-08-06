@@ -1,36 +1,31 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+ARG EMULATOR_FEED=https://api.nuget.org/v3/index.json
+ARG EMULATOR_VERSION
 
-ARG BUILD_NUMBER=t000
-ARG VERSION_SUFFIX=preview1
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS installer
 
-WORKDIR /src
+ARG EMULATOR_FEED
+ARG EMULATOR_VERSION
 
-COPY Directory.Build.props version.props microsoft.png ./
-COPY build/ build/
-COPY src/Common/MemoryBufferWriter.cs src/Common/MemoryBufferWriter.cs
-COPY src/Microsoft.Azure.SignalR.Emulator/ src/Microsoft.Azure.SignalR.Emulator/
-
-RUN dotnet publish src/Microsoft.Azure.SignalR.Emulator/Microsoft.Azure.SignalR.Emulator.csproj \
-    --configuration Release \
-    --output /emulator \
-    /p:BuildNumber="${BUILD_NUMBER}" \
-    /p:IsFinalBuild=true \
-    /p:VersionSuffix="${VERSION_SUFFIX}"
+RUN test -n "${EMULATOR_VERSION}" \
+    && dotnet tool install --global Microsoft.Azure.SignalR.Emulator \
+        --version "${EMULATOR_VERSION}" \
+        --add-source "${EMULATOR_FEED}" \
+        --no-cache
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 
-ARG SOURCE_REVISION=unknown
-ARG VERSION=dev
+ARG EMULATOR_VERSION
 
 LABEL org.opencontainers.image.description="Local emulator for Azure SignalR Service serverless scenarios" \
-      org.opencontainers.image.revision="${SOURCE_REVISION}" \
       org.opencontainers.image.source="https://github.com/Azure/azure-signalr" \
       org.opencontainers.image.title="Azure SignalR Emulator" \
-      org.opencontainers.image.version="${VERSION}"
+      org.opencontainers.image.version="${EMULATOR_VERSION}"
 
 WORKDIR /emulator
-COPY --from=build /emulator .
+COPY --from=installer /root/.dotnet/tools /root/.dotnet/tools
+
+ENV PATH="/root/.dotnet/tools:${PATH}"
 
 EXPOSE 8888
 
-ENTRYPOINT ["dotnet", "Microsoft.Azure.SignalR.Emulator.dll", "start", "-i", "0.0.0.0"]
+ENTRYPOINT ["asrs-emulator", "start", "-i", "0.0.0.0"]

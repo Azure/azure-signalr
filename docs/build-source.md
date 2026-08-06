@@ -39,16 +39,18 @@ The solution file is **AzureSignalR.sln** in the root.
 
 ## Building the emulator container
 
-Build the emulator image from the repository root so the Docker build uses the same source and version metadata as the .NET tool:
+The container installs an exact, already released version of the `Microsoft.Azure.SignalR.Emulator` NuGet dotnet tool. To build the image with the current released version:
 
 ```
-docker build -f src/Microsoft.Azure.SignalR.Emulator/Dockerfile -t signalr-emulator:dev .
+docker build --build-arg EMULATOR_VERSION=1.6.1 -f src/Microsoft.Azure.SignalR.Emulator/Dockerfile -t signalr-emulator:dev src/Microsoft.Azure.SignalR.Emulator
 docker run --rm -p 8888:8888 signalr-emulator:dev
 ```
 
 ### Releasing the emulator container
 
-The official pipeline in `.azure/pipelines/release.yml` publishes the emulator container whenever a final emulator release is queued with both `isFinalBuild` and `releaseEmulator` set to `true`. The pipeline reads the emulator version from `version.props`, builds the Linux/amd64 image from that release's source, and pushes both the version tag and `latest` to the `signalr/signalr-emulator` repository in the team's ACR. The existing Microsoft Artifact Registry (MAR) onboarding must syndicate that ACR repository to `mcr.microsoft.com/signalr/signalr-emulator`; Aspire consumes its `latest` tag on port 8888.
+The NuGet partner-drop job does not make a package immediately available on NuGet.org, so container publication is deliberately separate from `releaseEmulator`. Every Monday, the official pipeline in `.azure/pipelines/release.yml` reads the latest stable `Microsoft.Azure.SignalR.Emulator` version from NuGet.org, verifies that its package is downloadable, and builds the Linux/amd64 image with that exact version. To publish immediately after a package reaches NuGet.org, queue the pipeline with `releaseEmulatorContainer` set to `true` and optionally set `emulatorPackageVersion` to the exact released version. The package-release stage is skipped during container-only runs.
+
+The container stage pushes both the package version tag and `latest` to the `signalr/signalr-emulator` repository in the team's ACR. The existing Microsoft Artifact Registry (MAR) onboarding must syndicate that repository to `mcr.microsoft.com/signalr/signalr-emulator`; Aspire consumes its `latest` tag on port 8888.
 
 The release pipeline requires the `EmulatorContainerRegistry` variable and an `EmulatorContainerRegistryServiceConnection` Azure Resource Manager service connection. Its identity needs `Contributor` on the registry, or a custom role that can read the registry and call `scheduleRun` and `listBuildSourceUploadUrl`; `AcrPush` alone cannot queue an ACR build. The registry must also allow ACR Tasks build compute through its network configuration. Configure these protected values in Azure Pipelines rather than in the repository.
 

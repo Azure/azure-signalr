@@ -1,6 +1,2 @@
 .vs/
 .git/
-**/bin/
-**/obj/
-artifacts/
-TestResults*/
