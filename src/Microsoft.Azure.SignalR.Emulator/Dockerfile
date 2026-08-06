@@ -6,10 +6,21 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS installer
 ARG EMULATOR_FEED
 ARG EMULATOR_VERSION
 
+COPY . /context
+
 RUN test -n "${EMULATOR_VERSION}" \
+    && printf '%s\n' \
+        '<?xml version="1.0" encoding="utf-8"?>' \
+        '<configuration>' \
+        '  <packageSources>' \
+        '    <clear />' \
+        '  </packageSources>' \
+        '</configuration>' \
+        > /tmp/NuGet.Config \
     && dotnet tool install --global Microsoft.Azure.SignalR.Emulator \
         --version "${EMULATOR_VERSION}" \
         --add-source "${EMULATOR_FEED}" \
+        --configfile /tmp/NuGet.Config \
         --no-cache
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0

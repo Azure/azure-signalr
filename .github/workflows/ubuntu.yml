@@ -34,6 +34,7 @@ jobs:
           - '*.sh'
           - '*.sln'
           emulator:
+          - 'src/Microsoft.Azure.SignalR.Emulator/.dockerignore'
           - 'src/Microsoft.Azure.SignalR.Emulator/Dockerfile'
     - name: Update SubModules
       run: git submodule update --init --recursive
@@ -54,11 +55,19 @@ jobs:
       run: |
         emulator_version="$(curl --fail --silent --show-error https://api.nuget.org/v3-flatcontainer/microsoft.azure.signalr.emulator/index.json | jq --raw-output '[.versions[] | select(contains("-") | not)] | last')"
         test -n "${emulator_version}" && test "${emulator_version}" != "null"
+        context="${RUNNER_TEMP}/emulator-container"
+        mkdir -p "${context}/packages"
+        cp src/Microsoft.Azure.SignalR.Emulator/Dockerfile "${context}"
+        cp src/Microsoft.Azure.SignalR.Emulator/.dockerignore "${context}"
+        curl --fail --location --silent --show-error \
+          "https://api.nuget.org/v3-flatcontainer/microsoft.azure.signalr.emulator/${emulator_version}/microsoft.azure.signalr.emulator.${emulator_version}.nupkg" \
+          --output "${context}/packages/Microsoft.Azure.SignalR.Emulator.${emulator_version}.nupkg"
         docker build \
+          --build-arg "EMULATOR_FEED=/context/packages" \
           --build-arg "EMULATOR_VERSION=${emulator_version}" \
-          --file src/Microsoft.Azure.SignalR.Emulator/Dockerfile \
+          --file "${context}/Dockerfile" \
           --tag signalr-emulator:ci \
-          src/Microsoft.Azure.SignalR.Emulator
+          "${context}"
         docker run --rm --entrypoint sh signalr-emulator:ci \
           -c "test -d /root/.dotnet/tools/.store/microsoft.azure.signalr.emulator/${emulator_version}"
         docker run --rm --entrypoint asrs-emulator signalr-emulator:ci --help
