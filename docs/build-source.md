@@ -52,6 +52,8 @@ When a final emulator release is queued with both `isFinalBuild` and `releaseEmu
 
 The container job runs only after the partner-drop job succeeds, then pushes both the package version tag and `latest` to the `signalr/signalr-emulator` repository in the team's ACR. The existing Microsoft Artifact Registry (MAR) onboarding must syndicate that repository to `mcr.microsoft.com/signalr/signalr-emulator`; Aspire consumes its `latest` tag on port 8888.
 
+The current pipeline does not produce a prebuilt OCI image artifact, so the container job creates a new image digest from the exact release nupkg; it never compiles emulator source in Docker. If a future release pipeline produces an immutable image artifact before publication, publish that artifact by retagging and pushing it instead of rebuilding it.
+
 For a previously released version whose pipeline artifact is no longer retained, queue the same pipeline with `emulatorContainerPackageVersion` set to the exact version. This backfill mode skips package production, waits up to 30 minutes for only that version to become downloadable from NuGet.org, and never resolves an unpinned or `latest` package. Use `1.6.1` for the initial image correction.
 
 The release pipeline requires the `EmulatorContainerRegistry` variable and an `EmulatorContainerRegistryServiceConnection` Azure Resource Manager service connection. Its identity needs `Contributor` on the registry, or a custom role that can read the registry and call `scheduleRun` and `listBuildSourceUploadUrl`; `AcrPush` alone cannot queue an ACR build. The registry must also allow ACR Tasks build compute through its network configuration. Configure these protected values in Azure Pipelines rather than in the repository.
