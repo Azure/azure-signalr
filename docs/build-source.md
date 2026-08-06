@@ -48,15 +48,11 @@ docker run --rm -p 8888:8888 signalr-emulator:dev
 
 ### Releasing the emulator container
 
-The repository previously contained the Dockerfile but no image build or publication automation. Repository history does not establish whether the 2024 MCR image was published manually or by an external pipeline. The pipeline described here is the first explicit, repository-owned image publication path.
+The repository previously had no emulator image publication automation. After the emulator package is available on NuGet.org, queue `.azure/pipelines/release-emulator-container.yml` with its exact stable `emulatorPackageVersion`. Use `1.6.1` for the initial update.
 
-Image publication is a separate, explicit post-release action. After `Microsoft.Azure.SignalR.Emulator` is publicly downloadable from NuGet.org, queue `.azure/pipelines/release-emulator-container.yml` with `emulatorPackageVersion` set to that exact stable version. Use `1.6.1` for the initial image correction.
+The pipeline is manual and does not resolve the latest package. It validates the requested version, refuses to overwrite an existing version tag, builds with ACR Tasks, publishes `<version>` and `latest`, and locks the version tag. MAR must map `signalr/signalr-emulator` to `mcr.microsoft.com/signalr/signalr-emulator`.
 
-The pipeline has no trigger, pull request validation, schedule, or latest-version lookup. It validates and downloads only the requested package, refuses to overwrite an existing versioned image tag, then uses ACR Tasks to build the Dockerfile with that exact version. A successful run publishes both `<version>` and `latest` tags to the `signalr/signalr-emulator` repository in the configured ACR, then locks the versioned tag against updates and deletion while leaving `latest` mutable.
-
-A Microsoft Artifact Registry (MAR) mapping must be configured or confirmed to syndicate the ACR repository to `mcr.microsoft.com/signalr/signalr-emulator`; Aspire consumes its `latest` tag on port 8888. The Dockerfile installs the exact released NuGet tool and never compiles or packs emulator source.
-
-The image pipeline requires the `EmulatorContainerRegistry` variable and an `EmulatorContainerRegistryServiceConnection` Azure Resource Manager service connection. Configure an exclusive lock check on that protected service connection; the pipeline's sequential lock behavior prevents concurrent publication runs from racing on the same version tag. Its identity needs permission to list and update repository tag attributes and queue ACR Tasks builds, including `scheduleRun` and `listBuildSourceUploadUrl`; `AcrPush` alone cannot queue a build. The registry must also allow ACR Tasks build compute through its network configuration. No registry name, service connection identifier, or MAR configuration is checked in; configure or confirm those protected values in Azure Pipelines and the publishing environment.
+Configure `EmulatorContainerRegistry` and `EmulatorContainerRegistryServiceConnection` in Azure Pipelines. Add an exclusive lock check to the service connection and grant it permission to query and lock tags and run ACR Tasks. The Dockerfile installs the released NuGet tool; it does not build emulator source.
 
 ## Public API changes
 
