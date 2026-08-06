@@ -794,14 +794,23 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
         public bool Start()
         {
-            if (Interlocked.Increment(ref _counter) == 1)
+            TimerAwaitable timer;
+            lock (_lock)
             {
-                _timer = Init();
-                _timer.Start();
-                _ = PingAsync(_timer);
-                return true;
+                if (++_counter == 1)
+                {
+                    timer = Init();
+                    _timer = timer;
+                    timer.Start();
+                }
+                else
+                {
+                    return false;
+                }
             }
-            return false;
+
+            _ = PingAsync(timer);
+            return true;
         }
 
         public void Stop()
@@ -809,13 +818,13 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
             // might be called by multi-thread, lock to ensure thread-safety for _counter update
             lock (_lock)
             {
-                if (Interlocked.Read(ref _counter) == 0)
+                if (_counter == 0)
                 {
                     // Avoid wrong Stop() to break _counter in further scale
                     Log.TimerAlreadyStopped(_logger, _pingName);
                     return;
                 }
-                if (Interlocked.Decrement(ref _counter) == 0)
+                if (--_counter == 0)
                 {
                     CleanupTimer();
                 }
@@ -824,7 +833,10 @@ internal abstract class ServiceConnectionContainerBase : IServiceConnectionConta
 
         public void Dispose()
         {
-            CleanupTimer();
+            lock (_lock)
+            {
+                CleanupTimer();
+            }
         }
 
         private void CleanupTimer()

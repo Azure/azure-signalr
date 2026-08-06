@@ -59,63 +59,61 @@ public class CustomizedTimerTests(ITestOutputHelper output) : VerifiableLoggedTe
         });
     }
 
-    [Fact(Skip = "Flaky test, need fixing.")]
+    [Fact]
     public async Task StartStopStartStop()
     {
-        if (Environment.OSVersion.Platform == PlatformID.Unix)
-        {
-            // it will fail in osx in github action, due to slow machine.
-            // skip it for now.
-            return;
-        }
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
-            var callbackCount = 0;
-            using var timer = CreatePingTimer(loggerFactory, () => Interlocked.Increment(ref callbackCount));
+            using var callbacks = new ControlledCallbacks();
+            using var timer = CustomizedPingTimerFactory.CreateCustomizedPingTimer(
+                loggerFactory.CreateLogger(nameof(StartStopStartStop)),
+                nameof(StartStopStartStop),
+                callbacks.InvokeAsync,
+                BaseTs,
+                BaseTs);
 
             timer.Start();
-            await Task.Delay(BaseTsPlus);
+            await callbacks.WaitForStartAsync();
             timer.Stop();
-            Assert.Equal(1, callbackCount);
-
-            await Task.Delay(BaseTsPlus * 5);
+            await callbacks.CompleteAsync();
+            Assert.Equal(1, callbacks.Count);
 
             timer.Start();
-            await Task.Delay(BaseTsPlus);
+            await callbacks.WaitForStartAsync();
             timer.Stop();
-            Assert.Equal(2, callbackCount);
+            await callbacks.CompleteAsync();
+            Assert.Equal(2, callbacks.Count);
+            Assert.False(await callbacks.WaitForStartAsync(BaseTsPlus));
         }
     }
 
     [Fact]
     public async Task StartStopDispose_StartDisposeStop()
     {
-        if (Environment.OSVersion.Platform == PlatformID.Unix)
-        {
-            // it will fail in osx in github action, due to slow machine.
-            // skip it for now.
-            return;
-        }
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
-            var callbackCount = 0;
-            var timer = CreatePingTimer(loggerFactory, () => Interlocked.Increment(ref callbackCount));
+            using var callbacks = new ControlledCallbacks();
+            using var timer = CustomizedPingTimerFactory.CreateCustomizedPingTimer(
+                loggerFactory.CreateLogger(nameof(StartStopDispose_StartDisposeStop)),
+                nameof(StartStopDispose_StartDisposeStop),
+                callbacks.InvokeAsync,
+                BaseTs,
+                BaseTs);
 
             timer.Start();
-            await Task.Delay(BaseTsPlus);
+            await callbacks.WaitForStartAsync();
             timer.Stop();
-            Assert.Equal(1, callbackCount);
-            await Task.Delay(BaseTsPlus * 5);
+            await callbacks.CompleteAsync();
+            Assert.Equal(1, callbacks.Count);
             timer.Dispose();
-            Assert.Equal(1, callbackCount);
 
             timer.Start();
-            await Task.Delay(BaseTsPlus);
+            await callbacks.WaitForStartAsync();
             timer.Dispose();
-            Assert.Equal(2, callbackCount);
-            await Task.Delay(BaseTsPlus * 5);
+            await callbacks.CompleteAsync();
             timer.Stop();
-            Assert.Equal(2, callbackCount);
+            Assert.Equal(2, callbacks.Count);
+            Assert.False(await callbacks.WaitForStartAsync(BaseTsPlus));
         }
     }
 
@@ -126,26 +124,27 @@ public class CustomizedTimerTests(ITestOutputHelper output) : VerifiableLoggedTe
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
-            var callbackCount = 0;
+            using var callbacks = new ControlledCallbacks();
 
             using var timer = CustomizedPingTimerFactory.CreateCustomizedPingTimer(loggerFactory.CreateLogger(
                 nameof(BasicStartStopTest)), nameof(BasicStartStopTest),
-                async () =>
-                {
-                    Interlocked.Increment(ref callbackCount);
-                    // long running task to make timer skip timerTicks callbacks
-                    await Task.Delay(BaseTsPlus * timerTicks);
-                },
+                callbacks.InvokeAsync,
                 BaseTs, BaseTs);
 
             timer.Start();
-            await Task.Delay(BaseTsPlus * 2 * timerTicks);
-            timer.Stop();
-            Assert.Equal(2, callbackCount);
+            await callbacks.WaitForStartAsync();
 
-            // extra check it really stopped
-            await Task.Delay(BaseTsPlus * 2 * timerTicks);
-            Assert.Equal(2, callbackCount);
+            // Keep the first callback active across several timer ticks.
+            await Task.Delay(BaseTsPlus * timerTicks);
+            Assert.Equal(1, callbacks.Count);
+
+            await callbacks.CompleteAsync();
+            await callbacks.WaitForStartAsync();
+            timer.Stop();
+            await callbacks.CompleteAsync();
+
+            Assert.Equal(2, callbacks.Count);
+            Assert.False(await callbacks.WaitForStartAsync(BaseTsPlus));
         }
     }
 
@@ -159,6 +158,50 @@ public class CustomizedTimerTests(ITestOutputHelper output) : VerifiableLoggedTe
                 return Task.CompletedTask;
             },
             BaseTs, BaseTs);
+    }
+
+    private sealed class ControlledCallbacks : IDisposable
+    {
+        private readonly SemaphoreSlim _completed = new(0);
+
+        private readonly SemaphoreSlim _release = new(0);
+
+        private readonly SemaphoreSlim _started = new(0);
+
+        private int _count;
+
+        public int Count => Volatile.Read(ref _count);
+
+        public async Task CompleteAsync()
+        {
+            _release.Release();
+            await _completed.WaitAsync().OrTimeout();
+        }
+
+        public void Dispose()
+        {
+            _completed.Dispose();
+            _release.Dispose();
+            _started.Dispose();
+        }
+
+        public async Task InvokeAsync()
+        {
+            Interlocked.Increment(ref _count);
+            _started.Release();
+            await _release.WaitAsync();
+            _completed.Release();
+        }
+
+        public Task WaitForStartAsync()
+        {
+            return _started.WaitAsync().OrTimeout();
+        }
+
+        public Task<bool> WaitForStartAsync(TimeSpan timeout)
+        {
+            return _started.WaitAsync(timeout);
+        }
     }
 
     private sealed class CustomizedPingTimerFactory : ServiceConnectionContainerBase

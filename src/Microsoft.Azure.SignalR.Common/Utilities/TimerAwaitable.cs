@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly TimeSpan _dueTime;
         private bool _disposed;
-        private bool _running = true;
+        private volatile bool _running = true;
         private readonly object _lockObj = new object();
 
         public TimerAwaitable(TimeSpan dueTime, TimeSpan period)
