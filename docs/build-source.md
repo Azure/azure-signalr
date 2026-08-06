@@ -50,7 +50,7 @@ docker run --rm -p 8888:8888 signalr-emulator:dev
 
 The repository previously contained the Dockerfile but no image build or publication automation. Repository history does not establish whether the 2024 MCR image was published manually or by an external pipeline. The pipeline described here is the first explicit, repository-owned image publication path.
 
-Image publication is a separate, explicit post-release action. After `Microsoft.Azure.SignalR.Emulator` is publicly downloadable from NuGet.org, queue `.azure/pipelines/emulator-image-release.yml` with `emulatorPackageVersion` set to that exact stable version. Use `1.6.1` for the initial image correction.
+Image publication is a separate, explicit post-release action. After `Microsoft.Azure.SignalR.Emulator` is publicly downloadable from NuGet.org, queue `.azure/pipelines/release-emulator-container.yml` with `emulatorPackageVersion` set to that exact stable version. Use `1.6.1` for the initial image correction.
 
 The pipeline has no trigger, pull request validation, schedule, or latest-version lookup. It validates and downloads only the requested package, refuses to overwrite an existing versioned image tag, then uses ACR Tasks to build the Dockerfile with that exact version. A successful run publishes both `<version>` and `latest` tags to the `signalr/signalr-emulator` repository in the configured ACR, then locks the versioned tag against updates and deletion while leaving `latest` mutable.
 
