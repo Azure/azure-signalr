@@ -87,7 +87,10 @@ namespace Microsoft.Azure.SignalR.Management
     {
         public RefreshConnectionAuthenticationOptions() { }
         public System.DateTimeOffset? AuthenticationExpiresOn { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> Claims { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        [System.Runtime.CompilerServices.NullableAttribute(new byte[]{ (byte)2, (byte)1})]
+        [System.Runtime.CompilerServices.NullableAttribute(new byte[]{ (byte)2, (byte)1})]
+        [System.Runtime.CompilerServices.NullableAttribute(new byte[]{ (byte)2, (byte)1})]
+        public System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>? Claims { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
         public System.TimeSpan TokenLifetime { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
     }
     public sealed partial class RefreshConnectionAuthenticationResult
