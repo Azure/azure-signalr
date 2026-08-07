@@ -32,7 +32,7 @@ internal static class ConnectionAuthenticationHelper
             throw new ArgumentException("Argument cannot be null or empty.", nameof(connectionToken));
         }
 
-        options ??= new RefreshConnectionAuthenticationOptions();
+        options ??= RefreshConnectionAuthenticationOptions.Default;
         var expireTime = options.AuthenticationExpiresOn;
         var utcExpireTime = expireTime?.ToUniversalTime() ?? DateTimeOffset.MaxValue;
 

@@ -9,11 +9,15 @@ using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR.Management;
 
+#nullable enable
+
 /// <summary>
 /// Configures a live connection authentication refresh operation.
 /// </summary>
 public sealed class RefreshConnectionAuthenticationOptions
 {
+    internal static readonly RefreshConnectionAuthenticationOptions Default = new();
+
     /// <summary>
     /// Gets or sets the new application authentication expiration deadline. When null, the existing deadline is preserved.
     /// </summary>
@@ -22,7 +26,7 @@ public sealed class RefreshConnectionAuthenticationOptions
     /// <summary>
     /// Gets or sets the projected application claims. When null, the existing claims are preserved.
     /// </summary>
-    public IEnumerable<Claim> Claims { get; set; }
+    public IEnumerable<Claim>? Claims { get; set; }
 
     /// <summary>
     /// Gets or sets the maximum lifetime of the refreshed service access token. Default value is one hour.
