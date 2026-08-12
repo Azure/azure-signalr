@@ -97,12 +97,12 @@ public class RefreshAuthFacts
 
     private static async Task AssertRefreshDelegates(AckStatus expected)
     {
-        var container = new FakeServiceConnectionContainer { RefreshResult = expected };
+        var container = new FakeServiceConnectionContainer { RefreshStatus = expected };
         var manager = new ServiceConnectionManager<TestHub>();
         manager.SetServiceConnection(container);
 
         var message = new RefreshAuthMessage("connection-token", null, DateTimeOffset.UtcNow.AddMinutes(30), 0);
-        var result = await manager.RefreshConnectionAuthAsync(message);
+        var result = await manager.RefreshAuthAsync(message);
 
         Assert.Equal(expected, result.Status);
         Assert.Same(message, container.LastRefreshMessage);
@@ -140,7 +140,7 @@ public class RefreshAuthFacts
     {
         var manager = new ServiceConnectionManager<TestHub>();
         await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(
-            () => manager.RefreshConnectionAuthAsync(new RefreshAuthMessage("connection-token", null, DateTimeOffset.UtcNow, 0)));
+            () => manager.RefreshAuthAsync(new RefreshAuthMessage("connection-token", null, DateTimeOffset.UtcNow, 0)));
     }
 
     [Fact]
@@ -153,16 +153,16 @@ public class RefreshAuthFacts
 
     private sealed class FakeServiceConnectionContainer : IServiceConnectionContainer
     {
-        public AckStatus RefreshResult { get; set; } = AckStatus.Ok;
+        public AckStatus RefreshStatus { get; set; } = AckStatus.Ok;
 
         public (AckStatus Status, IReadOnlyList<Claim> Claims) ClaimsResult { get; set; } = (AckStatus.Ok, Array.Empty<Claim>());
 
         public RefreshAuthMessage LastRefreshMessage { get; private set; }
 
-        public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
+        public Task<RefreshAuthResult> RefreshAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
         {
             LastRefreshMessage = message;
-            return Task.FromResult(new RefreshConnectionAuthResult(RefreshResult));
+            return Task.FromResult(new RefreshAuthResult(RefreshStatus));
         }
 
         public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)

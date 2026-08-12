@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 
+using System.Security.Claims;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,13 +36,15 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
     private readonly RestClient _restClient;
     private readonly RestApiProvider _restApiProvider;
+    private readonly HubServiceEndpoint _endpoint;
     private readonly string _hubName;
     private readonly string _appName;
     private readonly IHubProtocolResolver _protocolResolver;
 
-    public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string appName, RestClient restClient, IHubProtocolResolver protocolResolver)
+    public RestHubLifetimeManager(string hubName, HubServiceEndpoint endpoint, string appName, RestClient restClient, IHubProtocolResolver protocolResolver)
     {
         _restApiProvider = new RestApiProvider(endpoint);
+        _endpoint = endpoint;
         _appName = appName;
         _hubName = hubName;
         _restClient = restClient;
@@ -292,6 +295,78 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
             return FilterExpectedResponse(response, ErrorCodes.WarningConnectionNotExisted);
         }, cancellationToken: cancellationToken);
         return exists;
+    }
+
+    public async Task<RefreshAuthResult> RefreshAuthAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(connectionToken))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionToken));
+        }
+
+        var api = _restApiProvider.GetRefreshConnectionAuthEndpoint(_appName, _hubName);
+        var requestBody = new RefreshConnectionAuthRequestBody
+        {
+            ConnectionToken = connectionToken,
+            ExpireTime = expireTime,
+            Claims = RestClaimSerializer.ToClaimDtos(claims),
+        };
+
+        var status = AckStatus.InternalServerError;
+        IReadOnlyList<Claim>? resultClaims = null;
+        using var content = new StringContent(JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json");
+        await _restClient.SendWithRetryAsync(api, HttpMethod.Post, content, async response =>
+        {
+            switch (response.StatusCode)
+            {
+                case HttpStatusCode.OK:
+                    status = AckStatus.Ok;
+                    resultClaims = await RestClaimSerializer.ReadClaimsAsync(response);
+                    return true;
+                case HttpStatusCode.Forbidden:
+                    status = AckStatus.Forbidden;
+                    return true;
+                case HttpStatusCode.NotFound:
+                    status = AckStatus.NotFound;
+                    return true;
+                default:
+                    return false;
+            }
+        }, cancellationToken: cancellationToken);
+
+        return new RefreshAuthResult(status, resultClaims, status == AckStatus.Ok ? _endpoint : null);
+    }
+
+    public async Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(string connectionToken, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(connectionToken))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionToken));
+        }
+
+        var api = _restApiProvider.GetConnectionClaimsEndpoint(_appName, _hubName);
+        var requestBody = new GetConnectionClaimsRequestBody { ConnectionToken = connectionToken };
+
+        var status = AckStatus.InternalServerError;
+        IReadOnlyList<Claim>? resultClaims = null;
+        using var content = new StringContent(JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json");
+        await _restClient.SendWithRetryAsync(api, HttpMethod.Post, content, async response =>
+        {
+            switch (response.StatusCode)
+            {
+                case HttpStatusCode.OK:
+                    status = AckStatus.Ok;
+                    resultClaims = await RestClaimSerializer.ReadClaimsAsync(response);
+                    return true;
+                case HttpStatusCode.NotFound:
+                    status = AckStatus.NotFound;
+                    return true;
+                default:
+                    return false;
+            }
+        }, cancellationToken: cancellationToken);
+
+        return new GetConnectionClaimsResult(status, resultClaims);
     }
 
     public async Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default)

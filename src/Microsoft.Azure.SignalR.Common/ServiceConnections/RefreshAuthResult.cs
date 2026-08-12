@@ -9,11 +9,11 @@ namespace Microsoft.Azure.SignalR;
 #nullable enable
 
 /// <summary>
-/// The result of refreshing auth on a live client connection.
+/// Internal transport result returned after the service processes a <see cref="Protocol.RefreshAuthMessage"/>.
 /// </summary>
-internal readonly struct RefreshConnectionAuthResult
+internal readonly struct RefreshAuthResult
 {
-    public RefreshConnectionAuthResult(AckStatus status, IReadOnlyList<Claim>? claims = null, HubServiceEndpoint? owningEndpoint = null)
+    public RefreshAuthResult(AckStatus status, IReadOnlyList<Claim>? claims = null, HubServiceEndpoint? owningEndpoint = null)
     {
         Status = status;
         Claims = claims;

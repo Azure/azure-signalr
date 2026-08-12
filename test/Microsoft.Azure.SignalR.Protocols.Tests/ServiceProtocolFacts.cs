@@ -869,6 +869,18 @@ Please verify the MsgPack output and update the baseline");
         }
 
         [Fact]
+        public void RefreshAuthMessage_MaxValueExpiration_RoundTrips()
+        {
+            var message = new RefreshAuthMessage("conn1", claims: null, DateTimeOffset.MaxValue, ackId: 1);
+            var bytes = Protocol.GetMessageBytes(message);
+            var sequence = new ReadOnlySequence<byte>(bytes);
+
+            Assert.True(Protocol.TryParseMessage(ref sequence, out var result));
+            var refreshMessage = Assert.IsType<RefreshAuthMessage>(result);
+            Assert.Equal(DateTimeOffset.MaxValue, refreshMessage.ExpireTime);
+        }
+
+        [Fact]
         public void ParseMessageWithExtraData()
         {
             // Legacy protocol
