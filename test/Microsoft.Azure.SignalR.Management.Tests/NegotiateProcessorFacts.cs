@@ -181,19 +181,23 @@ public class NegotiateProcessorFacts
     }
 
     [Fact]
-    public async Task NegotiateWithAuthenticationRefreshDisabledThrows()
+    public async Task NegotiateWithAuthenticationRefreshDisabledReturnsTokenLifetime()
     {
         using var hubContext = await new ServiceManagerBuilder()
             .WithOptions(o => o.ConnectionString = "Endpoint=https://abc.service.signalr.net;AccessKey=FakeKey;Version=1.0;")
             .BuildServiceManager()
             .CreateHubContextAsync("hub", default);
-        var exception = await Assert.ThrowsAsync<ArgumentException>(() => hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
+        var configuredLifetime = TimeSpan.FromMinutes(20);
+
+        var result = await hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
         {
             EnableAuthenticationRefresh = false,
-        }));
+            TokenLifetime = configuredLifetime,
+        });
 
-        Assert.Equal("negotiationOptions", exception.ParamName);
-        Assert.Contains(nameof(NegotiationOptions.EnableAuthenticationRefresh), exception.Message);
+        var token = JwtTokenHelper.JwtHandler.ReadJwtToken(result.AccessToken);
+        Assert.InRange(token.ValidTo - token.ValidFrom, configuredLifetime - TimeSpan.FromSeconds(1), configuredLifetime + TimeSpan.FromSeconds(1));
+        Assert.InRange(result.TokenLifetimeSeconds, (int)configuredLifetime.TotalSeconds - 1, (int)configuredLifetime.TotalSeconds);
     }
 
     [Theory]

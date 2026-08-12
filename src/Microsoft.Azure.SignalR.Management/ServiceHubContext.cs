@@ -40,9 +40,8 @@ namespace Microsoft.Azure.SignalR.Management
         public virtual ValueTask<NegotiationResponse> NegotiateAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         /// <summary>
-        /// Performs a negotiation that also returns the client access token's lifetime seconds. Requires <see cref="NegotiationOptions.EnableAuthenticationRefresh"/>.
+        /// Performs a negotiation that also returns the client access token's lifetime seconds.
         /// </summary>
-        /// <exception cref="ArgumentException"><see cref="NegotiationOptions.EnableAuthenticationRefresh"/> is not enabled.</exception>
         public virtual Task<NegotiationResult> NegotiateWithTokenLifetimeAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         /// <summary>
