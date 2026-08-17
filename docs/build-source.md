@@ -37,6 +37,23 @@ Before opening our .sln files in Visual Studio or VS Code, it is suggested to ru
 
 The solution file is **AzureSignalR.sln** in the root.
 
+## Building the emulator container
+
+The container installs an exact, already released version of the `Microsoft.Azure.SignalR.Emulator` NuGet dotnet tool. To build the image with the current released version:
+
+```
+docker build --build-arg EMULATOR_VERSION=1.6.1 -f src/Microsoft.Azure.SignalR.Emulator/Dockerfile -t signalr-emulator:dev src/Microsoft.Azure.SignalR.Emulator
+docker run --rm -p 8888:8888 signalr-emulator:dev
+```
+
+### Releasing the emulator container
+
+After the emulator package is publicly available on NuGet.org, queue the existing `.azure/pipelines/release.yml` pipeline with `releaseEmulatorContainer=true` and its exact stable `emulatorPackageVersion` (for example, `1.6.1`). This runs only the emulator-container stage; the normal SDK/NuGet package and partner-release jobs are skipped.
+
+The container release does not poll or resolve the latest package. It immediately downloads the requested exact package, refuses to overwrite an existing version tag, builds with ACR Tasks, publishes `<version>` and `latest`, and locks the version tag. MAR must map `signalr/signalr-emulator` to `mcr.microsoft.com/signalr/signalr-emulator`.
+
+Configure `EmulatorContainerRegistry` and `EmulatorContainerRegistryServiceConnection` in Azure Pipelines. Add an exclusive lock check to the service connection and grant it permission to query and lock tags and run ACR Tasks. The Dockerfile installs the released NuGet tool; it does not build emulator source.
+
 ## Public API changes
 
 If you make a public API change `eng\Export-API.ps1` script has to be run to update public API listings.

@@ -77,6 +77,17 @@ internal class RestClient
         return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, null, handleExpectedResponseAsync, null, cancellationToken);
     }
 
+    // Sends a request with a caller-provided body rather than a HubMessage
+    public Task SendWithRetryAsync(
+        RestApiEndpoint api,
+        HttpMethod httpMethod,
+        HttpContent content,
+        Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsyncCore(Constants.HttpClientNames.Resilient, api, httpMethod, null, null, handleExpectedResponseAsync, null, cancellationToken, content);
+    }
+
     public Task SendMessageWithRetryAsync(
         RestApiEndpoint api,
         HttpMethod httpMethod,
@@ -178,10 +189,11 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
         Type? typeHint,
         Func<HttpResponseMessage, Task<bool>>? handleExpectedResponseAsync = null,
         MediaTypeWithQualityHeaderValue? accepts = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        HttpContent? content = null)
     {
         using var httpClient = _httpClientFactory.CreateClient(httpClientName);
-        using var request = BuildRequest(api, httpMethod, body, typeHint);
+        using var request = BuildRequest(api, httpMethod, body, typeHint, content);
         if (accepts != null)
         {
             request.Headers.Accept.Add(accepts);
@@ -207,15 +219,15 @@ $"Response status code does not indicate success: {(int)response.StatusCode} ({r
         }
     }
 
-    private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
+    private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, HubMessage? body, Type? typeHint, HttpContent? content = null)
     {
-        return GenerateHttpRequest(api.Audience, api.Query, httpMethod, body, typeHint);
+        return GenerateHttpRequest(api.Audience, api.Query, httpMethod, body, typeHint, content);
     }
 
-    private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues>? query, HttpMethod httpMethod, HubMessage? body, Type? typeHint)
+    private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues>? query, HttpMethod httpMethod, HubMessage? body, Type? typeHint, HttpContent? content = null)
     {
         var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
-        request.Content = _payloadContentBuilder.Build(body, typeHint);
+        request.Content = content ?? _payloadContentBuilder.Build(body, typeHint);
         return request;
     }
 

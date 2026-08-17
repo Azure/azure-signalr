@@ -84,10 +84,10 @@ internal sealed class TestServiceConnectionContainer : IServiceConnectionContain
         return Task.FromResult(true);
     }
 
-    public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
+    public Task<RefreshAuthResult> RefreshAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
     {
         _validator?.Invoke((message, this));
-        return Task.FromResult(new RefreshConnectionAuthResult(AckStatus.Ok));
+        return Task.FromResult(new RefreshAuthResult(AckStatus.Ok));
     }
 
     public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)

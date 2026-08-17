@@ -72,7 +72,7 @@ internal class RefreshHandler<THub> where THub : Hub
             return;
         }
 
-        var newExpiration = _negotiateHandler.GetRefreshExpiration(context);
+        var newExpiration = NegotiateHandler<THub>.GetRefreshExpiration(context);
 
         // When an OnAuthenticationRefresh callback is configured, fetch PreviousUser from the runtime.
         // The endpoint that answers the read is remembered so the refresh below can be pinned to it
@@ -118,10 +118,10 @@ internal class RefreshHandler<THub> where THub : Hub
         var claims = projectedClaims.Length == 0 ? null : projectedClaims;
 
         AckStatus refreshStatus;
-        RefreshConnectionAuthResult refreshResult;
+        RefreshAuthResult refreshResult;
         try
         {
-            refreshResult = await _serviceConnectionManager.RefreshConnectionAuthAsync(
+            refreshResult = await _serviceConnectionManager.RefreshAuthAsync(
                 new RefreshAuthMessage(connectionToken, claims, newExpiration, 0), owningEndpoint, context.RequestAborted);
         }
         catch (Exception ex)
@@ -159,7 +159,7 @@ internal class RefreshHandler<THub> where THub : Hub
         try
         {
             var (accessToken, tokenLifetimeSeconds) = await _negotiateHandler.GenerateRefreshedAccessTokenAsync(
-                refreshResult.OwningEndpoint, refreshResult.Claims);
+                refreshResult.OwningEndpoint, refreshResult.Claims, newExpiration);
             await WriteSuccessAsync(context, accessToken, tokenLifetimeSeconds);
         }
         catch (Exception ex)

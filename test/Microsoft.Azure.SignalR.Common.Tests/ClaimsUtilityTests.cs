@@ -126,5 +126,102 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             Assert.Single(ci.Claims);
             Assert.True(ci.HasClaim("sub", "A"));
         }
+
+        [Fact]
+        public void PrepareClaimsForTokenRemovesTokenClaimsAndEquivalentAliases()
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "alice"),
+                new Claim("nameid", "alice"),
+                new Claim(ClaimTypes.Role, "admin"),
+                new Claim("role", "admin"),
+                new Claim("aud", "old-audience"),
+                new Claim("iss", "azure-signalr"),
+                new Claim("tenant", "contoso"),
+                new Claim("tenant", "fabrikam"),
+                new Claim(Constants.ClaimType.AuthExpiresOn, "12345"),
+            };
+
+            var prepared = ClaimsUtility.PrepareClaimsForToken(claims);
+
+            Assert.Single(prepared, claim =>
+                claim.Type is ClaimTypes.NameIdentifier or "nameid" && claim.Value == "alice");
+            Assert.Single(prepared, claim =>
+                claim.Type is ClaimTypes.Role or "role" && claim.Value == "admin");
+            Assert.DoesNotContain(prepared, claim => claim.Type is "aud" or "iss");
+            Assert.Equal(2, prepared.Count(claim => claim.Type == "tenant"));
+            Assert.Contains(prepared, claim => claim.Type == Constants.ClaimType.AuthExpiresOn);
+        }
+
+        [Fact]
+        public void PrepareClaimsForTokenDeduplicatesEveryOutboundClaimAlias()
+        {
+            foreach (var mapping in ClaimTypeMapping.OutboundClaimTypeMap)
+            {
+                var claims = new[]
+                {
+                    new Claim(mapping.Key, "value"),
+                    new Claim(mapping.Value, "value"),
+                };
+
+                var prepared = ClaimsUtility.PrepareClaimsForToken(claims);
+
+                Assert.Single(prepared);
+            }
+        }
+
+        [Fact]
+        public void PrepareClaimsForTokenPreservesIdenticalClaimsFromSameOriginalType()
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "alice", ClaimValueTypes.String),
+                new Claim(ClaimTypes.NameIdentifier, "alice", ClaimValueTypes.String),
+                new Claim(ClaimTypes.NameIdentifier, "alice", ClaimValueTypes.String),
+            };
+
+            var prepared = ClaimsUtility.PrepareClaimsForToken(claims);
+
+            Assert.Equal(3, prepared.Count);
+            Assert.All(prepared, claim =>
+            {
+                Assert.Equal(ClaimTypes.NameIdentifier, claim.Type);
+                Assert.Equal("alice", claim.Value);
+                Assert.Equal(ClaimValueTypes.String, claim.ValueType);
+            });
+        }
+
+        [Fact]
+        public void PrepareClaimsForTokenPreservesAliasesWithDifferentValues()
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "alice"),
+                new Claim("nameid", "bob"),
+            };
+
+            var prepared = ClaimsUtility.PrepareClaimsForToken(claims);
+
+            Assert.Equal(2, prepared.Count);
+            Assert.Equal("alice", prepared[0].Value);
+            Assert.Equal("bob", prepared[1].Value);
+        }
+
+        [Fact]
+        public void PrepareClaimsForTokenPreservesAliasesWithDifferentValueTypes()
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "1", ClaimValueTypes.String),
+                new Claim("nameid", "1", ClaimValueTypes.Integer),
+            };
+
+            var prepared = ClaimsUtility.PrepareClaimsForToken(claims);
+
+            Assert.Equal(2, prepared.Count);
+            Assert.Equal(ClaimValueTypes.String, prepared[0].ValueType);
+            Assert.Equal(ClaimValueTypes.Integer, prepared[1].ValueType);
+        }
     }
 }

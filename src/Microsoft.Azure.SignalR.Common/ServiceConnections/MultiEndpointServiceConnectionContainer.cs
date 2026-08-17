@@ -160,12 +160,12 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
 
     // Refresh mutates an existing connection on its owning ServiceEndpoint; it never negotiates a new endpoint or rebalances.
     // Exactly one endpoint should own the connection; multiple owners are treated as an ambiguous-sharding failure rather than picking one.
-    public async Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
+    public async Task<RefreshAuthResult> RefreshAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
     {
         var endpoints = GetOnlineEndpoints().ToArray();
         if (endpoints.Length == 0)
         {
-            return new RefreshConnectionAuthResult(AckStatus.NotFound);
+            return new RefreshAuthResult(AckStatus.NotFound);
         }
         // When GetConnectionClaims already resolved the owning endpoint, pin the refresh to it and skip the second fan-out.
         if (preferredEndpoint != null)
@@ -173,24 +173,24 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
             var pinned = Array.Find(endpoints, e => ReferenceEquals(e, preferredEndpoint));
             if (pinned != null)
             {
-                return await pinned.ConnectionContainer.RefreshConnectionAuthAsync(message, cancellationToken: cancellationToken);
+                return await pinned.ConnectionContainer.RefreshAuthAsync(message, cancellationToken: cancellationToken);
             }
             // The owning endpoint went offline between the read and the refresh; fall back to fanning out.
         }
         if (endpoints.Length == 1)
         {
-            return await endpoints[0].ConnectionContainer.RefreshConnectionAuthAsync(message, cancellationToken: cancellationToken);
+            return await endpoints[0].ConnectionContainer.RefreshAuthAsync(message, cancellationToken: cancellationToken);
         }
 
         var results = await Task.WhenAll(endpoints.Select(async e =>
         {
             try
             {
-                return await e.ConnectionContainer.RefreshConnectionAuthAsync((RefreshAuthMessage)message.Clone(), cancellationToken: cancellationToken);
+                return await e.ConnectionContainer.RefreshAuthAsync((RefreshAuthMessage)message.Clone(), cancellationToken: cancellationToken);
             }
             catch (TimeoutException)
             {
-                return new RefreshConnectionAuthResult(AckStatus.Timeout);
+                return new RefreshAuthResult(AckStatus.Timeout);
             }
         }));
 
@@ -203,10 +203,10 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         if (resolved.Length > 1)
         {
             Log.AmbiguousShardingOwnership(_logger, resolved.Length);
-            return new RefreshConnectionAuthResult(AckStatus.InternalServerError);
+            return new RefreshAuthResult(AckStatus.InternalServerError);
         }
         // No endpoint owned the connection: surface Timeout if any was inconclusive, otherwise NotFound.
-        return new RefreshConnectionAuthResult(results.Any(r => r.Status == AckStatus.Timeout) ? AckStatus.Timeout : AckStatus.NotFound);
+        return new RefreshAuthResult(results.Any(r => r.Status == AckStatus.Timeout) ? AckStatus.Timeout : AckStatus.NotFound);
     }
 
     public async Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)

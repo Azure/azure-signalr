@@ -160,7 +160,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             ("1", AckStatus.NotFound),
             ("2", AckStatus.Ok));
 
-        var result = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+        var result = await container.RefreshAuthAsync(NewRefreshMessage());
 
         Assert.Equal(AckStatus.Ok, result.Status);
     }
@@ -172,7 +172,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             ("1", AckStatus.NotFound),
             ("2", AckStatus.Forbidden));
 
-        var result = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+        var result = await container.RefreshAuthAsync(NewRefreshMessage());
 
         Assert.Equal(AckStatus.Forbidden, result.Status);
     }
@@ -184,7 +184,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             ("1", AckStatus.NotFound),
             ("2", AckStatus.NotFound));
 
-        var result = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+        var result = await container.RefreshAuthAsync(NewRefreshMessage());
 
         Assert.Equal(AckStatus.NotFound, result.Status);
     }
@@ -197,7 +197,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             ("1", AckStatus.Ok),
             ("2", AckStatus.Ok));
 
-        var result = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+        var result = await container.RefreshAuthAsync(NewRefreshMessage());
 
         Assert.Equal(AckStatus.InternalServerError, result.Status);
     }
@@ -243,11 +243,11 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         Assert.Equal(AckStatus.Ok, claims.Status);
         Assert.NotNull(claims.OwningEndpoint);
 
-        var pinned = await container.RefreshConnectionAuthAsync(NewRefreshMessage(), claims.OwningEndpoint);
+        var pinned = await container.RefreshAuthAsync(NewRefreshMessage(), claims.OwningEndpoint);
         Assert.Equal(AckStatus.Ok, pinned.Status);
 
         // Both endpoints would ack the refresh with Ok, so a second fan-out would resolve two owners and fail as ambiguous.
-        var fannedOut = await container.RefreshConnectionAuthAsync(NewRefreshMessage());
+        var fannedOut = await container.RefreshAuthAsync(NewRefreshMessage());
         Assert.Equal(AckStatus.InternalServerError, fannedOut.Status);
     }
 
@@ -290,8 +290,8 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             _claimsResult = claimsResult;
         }
 
-        public Task<RefreshConnectionAuthResult> RefreshConnectionAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
-            => Task.FromResult(new RefreshConnectionAuthResult(_refreshStatus));
+        public Task<RefreshAuthResult> RefreshAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
+            => Task.FromResult(new RefreshAuthResult(_refreshStatus));
 
         public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
             => Task.FromResult(new GetConnectionClaimsResult(_claimsResult.Status, _claimsResult.Claims));

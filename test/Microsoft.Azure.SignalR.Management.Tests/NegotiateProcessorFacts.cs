@@ -49,13 +49,155 @@ public class NegotiateProcessorFacts
             .BuildServiceManager()
             .CreateHubContextAsync("hub", default);
         var now = DateTimeOffset.UtcNow;
-        var negotiateResponse = await hubContext.NegotiateAsync(new NegotiationOptions { CloseOnAuthenticationExpiration = true, TokenLifetime = TimeSpan.FromSeconds(30) });
+        var authenticationExpiresOn = now.AddSeconds(30);
+        var negotiateResponse = await hubContext.NegotiateAsync(new NegotiationOptions
+        {
+            AuthenticationExpiresOn = authenticationExpiresOn,
+            EnableAuthenticationRefresh = true,
+            CloseOnAuthenticationExpiration = true,
+            TokenLifetime = TimeSpan.FromHours(1),
+        });
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(negotiateResponse.AccessToken);
         var closeOnAuthExpiration = Assert.Single(token.Claims, c => c.Type == Constants.ClaimType.CloseOnAuthExpiration);
         Assert.Equal("true", closeOnAuthExpiration.Value);
         var ttl = Assert.Single(token.Claims, c => c.Type == Constants.ClaimType.AuthExpiresOn);
         Assert.True(long.TryParse(ttl.Value, out var expiresOn));
-        Assert.InRange(DateTimeOffset.FromUnixTimeSeconds(expiresOn), now.AddSeconds(29), now.AddSeconds(32));
+        Assert.Equal(authenticationExpiresOn.ToUnixTimeSeconds(), expiresOn);
+        Assert.InRange(token.ValidTo - token.ValidFrom, TimeSpan.FromSeconds(25), TimeSpan.FromSeconds(31));
+    }
+
+    [Fact]
+    public async Task NegotiateWithTokenLifetimeCapsTokenAndReportedLifetimeByAuthenticationExpiration()
+    {
+        using var hubContext = await new ServiceManagerBuilder()
+            .WithOptions(o => o.ConnectionString = "Endpoint=https://abc.service.signalr.net;AccessKey=FakeKey;Version=1.0;")
+            .BuildServiceManager()
+            .CreateHubContextAsync("hub", default);
+        var authenticationExpiresOn = DateTimeOffset.UtcNow.AddMinutes(10);
+
+        var result = await hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
+        {
+            AuthenticationExpiresOn = authenticationExpiresOn,
+            EnableAuthenticationRefresh = true,
+            TokenLifetime = TimeSpan.FromHours(1),
+        });
+
+        var token = JwtTokenHelper.JwtHandler.ReadJwtToken(result.AccessToken);
+        Assert.InRange(token.ValidTo - token.ValidFrom, TimeSpan.FromMinutes(9.9), TimeSpan.FromMinutes(10));
+        Assert.InRange(result.TokenLifetimeSeconds, 594, 600);
+    }
+
+    [Fact]
+    public async Task NegotiateWithOmittedAuthenticationExpirationUsesLegacyCloseOnAuthDeadline()
+    {
+        using var hubContext = await new ServiceManagerBuilder()
+            .WithOptions(o => o.ConnectionString = "Endpoint=https://abc.service.signalr.net;AccessKey=FakeKey;Version=1.0;")
+            .BuildServiceManager()
+            .CreateHubContextAsync("hub", default);
+        var configuredLifetime = TimeSpan.FromMinutes(20);
+        var beforeNegotiate = DateTimeOffset.UtcNow;
+
+        var result = await hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
+        {
+            EnableAuthenticationRefresh = true,
+            CloseOnAuthenticationExpiration = true,
+            TokenLifetime = configuredLifetime,
+        });
+
+        var token = JwtTokenHelper.JwtHandler.ReadJwtToken(result.AccessToken);
+        var authExpiresOnClaim = Assert.Single(token.Claims, claim => claim.Type == Constants.ClaimType.AuthExpiresOn);
+        Assert.Contains(token.Claims, claim => claim.Type == Constants.ClaimType.CloseOnAuthExpiration && claim.Value == "true");
+        Assert.InRange(
+            DateTimeOffset.FromUnixTimeSeconds(long.Parse(authExpiresOnClaim.Value, System.Globalization.CultureInfo.InvariantCulture)),
+            beforeNegotiate.Add(configuredLifetime).AddSeconds(-1),
+            DateTimeOffset.UtcNow.Add(configuredLifetime).AddSeconds(1));
+        Assert.InRange(token.ValidTo - token.ValidFrom, configuredLifetime - TimeSpan.FromSeconds(1), configuredLifetime + TimeSpan.FromSeconds(1));
+        Assert.InRange(result.TokenLifetimeSeconds, (int)configuredLifetime.TotalSeconds - 1, (int)configuredLifetime.TotalSeconds);
+    }
+
+    [Fact]
+    public async Task NegotiateWithMaxAuthenticationExpirationPreservesNoDeadlineSentinel()
+    {
+        using var hubContext = await new ServiceManagerBuilder()
+            .WithOptions(o => o.ConnectionString = "Endpoint=https://abc.service.signalr.net;AccessKey=FakeKey;Version=1.0;")
+            .BuildServiceManager()
+            .CreateHubContextAsync("hub", default);
+        var configuredLifetime = TimeSpan.FromMinutes(20);
+
+        var result = await hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
+        {
+            AuthenticationExpiresOn = DateTimeOffset.MaxValue,
+            EnableAuthenticationRefresh = true,
+            CloseOnAuthenticationExpiration = true,
+            TokenLifetime = configuredLifetime,
+        });
+
+        var token = JwtTokenHelper.JwtHandler.ReadJwtToken(result.AccessToken);
+        Assert.DoesNotContain(token.Claims, claim => claim.Type == Constants.ClaimType.CloseOnAuthExpiration);
+        Assert.DoesNotContain(token.Claims, claim => claim.Type == Constants.ClaimType.AuthExpiresOn);
+        Assert.InRange(token.ValidTo - token.ValidFrom, configuredLifetime - TimeSpan.FromSeconds(1), configuredLifetime + TimeSpan.FromSeconds(1));
+        Assert.InRange(result.TokenLifetimeSeconds, (int)configuredLifetime.TotalSeconds - 1, (int)configuredLifetime.TotalSeconds);
+    }
+
+    [Fact]
+    public async Task NegotiateWithCloseDisabledAndOmittedExpirationUsesNoDeadlineSentinel()
+    {
+        using var hubContext = await new ServiceManagerBuilder()
+            .WithOptions(o => o.ConnectionString = "Endpoint=https://abc.service.signalr.net;AccessKey=FakeKey;Version=1.0;")
+            .BuildServiceManager()
+            .CreateHubContextAsync("hub", default);
+        var configuredLifetime = TimeSpan.FromMinutes(20);
+
+        var result = await hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
+        {
+            EnableAuthenticationRefresh = true,
+            CloseOnAuthenticationExpiration = false,
+            TokenLifetime = configuredLifetime,
+        });
+
+        var token = JwtTokenHelper.JwtHandler.ReadJwtToken(result.AccessToken);
+        Assert.DoesNotContain(token.Claims, claim => claim.Type == Constants.ClaimType.CloseOnAuthExpiration);
+        Assert.DoesNotContain(token.Claims, claim => claim.Type == Constants.ClaimType.AuthExpiresOn);
+        Assert.InRange(token.ValidTo - token.ValidFrom, configuredLifetime - TimeSpan.FromSeconds(1), configuredLifetime + TimeSpan.FromSeconds(1));
+        Assert.InRange(result.TokenLifetimeSeconds, (int)configuredLifetime.TotalSeconds - 1, (int)configuredLifetime.TotalSeconds);
+    }
+
+    [Fact]
+    public async Task NegotiateWithExpiredAuthenticationThrows()
+    {
+        using var hubContext = await new ServiceManagerBuilder()
+            .WithOptions(o => o.ConnectionString = "Endpoint=https://abc.service.signalr.net;AccessKey=FakeKey;Version=1.0;")
+            .BuildServiceManager()
+            .CreateHubContextAsync("hub", default);
+
+        var exception = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
+            {
+                AuthenticationExpiresOn = DateTimeOffset.UtcNow.AddSeconds(-1),
+                EnableAuthenticationRefresh = true,
+            }));
+
+        Assert.Contains(nameof(NegotiationOptions.AuthenticationExpiresOn), exception.Message);
+    }
+
+    [Fact]
+    public async Task NegotiateWithAuthenticationRefreshDisabledReturnsTokenLifetime()
+    {
+        using var hubContext = await new ServiceManagerBuilder()
+            .WithOptions(o => o.ConnectionString = "Endpoint=https://abc.service.signalr.net;AccessKey=FakeKey;Version=1.0;")
+            .BuildServiceManager()
+            .CreateHubContextAsync("hub", default);
+        var configuredLifetime = TimeSpan.FromMinutes(20);
+
+        var result = await hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
+        {
+            EnableAuthenticationRefresh = false,
+            TokenLifetime = configuredLifetime,
+        });
+
+        var token = JwtTokenHelper.JwtHandler.ReadJwtToken(result.AccessToken);
+        Assert.InRange(token.ValidTo - token.ValidFrom, configuredLifetime - TimeSpan.FromSeconds(1), configuredLifetime + TimeSpan.FromSeconds(1));
+        Assert.InRange(result.TokenLifetimeSeconds, (int)configuredLifetime.TotalSeconds - 1, (int)configuredLifetime.TotalSeconds);
     }
 
     [Theory]
@@ -151,6 +293,24 @@ public class NegotiateProcessorFacts
         var handler = new JwtSecurityTokenHandler();
         var token = handler.ReadJwtToken(tokenString);
         Assert.Equal("6", token.Claims.Single(c => c.Type == Constants.ClaimType.HttpTransportType).Value);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task NegotiateWithNonPositiveTokenLifetimeThrows(int lifetimeSeconds)
+    {
+        var endpoints = FakeEndpointUtils.GetFakeEndpoint(1).ToArray();
+        var provider = new ServiceCollection().AddSignalRServiceManager()
+        .Configure<ServiceManagerOptions>(o =>
+        {
+            o.ServiceEndpoints = endpoints;
+            o.ServiceTransportType = ServiceTransportType.Persistent;
+        }).BuildServiceProvider();
+        var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
+        var exception = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => negotiateProcessor.NegotiateAsync(HubName, new NegotiationOptions { TokenLifetime = TimeSpan.FromSeconds(lifetimeSeconds) }));
+        Assert.Contains(nameof(NegotiationOptions.TokenLifetime), exception.Message);
     }
 
     [Fact]
