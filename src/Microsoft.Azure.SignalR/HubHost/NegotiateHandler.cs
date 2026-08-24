@@ -240,7 +240,7 @@ internal class NegotiateHandler<THub> where THub : Hub
     internal bool IsAuthenticationRefreshEnabled => _dispatcherOptions.EnableAuthenticationRefresh;
 
 
-    internal Func<AuthenticationRefreshContext, ValueTask<bool>> AuthenticationRefreshCallback => _dispatcherOptions.OnAuthenticationRefresh;
+    internal Func<AuthenticationRefreshContext, Task<bool>> AuthenticationRefreshCallback => _dispatcherOptions.OnAuthenticationRefresh;
 
     internal Claim[] BuildRefreshClaims(HttpContext context) => BuildClaims(context).ToArray();
 
