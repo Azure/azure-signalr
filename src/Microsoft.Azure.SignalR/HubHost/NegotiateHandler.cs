@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -13,6 +15,7 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -47,6 +50,8 @@ internal class NegotiateHandler<THub> where THub : Hub
     private readonly int _customHandshakeTimeout;
 
     private readonly string _hubName;
+
+    private readonly TimeSpan _accessTokenLifetime;
 
     private readonly ILogger<NegotiateHandler<THub>> _logger;
 
@@ -89,6 +94,7 @@ internal class NegotiateHandler<THub> where THub : Hub
         _transportTypeDetector = options.Value.TransportTypeDetector;
         _customHandshakeTimeout = GetCustomHandshakeTimeout(hubOptions.Value.HandshakeTimeout ?? globalHubOptions.Value.HandshakeTimeout);
         _hubName = typeof(THub).Name;
+        _accessTokenLifetime = options.Value.AccessTokenLifetime;
 #if NET6_0_OR_GREATER
         _dispatcherOptions = GetDispatcherOptions(endpointDataSource, typeof(THub));
 #endif
@@ -119,14 +125,128 @@ internal class NegotiateHandler<THub> where THub : Hub
             _cultureFeatureManager.TryAddCultureFeature(clientRequestId, cultureFeature);
         }
 
-        return new NegotiationResponse
+        TimeSpan? accessTokenLifetime = null;
+#if NET11_0_OR_GREATER
+        if (_dispatcherOptions.EnableAuthenticationRefresh
+            && context.User?.Identity?.IsAuthenticated == true
+            && !HasWindowsIdentity(context.User))
+        {
+            accessTokenLifetime = ComputeAccessTokenLifetime(GetAuthenticationExpiresOn(context));
+        }
+#endif
+
+        var response = new NegotiationResponse
         {
             Url = provider.GetClientEndpoint(_hubName, originalPath, queryString),
-            AccessToken = await provider.GenerateClientAccessTokenAsync(_hubName, claims),
+            AccessToken = await provider.GenerateClientAccessTokenAsync(
+                _hubName,
+                claims,
+                accessTokenLifetime),
             // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
             AvailableTransports = new List<AvailableTransport>()
         };
+
+#if NET11_0_OR_GREATER
+        if (accessTokenLifetime.HasValue)
+        {
+            response.TokenLifetime = TimeSpan.FromSeconds(ComputeTokenLifetimeSeconds(accessTokenLifetime.Value));
+        }
+#endif
+
+        return response;
     }
+
+#if NET11_0_OR_GREATER
+    /// <summary>
+    /// Mints a refreshed client access token from the runtime-returned post-refresh claim set for the connection's owning endpoint.
+    /// </summary>
+    public async Task<(string AccessToken, int TokenLifetimeSeconds)> GenerateRefreshedAccessTokenAsync(
+        HubServiceEndpoint endpoint, IReadOnlyList<Claim> claims, DateTimeOffset authenticationExpiresOn)
+    {
+        var provider = _endpointManager.GetEndpointProvider(endpoint);
+        if (provider == null)
+        {
+            throw new AzureSignalRNotConnectedException();
+        }
+
+        var accessTokenLifetime = _accessTokenLifetime;
+        var effectiveAuthenticationExpiresOn = GetAuthExpiresOnFromClaims(claims)
+            ?? (authenticationExpiresOn != DateTimeOffset.MaxValue ? authenticationExpiresOn : null);
+        accessTokenLifetime = ComputeAccessTokenLifetime(effectiveAuthenticationExpiresOn);
+        var accessToken = await provider.GenerateClientAccessTokenAsync(_hubName, claims, accessTokenLifetime);
+        var tokenLifetimeSeconds = ComputeTokenLifetimeSeconds(accessTokenLifetime);
+        return (accessToken, tokenLifetimeSeconds);
+    }
+
+    private static DateTimeOffset? GetAuthExpiresOnFromClaims(IReadOnlyList<Claim> claims)
+    {
+        foreach (var claim in claims)
+        {
+            if (claim.Type == Constants.ClaimType.AuthExpiresOn
+                && long.TryParse(claim.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var unixSeconds))
+            {
+                return DateTimeOffset.FromUnixTimeSeconds(unixSeconds);
+            }
+        }
+        return null;
+    }
+
+    private TimeSpan ComputeAccessTokenLifetime(DateTimeOffset? authenticationExpiresOn)
+    {
+        var lifetime = _accessTokenLifetime;
+        if (authenticationExpiresOn.HasValue && authenticationExpiresOn.Value != DateTimeOffset.MaxValue)
+        {
+            var untilExpire = authenticationExpiresOn.Value - DateTimeOffset.UtcNow;
+            if (untilExpire < lifetime)
+            {
+                lifetime = untilExpire;
+            }
+        }
+        return lifetime > TimeSpan.Zero ? lifetime : TimeSpan.Zero;
+    }
+
+    private static int ComputeTokenLifetimeSeconds(TimeSpan lifetime)
+    {
+        var seconds = (long)lifetime.TotalSeconds;
+        return seconds <= 0 ? 0 : (seconds > int.MaxValue ? int.MaxValue : (int)seconds);
+    }
+
+    private static DateTimeOffset? GetAuthenticationExpiresOn(HttpContext context)
+    {
+        var authResultFeature = context.Features.Get<IAuthenticateResultFeature>();
+        if (authResultFeature?.AuthenticateResult?.Succeeded == true)
+        {
+            return authResultFeature.AuthenticateResult.Properties.ExpiresUtc;
+        }
+        return null;
+    }
+
+    internal static bool HasWindowsIdentity(ClaimsPrincipal user)
+    {
+        if (user == null)
+        {
+            return false;
+        }
+        foreach (var identity in user.Identities)
+        {
+            if (identity is System.Security.Principal.WindowsIdentity)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    internal bool IsAuthenticationRefreshEnabled => _dispatcherOptions.EnableAuthenticationRefresh;
+
+
+    internal Func<AuthenticationRefreshContext, ValueTask<bool>> AuthenticationRefreshCallback => _dispatcherOptions.OnAuthenticationRefresh;
+
+    internal Claim[] BuildRefreshClaims(HttpContext context) => BuildClaims(context).ToArray();
+
+    internal static DateTimeOffset GetRefreshExpiration(HttpContext context) =>
+        GetAuthenticationExpiresOn(context) ?? DateTimeOffset.MaxValue;
+#endif
 
     private static string GetOriginalPath(string path)
     {

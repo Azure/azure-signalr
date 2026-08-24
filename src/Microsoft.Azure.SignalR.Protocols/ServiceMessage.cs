@@ -4,6 +4,7 @@
 
 using System;
 using System.Buffers;
+using System.IO;
 
 using MessagePack;
 
@@ -211,6 +212,10 @@ namespace Microsoft.Azure.SignalR.Protocol
                     // todo : more optional fields
                     default:
                         // bypass unknown member.
+                        if (reader.NextMessagePackType == MessagePackType.Array || reader.NextMessagePackType == MessagePackType.Map)
+                        {
+                            throw new InvalidDataException("No complex data for extension members.");
+                        }
                         reader.Skip();
                         break;
                 }
@@ -316,6 +321,101 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             ErrorType = e.GetType().Name;
             ErrorMessage = e.Message;
+        }
+    }
+
+    /// <summary>
+    /// A message to refresh the authentication state of an existing client connection without forcing the client to reconnect.
+    /// </summary>
+    public class RefreshAuthMessage : ExtensibleServiceMessage, IAckableMessage
+    {
+        /// <summary>
+        /// Gets or sets the connection token that identifies the live client connection whose authentication state is being refreshed.
+        /// </summary>
+        public string ConnectionToken { get; set; }
+
+        /// <summary>
+        /// Gets or sets the refreshed user claims for the connection.
+        /// </summary>
+        public System.Security.Claims.Claim[]? Claims { get; set; }
+
+        /// <summary>
+        /// Gets or sets the time at which the refreshed authentication state expires in UTC.
+        /// </summary>
+        public DateTimeOffset ExpireTime { get; set; }
+
+        /// <summary>
+        /// Gets or sets the protocol correlation id used to acknowledge this refresh operation.
+        /// </summary>
+        public int AckId { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RefreshAuthMessage"/> class.
+        /// </summary>
+        /// <param name="connectionToken">The connection token that identifies the live client connection.</param>
+        /// <param name="claims">The refreshed user claims for the connection.</param>
+        /// <param name="expireTime">The time at which the refreshed authentication state expires in UTC.</param>
+        /// <param name="ackId">The protocol correlation id used to acknowledge this refresh operation.</param>
+        public RefreshAuthMessage(string connectionToken, System.Security.Claims.Claim[]? claims, DateTimeOffset expireTime, int ackId)
+        {
+            ConnectionToken = connectionToken ?? throw new ArgumentNullException(nameof(connectionToken));
+            Claims = claims;
+            ExpireTime = expireTime.ToUniversalTime();
+            AckId = ackId;
+        }
+    }
+
+    /// <summary>
+    /// A read-only message to fetch the current user claims of an existing client connection.
+    /// </summary>
+    public class GetConnectionClaimsMessage : ExtensibleServiceMessage, IAckableMessage
+    {
+        /// <summary>
+        /// Gets or sets the connection token that identifies the live client connection whose claims are being fetched.
+        /// </summary>
+        public string ConnectionToken { get; set; }
+
+        /// <summary>
+        /// Gets or sets the protocol correlation id used to acknowledge this read operation.
+        /// </summary>
+        public int AckId { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GetConnectionClaimsMessage"/> class.
+        /// </summary>
+        /// <param name="connectionToken">The connection token that identifies the live client connection.</param>
+        /// <param name="ackId">The protocol correlation id used to acknowledge this read operation.</param>
+        public GetConnectionClaimsMessage(string connectionToken, int ackId)
+        {
+            ConnectionToken = connectionToken ?? throw new ArgumentNullException(nameof(connectionToken));
+            AckId = ackId;
+        }
+    }
+
+    /// <summary>
+    /// A server-bound message that pushes refreshed user claims of a client connection to its owning app server.
+    /// </summary>
+    public class UpdateConnectionClaimsMessage : ExtensibleServiceMessage
+    {
+        /// <summary>
+        /// Gets or sets the connection id of the live client connection whose claims are being updated.
+        /// </summary>
+        public string ConnectionId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the refreshed user claims to apply on the owning app server.
+        /// </summary>
+        public System.Security.Claims.Claim[]? Claims { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UpdateConnectionClaimsMessage"/> class.
+        /// </summary>
+        /// <param name="connectionId">The connection id of the live client connection.</param>
+        /// <param name="claims">The refreshed user claims to apply on the owning app server.</param>
+        public UpdateConnectionClaimsMessage(string connectionId, System.Security.Claims.Claim[]? claims)
+        {
+            ConnectionId = connectionId ?? throw new ArgumentNullException(nameof(connectionId));
+            Claims = claims;
         }
     }
 
@@ -602,7 +702,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         /// <summary>
         /// A token to indiate the start point of results.
-        /// This parameter is provided by the service in the response of a previous request when there are additional results to be fetched. 
+        /// This parameter is provided by the service in the response of a previous request when there are additional results to be fetched.
         /// Clients should include the continuationToken in the next request to receive the subsequent page of data. If this parameter is omitted, the server will return the first page of results.
         /// </summary>
         public string? ContinuationToken { get; set; }

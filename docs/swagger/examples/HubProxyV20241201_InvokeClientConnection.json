@@ -1,0 +1,16 @@
+{
+  "parameters": {
+    "api-version": "2024-01-01",
+    "hub": "hub1",
+    "connectionId": "hub1"
+  },
+  "responses": {
+    "200": {
+      "body": {
+        "result": {
+          "message": "Hello, World!"
+        }
+      }
+    }
+  }
+}

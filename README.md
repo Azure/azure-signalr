@@ -4,6 +4,10 @@ Azure SignalR Service SDK for .NET helps you to instantly build Azure applicatio
 
 This repository contains the open source subset of the .NET SDK.
 
+> [!IMPORTANT]
+> **.NET 6 support was removed in `Microsoft.Azure.SignalR` 1.32.0.** Supported TFMs are now **.NET 8** and **.NET 9**. If you must stay on .NET 6, pin to **1.31.x**. See [#2258](https://github.com/Azure/azure-signalr/issues/2258).
+
+
 ## Build Status
 
 [![Windows](https://img.shields.io/github/actions/workflow/status/Azure/azure-signalr/windows.yml?branch=dev&label=Windows)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Windowns)

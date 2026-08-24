@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -62,6 +63,26 @@ internal class ServiceConnectionManager<THub> : IDisposable, IServiceConnectionM
         }
 
         return _serviceConnection.WriteAckableMessageAsync(seviceMessage, cancellationToken);
+    }
+
+    public Task<RefreshAuthResult> RefreshAuthAsync(RefreshAuthMessage message, HubServiceEndpoint? preferredEndpoint = null, CancellationToken cancellationToken = default)
+    {
+        if (_serviceConnection == null)
+        {
+            throw new AzureSignalRNotConnectedException();
+        }
+
+        return _serviceConnection.RefreshAuthAsync(message, preferredEndpoint, cancellationToken);
+    }
+
+    public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+    {
+        if (_serviceConnection == null)
+        {
+            throw new AzureSignalRNotConnectedException();
+        }
+
+        return _serviceConnection.GetConnectionClaimsAsync(message, cancellationToken);
     }
 
     public void Dispose()
