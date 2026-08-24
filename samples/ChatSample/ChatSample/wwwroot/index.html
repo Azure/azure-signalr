@@ -65,7 +65,7 @@
             var messageInput = document.getElementById('message');
             messageInput.focus();
 
-            function createMessageEntry(encodedName, encodedMsg) {
+            function createMessageEntry(name, encodedName, encodedMsg) {
                 var entry = document.createElement('div');
                 entry.classList.add("message-entry");
                 if (encodedName === "_SYSTEM_") {
@@ -75,7 +75,7 @@
                 } else if (encodedName === "_BROADCAST_") {
                     entry.classList.add("text-center");
                     entry.innerHTML = '<div class="text-center broadcast-message">' + encodedMsg + '</div>';
-                } else if (encodedName === username) {
+                } else if (name === username) {
                     entry.innerHTML = '<div class="message-avatar pull-right">' + encodedName + '</div>' +
                         '<div class="message-content pull-right">' + encodedMsg + '<div>';
                 } else {
@@ -89,9 +89,9 @@
                 var messageCallback = function (name, message) {
                     if (!message) return;
                     // Html encode display name and message.
-                    var encodedName = name;
+                    var encodedName = name.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     var encodedMsg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                    var messageEntry = createMessageEntry(encodedName, encodedMsg);
+                    var messageEntry = createMessageEntry(name, encodedName, encodedMsg);
 
                     var messageBox = document.getElementById('messages');
                     messageBox.appendChild(messageEntry);
