@@ -7,6 +7,8 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+
+using System.Security.Claims;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +17,8 @@ using Azure;
 
 using Microsoft.AspNetCore.SignalR;
 #if NET7_0_OR_GREATER
+using System.Buffers;
+using System.Net.Http.Headers;
 using Microsoft.AspNetCore.SignalR.Protocol;
 #endif
 using Microsoft.Extensions.Primitives;
@@ -32,13 +36,15 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
 
     private readonly RestClient _restClient;
     private readonly RestApiProvider _restApiProvider;
+    private readonly HubServiceEndpoint _endpoint;
     private readonly string _hubName;
     private readonly string _appName;
     private readonly IHubProtocolResolver _protocolResolver;
 
-    public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string appName, RestClient restClient, IHubProtocolResolver protocolResolver)
+    public RestHubLifetimeManager(string hubName, HubServiceEndpoint endpoint, string appName, RestClient restClient, IHubProtocolResolver protocolResolver)
     {
         _restApiProvider = new RestApiProvider(endpoint);
+        _endpoint = endpoint;
         _appName = appName;
         _hubName = hubName;
         _restClient = restClient;
@@ -291,6 +297,78 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
         return exists;
     }
 
+    public async Task<RefreshAuthResult> RefreshAuthAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(connectionToken))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionToken));
+        }
+
+        var api = _restApiProvider.GetRefreshConnectionAuthEndpoint(_appName, _hubName);
+        var requestBody = new RefreshConnectionAuthRequestBody
+        {
+            ConnectionToken = connectionToken,
+            ExpireTime = expireTime,
+            Claims = RestClaimSerializer.ToClaimDtos(claims),
+        };
+
+        var status = AckStatus.InternalServerError;
+        IReadOnlyList<Claim>? resultClaims = null;
+        using var content = new StringContent(JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json");
+        await _restClient.SendWithRetryAsync(api, HttpMethod.Post, content, async response =>
+        {
+            switch (response.StatusCode)
+            {
+                case HttpStatusCode.OK:
+                    status = AckStatus.Ok;
+                    resultClaims = await RestClaimSerializer.ReadClaimsAsync(response);
+                    return true;
+                case HttpStatusCode.Forbidden:
+                    status = AckStatus.Forbidden;
+                    return true;
+                case HttpStatusCode.NotFound:
+                    status = AckStatus.NotFound;
+                    return true;
+                default:
+                    return false;
+            }
+        }, cancellationToken: cancellationToken);
+
+        return new RefreshAuthResult(status, resultClaims, status == AckStatus.Ok ? _endpoint : null);
+    }
+
+    public async Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(string connectionToken, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(connectionToken))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionToken));
+        }
+
+        var api = _restApiProvider.GetConnectionClaimsEndpoint(_appName, _hubName);
+        var requestBody = new GetConnectionClaimsRequestBody { ConnectionToken = connectionToken };
+
+        var status = AckStatus.InternalServerError;
+        IReadOnlyList<Claim>? resultClaims = null;
+        using var content = new StringContent(JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json");
+        await _restClient.SendWithRetryAsync(api, HttpMethod.Post, content, async response =>
+        {
+            switch (response.StatusCode)
+            {
+                case HttpStatusCode.OK:
+                    status = AckStatus.Ok;
+                    resultClaims = await RestClaimSerializer.ReadClaimsAsync(response);
+                    return true;
+                case HttpStatusCode.NotFound:
+                    status = AckStatus.NotFound;
+                    return true;
+                default:
+                    return false;
+            }
+        }, cancellationToken: cancellationToken);
+
+        return new GetConnectionClaimsResult(status, resultClaims);
+    }
+
     public async Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(userId))
@@ -359,10 +437,115 @@ internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IService
     }
 
 #if NET7_0_OR_GREATER
+    public override async Task<T> InvokeConnectionAsync<T>(string connectionId, string methodName, object?[] args, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(methodName))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
+        }
+        if (string.IsNullOrEmpty(connectionId))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+        }
+        if (!_protocolResolver.AllProtocols.All(IsInvocationSupported))
+        {
+            throw new NotSupportedException("Non supported protocol for client invocation.");
+        }
 
-#pragma warning disable IDE0051 // Will be used in the future updates
+        var api = _restApiProvider.GetClientInvocationEndpoint(_appName, _hubName, connectionId);
+        string? errorContent = null;
+        var isSuccess = false;
+        CompletionMessage? responseMessage = null;
+
+        await _restClient.SendMessageWithRetryAsync(
+            api,
+            HttpMethod.Post,
+            methodName,
+            args,
+            async response =>
+            {
+                isSuccess = response.IsSuccessStatusCode;
+
+                if (isSuccess)
+                {
+                    // 1. Get protocol from header (e.g. "json" or "messagepack")
+                    if (!response.Headers.TryGetValues(Constants.Headers.AsrsManagementSDKClientInvocationProtocol, out var protocolHeaderValues))
+                    {
+                        throw new HubException("Response is missing protocol header.");
+                    }
+                    var protocolName = protocolHeaderValues.FirstOrDefault();
+                    if (string.IsNullOrEmpty(protocolName))
+                    {
+                        throw new HubException("Response protocol header is empty.");
+                    }
+
+                    // 2. Pick the hub protocol that matches X-Protocol
+                    var protocol = _protocolResolver.GetProtocol(protocolName, supportedProtocols: null);
+
+                    if (protocol == null)
+                    {
+                        throw new InvalidOperationException(
+                            $"The protocol '{protocolName}' is not configured. " +
+                            $"Add the missing protocol using ServiceManagerBuilder.AddHubProtocol() or ServiceManagerBuilder.WithHubProtocols().");
+                    }
+
+                    // 3. Read raw completion payload from response body
+
+                    var buffer = await response.Content.ReadAsByteArrayAsync(cancellationToken)
+                            .ConfigureAwait(false);
+
+                    if (buffer.Length == 0)
+                    {
+                        throw new HubException("Response payload is empty.");
+                    }
+
+                    // 4. Use SimpleInvocationBinder with typeof(T)
+                    var binder = new SimpleInvocationBinder(typeof(T));
+
+                    // 5. Parse the payload bytes into CompletionMessage
+                    var sequence = new ReadOnlySequence<byte>(buffer);
+                    var local = sequence;
+                    if (!protocol.TryParseMessage(ref local, binder, out var hubMessage))
+                    {
+                        throw new HubException("Failed to parse invocation response.");
+                    }
+
+                    responseMessage = (CompletionMessage)hubMessage!;
+                }
+                else
+                {
+                    errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                }
+
+                return isSuccess || response.StatusCode == HttpStatusCode.BadRequest;
+            },
+            new MediaTypeWithQualityHeaderValue("application/octet-stream"),
+            cancellationToken);
+
+        if (!isSuccess)
+        {
+            throw new HubException(errorContent ?? "Unknown error in response");
+        }
+        if (responseMessage == null)
+        {
+            throw new HubException("Response message is null.");
+        }
+        if (responseMessage.Error != null)
+        {
+            throw new HubException(responseMessage.Error);
+        }
+
+        return (T)responseMessage!.Result!;
+    }
+
+    public override Task SetConnectionResultAsync(string connectionId, CompletionMessage result)
+    {
+        // This method won't get trigger because in transient we will wait for the returned completion message.
+        // this is to honor the interface
+        throw new NotImplementedException();
+    }
+
     private static bool IsInvocationSupported(IHubProtocol protocol)
-#pragma warning restore IDE0051 // Will be used in the future updates
     {
         // Use protocol.Name to check for supported protocols
         switch (protocol.Name)

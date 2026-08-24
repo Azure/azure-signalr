@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,6 +38,27 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         /// <returns>A negotiation response object that contains an endpoint url and an access token for the client to connect to the Azure SignalR instance. </returns>
         public virtual ValueTask<NegotiationResponse> NegotiateAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
+        /// <summary>
+        /// Performs a negotiation that also returns the client access token's lifetime seconds.
+        /// </summary>
+        public virtual Task<NegotiationResult> NegotiateWithTokenLifetimeAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
+        /// <summary>
+        /// Refreshes the authentication expiration and the application claims of a live client connection without reconnecting,
+        /// then returns a refreshed service access token for the client.
+        /// </summary>
+        /// <param name="connectionToken">The connection token (the <c>id</c> from the client-facing refresh endpoint).</param>
+        /// <param name="options">The refresh options. When null, the existing authentication expiration and claims are preserved, and the default service-token lifetime is used.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        public virtual Task<RefreshConnectionAuthenticationResult> RefreshConnectionAuthenticationAsync(string connectionToken, RefreshConnectionAuthenticationOptions options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
+        /// <summary>
+        /// Reads the current claim set of a live client connection.
+        /// </summary>
+        /// <param name="connectionToken">The connection token (the <c>id</c> from the client-facing refresh endpoint).</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        public virtual Task<ConnectionClaims> GetConnectionClaimsAsync(string connectionToken, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public virtual Task DisposeAsync() => Task.CompletedTask;
 

@@ -52,6 +52,9 @@ namespace Microsoft.Azure.SignalR;
 internal partial class ClientConnectionContext : ConnectionContext,
                                           IClientConnection,
                                           IConnectionUserFeature,
+#if NET11_0_OR_GREATER
+                                          IConnectionUserRefreshFeature,
+#endif
                                           IConnectionItemsFeature,
                                           IConnectionIdFeature,
                                           IConnectionTransportFeature,
@@ -127,6 +130,89 @@ internal partial class ClientConnectionContext : ConnectionContext,
     public IDuplexPipe Application { get; set; }
 
     public ClaimsPrincipal User { get; set; }
+
+    /// <summary>
+    /// Applies refreshed user claims pushed from the service to the live client connection.
+    /// </summary>
+    /// <param name="user">The refreshed user principal.</param>
+    public void UpdateUser(ClaimsPrincipal user)
+    {
+        User = user;
+#if NET11_0_OR_GREATER
+        NotifyUserRefreshed(user);
+#endif
+    }
+
+#if NET11_0_OR_GREATER
+    private readonly object _userRefreshedLock = new();
+
+    private List<UserRefreshedRegistration> _userRefreshedCallbacks;
+
+    IDisposable IConnectionUserRefreshFeature.OnUserRefreshed(Action<ClaimsPrincipal, object> callback, object state)
+    {
+        ArgumentNullException.ThrowIfNull(callback);
+
+        var registration = new UserRefreshedRegistration(this, callback, state);
+        lock (_userRefreshedLock)
+        {
+            (_userRefreshedCallbacks ??= new List<UserRefreshedRegistration>()).Add(registration);
+        }
+        return registration;
+    }
+
+    private void NotifyUserRefreshed(ClaimsPrincipal user)
+    {
+        UserRefreshedRegistration[] callbacks;
+        lock (_userRefreshedLock)
+        {
+            if (_userRefreshedCallbacks == null || _userRefreshedCallbacks.Count == 0)
+            {
+                return;
+            }
+            callbacks = _userRefreshedCallbacks.ToArray();
+        }
+
+        foreach (var registration in callbacks)
+        {
+            try
+            {
+                registration.Invoke(user);
+            }
+            catch (Exception ex)
+            {
+                Log.UserRefreshedCallbackFailed(Logger, ConnectionId, ex);
+            }
+        }
+    }
+
+    private void RemoveUserRefreshedRegistration(UserRefreshedRegistration registration)
+    {
+        lock (_userRefreshedLock)
+        {
+            _userRefreshedCallbacks?.Remove(registration);
+        }
+    }
+
+    private sealed class UserRefreshedRegistration : IDisposable
+    {
+        private readonly ClientConnectionContext _connection;
+
+        private readonly Action<ClaimsPrincipal, object> _callback;
+
+        private readonly object _state;
+
+        public UserRefreshedRegistration(ClientConnectionContext connection, Action<ClaimsPrincipal, object> callback, object state)
+        {
+            _connection = connection;
+            _callback = callback;
+            _state = state;
+        }
+
+        public void Invoke(ClaimsPrincipal user) => _callback(user, _state);
+
+        public void Dispose() => _connection.RemoveUserRefreshedRegistration(this);
+    }
+#endif
 
     public Task LifetimeTask => _connectionEndTcs.Task;
 
@@ -479,26 +565,43 @@ internal partial class ClientConnectionContext : ConnectionContext,
             {
                 var owner = ExactSizeMemoryPool.Shared.Rent((int)connectionDataMessage.Payload.Length);
                 connectionDataMessage.Payload.CopyTo(owner.Memory.Span);
-                // make sure there is no await operation before _bufferingMessages.
+                // make sure there is no await operation before _bufferingMessages.Enqueue.
                 _bufferedMessages.Enqueue(owner);
             }
             else
             {
-                long length = 0;
-                foreach (var owner in _bufferedMessages)
+                int length = 0;
+                if (_bufferedMessages.Count > 0)
                 {
-                    using (owner)
+                    length += (int)connectionDataMessage.Payload.Length;
+                    foreach (var buffered in _bufferedMessages)
                     {
-                        await WriteToApplicationAsync(new ReadOnlySequence<byte>(owner.Memory));
-                        length += owner.Memory.Length;
+                        length += buffered.Memory.Length;
                     }
+                    using var memoryOwner = ExactSizeMemoryPool.Shared.Rent(length);
+                    var destination = memoryOwner.Memory.Span;
+                    while (_bufferedMessages.Count > 0)
+                    {
+                        using var owner = _bufferedMessages.Dequeue();
+                        owner.Memory.Span.CopyTo(destination);
+                        destination = destination.Slice(owner.Memory.Length);
+                    }
+                    foreach (var memory in connectionDataMessage.Payload)
+                    {
+                        memory.Span.CopyTo(destination);
+                        destination = destination.Slice(memory.Length);
+                    }
+                    // make sure there is no await operation before WriteToApplicationAsync.
+                    await WriteToApplicationAsync(new ReadOnlySequence<byte>(memoryOwner.Memory));
                 }
-                _bufferedMessages.Clear();
-
-                var payload = connectionDataMessage.Payload;
-                length += payload.Length;
-                Log.WriteMessageToApplication(Logger, length, connectionDataMessage.ConnectionId);
-                await WriteToApplicationAsync(payload);
+                else
+                {
+                    var payload = connectionDataMessage.Payload;
+                    length += (int)payload.Length;
+                    Log.WriteMessageToApplication(Logger, length, connectionDataMessage.ConnectionId);
+                    // make sure there is no await operation before WriteToApplicationAsync.
+                    await WriteToApplicationAsync(payload);
+                }
             }
         }
         catch (Exception ex)
@@ -603,6 +706,9 @@ internal partial class ClientConnectionContext : ConnectionContext,
         var features = new FeatureCollection();
         features.Set<IConnectionHeartbeatFeature>(this);
         features.Set<IConnectionUserFeature>(this);
+#if NET11_0_OR_GREATER
+        features.Set<IConnectionUserRefreshFeature>(this);
+#endif
         features.Set<IConnectionItemsFeature>(this);
         features.Set<IConnectionIdFeature>(this);
         features.Set<IConnectionTransportFeature>(this);

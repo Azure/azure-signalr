@@ -35,6 +35,17 @@ public class NegotiationOptions
     public TimeSpan TokenLifetime { get; set; } = TimeSpan.FromHours(1);
 
     /// <summary>
+    /// Gets or sets the application authentication expiration deadline. When null and <see cref="CloseOnAuthenticationExpiration"/> is enabled,
+    /// the deadline defaults to the current time plus <see cref="TokenLifetime"/> for backward compatibility.
+    /// </summary>
+    public DateTimeOffset? AuthenticationExpiresOn { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether authentication refresh is enabled for this connection. By default it is false.
+    /// </summary>
+    public bool EnableAuthenticationRefresh { get; set; }
+
+    /// <summary>
     /// Gets or sets the flag indicates whether the client is a diagnostic client. By default it is false.
     /// </summary>
     public bool IsDiagnosticClient { get; set; }
@@ -45,7 +56,7 @@ public class NegotiationOptions
     public bool EnableDetailedErrors { get; set; }
 
     /// <summary>
-    /// Gets or sets the flag indicates that whether the connection should be closed when the authentication token expires. The lifetime of the token is determined by <see cref="TokenLifetime"/>. By default it is false.
+    /// Gets or sets the flag indicates whether the connection should be closed at <see cref="AuthenticationExpiresOn"/>. By default it is false.
     /// </summary>
     public bool CloseOnAuthenticationExpiration { get; set; }
 

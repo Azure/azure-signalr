@@ -780,6 +780,24 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "GroupMemberQueryMessageWithOptionalFields",
                 message: new GroupMemberQueryMessage() { GroupName = "group", AckId = 1, MaxPageSize = 5, Top = 10, ContinuationToken = "token", TracingId = 1234UL },
                 binary: "lyiBAc0E0qVncm91cAEKpXRva2VuBQ=="),
+            new ProtocolTestData(
+                name: "RefreshAuthMessage",
+                message: new RefreshAuthMessage("conn1", new[]
+                {
+                    new System.Security.Claims.Claim("role", "reader"),
+                }, new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero), 1),
+                binary: "limlY29ubjGBpHJvbGWmcmVhZGVy1v9lkgCAAYA="),
+            new ProtocolTestData(
+                name: "GetConnectionClaimsMessage",
+                message: new GetConnectionClaimsMessage("conn1", 1),
+                binary: "lCqlY29ubjEBgA=="),
+            new ProtocolTestData(
+                name: "UpdateConnectionClaimsMessage",
+                message: new UpdateConnectionClaimsMessage("conn1", new[]
+                {
+                    new System.Security.Claims.Claim("role", "reader"),
+                }),
+                binary: "lCulY29ubjGBpHJvbGWmcmVhZGVygA=="),
         }.ToDictionary(t => t.Name);
 
 #pragma warning restore CS0618 // Type or member is obsolete
@@ -848,6 +866,18 @@ Please verify the MsgPack output and update the baseline");
             var seq = new ReadOnlySequence<byte>(bytes);
             var parsing = protocol.TryParseMessage(ref seq, out var result);
             Assert.Equal(count, (result as ConnectionDataMessage).Payload.Length);
+        }
+
+        [Fact]
+        public void RefreshAuthMessage_MaxValueExpiration_RoundTrips()
+        {
+            var message = new RefreshAuthMessage("conn1", claims: null, DateTimeOffset.MaxValue, ackId: 1);
+            var bytes = Protocol.GetMessageBytes(message);
+            var sequence = new ReadOnlySequence<byte>(bytes);
+
+            Assert.True(Protocol.TryParseMessage(ref sequence, out var result));
+            var refreshMessage = Assert.IsType<RefreshAuthMessage>(result);
+            Assert.Equal(DateTimeOffset.MaxValue, refreshMessage.ExpireTime);
         }
 
         [Fact]

@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR.Management
                     {
                         var payloadBuilderResolver = _serviceProvider.GetRequiredService<PayloadBuilderResolver>();
                         var httpClientFactory = _serviceProvider.GetRequiredService<IHttpClientFactory>();
-                        var serviceEndpoint = _serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.First().Key;
+                        var serviceEndpoint = _serviceProvider.GetRequiredService<IServiceEndpointManager>().GetEndpoints(hubName)[0];
                         var restClient = new RestClient(httpClientFactory, payloadBuilderResolver.GetPayloadContentBuilder());
                         var protocolResolver = _serviceProvider.GetRequiredService<IHubProtocolResolver>();
                         return new RestHubLifetimeManager<THub>(hubName, serviceEndpoint, _options.ApplicationName, restClient, protocolResolver);

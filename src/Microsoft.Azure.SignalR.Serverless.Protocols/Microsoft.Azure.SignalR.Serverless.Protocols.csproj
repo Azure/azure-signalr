@@ -15,21 +15,24 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);ENABLE_UNSAFE_MSGPACK;SPAN_BUILTIN;MESSAGEPACK_INTERNAL</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <MessagePackRoot>$(RepositoryRoot)src\submodules\MessagePack-CSharp\src\MessagePack.UnityClient\Assets\Scripts\MessagePack\</MessagePackRoot>
+    <MessagePackRoot>$(RepositoryRoot)src\submodules\MessagePack-CSharp\src\MessagePack\</MessagePackRoot>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- MessagePack -->
     <Compile Include="$(MessagePackRoot)MessagePackReader.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)MessagePackReader.Integers.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)MessagePackPrimitives.Readers.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)MessagePackPrimitives.Readers.Integers.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)MessagePackWriter.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)MessagePackPrimitives.Writers.cs" LinkBase="MessagePack" />
     <Compile Include="$(MessagePackRoot)SequenceReader.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)SequenceReaderExtensions.cs" LinkBase="MessagePack" />
     <Compile Include="$(MessagePackRoot)MessagePackSerializationException.cs" LinkBase="MessagePack" />
     <Compile Include="$(MessagePackRoot)MessagePackCode.cs" LinkBase="MessagePack" />
-    <Compile Include="$(MessagePackRoot)T4\MessagePackReader.Integers.cs" LinkBase="MessagePack" />
-    <Compile Include="$(MessagePackRoot)MessagePackWriter.cs" LinkBase="MessagePack" />
     <Compile Include="$(MessagePackRoot)ExtensionHeader.cs" LinkBase="MessagePack" />
     <Compile Include="$(MessagePackRoot)Nil.cs" LinkBase="MessagePack" />
     <Compile Include="$(MessagePackRoot)ExtensionResult.cs" LinkBase="MessagePack" />
-    <Compile Include="$(MessagePackRoot)SequenceReaderExtensions.cs" LinkBase="MessagePack" />
     <Compile Include="$(MessagePackRoot)Internal\DateTimeConstants.cs" LinkBase="MessagePack" />
     <Compile Include="$(MessagePackRoot)StringEncoding.cs" LinkBase="MessagePack" />
     <Compile Include="$(MessagePackRoot)BufferWriter.cs" LinkBase="MessagePack" />
@@ -37,6 +40,7 @@
     <Compile Include="$(MessagePackRoot)Utilities.cs" LinkBase="MessagePack" />
     <Compile Include="..\Common\MemoryBufferWriter.cs" Link="Internal\MemoryBufferWriter.cs" />
     <Compile Include="..\Common\SequenceOfT.cs" LinkBase="MessagePack" />
+    <Compile Include="..\Common\DoesNotReturnIfAttribute.cs" Link="Internal\DoesNotReturnIfAttribute.cs" />
   </ItemGroup>
   
 </Project>

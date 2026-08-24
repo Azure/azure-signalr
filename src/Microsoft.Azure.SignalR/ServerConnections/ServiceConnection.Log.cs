@@ -100,6 +100,11 @@ internal partial class ServiceConnection
             ReceivedMessageForNonExistentConnectionAction(logger, message.TracingId, message.ConnectionId, null);
         }
 
+        public static void ReceivedMessageForNonExistentConnection(ILogger logger, string connectionId)
+        {
+            ReceivedMessageForNonExistentConnectionAction(logger, null, connectionId, null);
+        }
+
         public static void ConnectedEnding(ILogger logger, string connectionId)
         {
             ConnectedEndingAction(logger, connectionId, null);

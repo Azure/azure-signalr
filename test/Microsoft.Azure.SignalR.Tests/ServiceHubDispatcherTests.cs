@@ -139,6 +139,16 @@ public class ServiceHubDispatcherTests
             throw new NotImplementedException();
         }
 
+        public Task<RefreshAuthResult> RefreshAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task WriteAsync(ServiceMessage seviceMessage)
         {
             throw new NotImplementedException();

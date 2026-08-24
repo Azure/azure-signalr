@@ -148,6 +148,17 @@ internal class ServiceConnectionManager : IServiceConnectionManager
         throw new NotImplementedException();
     }
 
+    // ASP.NET SignalR does not support it.
+    public Task<RefreshAuthResult> RefreshAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
+    {
+        throw new NotSupportedException();
+    }
+
+    public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+    {
+        throw new NotSupportedException();
+    }
+
     public void Dispose()
     {
         StopAsync().GetAwaiter().GetResult();

@@ -27,13 +27,22 @@ jobs:
             - '**.csproj'
             - '**.targets'
             - '*.sln'
+      - name: Enable git long paths
+        if: steps.filter.outputs.src == 'true'
+        run: git config --global core.longpaths true
       - name: Update SubModules
         if: steps.filter.outputs.src == 'true'
         run: git submodule update --init --recursive
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'  # Adjust as needed
+          dotnet-version: '8.0.x'
+      # Remove it when .NET 11 is GA.
+      - name: Setup .NET 11 daily SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+          dotnet-quality: 'daily'
       - name: Restore dependencies
         run: dotnet restore
 
@@ -81,8 +90,7 @@ jobs:
         id: check_label
         if: steps.api-check.outcome == 'failure' && contains(github.event.pull_request.labels.*.name, 'api-breaking-change-signoff') # Run only if the api-check step failed
         run: |
-          LABELS="${{ toJson(github.event.pull_request.labels) }}"
-          echo "PR Labels: $LABELS"
+          echo "Label 'api-breaking-change-signoff' found on PR; API breaking change is signed off."
           echo "HAS_SPECIAL_LABEL=true" >> $GITHUB_ENV
         shell: bash
       - name: Determine merge eligibility

@@ -621,6 +621,76 @@ public class NegotiateHandlerFacts
 
 #endif
 
+#if NET11_0_OR_GREATER
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TestNegotiateHandlerCapsAccessTokenLifetimeOnlyWhenAuthenticationRefreshEnabled(bool enableAuthenticationRefresh)
+    {
+        var configuredLifetime = TimeSpan.FromDays(1);
+        var authenticationLifetime = TimeSpan.FromMinutes(10);
+        using var app = await CreateSignalRServerAppWithAuthenticationRefreshAsync(enableAuthenticationRefresh, configuredLifetime);
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(
+            new[] { new Claim(ClaimTypes.NameIdentifier, DefaultUserId) },
+            "TestAuth"));
+        var httpContext = new DefaultHttpContext { User = principal };
+        httpContext.Features.Set(Mock.Of<IAuthenticateResultFeature>(feature =>
+            feature.AuthenticateResult == AuthenticateResult.Success(new AuthenticationTicket(
+                principal,
+                new AuthenticationProperties { ExpiresUtc = DateTimeOffset.UtcNow.Add(authenticationLifetime) },
+                "TestAuth"))));
+        var handler = app.Services.GetRequiredService<NegotiateHandler<Chat>>();
+
+        var response = await handler.Process(httpContext);
+
+        var token = JwtSecurityTokenHandler.ReadJwtToken(response.AccessToken);
+        var actualLifetime = token.ValidTo - token.ValidFrom;
+        var expectedLifetime = enableAuthenticationRefresh ? authenticationLifetime : configuredLifetime;
+        Assert.InRange(actualLifetime, expectedLifetime - TimeSpan.FromSeconds(5), expectedLifetime + TimeSpan.FromSeconds(1));
+        if (enableAuthenticationRefresh)
+        {
+            Assert.InRange(response.TokenLifetime.Value, authenticationLifetime - TimeSpan.FromSeconds(5), authenticationLifetime);
+        }
+        else
+        {
+            Assert.Null(response.TokenLifetime);
+        }
+
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task TestGenerateRefreshedAccessTokenCapsTokenAndSchedulingLifetime()
+    {
+        var configuredLifetime = TimeSpan.FromDays(1);
+        var authenticationLifetime = TimeSpan.FromMinutes(10);
+        var authenticationExpiresOn = DateTimeOffset.UtcNow.Add(authenticationLifetime);
+        using var app = await CreateSignalRServerAppWithAuthenticationRefreshAsync(true, configuredLifetime);
+        var handler = app.Services.GetRequiredService<NegotiateHandler<Chat>>();
+        var endpoint = app.Services.GetRequiredService<IServiceEndpointManager>().GetEndpoints(nameof(Chat)).First();
+        var claims = new[]
+        {
+            new Claim(
+                Constants.ClaimType.AuthExpiresOn,
+                authenticationExpiresOn.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)),
+        };
+
+        var (accessToken, tokenLifetimeSeconds) = await handler.GenerateRefreshedAccessTokenAsync(
+            endpoint,
+            claims,
+            authenticationExpiresOn);
+
+        var token = JwtSecurityTokenHandler.ReadJwtToken(accessToken);
+        var actualLifetime = token.ValidTo - token.ValidFrom;
+        Assert.InRange(actualLifetime, authenticationLifetime - TimeSpan.FromSeconds(5), authenticationLifetime + TimeSpan.FromSeconds(1));
+        Assert.InRange(tokenLifetimeSeconds, (int)authenticationLifetime.TotalSeconds - 5, (int)authenticationLifetime.TotalSeconds);
+
+        await app.StopAsync();
+    }
+
+#endif
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -689,6 +759,25 @@ public class NegotiateHandlerFacts
         await app.StartAsync();
         return app;
     }
+
+#if NET11_0_OR_GREATER
+    private static async Task<WebApplication> CreateSignalRServerAppWithAuthenticationRefreshAsync(bool enableAuthenticationRefresh, TimeSpan accessTokenLifetime)
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddSignalR().AddAzureSignalR(options =>
+        {
+            options.ConnectionString = "Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;";
+            options.AccessTokenLifetime = accessTokenLifetime;
+        });
+        builder.Services.AddSingleton(sp => Mock.Of<IEndpointRouter>(router =>
+            router.GetNegotiateEndpoint(It.IsAny<HttpContext>(), It.IsAny<IEnumerable<ServiceEndpoint>>()) == sp.GetService<IServiceEndpointManager>().Endpoints.First().Value));
+        builder.Services.AddSingleton<IServiceConnectionFactory>(new TestServiceConnectionFactory());
+        var app = builder.Build();
+        app.MapHub<Chat>("/chat", options => options.EnableAuthenticationRefresh = enableAuthenticationRefresh);
+        await app.StartAsync();
+        return app;
+    }
+#endif
 
     private sealed class TestServerNameProvider : IServerNameProvider
     {

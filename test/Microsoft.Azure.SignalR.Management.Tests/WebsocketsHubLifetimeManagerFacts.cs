@@ -4,10 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -65,6 +67,110 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.NotNull(manager);
             _serverNameProviderMock.Verify(s => s.GetName(), Times.Once);
         }
+
+        [Fact]
+        public async Task RefreshAuthAsync_NullOrEmptyConnectionToken_ThrowsArgumentException()
+        {
+            var manager = CreateManager();
+
+            var exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => manager.RefreshAuthAsync(null!, DateTimeOffset.UtcNow, null, default));
+            Assert.Equal("connectionToken", exception.ParamName);
+
+            exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => manager.RefreshAuthAsync(string.Empty, DateTimeOffset.UtcNow, null, default));
+            Assert.Equal("connectionToken", exception.ParamName);
+        }
+
+        [Fact]
+        public async Task RefreshAuthAsync_DelegatesTokenKeyedMessageToContainer_ReturnsResult()
+        {
+            var manager = CreateManager();
+            var expireTime = new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero);
+            RefreshAuthMessage captured = null;
+            var expected = new RefreshAuthResult(AckStatus.Ok, new[] { new Claim("role", "admin") });
+
+            _serviceConnectionManagerMock
+                .Setup(m => m.RefreshAuthAsync(It.IsAny<RefreshAuthMessage>(), It.IsAny<HubServiceEndpoint>(), It.IsAny<CancellationToken>()))
+                .Callback<RefreshAuthMessage, HubServiceEndpoint, CancellationToken>((message, _, _) => captured = message)
+                .ReturnsAsync(expected);
+
+            var result = await manager.RefreshAuthAsync("conn-token-1", expireTime, new[] { new Claim("role", "admin") }, default);
+
+            // The Persistent transport builds a token-keyed RefreshAuthMessage and delegates to the container.
+            Assert.NotNull(captured);
+            Assert.Equal("conn-token-1", captured!.ConnectionToken);
+            Assert.Equal(expireTime, captured.ExpireTime);
+            var sentClaim = Assert.Single(captured.Claims!);
+            Assert.Equal("role", sentClaim.Type);
+            Assert.Equal("admin", sentClaim.Value);
+
+            Assert.Equal(AckStatus.Ok, result.Status);
+            Assert.Equal("admin", Assert.Single(result.Claims!).Value);
+        }
+
+        [Fact]
+        public async Task RefreshAuthAsync_NoClaims_SendsNullClaims()
+        {
+            var manager = CreateManager();
+            RefreshAuthMessage captured = null;
+
+            _serviceConnectionManagerMock
+                .Setup(m => m.RefreshAuthAsync(It.IsAny<RefreshAuthMessage>(), It.IsAny<HubServiceEndpoint>(), It.IsAny<CancellationToken>()))
+                .Callback<RefreshAuthMessage, HubServiceEndpoint, CancellationToken>((message, _, _) => captured = message)
+                .ReturnsAsync(new RefreshAuthResult(AckStatus.Ok));
+
+            await manager.RefreshAuthAsync("conn-token-1", DateTimeOffset.UtcNow, null, default);
+
+            Assert.NotNull(captured);
+            Assert.Null(captured!.Claims);
+        }
+
+        [Fact]
+        public async Task GetConnectionClaimsAsync_NullOrEmptyConnectionToken_ThrowsArgumentException()
+        {
+            var manager = CreateManager();
+
+            var exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => manager.GetConnectionClaimsAsync(null!, default));
+            Assert.Equal("connectionToken", exception.ParamName);
+
+            exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => manager.GetConnectionClaimsAsync(string.Empty, default));
+            Assert.Equal("connectionToken", exception.ParamName);
+        }
+
+        [Fact]
+        public async Task GetConnectionClaimsAsync_DelegatesTokenKeyedMessageToContainer_ReturnsResult()
+        {
+            var manager = CreateManager();
+            GetConnectionClaimsMessage captured = null;
+            var expected = new GetConnectionClaimsResult(AckStatus.Ok, new[] { new Claim("role", "user") });
+
+            _serviceConnectionManagerMock
+                .Setup(m => m.GetConnectionClaimsAsync(It.IsAny<GetConnectionClaimsMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<GetConnectionClaimsMessage, CancellationToken>((message, _) => captured = message)
+                .ReturnsAsync(expected);
+
+            var result = await manager.GetConnectionClaimsAsync("conn-token-1", default);
+
+            Assert.NotNull(captured);
+            Assert.Equal("conn-token-1", captured!.ConnectionToken);
+            Assert.Equal(AckStatus.Ok, result.Status);
+            Assert.Equal("user", Assert.Single(result.Claims!).Value);
+        }
+
+        private WebSocketsHubLifetimeManager<TestHub> CreateManager() =>
+            new(
+                _serviceConnectionManagerMock.Object,
+                _protocolResolver,
+                _globalHubOptionsMock.Object,
+                _hubOptionsMock.Object,
+                _loggerFactoryMock.Object,
+                _serviceManagerOptionsMock.Object,
+                _clientInvocationManagerMock.Object,
+                _serverNameProviderMock.Object,
+                _hubName);
 
 #if NET7_0_OR_GREATER
         [Fact]

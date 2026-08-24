@@ -2,9 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #nullable enable
 using System;
+using System.Collections.Generic;
 #if NET7_0_OR_GREATER
 using System.Linq;
 #endif
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -188,6 +190,35 @@ internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<T
         }
         return WriteAckableMessageAsync(message, cancellationToken);
     }
+
+    public Task<RefreshAuthResult> RefreshAuthAsync(string connectionToken, DateTimeOffset expireTime, IEnumerable<Claim>? claims, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(connectionToken))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionToken));
+        }
+
+        var message = new RefreshAuthMessage(connectionToken, ToClaimArray(claims), expireTime, 0);
+        return ServiceConnectionContainer.RefreshAuthAsync(message, cancellationToken: cancellationToken);
+    }
+
+    public Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(string connectionToken, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(connectionToken))
+        {
+            throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionToken));
+        }
+
+        var message = new GetConnectionClaimsMessage(connectionToken, 0);
+        return ServiceConnectionContainer.GetConnectionClaimsAsync(message, cancellationToken);
+    }
+
+    private static Claim[]? ToClaimArray(IEnumerable<Claim>? claims) => claims switch
+    {
+        null => null,
+        Claim[] array => array,
+        _ => new List<Claim>(claims).ToArray()
+    };
 
     public Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default)
     {

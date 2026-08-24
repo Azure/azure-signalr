@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -155,6 +156,97 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
     public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
     {
         return CreateMessageWriter(serviceMessage).WriteAckableMessageAsync(serviceMessage, cancellationToken);
+    }
+
+    // Refresh mutates an existing connection on its owning ServiceEndpoint; it never negotiates a new endpoint or rebalances.
+    // Exactly one endpoint should own the connection; multiple owners are treated as an ambiguous-sharding failure rather than picking one.
+    public async Task<RefreshAuthResult> RefreshAuthAsync(RefreshAuthMessage message, HubServiceEndpoint preferredEndpoint = null, CancellationToken cancellationToken = default)
+    {
+        var endpoints = GetOnlineEndpoints().ToArray();
+        if (endpoints.Length == 0)
+        {
+            return new RefreshAuthResult(AckStatus.NotFound);
+        }
+        // When GetConnectionClaims already resolved the owning endpoint, pin the refresh to it and skip the second fan-out.
+        if (preferredEndpoint != null)
+        {
+            var pinned = Array.Find(endpoints, e => ReferenceEquals(e, preferredEndpoint));
+            if (pinned != null)
+            {
+                return await pinned.ConnectionContainer.RefreshAuthAsync(message, cancellationToken: cancellationToken);
+            }
+            // The owning endpoint went offline between the read and the refresh; fall back to fanning out.
+        }
+        if (endpoints.Length == 1)
+        {
+            return await endpoints[0].ConnectionContainer.RefreshAuthAsync(message, cancellationToken: cancellationToken);
+        }
+
+        var results = await Task.WhenAll(endpoints.Select(async e =>
+        {
+            try
+            {
+                return await e.ConnectionContainer.RefreshAuthAsync((RefreshAuthMessage)message.Clone(), cancellationToken: cancellationToken);
+            }
+            catch (TimeoutException)
+            {
+                return new RefreshAuthResult(AckStatus.Timeout);
+            }
+        }));
+
+        // Owners are endpoints that resolved the connection. Each carries its own claims + owning endpoint.
+        var resolved = results.Where(r => r.Status != AckStatus.NotFound && r.Status != AckStatus.Timeout).ToArray();
+        if (resolved.Length == 1)
+        {
+            return resolved[0];
+        }
+        if (resolved.Length > 1)
+        {
+            Log.AmbiguousShardingOwnership(_logger, resolved.Length);
+            return new RefreshAuthResult(AckStatus.InternalServerError);
+        }
+        // No endpoint owned the connection: surface Timeout if any was inconclusive, otherwise NotFound.
+        return new RefreshAuthResult(results.Any(r => r.Status == AckStatus.Timeout) ? AckStatus.Timeout : AckStatus.NotFound);
+    }
+
+    public async Task<GetConnectionClaimsResult> GetConnectionClaimsAsync(GetConnectionClaimsMessage message, CancellationToken cancellationToken = default)
+    {
+        var endpoints = GetOnlineEndpoints().ToArray();
+        if (endpoints.Length == 0)
+        {
+            return new GetConnectionClaimsResult(AckStatus.NotFound);
+        }
+        if (endpoints.Length == 1)
+        {
+            var single = await endpoints[0].ConnectionContainer.GetConnectionClaimsAsync(message, cancellationToken);
+            // Surface the queried endpoint so the caller can pin a follow-up refresh to it.
+            return new GetConnectionClaimsResult(single.Status, single.Claims, endpoints[0]);
+        }
+
+        var results = await Task.WhenAll(endpoints.Select(async e =>
+        {
+            try
+            {
+                var r = await e.ConnectionContainer.GetConnectionClaimsAsync((GetConnectionClaimsMessage)message.Clone(), cancellationToken);
+                return (Endpoint: e, r.Status, r.Claims);
+            }
+            catch (TimeoutException)
+            {
+                return (Endpoint: e, Status: AckStatus.Timeout, Claims: (IReadOnlyList<Claim>)null);
+            }
+        }));
+
+        var resolved = results.Where(r => r.Status != AckStatus.NotFound && r.Status != AckStatus.Timeout).ToArray();
+        if (resolved.Length == 1)
+        {
+            return new GetConnectionClaimsResult(resolved[0].Status, resolved[0].Claims, resolved[0].Endpoint);
+        }
+        if (resolved.Length > 1)
+        {
+            Log.AmbiguousShardingOwnership(_logger, resolved.Length);
+            return new GetConnectionClaimsResult(AckStatus.InternalServerError);
+        }
+        return new GetConnectionClaimsResult(results.Any(r => r.Status == AckStatus.Timeout) ? AckStatus.Timeout : AckStatus.NotFound);
     }
 
     public IAsyncEnumerable<Page<SignalRGroupMember>> ListConnectionsInGroupAsync(string groupName, int? top = null, int? maxPageSize = null, string continuationToken = null, ulong? tracingId = null, CancellationToken token = default)
@@ -474,6 +566,9 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         private static readonly Action<ILogger, string, Exception> FailedRemovingConnectionForEndpointAction =
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(10, "FailedRemovingConnectionForEndpoint"), "Fail to stop server connections for endpoint {endpoint}.");
 
+        private static readonly Action<ILogger, int, Exception> AmbiguousShardingOwnershipAction =
+            LoggerMessage.Define<int>(LogLevel.Error, new EventId(11, "AmbiguousShardingOwnership"), "Auth refresh resolved to {count} owning endpoints for a single connection; treating as ambiguous sharding and failing the refresh.");
+
         public static void StartingConnection(ILogger logger, string endpoint)
         {
             StartingConnectionAction(logger, endpoint, null);
@@ -507,6 +602,11 @@ internal class MultiEndpointServiceConnectionContainer : IServiceConnectionConta
         public static void FailedRemovingConnectionForEndpoint(ILogger logger, string endpoint, Exception ex)
         {
             FailedRemovingConnectionForEndpointAction(logger, endpoint, ex);
+        }
+
+        public static void AmbiguousShardingOwnership(ILogger logger, int count)
+        {
+            AmbiguousShardingOwnershipAction(logger, count, null);
         }
     }
 }

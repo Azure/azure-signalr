@@ -1,0 +1,27 @@
+{
+  "parameters": {
+    "api-version": "2024-01-01",
+    "hub": "hub1",
+    "group": "group1",
+    "maxpagesize": 200,
+    "top": 1000,
+    "application": "app1"
+  },
+  "responses": {
+    "200": {
+      "body": {
+        "value": [
+          {
+            "connectionId": "c1",
+            "userId": "u1"
+          },
+          {
+            "connectionId": "c2",
+            "userId": "u2"
+          }
+        ],
+        "nextLink": "https://www.host.com/api/hubs/hub/groups/group1/connections?top=1000&maxpagesize=200&continuationToken=c2&api-version=2024-12-01"
+      }
+    }
+  }
+}
