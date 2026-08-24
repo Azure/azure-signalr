@@ -128,6 +128,10 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     public ClaimsPrincipal User { get; set; }
 
+#if NET11_0_OR_GREATER
+    public Func<ClaimsPrincipal, bool> OnUserRefreshing { get; set; } = _ => true;
+#endif
+
     public Task LifetimeTask => _connectionEndTcs.Task;
 
     public Task HandshakeResponseTask => _hanshakeCompleteTcs.Task;
