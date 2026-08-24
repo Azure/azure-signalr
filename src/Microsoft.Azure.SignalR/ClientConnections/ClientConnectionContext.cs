@@ -131,6 +131,10 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     public ClaimsPrincipal User { get; set; }
 
+#if NET11_0_OR_GREATER
+    public Func<ClaimsPrincipal, bool> OnUserRefreshing { get; set; } = _ => true;
+#endif
+
     /// <summary>
     /// Applies refreshed user claims pushed from the service to the live client connection.
     /// </summary>
