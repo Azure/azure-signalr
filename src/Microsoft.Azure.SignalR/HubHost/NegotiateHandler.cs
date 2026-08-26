@@ -10,6 +10,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Localization;
@@ -211,14 +212,22 @@ internal class NegotiateHandler<THub> where THub : Hub
         return seconds <= 0 ? 0 : (seconds > int.MaxValue ? int.MaxValue : (int)seconds);
     }
 
-    private static DateTimeOffset? GetAuthenticationExpiresOn(HttpContext context)
+    private DateTimeOffset? GetAuthenticationExpiresOn(HttpContext context)
     {
         var authResultFeature = context.Features.Get<IAuthenticateResultFeature>();
-        if (authResultFeature?.AuthenticateResult?.Succeeded == true)
+        var expiration = authResultFeature?.AuthenticateResult?.Succeeded == true
+            ? authResultFeature.AuthenticateResult.Properties.ExpiresUtc
+            : null;
+        if (_dispatcherOptions.MaximumAuthenticationExpiration is not { } maximum)
         {
-            return authResultFeature.AuthenticateResult.Properties.ExpiresUtc;
+            return expiration;
         }
-        return null;
+
+        var now = DateTimeOffset.UtcNow;
+        var maximumExpiration = maximum >= DateTimeOffset.MaxValue - now
+            ? DateTimeOffset.MaxValue
+            : now + maximum;
+        return expiration is null || expiration > maximumExpiration ? maximumExpiration : expiration;
     }
 
     internal static bool HasWindowsIdentity(ClaimsPrincipal user)
@@ -244,7 +253,7 @@ internal class NegotiateHandler<THub> where THub : Hub
 
     internal Claim[] BuildRefreshClaims(HttpContext context) => BuildClaims(context).ToArray();
 
-    internal static DateTimeOffset GetRefreshExpiration(HttpContext context) =>
+    internal DateTimeOffset GetRefreshExpiration(HttpContext context) =>
         GetAuthenticationExpiresOn(context) ?? DateTimeOffset.MaxValue;
 #endif
 
@@ -282,7 +291,13 @@ internal class NegotiateHandler<THub> where THub : Hub
         var authResultFeature = context.Features.Get<IAuthenticateResultFeature>();
         if (authResultFeature != null && authResultFeature.AuthenticateResult != null && authResultFeature.AuthenticateResult.Succeeded)
         {
+#if NET11_0_OR_GREATER
+            authenticationExpiresOn = _dispatcherOptions.EnableAuthenticationRefresh
+                ? GetAuthenticationExpiresOn(context)
+                : authResultFeature.AuthenticateResult.Properties.ExpiresUtc;
+#else
             authenticationExpiresOn = authResultFeature.AuthenticateResult.Properties.ExpiresUtc;
+#endif
         }
 #endif
         return ClaimsUtility.BuildJwtClaims(context.User,

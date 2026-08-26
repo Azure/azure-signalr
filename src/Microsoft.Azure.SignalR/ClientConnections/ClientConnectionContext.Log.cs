@@ -43,8 +43,8 @@ internal partial class ClientConnectionContext
             LoggerMessage.Define<string>(LogLevel.Information, new EventId(10, "OutgoingTaskPauseAck"), "Acknowlege the pause request for connection {connectionId}.");
 
 #if NET11_0_OR_GREATER
-        private static readonly Action<ILogger, string, Exception> _userRefreshedCallbackFailed =
-            LoggerMessage.Define<string>(LogLevel.Error, new EventId(11, "UserRefreshedCallbackFailed"), "An IConnectionUserRefreshFeature.OnUserRefreshed callback threw an exception for connection {TransportConnectionId}.");
+        private static readonly Action<ILogger, string, Exception> _authenticationRefreshedCallbackFailed =
+            LoggerMessage.Define<string>(LogLevel.Error, new EventId(11, "AuthenticationRefreshedCallbackFailed"), "An IConnectionAuthenticationRefreshFeature.OnAuthenticationRefreshed callback threw an exception for connection {TransportConnectionId}.");
 #endif
 
         public static void WriteMessageToApplication(ILogger<ServiceConnection> logger, long count, string connectionId)
@@ -98,9 +98,9 @@ internal partial class ClientConnectionContext
         }
 
 #if NET11_0_OR_GREATER
-        public static void UserRefreshedCallbackFailed(ILogger logger, string connectionId, Exception exception)
+        public static void AuthenticationRefreshedCallbackFailed(ILogger logger, string connectionId, Exception exception)
         {
-            _userRefreshedCallbackFailed(logger, connectionId, exception);
+            _authenticationRefreshedCallbackFailed(logger, connectionId, exception);
         }
 #endif
     }

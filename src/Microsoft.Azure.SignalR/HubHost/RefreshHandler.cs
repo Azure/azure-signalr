@@ -8,6 +8,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
 
+using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
@@ -72,7 +73,7 @@ internal class RefreshHandler<THub> where THub : Hub
             return;
         }
 
-        var newExpiration = NegotiateHandler<THub>.GetRefreshExpiration(context);
+        var newExpiration = _negotiateHandler.GetRefreshExpiration(context);
 
         // When an OnAuthenticationRefresh callback is configured, fetch PreviousUser from the runtime.
         // The endpoint that answers the read is remembered so the refresh below can be pinned to it
