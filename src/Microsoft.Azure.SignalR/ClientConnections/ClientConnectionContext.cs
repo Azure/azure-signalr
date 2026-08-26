@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
@@ -53,7 +54,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
                                           IClientConnection,
                                           IConnectionUserFeature,
 #if NET11_0_OR_GREATER
-                                          IConnectionUserRefreshFeature,
+                                          IConnectionAuthenticationRefreshFeature,
 #endif
                                           IConnectionItemsFeature,
                                           IConnectionIdFeature,
@@ -131,90 +132,106 @@ internal partial class ClientConnectionContext : ConnectionContext,
 
     public ClaimsPrincipal User { get; set; }
 
-#if NET11_0_OR_GREATER
-    public Func<ClaimsPrincipal, bool> OnUserRefreshing { get; set; } = _ => true;
-#endif
-
     /// <summary>
     /// Applies refreshed user claims pushed from the service to the live client connection.
     /// </summary>
     /// <param name="user">The refreshed user principal.</param>
     public void UpdateUser(ClaimsPrincipal user)
     {
+#if NET11_0_OR_GREATER
+        var refreshContext = new AuthenticationRefreshContext
+        {
+            HttpContext = HttpContext,
+            ConnectionId = ConnectionId,
+            PreviousUser = User ?? new ClaimsPrincipal(new ClaimsIdentity()),
+            NewUser = user,
+            NewExpiration = GetAuthenticationExpiration(user),
+        };
+#endif
         User = user;
 #if NET11_0_OR_GREATER
-        NotifyUserRefreshed(user);
+        NotifyAuthenticationRefreshed(refreshContext);
 #endif
     }
 
 #if NET11_0_OR_GREATER
-    private readonly object _userRefreshedLock = new();
+    private readonly object _authenticationRefreshedLock = new();
 
-    private List<UserRefreshedRegistration> _userRefreshedCallbacks;
+    private List<AuthenticationRefreshedRegistration> _authenticationRefreshedCallbacks;
 
-    IDisposable IConnectionUserRefreshFeature.OnUserRefreshed(Action<ClaimsPrincipal, object> callback, object state)
+    public Func<AuthenticationRefreshContext, Task<bool>> OnAuthenticationRefresh { get; set; } = static _ => Task.FromResult(true);
+
+    public IDisposable OnAuthenticationRefreshed(Action<AuthenticationRefreshContext, object> callback, object state)
     {
         ArgumentNullException.ThrowIfNull(callback);
 
-        var registration = new UserRefreshedRegistration(this, callback, state);
-        lock (_userRefreshedLock)
+        var registration = new AuthenticationRefreshedRegistration(this, callback, state);
+        lock (_authenticationRefreshedLock)
         {
-            (_userRefreshedCallbacks ??= new List<UserRefreshedRegistration>()).Add(registration);
+            (_authenticationRefreshedCallbacks ??= new List<AuthenticationRefreshedRegistration>()).Add(registration);
         }
         return registration;
     }
 
-    private void NotifyUserRefreshed(ClaimsPrincipal user)
+    private void NotifyAuthenticationRefreshed(AuthenticationRefreshContext context)
     {
-        UserRefreshedRegistration[] callbacks;
-        lock (_userRefreshedLock)
+        AuthenticationRefreshedRegistration[] callbacks;
+        lock (_authenticationRefreshedLock)
         {
-            if (_userRefreshedCallbacks == null || _userRefreshedCallbacks.Count == 0)
+            if (_authenticationRefreshedCallbacks == null || _authenticationRefreshedCallbacks.Count == 0)
             {
                 return;
             }
-            callbacks = _userRefreshedCallbacks.ToArray();
+            callbacks = _authenticationRefreshedCallbacks.ToArray();
         }
 
         foreach (var registration in callbacks)
         {
             try
             {
-                registration.Invoke(user);
+                registration.Invoke(context);
             }
             catch (Exception ex)
             {
-                Log.UserRefreshedCallbackFailed(Logger, ConnectionId, ex);
+                Log.AuthenticationRefreshedCallbackFailed(Logger, ConnectionId, ex);
             }
         }
     }
 
-    private void RemoveUserRefreshedRegistration(UserRefreshedRegistration registration)
+    private void RemoveAuthenticationRefreshedRegistration(AuthenticationRefreshedRegistration registration)
     {
-        lock (_userRefreshedLock)
+        lock (_authenticationRefreshedLock)
         {
-            _userRefreshedCallbacks?.Remove(registration);
+            _authenticationRefreshedCallbacks?.Remove(registration);
         }
     }
 
-    private sealed class UserRefreshedRegistration : IDisposable
+    private static DateTimeOffset? GetAuthenticationExpiration(ClaimsPrincipal user)
+    {
+        var expiration = user.FindFirst(Constants.ClaimType.AuthExpiresOn)?.Value;
+        return long.TryParse(expiration, NumberStyles.Integer, CultureInfo.InvariantCulture, out var unixSeconds)
+            ? DateTimeOffset.FromUnixTimeSeconds(unixSeconds)
+            : null;
+    }
+
+    private sealed class AuthenticationRefreshedRegistration : IDisposable
     {
         private readonly ClientConnectionContext _connection;
 
-        private readonly Action<ClaimsPrincipal, object> _callback;
+        private readonly Action<AuthenticationRefreshContext, object> _callback;
 
         private readonly object _state;
 
-        public UserRefreshedRegistration(ClientConnectionContext connection, Action<ClaimsPrincipal, object> callback, object state)
+        public AuthenticationRefreshedRegistration(ClientConnectionContext connection, Action<AuthenticationRefreshContext, object> callback, object state)
         {
             _connection = connection;
             _callback = callback;
             _state = state;
         }
 
-        public void Invoke(ClaimsPrincipal user) => _callback(user, _state);
+        public void Invoke(AuthenticationRefreshContext context) => _callback(context, _state);
 
-        public void Dispose() => _connection.RemoveUserRefreshedRegistration(this);
+        public void Dispose() => _connection.RemoveAuthenticationRefreshedRegistration(this);
     }
 #endif
 
@@ -711,7 +728,7 @@ internal partial class ClientConnectionContext : ConnectionContext,
         features.Set<IConnectionHeartbeatFeature>(this);
         features.Set<IConnectionUserFeature>(this);
 #if NET11_0_OR_GREATER
-        features.Set<IConnectionUserRefreshFeature>(this);
+        features.Set<IConnectionAuthenticationRefreshFeature>(this);
 #endif
         features.Set<IConnectionItemsFeature>(this);
         features.Set<IConnectionIdFeature>(this);

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 using Azure;
 
+using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
@@ -23,6 +24,34 @@ public class RefreshAuthFacts
     private sealed class TestHub : Hub
     {
     }
+
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void ClientConnectionContext_UpdateUser_NotifiesAuthenticationRefreshFeature()
+    {
+        var connectionId = Guid.NewGuid().ToString("N");
+        var previousUser = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("my-claim", "original") }));
+        var expiration = DateTimeOffset.UtcNow.AddMinutes(10);
+        var newUser = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("my-claim", "updated"),
+            new Claim(Constants.ClaimType.AuthExpiresOn, expiration.ToUnixTimeSeconds().ToString()),
+        }));
+        var connection = new ClientConnectionContext(new OpenConnectionMessage(connectionId, previousUser.Claims.ToArray()));
+        var feature = connection.Features.Get<IConnectionAuthenticationRefreshFeature>();
+        AuthenticationRefreshContext refreshContext = null;
+        using var registration = feature.OnAuthenticationRefreshed((context, _) => refreshContext = context, null);
+
+        connection.UpdateUser(newUser);
+
+        Assert.Equal(previousUser.Identity.FindFirst("my-claim")?.Value, refreshContext.PreviousUser.Identity.FindFirst("my-claim")?.Value);
+        Assert.Same(newUser, refreshContext.NewUser);
+        Assert.Same(connection.HttpContext, refreshContext.HttpContext);
+        Assert.Equal(connectionId, refreshContext.ConnectionId);
+        Assert.Equal(expiration.ToUnixTimeSeconds(), refreshContext.NewExpiration?.ToUnixTimeSeconds());
+        Assert.Same(newUser, connection.User);
+    }
+#endif
 
     [Fact]
     public async Task ServiceConnection_UpdateConnectionClaims_UpdatesLiveConnectionUser()

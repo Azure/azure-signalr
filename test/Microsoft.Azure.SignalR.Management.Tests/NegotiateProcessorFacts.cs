@@ -53,7 +53,6 @@ public class NegotiateProcessorFacts
         var negotiateResponse = await hubContext.NegotiateAsync(new NegotiationOptions
         {
             AuthenticationExpiresOn = authenticationExpiresOn,
-            EnableAuthenticationRefresh = true,
             CloseOnAuthenticationExpiration = true,
             TokenLifetime = TimeSpan.FromHours(1),
         });
@@ -78,7 +77,6 @@ public class NegotiateProcessorFacts
         var result = await hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
         {
             AuthenticationExpiresOn = authenticationExpiresOn,
-            EnableAuthenticationRefresh = true,
             TokenLifetime = TimeSpan.FromHours(1),
         });
 
@@ -99,7 +97,6 @@ public class NegotiateProcessorFacts
 
         var result = await hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
         {
-            EnableAuthenticationRefresh = true,
             CloseOnAuthenticationExpiration = true,
             TokenLifetime = configuredLifetime,
         });
@@ -127,7 +124,6 @@ public class NegotiateProcessorFacts
         var result = await hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
         {
             AuthenticationExpiresOn = DateTimeOffset.MaxValue,
-            EnableAuthenticationRefresh = true,
             CloseOnAuthenticationExpiration = true,
             TokenLifetime = configuredLifetime,
         });
@@ -150,7 +146,6 @@ public class NegotiateProcessorFacts
 
         var result = await hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
         {
-            EnableAuthenticationRefresh = true,
             CloseOnAuthenticationExpiration = false,
             TokenLifetime = configuredLifetime,
         });
@@ -174,14 +169,13 @@ public class NegotiateProcessorFacts
             hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
             {
                 AuthenticationExpiresOn = DateTimeOffset.UtcNow.AddSeconds(-1),
-                EnableAuthenticationRefresh = true,
             }));
 
         Assert.Contains(nameof(NegotiationOptions.AuthenticationExpiresOn), exception.Message);
     }
 
     [Fact]
-    public async Task NegotiateWithAuthenticationRefreshDisabledReturnsTokenLifetime()
+    public async Task NegotiateWithTokenLifetimeReturnsTokenLifetime()
     {
         using var hubContext = await new ServiceManagerBuilder()
             .WithOptions(o => o.ConnectionString = "Endpoint=https://abc.service.signalr.net;AccessKey=FakeKey;Version=1.0;")
@@ -191,7 +185,6 @@ public class NegotiateProcessorFacts
 
         var result = await hubContext.NegotiateWithTokenLifetimeAsync(new NegotiationOptions
         {
-            EnableAuthenticationRefresh = false,
             TokenLifetime = configuredLifetime,
         });
 

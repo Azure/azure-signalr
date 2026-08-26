@@ -41,11 +41,6 @@ public class NegotiationOptions
     public DateTimeOffset? AuthenticationExpiresOn { get; set; }
 
     /// <summary>
-    /// Gets or sets whether authentication refresh is enabled for this connection. By default it is false.
-    /// </summary>
-    public bool EnableAuthenticationRefresh { get; set; }
-
-    /// <summary>
     /// Gets or sets the flag indicates whether the client is a diagnostic client. By default it is false.
     /// </summary>
     public bool IsDiagnosticClient { get; set; }
