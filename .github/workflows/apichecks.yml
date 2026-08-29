@@ -12,10 +12,10 @@ jobs:
     runs-on: windows-latest  # Use Windows for PowerShell script execution
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0  # Ensure full history for diff comparison
-      - uses: dorny/paths-filter@v2
+      - uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50 # v2.11.1
         id: filter
         with:
           filters: |
@@ -34,12 +34,12 @@ jobs:
         if: steps.filter.outputs.src == 'true'
         run: git submodule update --init --recursive
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: '8.0.x'
       # Remove it when .NET 11 is GA.
       - name: Setup .NET 11 daily SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: '11.0.x'
           dotnet-quality: 'daily'
@@ -52,7 +52,7 @@ jobs:
 
       # Upload the log file as an artifact
       - name: Upload Export API Log as Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: export-api-log
           path: ./export-api.log
