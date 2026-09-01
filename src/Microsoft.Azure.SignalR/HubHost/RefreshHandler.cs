@@ -106,7 +106,7 @@ internal class RefreshHandler<THub> where THub : Hub
                 ConnectionId = string.Empty,
                 PreviousUser = BuildPreviousUser(previousClaims),
                 NewUser = newUser,
-                NewExpiration = newExpiration,
+                NewExpiration = newExpiration == DateTimeOffset.MaxValue ? null : newExpiration,
             };
 
             if (!await callback(refreshContext))
