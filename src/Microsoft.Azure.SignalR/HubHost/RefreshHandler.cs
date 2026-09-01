@@ -4,6 +4,7 @@
 #if NET11_0_OR_GREATER
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -175,43 +176,7 @@ internal class RefreshHandler<THub> where THub : Hub
     /// </summary>
     private static ClaimsPrincipal BuildPreviousUser(IReadOnlyList<Claim> serviceClaims)
     {
-        if (serviceClaims == null || serviceClaims.Count == 0)
-        {
-            return new ClaimsPrincipal(new ClaimsIdentity());
-        }
-
-        var authenticationType = "Bearer";
-        var nameType = ClaimsIdentity.DefaultNameClaimType;
-        var roleType = ClaimsIdentity.DefaultRoleClaimType;
-        var appClaims = new List<Claim>(serviceClaims.Count);
-
-        foreach (var claim in serviceClaims)
-        {
-            switch (claim.Type)
-            {
-                case Constants.ClaimType.AuthenticationType:
-                    authenticationType = claim.Value;
-                    break;
-                case Constants.ClaimType.NameType:
-                    nameType = claim.Value;
-                    break;
-                case Constants.ClaimType.RoleType:
-                    roleType = claim.Value;
-                    break;
-                default:
-                    if (claim.Type.StartsWith(Constants.ClaimType.AzureSignalRUserPrefix, StringComparison.Ordinal))
-                    {
-                        appClaims.Add(new Claim(claim.Type.Substring(Constants.ClaimType.AzureSignalRUserPrefix.Length), claim.Value));
-                    }
-                    else if (!claim.Type.StartsWith(Constants.ClaimType.AzureSignalRSysPrefix, StringComparison.Ordinal))
-                    {
-                        appClaims.Add(claim);
-                    }
-                    break;
-            }
-        }
-
-        return new ClaimsPrincipal(new ClaimsIdentity(appClaims, authenticationType, nameType, roleType));
+        return ClaimsUtility.GetUserPrincipal(serviceClaims?.ToArray());
     }
 
     private static Task WriteErrorAsync(HttpContext context, int statusCode, string error)

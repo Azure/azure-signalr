@@ -71,6 +71,35 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         }
 
         [Fact]
+        public void GetUserPrincipalFiltersServiceTokenEnvelopeAndRestoresApplicationClaims()
+        {
+            var claims = new[]
+            {
+                new Claim(Constants.ClaimType.AuthenticationType, "CustomAuth"),
+                new Claim(Constants.ClaimType.NameType, "custom-name"),
+                new Claim(Constants.ClaimType.RoleType, "custom-role"),
+                new Claim(Constants.ClaimType.AzureSignalRUserPrefix + "exp", "application-expiration"),
+                new Claim("tenant", "contoso"),
+                new Claim("aud", "service-audience"),
+                new Claim("exp", "service-expiration"),
+                new Claim("iat", "service-issued-at"),
+                new Claim("iss", "azure-signalr"),
+                new Claim("nbf", "service-not-before"),
+                new Claim(Constants.ClaimType.AuthExpiresOn, "12345"),
+            };
+
+            var identity = Assert.IsType<ClaimsIdentity>(ClaimsUtility.GetUserPrincipal(claims).Identity);
+
+            Assert.Equal("CustomAuth", identity.AuthenticationType);
+            Assert.Equal("custom-name", identity.NameClaimType);
+            Assert.Equal("custom-role", identity.RoleClaimType);
+            Assert.Equal("application-expiration", Assert.Single(identity.FindAll("exp")).Value);
+            Assert.Equal("contoso", identity.FindFirst("tenant")?.Value);
+            Assert.DoesNotContain(identity.Claims, claim => claim.Type is "aud" or "iat" or "iss" or "nbf");
+            Assert.DoesNotContain(identity.Claims, claim => claim.Type.StartsWith(Constants.ClaimType.AzureSignalRSysPrefix, StringComparison.Ordinal));
+        }
+
+        [Fact]
         public void TestGetSubjectClaims()
         {
             // only the first sub claim is considered as valid to the service
