@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,14 +36,18 @@ public class RefreshAuthFacts
         var newUser = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
             new Claim("my-claim", "updated"),
-            new Claim(Constants.ClaimType.AuthExpiresOn, expiration.ToUnixTimeSeconds().ToString()),
         }));
         var connection = new ClientConnectionContext(new OpenConnectionMessage(connectionId, previousUser.Claims.ToArray()));
         var feature = connection.Features.Get<IConnectionAuthenticationRefreshFeature>();
         AuthenticationRefreshContext refreshContext = null;
-        using var registration = feature.OnAuthenticationRefreshed((context, _) => refreshContext = context, null);
+        ClaimsPrincipal callbackHttpContextUser = null;
+        using var registration = feature.OnAuthenticationRefreshed((context, _) =>
+        {
+            refreshContext = context;
+            callbackHttpContextUser = context.HttpContext.User;
+        }, null);
 
-        connection.UpdateUser(newUser);
+        connection.UpdateUser(newUser, expiration);
 
         Assert.Equal(previousUser.Identity.FindFirst("my-claim")?.Value, refreshContext.PreviousUser.Identity.FindFirst("my-claim")?.Value);
         Assert.Same(newUser, refreshContext.NewUser);
@@ -50,13 +55,16 @@ public class RefreshAuthFacts
         Assert.Equal(connectionId, refreshContext.ConnectionId);
         Assert.Equal(expiration.ToUnixTimeSeconds(), refreshContext.NewExpiration?.ToUnixTimeSeconds());
         Assert.Same(newUser, connection.User);
+        Assert.Same(newUser, connection.HttpContext.User);
+        Assert.Same(newUser, callbackHttpContextUser);
     }
 #endif
 
     [Fact]
-    public async Task ServiceConnection_UpdateConnectionClaims_UpdatesLiveConnectionUser()
+    public async Task ServiceConnection_UpdateConnectionClaims_UpdatesLiveConnectionUserAndPreservesExpirationMetadata()
     {
         var connectionId = Guid.NewGuid().ToString("N");
+        var expiration = DateTimeOffset.UtcNow.AddMinutes(10);
 
         var proxy = new ServiceConnectionProxy();
         var serverTask = proxy.WaitForServerConnectionAsync(1);
@@ -70,8 +78,18 @@ public class RefreshAuthFacts
 
         Assert.Equal("original", connection.User.FindFirst("my-claim")?.Value);
 
+#if NET11_0_OR_GREATER
+        var feature = connection.Features.Get<IConnectionAuthenticationRefreshFeature>();
+        AuthenticationRefreshContext refreshContext = null;
+        using var registration = feature.OnAuthenticationRefreshed((context, _) => refreshContext = context, null);
+#endif
+
         // The service pushes refreshed claims for the live client connection.
-        await proxy.WriteMessageAsync(new UpdateConnectionClaimsMessage(connectionId, new[] { new Claim("my-claim", "updated") }));
+        await proxy.WriteMessageAsync(new UpdateConnectionClaimsMessage(connectionId, new[]
+        {
+            new Claim("my-claim", "updated"),
+            new Claim(Constants.ClaimType.AuthExpiresOn, expiration.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)),
+        }));
 
         // The message is dispatched asynchronously; poll until the user is updated.
         var updated = false;
@@ -86,6 +104,67 @@ public class RefreshAuthFacts
         }
 
         Assert.True(updated, "The client connection user was not updated by UpdateConnectionClaimsMessage.");
+        Assert.Same(connection.User, connection.HttpContext.User);
+        Assert.Null(connection.User.FindFirst(Constants.ClaimType.AuthExpiresOn));
+#if NET11_0_OR_GREATER
+        Assert.NotNull(refreshContext);
+        Assert.Equal(expiration.ToUnixTimeSeconds(), refreshContext.NewExpiration?.ToUnixTimeSeconds());
+        Assert.Null(refreshContext.NewUser.FindFirst(Constants.ClaimType.AuthExpiresOn));
+#endif
+
+        proxy.Stop();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("not-a-unix-timestamp")]
+    [InlineData("9223372036854775807")]
+    public async Task ServiceConnection_UpdateConnectionClaims_InvalidOrMissingExpiration_UpdatesUserWithoutExpiration(string expirationValue)
+    {
+        var connectionId = Guid.NewGuid().ToString("N");
+
+        var proxy = new ServiceConnectionProxy();
+        var serverTask = proxy.WaitForServerConnectionAsync(1);
+        _ = proxy.StartAsync();
+        await serverTask.OrTimeout();
+
+        var connectionTask = proxy.WaitForConnectionAsync(connectionId);
+        await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, new[] { new Claim("my-claim", "original") }));
+        var connection = (ClientConnectionContext)await connectionTask.OrTimeout();
+
+#if NET11_0_OR_GREATER
+        var feature = connection.Features.Get<IConnectionAuthenticationRefreshFeature>();
+        AuthenticationRefreshContext refreshContext = null;
+        using var registration = feature.OnAuthenticationRefreshed((context, _) => refreshContext = context, null);
+#endif
+
+        var refreshedClaims = new List<Claim> { new("my-claim", "updated") };
+        if (expirationValue != null)
+        {
+            refreshedClaims.Add(new Claim(Constants.ClaimType.AuthExpiresOn, expirationValue));
+        }
+
+        await proxy.WriteMessageAsync(new UpdateConnectionClaimsMessage(connectionId, refreshedClaims.ToArray()));
+
+        var updated = false;
+        for (var i = 0; i < 100 && !updated; i++)
+        {
+            if (connection.User?.FindFirst("my-claim")?.Value == "updated")
+            {
+                updated = true;
+                break;
+            }
+            await Task.Delay(20);
+        }
+
+        Assert.True(updated, "The client connection user was not updated by UpdateConnectionClaimsMessage.");
+        Assert.Same(connection.User, connection.HttpContext.User);
+        Assert.Null(connection.User.FindFirst(Constants.ClaimType.AuthExpiresOn));
+#if NET11_0_OR_GREATER
+        Assert.NotNull(refreshContext);
+        Assert.Null(refreshContext.NewExpiration);
+        Assert.Null(refreshContext.NewUser.FindFirst(Constants.ClaimType.AuthExpiresOn));
+#endif
 
         proxy.Stop();
     }

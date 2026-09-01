@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -290,14 +291,34 @@ internal partial class ServiceConnection : ServiceConnectionBase
         if (_clientConnectionManager.TryGetClientConnection(updateConnectionClaimsMessage.ConnectionId, out var connection)
             && connection is ClientConnectionContext clientConnection)
         {
+            var authenticationExpiration = GetAuthenticationExpiration(updateConnectionClaimsMessage.Claims);
             var user = ClaimsUtility.GetUserPrincipal(updateConnectionClaimsMessage.Claims);
-            clientConnection.UpdateUser(user);
+            clientConnection.UpdateUser(user, authenticationExpiration);
         }
         else
         {
             Log.ReceivedMessageForNonExistentConnection(Logger, updateConnectionClaimsMessage.ConnectionId);
         }
         return Task.CompletedTask;
+    }
+
+    private static DateTimeOffset? GetAuthenticationExpiration(IEnumerable<Claim> claims)
+    {
+        var expiration = claims?.FirstOrDefault(claim =>
+            string.Equals(claim.Type, Constants.ClaimType.AuthExpiresOn, StringComparison.Ordinal))?.Value;
+        if (!long.TryParse(expiration, NumberStyles.Integer, CultureInfo.InvariantCulture, out var unixSeconds))
+        {
+            return null;
+        }
+
+        try
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(unixSeconds);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return null;
+        }
     }
 
     protected override Task OnPingMessageAsync(PingMessage pingMessage)
