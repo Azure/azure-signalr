@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 
@@ -181,6 +182,31 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             Assert.DoesNotContain(prepared, claim => claim.Type is "aud" or "iss");
             Assert.Equal(2, prepared.Count(claim => claim.Type == "tenant"));
             Assert.Contains(prepared, claim => claim.Type == Constants.ClaimType.AuthExpiresOn);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("not-a-unix-timestamp")]
+        [InlineData("9223372036854775807")]
+        public void GetAuthenticationExpirationReturnsNullForMissingOrInvalidValue(string expirationValue)
+        {
+            var claims = expirationValue == null
+                ? Array.Empty<Claim>()
+                : new[] { new Claim(Constants.ClaimType.AuthExpiresOn, expirationValue) };
+
+            Assert.Null(ClaimsUtility.GetAuthenticationExpiration(claims));
+        }
+
+        [Fact]
+        public void GetAuthenticationExpirationReturnsValidValue()
+        {
+            var expiration = DateTimeOffset.UtcNow.AddMinutes(10);
+            var claims = new[]
+            {
+                new Claim(Constants.ClaimType.AuthExpiresOn, expiration.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)),
+            };
+
+            Assert.Equal(expiration.ToUnixTimeSeconds(), ClaimsUtility.GetAuthenticationExpiration(claims)?.ToUnixTimeSeconds());
         }
 
         [Fact]
