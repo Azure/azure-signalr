@@ -109,7 +109,19 @@ internal class RefreshHandler<THub> where THub : Hub
                 NewExpiration = newExpiration == DateTimeOffset.MaxValue ? null : newExpiration,
             };
 
-            if (!await callback(refreshContext))
+            bool accepted;
+            try
+            {
+                accepted = await callback(refreshContext);
+            }
+            catch (Exception ex)
+            {
+                Log.AuthenticationRefreshCallbackFailed(_logger, ex);
+                await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, "internal_server_error");
+                return;
+            }
+
+            if (!accepted)
             {
                 await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_change_rejected");
                 return;
@@ -233,6 +245,9 @@ internal class RefreshHandler<THub> where THub : Hub
         private static readonly Action<ILogger, string, Exception> _refreshMissingClaimPayload =
             LoggerMessage.Define<string>(LogLevel.Error, new EventId(4, "RefreshAuthMissingClaimPayload"), "The service confirmed the refresh for connection token {ConnectionToken} but returned no claim payload; the runtime does not understand the refresh contract. Rejecting.");
 
+        private static readonly Action<ILogger, Exception> _authenticationRefreshCallbackFailed =
+            LoggerMessage.Define(LogLevel.Error, new EventId(5, "AuthenticationRefreshCallbackFailed"), "The application authentication refresh callback threw an exception.");
+
         public static void RefreshFailed(ILogger logger, string connectionToken, AckStatus status) => _refreshFailed(logger, connectionToken, status, null);
 
         public static void RefreshServiceCallFailed(ILogger logger, Exception ex) => _refreshServiceCallFailed(logger, ex);
@@ -240,6 +255,8 @@ internal class RefreshHandler<THub> where THub : Hub
         public static void RefreshTokenGenerationFailed(ILogger logger, Exception ex) => _refreshTokenGenerationFailed(logger, ex);
 
         public static void RefreshMissingClaimPayload(ILogger logger, string connectionToken) => _refreshMissingClaimPayload(logger, connectionToken, null);
+
+        public static void AuthenticationRefreshCallbackFailed(ILogger logger, Exception ex) => _authenticationRefreshCallbackFailed(logger, ex);
     }
 }
 #endif
