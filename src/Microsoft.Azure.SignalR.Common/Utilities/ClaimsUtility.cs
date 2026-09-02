@@ -200,6 +200,34 @@ namespace Microsoft.Azure.SignalR
             return preparedClaims;
         }
 
+        internal static DateTimeOffset? GetAuthenticationExpiration(IEnumerable<Claim> claims)
+        {
+            if (claims == null)
+            {
+                return null;
+            }
+
+            foreach (var claim in claims)
+            {
+                if (claim.Type != Constants.ClaimType.AuthExpiresOn
+                    || !long.TryParse(claim.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var unixSeconds))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    return DateTimeOffset.FromUnixTimeSeconds(unixSeconds);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    return null;
+                }
+            }
+
+            return null;
+        }
+
         public static ClaimsPrincipal GetUserPrincipal(this OpenConnectionMessage message)
         {
 #if NET6_0_OR_GREATER

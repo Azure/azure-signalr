@@ -171,25 +171,12 @@ internal class NegotiateHandler<THub> where THub : Hub
         }
 
         var accessTokenLifetime = _accessTokenLifetime;
-        var effectiveAuthenticationExpiresOn = GetAuthExpiresOnFromClaims(claims)
+        var effectiveAuthenticationExpiresOn = ClaimsUtility.GetAuthenticationExpiration(claims)
             ?? (authenticationExpiresOn != DateTimeOffset.MaxValue ? authenticationExpiresOn : null);
         accessTokenLifetime = ComputeAccessTokenLifetime(effectiveAuthenticationExpiresOn);
         var accessToken = await provider.GenerateClientAccessTokenAsync(_hubName, claims, accessTokenLifetime);
         var tokenLifetimeSeconds = ComputeTokenLifetimeSeconds(accessTokenLifetime);
         return (accessToken, tokenLifetimeSeconds);
-    }
-
-    private static DateTimeOffset? GetAuthExpiresOnFromClaims(IReadOnlyList<Claim> claims)
-    {
-        foreach (var claim in claims)
-        {
-            if (claim.Type == Constants.ClaimType.AuthExpiresOn
-                && long.TryParse(claim.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var unixSeconds))
-            {
-                return DateTimeOffset.FromUnixTimeSeconds(unixSeconds);
-            }
-        }
-        return null;
     }
 
     private TimeSpan ComputeAccessTokenLifetime(DateTimeOffset? authenticationExpiresOn)

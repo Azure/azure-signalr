@@ -689,6 +689,35 @@ public class NegotiateHandlerFacts
         await app.StopAsync();
     }
 
+    [Theory]
+    [InlineData("not-a-unix-timestamp")]
+    [InlineData("9223372036854775807")]
+    public async Task TestGenerateRefreshedAccessTokenFallsBackForInvalidAuthenticationExpirationClaim(string expirationValue)
+    {
+        var configuredLifetime = TimeSpan.FromDays(1);
+        var authenticationLifetime = TimeSpan.FromMinutes(10);
+        var authenticationExpiresOn = DateTimeOffset.UtcNow.Add(authenticationLifetime);
+        using var app = await CreateSignalRServerAppWithAuthenticationRefreshAsync(true, configuredLifetime);
+        var handler = app.Services.GetRequiredService<NegotiateHandler<Chat>>();
+        var endpoint = app.Services.GetRequiredService<IServiceEndpointManager>().GetEndpoints(nameof(Chat)).First();
+        var claims = new[]
+        {
+            new Claim(Constants.ClaimType.AuthExpiresOn, expirationValue),
+        };
+
+        var (accessToken, tokenLifetimeSeconds) = await handler.GenerateRefreshedAccessTokenAsync(
+            endpoint,
+            claims,
+            authenticationExpiresOn);
+
+        var token = JwtSecurityTokenHandler.ReadJwtToken(accessToken);
+        var actualLifetime = token.ValidTo - token.ValidFrom;
+        Assert.InRange(actualLifetime, authenticationLifetime - TimeSpan.FromSeconds(5), authenticationLifetime + TimeSpan.FromSeconds(1));
+        Assert.InRange(tokenLifetimeSeconds, (int)authenticationLifetime.TotalSeconds - 5, (int)authenticationLifetime.TotalSeconds);
+
+        await app.StopAsync();
+    }
+
     [Fact]
     public async Task TestNegotiateHandlerAppliesMaximumAuthenticationExpiration()
     {

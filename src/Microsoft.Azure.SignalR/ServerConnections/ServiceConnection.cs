@@ -290,8 +290,9 @@ internal partial class ServiceConnection : ServiceConnectionBase
         if (_clientConnectionManager.TryGetClientConnection(updateConnectionClaimsMessage.ConnectionId, out var connection)
             && connection is ClientConnectionContext clientConnection)
         {
+            var authenticationExpiration = ClaimsUtility.GetAuthenticationExpiration(updateConnectionClaimsMessage.Claims);
             var user = ClaimsUtility.GetUserPrincipal(updateConnectionClaimsMessage.Claims);
-            clientConnection.UpdateUser(user);
+            clientConnection.UpdateUser(user, authenticationExpiration);
         }
         else
         {

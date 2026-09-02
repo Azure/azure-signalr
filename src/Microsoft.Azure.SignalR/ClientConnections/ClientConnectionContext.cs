@@ -6,7 +6,6 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
@@ -136,7 +135,8 @@ internal partial class ClientConnectionContext : ConnectionContext,
     /// Applies refreshed user claims pushed from the service to the live client connection.
     /// </summary>
     /// <param name="user">The refreshed user principal.</param>
-    public void UpdateUser(ClaimsPrincipal user)
+    /// <param name="authenticationExpiration">The refreshed authentication expiration, or <c>null</c> when no expiration was supplied.</param>
+    public void UpdateUser(ClaimsPrincipal user, DateTimeOffset? authenticationExpiration)
     {
 #if NET11_0_OR_GREATER
         var refreshContext = new AuthenticationRefreshContext
@@ -145,10 +145,11 @@ internal partial class ClientConnectionContext : ConnectionContext,
             ConnectionId = ConnectionId,
             PreviousUser = User ?? new ClaimsPrincipal(new ClaimsIdentity()),
             NewUser = user,
-            NewExpiration = GetAuthenticationExpiration(user),
+            NewExpiration = authenticationExpiration,
         };
 #endif
         User = user;
+        HttpContext.User = user;
 #if NET11_0_OR_GREATER
         NotifyAuthenticationRefreshed(refreshContext);
 #endif
@@ -204,14 +205,6 @@ internal partial class ClientConnectionContext : ConnectionContext,
         {
             _authenticationRefreshedCallbacks?.Remove(registration);
         }
-    }
-
-    private static DateTimeOffset? GetAuthenticationExpiration(ClaimsPrincipal user)
-    {
-        var expiration = user.FindFirst(Constants.ClaimType.AuthExpiresOn)?.Value;
-        return long.TryParse(expiration, NumberStyles.Integer, CultureInfo.InvariantCulture, out var unixSeconds)
-            ? DateTimeOffset.FromUnixTimeSeconds(unixSeconds)
-            : null;
     }
 
     private sealed class AuthenticationRefreshedRegistration : IDisposable

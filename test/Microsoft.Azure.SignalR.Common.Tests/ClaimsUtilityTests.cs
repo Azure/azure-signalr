@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 
@@ -68,6 +69,35 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             Assert.Equal(2, ci.Claims.Count());
             Assert.True(ci.HasClaim("iss", "A"));
             Assert.True(ci.HasClaim("jti", "B"));
+        }
+
+        [Fact]
+        public void GetUserPrincipalFiltersServiceTokenEnvelopeAndRestoresApplicationClaims()
+        {
+            var claims = new[]
+            {
+                new Claim(Constants.ClaimType.AuthenticationType, "CustomAuth"),
+                new Claim(Constants.ClaimType.NameType, "custom-name"),
+                new Claim(Constants.ClaimType.RoleType, "custom-role"),
+                new Claim(Constants.ClaimType.AzureSignalRUserPrefix + "exp", "application-expiration"),
+                new Claim("tenant", "contoso"),
+                new Claim("aud", "service-audience"),
+                new Claim("exp", "service-expiration"),
+                new Claim("iat", "service-issued-at"),
+                new Claim("iss", "azure-signalr"),
+                new Claim("nbf", "service-not-before"),
+                new Claim(Constants.ClaimType.AuthExpiresOn, "12345"),
+            };
+
+            var identity = Assert.IsType<ClaimsIdentity>(ClaimsUtility.GetUserPrincipal(claims).Identity);
+
+            Assert.Equal("CustomAuth", identity.AuthenticationType);
+            Assert.Equal("custom-name", identity.NameClaimType);
+            Assert.Equal("custom-role", identity.RoleClaimType);
+            Assert.Equal("application-expiration", Assert.Single(identity.FindAll("exp")).Value);
+            Assert.Equal("contoso", identity.FindFirst("tenant")?.Value);
+            Assert.DoesNotContain(identity.Claims, claim => claim.Type is "aud" or "iat" or "iss" or "nbf");
+            Assert.DoesNotContain(identity.Claims, claim => claim.Type.StartsWith(Constants.ClaimType.AzureSignalRSysPrefix, StringComparison.Ordinal));
         }
 
         [Fact]
@@ -152,6 +182,31 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             Assert.DoesNotContain(prepared, claim => claim.Type is "aud" or "iss");
             Assert.Equal(2, prepared.Count(claim => claim.Type == "tenant"));
             Assert.Contains(prepared, claim => claim.Type == Constants.ClaimType.AuthExpiresOn);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("not-a-unix-timestamp")]
+        [InlineData("9223372036854775807")]
+        public void GetAuthenticationExpirationReturnsNullForMissingOrInvalidValue(string expirationValue)
+        {
+            var claims = expirationValue == null
+                ? Array.Empty<Claim>()
+                : new[] { new Claim(Constants.ClaimType.AuthExpiresOn, expirationValue) };
+
+            Assert.Null(ClaimsUtility.GetAuthenticationExpiration(claims));
+        }
+
+        [Fact]
+        public void GetAuthenticationExpirationReturnsValidValue()
+        {
+            var expiration = DateTimeOffset.UtcNow.AddMinutes(10);
+            var claims = new[]
+            {
+                new Claim(Constants.ClaimType.AuthExpiresOn, expiration.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)),
+            };
+
+            Assert.Equal(expiration.ToUnixTimeSeconds(), ClaimsUtility.GetAuthenticationExpiration(claims)?.ToUnixTimeSeconds());
         }
 
         [Fact]
