@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -27,6 +27,8 @@ internal class MicrosoftEntraAccessKey : IAccessKey
     private const int GetAccessKeyMaxRetryTimes = 3;
 
     private const int GetMicrosoftEntraTokenMaxRetryTimes = 3;
+
+    private const int MaxResponseContentLength = 1024 * 1024; // 1 MB cap to protect against oversized responses.
 
     private readonly object _lock = new object();
 
@@ -246,6 +248,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var httpClient = _httpClientFactory.CreateClient(Constants.HttpClientNames.UserDefault);
+        httpClient.MaxResponseContentBufferSize = MaxResponseContentLength;
 
         var response = await httpClient.SendAsync(request, ctoken);
 
