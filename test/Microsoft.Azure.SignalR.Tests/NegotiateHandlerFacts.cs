@@ -14,6 +14,7 @@ using System.Web;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Features;
@@ -668,7 +669,7 @@ public class NegotiateHandlerFacts
         var authenticationExpiresOn = DateTimeOffset.UtcNow.Add(authenticationLifetime);
         using var app = await CreateSignalRServerAppWithAuthenticationRefreshAsync(true, configuredLifetime);
         var handler = app.Services.GetRequiredService<NegotiateHandler<Chat>>();
-        var endpoint = app.Services.GetRequiredService<IServiceEndpointManager>().GetEndpoints(nameof(Chat)).First();
+        var endpoint = app.Services.GetRequiredService<IServiceEndpointManager>().GetEndpoints(nameof(Chat))[0];
         var claims = new[]
         {
             new Claim(
@@ -699,7 +700,7 @@ public class NegotiateHandlerFacts
         var authenticationExpiresOn = DateTimeOffset.UtcNow.Add(authenticationLifetime);
         using var app = await CreateSignalRServerAppWithAuthenticationRefreshAsync(true, configuredLifetime);
         var handler = app.Services.GetRequiredService<NegotiateHandler<Chat>>();
-        var endpoint = app.Services.GetRequiredService<IServiceEndpointManager>().GetEndpoints(nameof(Chat)).First();
+        var endpoint = app.Services.GetRequiredService<IServiceEndpointManager>().GetEndpoints(nameof(Chat))[0];
         var claims = new[]
         {
             new Claim(Constants.ClaimType.AuthExpiresOn, expirationValue),
@@ -718,13 +719,18 @@ public class NegotiateHandlerFacts
         await app.StopAsync();
     }
 
-    [Fact]
-    public async Task TestNegotiateHandlerAppliesMaximumAuthenticationExpiration()
+    [Theory]
+    [InlineData(true, null)]
+    [InlineData(true, 2)]
+    [InlineData(true, 10)]
+    [InlineData(false, null)]
+    [InlineData(false, 10)]
+    public async Task TestNegotiateHandlerAppliesMaximumAuthenticationExpiration(bool enableAuthenticationRefresh, int? ticketLifetimeMinutes)
     {
         var configuredLifetime = TimeSpan.FromDays(1);
         var maximumAuthenticationExpiration = TimeSpan.FromMinutes(5);
         using var app = await CreateSignalRServerAppWithAuthenticationRefreshAsync(
-            true,
+            enableAuthenticationRefresh,
             configuredLifetime,
             maximumAuthenticationExpiration,
             closeOnAuthenticationExpiration: true);
@@ -732,22 +738,52 @@ public class NegotiateHandlerFacts
             new[] { new Claim(ClaimTypes.NameIdentifier, DefaultUserId) },
             "TestAuth"));
         var httpContext = new DefaultHttpContext { User = principal };
+        var properties = new AuthenticationProperties
+        {
+            ExpiresUtc = ticketLifetimeMinutes.HasValue
+                ? DateTimeOffset.UtcNow.AddMinutes(ticketLifetimeMinutes.Value)
+                : null
+        };
+        httpContext.Features.Set(Mock.Of<IAuthenticateResultFeature>(feature =>
+            feature.AuthenticateResult == AuthenticateResult.Success(new AuthenticationTicket(
+                principal,
+                properties,
+                "TestAuth"))));
         var handler = app.Services.GetRequiredService<NegotiateHandler<Chat>>();
 
         var response = await handler.Process(httpContext);
         var token = JwtSecurityTokenHandler.ReadJwtToken(response.AccessToken);
-        var authExpiresOn = DateTimeOffset.FromUnixTimeSeconds(long.Parse(
-            token.Claims.Single(claim => claim.Type == Constants.ClaimType.AuthExpiresOn).Value,
-            CultureInfo.InvariantCulture));
-
-        Assert.InRange(
-            response.TokenLifetime.Value,
-            maximumAuthenticationExpiration - TimeSpan.FromSeconds(5),
-            maximumAuthenticationExpiration);
-        Assert.InRange(
-            authExpiresOn - DateTimeOffset.UtcNow,
-            maximumAuthenticationExpiration - TimeSpan.FromSeconds(5),
-            maximumAuthenticationExpiration);
+        TimeSpan? expectedAuthenticationLifetime = ticketLifetimeMinutes.HasValue
+            ? TimeSpan.FromMinutes(ticketLifetimeMinutes.Value)
+            : null;
+        if (enableAuthenticationRefresh && (expectedAuthenticationLifetime is null || expectedAuthenticationLifetime > maximumAuthenticationExpiration))
+        {
+            expectedAuthenticationLifetime = maximumAuthenticationExpiration;
+        }
+        if (expectedAuthenticationLifetime.HasValue)
+        {
+            var authExpiresOn = DateTimeOffset.FromUnixTimeSeconds(long.Parse(
+                Assert.Single(token.Claims, claim => claim.Type == Constants.ClaimType.AuthExpiresOn).Value,
+                CultureInfo.InvariantCulture));
+            Assert.InRange(
+                authExpiresOn - DateTimeOffset.UtcNow,
+                expectedAuthenticationLifetime.Value - TimeSpan.FromSeconds(5),
+                expectedAuthenticationLifetime.Value);
+        }
+        else
+        {
+            Assert.DoesNotContain(token.Claims, claim => claim.Type == Constants.ClaimType.AuthExpiresOn);
+        }
+        var expectedTokenLifetime = enableAuthenticationRefresh ? expectedAuthenticationLifetime.Value : configuredLifetime;
+        Assert.InRange(token.ValidTo - token.ValidFrom, expectedTokenLifetime - TimeSpan.FromSeconds(5), expectedTokenLifetime + TimeSpan.FromSeconds(1));
+        if (enableAuthenticationRefresh)
+        {
+            Assert.InRange(response.TokenLifetime.Value, expectedTokenLifetime - TimeSpan.FromSeconds(5), expectedTokenLifetime);
+        }
+        else
+        {
+            Assert.Null(response.TokenLifetime);
+        }
 
         await app.StopAsync();
     }
@@ -814,8 +850,10 @@ public class NegotiateHandlerFacts
     private static async Task<WebApplication> CreateSignalRServerAppWithCloseOnAuthExpAsync(bool closeOnAuthExp)
     {
         var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Services.AddSignalR().AddAzureSignalR("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;");
         builder.Services.AddSingleton(sp => Mock.Of<IEndpointRouter>(r => r.GetNegotiateEndpoint(It.IsAny<HttpContext>(), It.IsAny<IEnumerable<ServiceEndpoint>>()) == sp.GetService<IServiceEndpointManager>().Endpoints.First().Value));
+        builder.Services.AddSingleton<IServiceConnectionManager<Chat>>(new TestServiceConnectionManager<Chat>());
         builder.Services.AddSingleton<IServiceConnectionFactory>(new TestServiceConnectionFactory());
         var app = builder.Build();
         app.MapHub<Chat>("/chat", o => o.CloseOnAuthenticationExpiration = closeOnAuthExp);
@@ -831,6 +869,7 @@ public class NegotiateHandlerFacts
         bool closeOnAuthenticationExpiration = false)
     {
         var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Services.AddSignalR().AddAzureSignalR(options =>
         {
             options.ConnectionString = "Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;";
@@ -838,6 +877,7 @@ public class NegotiateHandlerFacts
         });
         builder.Services.AddSingleton(sp => Mock.Of<IEndpointRouter>(router =>
             router.GetNegotiateEndpoint(It.IsAny<HttpContext>(), It.IsAny<IEnumerable<ServiceEndpoint>>()) == sp.GetService<IServiceEndpointManager>().Endpoints.First().Value));
+        builder.Services.AddSingleton<IServiceConnectionManager<Chat>>(new TestServiceConnectionManager<Chat>());
         builder.Services.AddSingleton<IServiceConnectionFactory>(new TestServiceConnectionFactory());
         var app = builder.Build();
         app.MapHub<Chat>("/chat", options =>

@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Security.Claims;
 
 using Microsoft.AspNetCore.Builder;
@@ -12,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    internal sealed class TestStartup : IStartup
+    internal sealed class TestStartup
     {
         public const string ApplicationName = "AppName";
 
@@ -30,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Tests
             app.UseMvc();
         }
 
-        public IServiceProvider ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IServiceCollection services)
         {
             var applicationName = _configuration[ApplicationName];
 
@@ -46,8 +45,6 @@ namespace Microsoft.Azure.SignalR.Tests
                     o.ClaimsProvider = context => new[] { new Claim(ClaimTypes.NameIdentifier, context.Request.Query["user"]) };
                     o.ApplicationName = applicationName;
                 });
-
-            return services.BuildServiceProvider();
         }
     }
 }

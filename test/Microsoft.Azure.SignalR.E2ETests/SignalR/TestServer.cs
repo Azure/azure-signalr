@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 using Xunit.Abstractions;
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     internal sealed class TestServer : TestServerBase
     {
-        private IWebHost _host;
+        private IHost _host;
 
         private IServiceConnectionManager<TestHub> _scm;
 
@@ -35,16 +36,17 @@ namespace Microsoft.Azure.SignalR.Tests
 
         protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output, Dictionary<string, string> configuration)
         {
-            _host = new WebHostBuilder()
-                .ConfigureServices(services =>
-                {
-                    services.AddSingleton<TestHubConnectionManager>(HubConnectionManager);
-                })
-                .ConfigureLogging(logging => logging.AddXunit(output))
-                .ConfigureAppConfiguration(builder => builder.AddInMemoryCollection(configuration))
-                .UseStartup<TestStartup>()
-                .UseUrls(serverUrl)
-                .UseKestrel()
+            _host = new HostBuilder()
+                .ConfigureWebHost(webHost => webHost
+                    .ConfigureServices(services =>
+                    {
+                        services.AddSingleton<TestHubConnectionManager>(HubConnectionManager);
+                    })
+                    .ConfigureLogging(logging => logging.AddXunit(output))
+                    .ConfigureAppConfiguration(builder => builder.AddInMemoryCollection(configuration))
+                    .UseStartup<TestStartup>()
+                    .UseUrls(serverUrl)
+                    .UseKestrel())
                 .Build();
 
             _scm = _host.Services.GetRequiredService<IServiceConnectionManager<TestHub>>();
