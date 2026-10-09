@@ -8,7 +8,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting;
@@ -20,6 +19,7 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Azure.SignalR.Tests.TestHubs;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 using Xunit;
@@ -47,23 +47,27 @@ public class RunSignalRTests : VerifiableLoggedTest
         {
             services.AddSingleton<IConnectionFactory>(cdf);
         });
-        var builder = WebHost.CreateDefaultBuilder()
-            .ConfigureLogging(logging => logging.AddXunit(_output))
-            .ConfigureLogging(logging => logging.AddProvider(provider))
-            .ConfigureLogging(logging => logging.AddFilter("Microsoft.Azure.SignalR", LogLevel.Debug))
-            .ConfigureLogging(logging => logging.AddFilter("Microsoft.AspNetCore.DataProtection", LogLevel.None))
-            .UseStartup(c => startup);
+        var builder = new HostBuilder()
+            .ConfigureWebHost(webHost => webHost
+                .UseTestServer()
+                .ConfigureLogging(logging => logging.AddXunit(_output))
+                .ConfigureLogging(logging => logging.AddProvider(provider))
+                .ConfigureLogging(logging => logging.AddFilter("Microsoft.Azure.SignalR", LogLevel.Debug))
+                .ConfigureLogging(logging => logging.AddFilter("Microsoft.AspNetCore.DataProtection", LogLevel.None))
+                .ConfigureServices(startup.ConfigureServices)
+                .Configure(startup.Configure));
 
-        using (var server = new TestServer(builder))
+        using (var host = await builder.StartAsync())
         {
             var sc = await cdf.FirstConnectionTask.OrTimeout();
             await sc.OpenClientConnectionAsync("conn1").OrTimeout();
 
-            var ccm = server.Services.GetService<IClientConnectionManager>();
+            var ccm = host.Services.GetService<IClientConnectionManager>();
             Assert.NotNull(ccm);
 
             await Utils.PollWait(() => ccm.TryGetClientConnection("conn1", out var connection));
             await sc.WriteServiceFinAck();
+            await host.StopAsync();
         }
 
         var logs = provider.GetLogs();
@@ -86,14 +90,17 @@ public class RunSignalRTests : VerifiableLoggedTest
         {
             services.AddSingleton<IConnectionFactory>(cdf);
         });
-        var builder = WebHost.CreateDefaultBuilder()
-            .ConfigureLogging(logging => logging.AddXunit(_output))
-            .ConfigureLogging(logging => logging.AddProvider(provider))
-            .ConfigureLogging(logging => logging.AddFilter("Microsoft.AspNetCore.DataProtection", LogLevel.None))
-            .UseStartup(c => startup);
+        var builder = new HostBuilder()
+            .ConfigureWebHost(webHost => webHost
+                .UseTestServer()
+                .ConfigureLogging(logging => logging.AddXunit(_output))
+                .ConfigureLogging(logging => logging.AddProvider(provider))
+                .ConfigureLogging(logging => logging.AddFilter("Microsoft.AspNetCore.DataProtection", LogLevel.None))
+                .ConfigureServices(startup.ConfigureServices)
+                .Configure(startup.Configure));
         const int count = 1111;
 
-        using (var server = new TestServer(builder))
+        using (var host = await builder.StartAsync())
         {
             var sc = await cdf.FirstConnectionTask.OrTimeout();
             for (var i = 0; i < count; i++)
@@ -101,11 +108,12 @@ public class RunSignalRTests : VerifiableLoggedTest
                 await sc.OpenClientConnectionAsync("conn" + i).OrTimeout();
             }
 
-            var ccm = server.Services.GetService<IClientConnectionManager>();
+            var ccm = host.Services.GetService<IClientConnectionManager>();
             Assert.NotNull(ccm);
 
             await Utils.PollWait(() => ccm.Count == count).OrTimeout();
             await sc.WriteServiceFinAck();
+            await host.StopAsync();
         }
 
         var logs = provider.GetLogs();
@@ -127,23 +135,27 @@ public class RunSignalRTests : VerifiableLoggedTest
         {
             services.AddSingleton<IConnectionFactory>(cdf);
         });
-        var builder = WebHost.CreateDefaultBuilder()
-            .ConfigureLogging(logging => logging.AddXunit(_output))
-            .ConfigureLogging(logging => logging.AddProvider(provider))
-            .ConfigureLogging(logging => logging.AddFilter("Microsoft.AspNetCore.DataProtection", LogLevel.None))
-            .UseStartup(c => startup);
+        var builder = new HostBuilder()
+            .ConfigureWebHost(webHost => webHost
+                .UseTestServer()
+                .ConfigureLogging(logging => logging.AddXunit(_output))
+                .ConfigureLogging(logging => logging.AddProvider(provider))
+                .ConfigureLogging(logging => logging.AddFilter("Microsoft.AspNetCore.DataProtection", LogLevel.None))
+                .ConfigureServices(startup.ConfigureServices)
+                .Configure(startup.Configure));
 
-        using (var server = new TestServer(builder))
+        using (var host = await builder.StartAsync())
         {
             var sc = await cdf.FirstConnectionTask.OrTimeout();
             await sc.OpenClientConnectionAsync("conn1").OrTimeout();
 
-            var ccm = server.Services.GetService<IClientConnectionManager>();
+            var ccm = host.Services.GetService<IClientConnectionManager>();
             Assert.NotNull(ccm);
 
             await Utils.PollWait(() => ccm.TryGetClientConnection("conn1", out var connection));
 
             await sc.WriteServiceFinAck();
+            await host.StopAsync();
         }
 
         var logs = provider.GetLogs();
@@ -157,7 +169,7 @@ public class RunSignalRTests : VerifiableLoggedTest
         Assert.Empty(logs.Where(s => s.Write.LogLevel == LogLevel.Warning && s.Write.EventId.Name != "DetectedLongRunningApplicationTask" && s.Write.EventId.Name != "EndpointOffline").Select(s => s.Write.EventId.Name));
     }
 
-    private sealed class TestStartup<THub> : IStartup
+    private sealed class TestStartup<THub>
         where THub : Hub
     {
         private readonly Action<IServiceCollection> _configureServices;
@@ -177,7 +189,7 @@ public class RunSignalRTests : VerifiableLoggedTest
             app.UseMvc();
         }
 
-        public IServiceProvider ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc(option => option.EnableEndpointRouting = false);
             services
@@ -192,7 +204,6 @@ public class RunSignalRTests : VerifiableLoggedTest
                     o.MaxHubServerConnectionCount = 1;
                 });
             _configureServices.Invoke(services);
-            return services.BuildServiceProvider();
         }
     }
 

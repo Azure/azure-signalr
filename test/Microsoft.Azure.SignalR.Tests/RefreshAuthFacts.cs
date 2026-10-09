@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,7 +50,7 @@ public class RefreshAuthFacts
 
         connection.UpdateUser(newUser, expiration);
 
-        Assert.Equal(previousUser.Identity.FindFirst("my-claim")?.Value, refreshContext.PreviousUser.Identity.FindFirst("my-claim")?.Value);
+        Assert.Equal(previousUser.FindFirst("my-claim")?.Value, refreshContext.PreviousUser.FindFirst("my-claim")?.Value);
         Assert.Same(newUser, refreshContext.NewUser);
         Assert.Same(connection.HttpContext, refreshContext.HttpContext);
         Assert.Equal(connectionId, refreshContext.ConnectionId);

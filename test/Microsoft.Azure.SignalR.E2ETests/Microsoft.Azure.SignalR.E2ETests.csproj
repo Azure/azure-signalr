@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net11.0</TargetFrameworks>
+    <TestTfmsInParallel>false</TestTfmsInParallel>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -20,11 +21,13 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' != 'true' ">
+    <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR\Microsoft.Azure.SignalR.csproj" />
     <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.Management\Microsoft.Azure.SignalR.Management.csproj" />
     <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' == 'true' ">
+    <PackageReference Include="Microsoft.Azure.SignalR" Version="$(VersionPrefix)-*" />
     <PackageReference Include="Microsoft.Azure.SignalR.Management"  Version="$(VersionPrefix)-*" />
   </ItemGroup>
 
