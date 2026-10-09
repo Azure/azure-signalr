@@ -19,8 +19,10 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests;
 
@@ -30,6 +32,17 @@ public class RefreshAuthE2EFacts
     private const string InitialMarker = "initial";
     private const string MarkerClaimType = "marker";
     private const string RefreshedMarker = "refreshed";
+    private const int ConnectionStartAttempts = 20;
+    private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan ConnectionStartRetryDelay = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan MarkerPollInterval = TimeSpan.FromMilliseconds(50);
+
+    private readonly ITestOutputHelper _output;
+
+    public RefreshAuthE2EFacts(ITestOutputHelper output)
+    {
+        _output = output;
+    }
 
     [ConditionalFact]
     [SkipIfConnectionStringNotPresent]
@@ -37,6 +50,9 @@ public class RefreshAuthE2EFacts
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.Logging.AddXunit(_output)
+            .AddFilter("Microsoft.Azure.SignalR", LogLevel.Debug)
+            .AddFilter("Microsoft.AspNetCore.SignalR", LogLevel.Debug);
         builder.Services
             .AddSignalR()
             .AddAzureSignalR(options => options.ConnectionString = TestConfiguration.Instance.ConnectionString);
@@ -55,83 +71,111 @@ public class RefreshAuthE2EFacts
             await next(context);
         });
         app.MapHub<AuthRefreshHub>(HubPath, options => options.EnableAuthenticationRefresh = true);
-        await app.StartAsync();
 
-        var serverUrl = app.Urls.Single();
-        var tokenCapture = new ConnectionTokenCaptureHandler();
-        await using var connection = new HubConnectionBuilder()
-            .WithUrl($"{serverUrl}{HubPath}", options =>
-            {
-                options.AccessTokenProvider = () => Task.FromResult(InitialMarker);
-                options.HttpMessageHandlerFactory = handler =>
+        try
+        {
+            await app.StartAsync();
+
+            var serverUrl = app.Urls.Single();
+            var tokenCapture = new ConnectionTokenCaptureHandler();
+            await using var connection = new HubConnectionBuilder()
+                .ConfigureLogging(logging => logging.AddXunit(_output)
+                    .AddFilter("Microsoft.AspNetCore.SignalR.Client", LogLevel.Debug))
+                .WithUrl($"{serverUrl}{HubPath}", options =>
                 {
-                    tokenCapture.InnerHandler = handler;
-                    return tokenCapture;
-                };
-            })
-            .Build();
+                    options.AccessTokenProvider = () => Task.FromResult(InitialMarker);
+                    options.HttpMessageHandlerFactory = handler =>
+                    {
+                        tokenCapture.InnerHandler = handler;
+                        return tokenCapture;
+                    };
+                })
+                .Build();
 
-        await StartConnectionAsync(connection);
-        var connectionId = connection.ConnectionId;
-        var connectionToken = tokenCapture.ConnectionToken;
-        Assert.False(string.IsNullOrEmpty(connectionToken));
-        Assert.Equal(InitialMarker, await GetMarkerAsync(connection));
+            _output.WriteLine("Starting the client connection.");
+            await StartConnectionAsync(connection);
+            var connectionId = connection.ConnectionId;
+            var connectionToken = tokenCapture.ConnectionToken;
+            Assert.False(string.IsNullOrEmpty(connectionToken));
+            _output.WriteLine("Checking the initial connected user.");
+            Assert.Equal(InitialMarker, await WaitForMarkerAsync(connection, InitialMarker));
 
-        var (accessToken, tokenLifetimeSeconds) = await RefreshAsync(serverUrl, connectionToken);
-        Assert.False(string.IsNullOrEmpty(accessToken));
-        Assert.True(tokenLifetimeSeconds > 0);
-        Assert.Contains(new JwtSecurityTokenHandler().ReadJwtToken(accessToken).Claims,
-            claim => claim.Type == MarkerClaimType && claim.Value == RefreshedMarker);
-        var marker = await WaitForMarkerAsync(connection, RefreshedMarker);
+            _output.WriteLine("Sending the authentication refresh request.");
+            var (accessToken, tokenLifetimeSeconds) = await RefreshAsync(serverUrl, connectionToken);
+            Assert.False(string.IsNullOrEmpty(accessToken));
+            Assert.True(tokenLifetimeSeconds > 0);
+            Assert.Contains(new JwtSecurityTokenHandler().ReadJwtToken(accessToken).Claims,
+                claim => claim.Type == MarkerClaimType && claim.Value == RefreshedMarker);
+            _output.WriteLine("Checking the refreshed user on the existing connection.");
+            var marker = await WaitForMarkerAsync(connection, RefreshedMarker);
 
-        Assert.Equal(RefreshedMarker, marker);
-        Assert.Equal(connectionId, connection.ConnectionId);
+            Assert.Equal(RefreshedMarker, marker);
+            Assert.Equal(connectionId, connection.ConnectionId);
+        }
+        finally
+        {
+            _output.WriteLine("Stopping the app after disposing the client connection.");
+            await app.StopAsync();
+        }
     }
 
-    private static Task<string> GetMarkerAsync(HubConnection connection) =>
-        connection.InvokeAsync<string>(nameof(AuthRefreshHub.GetMarker)).OrTimeout();
+    private static Task<string> GetMarkerAsync(HubConnection connection, CancellationToken cancellationToken) =>
+        connection.InvokeAsync<string>(nameof(AuthRefreshHub.GetMarker), cancellationToken);
 
     private static async Task StartConnectionAsync(HubConnection connection)
     {
         for (var attempt = 0; ; attempt++)
         {
+            using var timeout = new CancellationTokenSource(OperationTimeout);
             try
             {
-                await connection.StartAsync().OrTimeout();
+                await connection.StartAsync(timeout.Token);
                 return;
             }
-            catch (HubException) when (attempt < 19)
+            catch (HubException) when (attempt < ConnectionStartAttempts - 1)
             {
-                await Task.Delay(250);
+                await Task.Delay(ConnectionStartRetryDelay);
             }
         }
     }
 
     private static async Task<(string AccessToken, int TokenLifetimeSeconds)> RefreshAsync(string serverUrl, string connectionToken)
     {
+        using var timeout = new CancellationTokenSource(OperationTimeout);
         using var httpClient = new HttpClient();
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", RefreshedMarker);
         using var response = await httpClient.PostAsync(
             $"{serverUrl}{HubPath}/refresh?id={Uri.EscapeDataString(connectionToken)}",
-            content: null).OrTimeout();
+            content: null,
+            cancellationToken: timeout.Token);
         response.EnsureSuccessStatusCode();
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(timeout.Token));
         return (document.RootElement.GetProperty("accessToken").GetString(),
             document.RootElement.GetProperty("tokenLifetimeSeconds").GetInt32());
     }
 
     private static async Task<string> WaitForMarkerAsync(HubConnection connection, string expected)
     {
+        using var timeout = new CancellationTokenSource(OperationTimeout);
         string marker = null;
-        for (var attempt = 0; attempt < 100 && marker != expected; attempt++)
+        try
         {
-            marker = await GetMarkerAsync(connection);
-            if (marker != expected)
+            while (true)
             {
-                await Task.Delay(50);
+                marker = await GetMarkerAsync(connection, timeout.Token);
+                if (marker == expected)
+                {
+                    return marker;
+                }
+                await Task.Delay(MarkerPollInterval, timeout.Token);
             }
         }
-        return marker;
+        catch (OperationCanceledException ex) when (timeout.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"Timed out waiting for marker '{expected}' after {OperationTimeout.TotalSeconds} seconds. " +
+                $"Last observed marker: '{marker ?? "<none>"}'. Client state: {connection.State}.", ex);
+        }
     }
 
     private sealed class AuthRefreshHub : Hub
