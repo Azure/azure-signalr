@@ -55,7 +55,7 @@
 
     <!--Emulator, self-contained, always try the latest version -->
     <SystemCommandLinePackageVersion>2.0.0-beta4.22272.1</SystemCommandLinePackageVersion>
-    <EmulatorMicrosoftPackageVersion>8.0.28</EmulatorMicrosoftPackageVersion>
+    <EmulatorMicrosoftPackageVersion>8.0.32</EmulatorMicrosoftPackageVersion>
 
     <!-- Vulnerability fix-->
     <jQueryPackageVersion>3.7.1</jQueryPackageVersion>
