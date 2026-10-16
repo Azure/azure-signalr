@@ -34,6 +34,10 @@
 
     <!--Security Patches-->
     <!-- Fix risks from Microsoft.AspNetCore.SignalR-->
+    <!-- SignalR.Core was removed from this advisory on 2026-10-15; the audit feed still lists it.
+         Remove this legacy-target suppression once the feed reflects the corrected announcement:
+         https://github.com/dotnet/announcements/issues/452 -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-334f-vvp4-7g6p" />
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="$(MicrosoftAspNetCoreHttpPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Connections" Version="$(MicrosoftAspNetCoreHttpConnectionsPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.WebSockets" Version="$(MicrosoftAspNetCoreWebSocketsPackageVersion)" />
