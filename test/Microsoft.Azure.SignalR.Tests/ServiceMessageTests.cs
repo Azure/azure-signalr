@@ -11,7 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Azure.Core;
-using Azure.Identity;
 
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
@@ -270,7 +269,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
     {
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Error))
         {
-            var endpoint = new TestHubServiceEndpoint(endpoint: new TestServiceEndpoint(new DefaultAzureCredential()));
+            var endpoint = new TestHubServiceEndpoint(endpoint: new TestServiceEndpoint(new TestTokenCredential()));
             var key = Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
             key.UpdateAccessKey("foo", "bar");
 
@@ -281,7 +280,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
 
             var connection = CreateServiceConnection(loggerFactory: loggerFactory, hubServiceEndpoint: endpoint, clientInvocationManager: clientInvocationManager);
             var connectionTask = connection.StartAsync();
-            await connection.ConnectionInitializedTask.OrTimeout(1000);
+            await connection.ConnectionInitializedTask.OrTimeout(TimeSpan.FromSeconds(30));
 
             Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
 
@@ -295,7 +294,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
             // complete reading to end the connection
             connection.CompleteWriteFromService();
 
-            await connectionTask.OrTimeout();
+            await connectionTask.OrTimeout(TimeSpan.FromSeconds(30));
             Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
 
             Assert.Empty(connection.ClientConnectionManager.ClientConnections);

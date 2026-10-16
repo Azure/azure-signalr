@@ -99,19 +99,35 @@ public class CustomizedTimerTests(ITestOutputHelper output) : VerifiableLoggedTe
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var callbackCount = 0;
-            var timer = CreatePingTimer(loggerFactory, () => Interlocked.Increment(ref callbackCount));
+            var callbackStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var releaseCallback = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var timer = CustomizedPingTimerFactory.CreateCustomizedPingTimer(loggerFactory.CreateLogger(
+                nameof(StartStopDispose_StartDisposeStop)), nameof(StartStopDispose_StartDisposeStop),
+                () =>
+                {
+                    // Hold the callback until the test stops the timer so another tick cannot race the assertion.
+                    var releaseTask = releaseCallback.Task;
+                    Interlocked.Increment(ref callbackCount);
+                    callbackStarted.TrySetResult(true);
+                    return releaseTask;
+                },
+                BaseTs, BaseTs);
 
             timer.Start();
-            await Task.Delay(BaseTsPlus);
+            await callbackStarted.Task.OrTimeout(TimeSpan.FromSeconds(30));
             timer.Stop();
+            releaseCallback.SetResult(true);
             Assert.Equal(1, callbackCount);
             await Task.Delay(BaseTsPlus * 5);
             timer.Dispose();
             Assert.Equal(1, callbackCount);
 
+            callbackStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            releaseCallback = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             timer.Start();
-            await Task.Delay(BaseTsPlus);
+            await callbackStarted.Task.OrTimeout(TimeSpan.FromSeconds(30));
             timer.Dispose();
+            releaseCallback.SetResult(true);
             Assert.Equal(2, callbackCount);
             await Task.Delay(BaseTsPlus * 5);
             timer.Stop();
