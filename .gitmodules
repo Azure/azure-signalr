@@ -1,4 +1,4 @@
 [submodule "src/submodules/MessagePack-CSharp"]
 	path = src/submodules/MessagePack-CSharp
 	url = https://github.com/neuecc/MessagePack-CSharp
-	branch = v3.1.7
+	branch = v3.1.9
