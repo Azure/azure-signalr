@@ -42,6 +42,8 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     private readonly IHttpClientFactory _httpClientFactory;
 
+    private volatile HttpClient? _proxyHttpClient;
+
     private volatile bool _isAuthorized;
 
     private DateTime _updateAt = DateTime.MinValue;
@@ -91,6 +93,22 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
         _updateTaskSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
         _updateTaskSource.TrySetResult(false);
+    }
+
+    /// <summary>
+    /// Sends the access key requests through <paramref name="proxy"/>. Only the first non-null proxy is used.
+    /// </summary>
+    internal void UseProxy(IWebProxy? proxy)
+    {
+        if (proxy == null || _proxyHttpClient != null)
+        {
+            return;
+        }
+
+        lock (_lock)
+        {
+            _proxyHttpClient ??= new HttpClient(new HttpClientHandler { Proxy = proxy }, disposeHandler: true);
+        }
     }
 
     public virtual async Task<string> GetMicrosoftEntraTokenAsync(CancellationToken ctoken = default)
@@ -245,7 +263,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         var request = new HttpRequestMessage(HttpMethod.Get, new Uri(GetAccessKeyUrl));
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-        var httpClient = _httpClientFactory.CreateClient(Constants.HttpClientNames.UserDefault);
+        var httpClient = _proxyHttpClient ?? _httpClientFactory.CreateClient(Constants.HttpClientNames.UserDefault);
 
         var response = await httpClient.SendAsync(request, ctoken);
 

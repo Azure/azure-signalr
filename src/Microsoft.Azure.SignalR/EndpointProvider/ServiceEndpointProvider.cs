@@ -32,6 +32,7 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
     {
         _accessTokenLifetime = serviceOptions.AccessTokenLifetime;
         _accessKey = endpoint.AccessKey;
+        (_accessKey as MicrosoftEntraAccessKey)?.UseProxy(serviceOptions.Proxy);
         _appName = serviceOptions.ApplicationName;
         _algorithm = serviceOptions.AccessTokenAlgorithm;
 

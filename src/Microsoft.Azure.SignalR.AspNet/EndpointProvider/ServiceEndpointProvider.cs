@@ -46,6 +46,7 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
         _clientEndpoint = endpoint.ClientEndpoint.AbsoluteUri;
         _serverEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
         _accessKey = endpoint.AccessKey;
+        (_accessKey as MicrosoftEntraAccessKey)?.UseProxy(options.Proxy);
         _appName = options.ApplicationName;
         _algorithm = options.AccessTokenAlgorithm;
 
