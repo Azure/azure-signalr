@@ -201,7 +201,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
     public async Task TestAccessKeyRequestMessage(Type keyType)
     {
         var endpoint = MockServiceEndpoint(keyType.Name);
-        var provider = new ServiceEndpointProvider(endpoint, new ServiceOptions(), new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
+        IServiceEndpointProvider provider = new ServiceEndpointProvider(endpoint, new ServiceOptions(), new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
         Assert.IsAssignableFrom(keyType, provider.AccessKey);
         var hubServiceEndpoint = new HubServiceEndpoint("foo", provider, endpoint);
         var clientInvocationManager = new DefaultClientInvocationManager();
@@ -231,7 +231,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         var algorithm = AccessTokenAlgorithm.HS256;
 
         var endpoint = MockServiceEndpoint(keyType.Name);
-        var provider = new ServiceEndpointProvider(endpoint, new ServiceOptions(), new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
+        IServiceEndpointProvider provider = new ServiceEndpointProvider(endpoint, new ServiceOptions(), new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
         Assert.IsAssignableFrom(keyType, provider.AccessKey);
         var hubServiceEndpoint = new HubServiceEndpoint("foo", provider, endpoint);
         var clientInvocationManager = new DefaultClientInvocationManager();

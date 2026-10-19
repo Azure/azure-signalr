@@ -27,13 +27,15 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
 
     private readonly string _serverEndpoint;
 
+    private readonly IAccessKey _accessKey;
+
     private readonly string _appName;
 
     private readonly TimeSpan _accessTokenLifetime;
 
     private readonly AccessTokenAlgorithm _algorithm;
 
-    public IAccessKey AccessKey { get; }
+    IAccessKey IServiceEndpointProvider.AccessKey => _accessKey;
 
     public IWebProxy Proxy { get; }
 
@@ -45,7 +47,7 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
         _audienceBaseUrl = endpoint.AudienceBaseUrl;
         _clientEndpoint = endpoint.ClientEndpoint.AbsoluteUri;
         _serverEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
-        AccessKey = accessKey;
+        _accessKey = accessKey;
         _appName = options.ApplicationName;
         _algorithm = options.AccessTokenAlgorithm;
 
@@ -56,7 +58,7 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
     {
         var audience = $"{_audienceBaseUrl}{ClientPath}";
 
-        return AccessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
+        return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
     }
 
     public string GetClientEndpoint(string hubName = null, string originalPath = null, string queryString = null)
@@ -95,11 +97,11 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
 
     public IAccessTokenProvider GetServerAccessTokenProvider(string hubName, string serverId)
     {
-        if (AccessKey is MicrosoftEntraAccessKey key)
+        if (_accessKey is MicrosoftEntraAccessKey key)
         {
             return new MicrosoftEntraTokenProvider(key);
         }
-        else if (AccessKey is AccessKey key2)
+        else if (_accessKey is AccessKey key2)
         {
             var audience = $"{_audienceBaseUrl}{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
             var claims = serverId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, serverId) } : null;

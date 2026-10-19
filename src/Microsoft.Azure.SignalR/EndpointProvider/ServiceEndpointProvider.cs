@@ -16,6 +16,8 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
         $"Please specify a configuration entry for {Constants.Keys.ConnectionStringDefaultKey}, " +
         "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
+    private readonly IAccessKey _accessKey;
+
     private readonly string _appName;
 
     private readonly TimeSpan _accessTokenLifetime;
@@ -24,14 +26,14 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
 
     private readonly AccessTokenAlgorithm _algorithm;
 
-    public IAccessKey AccessKey { get; }
+    IAccessKey IServiceEndpointProvider.AccessKey => _accessKey;
 
     public IWebProxy Proxy { get; }
 
     public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions serviceOptions, IAccessKey accessKey)
     {
         _accessTokenLifetime = serviceOptions.AccessTokenLifetime;
-        AccessKey = accessKey;
+        _accessKey = accessKey;
         _appName = serviceOptions.ApplicationName;
         _algorithm = serviceOptions.AccessTokenAlgorithm;
 
@@ -49,7 +51,7 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
 
         var audience = _generator.GetClientAudience(hubName, _appName);
 
-        return AccessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
+        return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
     }
 
     public string GetClientEndpoint(string hubName, string originalPath, string queryString)
@@ -61,11 +63,11 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
 
     public IAccessTokenProvider GetServerAccessTokenProvider(string hubName, string serverId)
     {
-        if (AccessKey is MicrosoftEntraAccessKey key)
+        if (_accessKey is MicrosoftEntraAccessKey key)
         {
             return new MicrosoftEntraTokenProvider(key);
         }
-        else if (AccessKey is AccessKey key2)
+        else if (_accessKey is AccessKey key2)
         {
             var audience = _generator.GetServerAudience(hubName, _appName);
             var claims = serverId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, serverId) } : null;
