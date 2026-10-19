@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,5 +20,6 @@ internal interface IAccessKey
                                                  IEnumerable<Claim> claims,
                                                  TimeSpan lifetime,
                                                  AccessTokenAlgorithm algorithm,
-                                                 CancellationToken ctoken = default);
+                                                 CancellationToken ctoken = default,
+                                                 IWebProxy proxy = null);
 }

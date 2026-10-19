@@ -46,7 +46,6 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
         _clientEndpoint = endpoint.ClientEndpoint.AbsoluteUri;
         _serverEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
         _accessKey = endpoint.AccessKey;
-        (_accessKey as MicrosoftEntraAccessKey)?.UseProxy(options.Proxy);
         _appName = options.ApplicationName;
         _algorithm = options.AccessTokenAlgorithm;
 
@@ -57,7 +56,7 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
     {
         var audience = $"{_audienceBaseUrl}{ClientPath}";
 
-        return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
+        return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm, proxy: Proxy);
     }
 
     public string GetClientEndpoint(string hubName = null, string originalPath = null, string queryString = null)

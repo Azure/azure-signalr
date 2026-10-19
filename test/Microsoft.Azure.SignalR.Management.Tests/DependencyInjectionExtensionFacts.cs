@@ -12,6 +12,8 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Azure.Core;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -22,6 +24,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
+using Moq;
 
 using Newtonsoft.Json;
 
@@ -270,6 +274,39 @@ public class DependencyInjectionExtensionFacts
         Assert.Equal("/api/hubs/hub/users/userId", requestUrls.Dequeue());
         await hubContext.Clients.All.SendAsync("method");
         Assert.Equal("/api/hubs/hub/:send", requestUrls.Dequeue());
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task ProxyAppliesToMicrosoftEntraNegotiationAsync()
+    {
+        var requestPaths = new Queue<string>();
+        var appBuilder = WebApplication.CreateBuilder();
+        appBuilder.Services.AddLogging(b => b.AddXunit(_outputHelper));
+        using var app = appBuilder.Build();
+        app.Urls.Add("http://127.0.0.1:0");
+        app.Run(async context =>
+        {
+            requestPaths.Enqueue(context.Request.Path);
+            await context.Response.WriteAsync("{\"KeyId\":\"kid\",\"AccessKey\":\"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\"}");
+        });
+        await app.StartAsync();
+
+        var credential = new Mock<TokenCredential>();
+        credential.Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+            .Returns(new ValueTask<AccessToken>(new AccessToken("token", DateTimeOffset.UtcNow.AddHours(1))));
+        using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+        {
+            o.ServiceEndpoints = new[] { new ServiceEndpoint(new Uri("http://signalr.invalid"), credential.Object) };
+            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.Proxy = new WebProxy(app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.Single());
+        }).BuildServiceManager();
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var hubContext = await serviceManager.CreateHubContextAsync("hub", timeout.Token);
+        var response = await hubContext.NegotiateAsync(cancellationToken: timeout.Token);
+        Assert.False(string.IsNullOrEmpty(response.AccessToken));
+        Assert.Equal("/api/v1/auth/accessKey", Assert.Single(requestPaths));
         await app.StopAsync();
     }
 

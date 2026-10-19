@@ -4,6 +4,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,15 +44,60 @@ public class MicrosoftEntraProxyFacts
         }
     }
 
-    private static async Task<string> ServeOnceAsync(TcpListener listener)
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SharedEndpointUsesTheRequestingProvidersProxy(bool copyEndpoint)
     {
-        using var client = await listener.AcceptTcpClientAsync();
+        var listenerA = new TcpListener(IPAddress.Loopback, 0);
+        var listenerB = new TcpListener(IPAddress.Loopback, 0);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        listenerA.Start();
+        listenerB.Start();
+        try
+        {
+            var requestA = ServeOnceAsync(listenerA, timeout.Token);
+            var requestB = ServeOnceAsync(listenerB, timeout.Token);
+            var endpoint = new ServiceEndpoint(new Uri("http://signalr.invalid"), new StaticTokenCredential());
+            var providerA = new ServiceEndpointProvider(endpoint, new ServiceOptions
+            {
+                Proxy = new WebProxy($"http://127.0.0.1:{((IPEndPoint)listenerA.LocalEndpoint).Port}")
+            });
+            var providerB = new ServiceEndpointProvider(copyEndpoint ? new ServiceEndpoint(endpoint) : endpoint, new ServiceOptions
+            {
+                Proxy = new WebProxy($"http://127.0.0.1:{((IPEndPoint)listenerB.LocalEndpoint).Port}")
+            });
+
+            // B negotiates first, even though A's provider was constructed first.
+            var tokenB = providerB.GenerateClientAccessTokenAsync("hub");
+            Assert.Same(requestB, await Task.WhenAny(requestA, requestB).WaitAsync(timeout.Token));
+            Assert.StartsWith("GET http://signalr.invalid/api/v1/auth/accessKey ", await requestB);
+            Assert.NotNull(await tokenB.WaitAsync(timeout.Token));
+
+            // A later refresh must use A's proxy, while retaining the shared key cache.
+            typeof(MicrosoftEntraAccessKey).GetField("_updateAt", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(endpoint.AccessKey, DateTime.UtcNow.AddHours(-3));
+            var tokenA = providerA.GenerateClientAccessTokenAsync("hub");
+            Assert.StartsWith("GET http://signalr.invalid/api/v1/auth/accessKey ", await requestA);
+            Assert.NotNull(await tokenA.WaitAsync(timeout.Token));
+        }
+        finally
+        {
+            timeout.Cancel();
+            listenerA.Stop();
+            listenerB.Stop();
+        }
+    }
+
+    private static async Task<string> ServeOnceAsync(TcpListener listener, CancellationToken cancellationToken = default)
+    {
+        using var client = await listener.AcceptTcpClientAsync(cancellationToken);
         var stream = client.GetStream();
         var buffer = new byte[4096];
         var head = new StringBuilder();
         while (!head.ToString().Contains("\r\n\r\n"))
         {
-            var n = await stream.ReadAsync(buffer.AsMemory());
+            var n = await stream.ReadAsync(buffer.AsMemory(), cancellationToken);
             if (n == 0)
             {
                 break;
@@ -60,7 +106,7 @@ public class MicrosoftEntraProxyFacts
         }
         var body = "{\"KeyId\":\"kid\",\"AccessKey\":\"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\"}";
         var response = $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n{body}";
-        await stream.WriteAsync(Encoding.ASCII.GetBytes(response));
+        await stream.WriteAsync(Encoding.ASCII.GetBytes(response), cancellationToken);
         return head.ToString();
     }
 
