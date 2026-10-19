@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -308,6 +309,71 @@ public class DependencyInjectionExtensionFacts
         Assert.False(string.IsNullOrEmpty(response.AccessToken));
         Assert.Equal("/api/v1/auth/accessKey", Assert.Single(requestPaths));
         await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task ServiceManagersSharingEndpointUseTheirOwnProxiesAsync()
+    {
+        var requests = new ConcurrentQueue<(string Proxy, string Path)>();
+        using var proxyA = CreateProxy("A");
+        using var proxyB = CreateProxy("B");
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await proxyA.StartAsync(timeout.Token);
+        await proxyB.StartAsync(timeout.Token);
+
+        var credential = new Mock<TokenCredential>();
+        credential.Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+            .Returns(new ValueTask<AccessToken>(new AccessToken("token", DateTimeOffset.UtcNow.AddHours(1))));
+        var endpoint = new ServiceEndpoint(new Uri("http://signalr.invalid"), credential.Object);
+
+        using var managerA = new ServiceManagerBuilder().WithOptions(o =>
+        {
+            o.ServiceEndpoints = new[] { endpoint };
+            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.Proxy = new WebProxy(proxyA.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.Single());
+        }).BuildServiceManager();
+        using var managerB = new ServiceManagerBuilder().WithOptions(o =>
+        {
+            o.ServiceEndpoints = new[] { endpoint };
+            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.Proxy = new WebProxy(proxyB.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.Single());
+        }).BuildServiceManager();
+        using var hubA = await managerA.CreateHubContextAsync("hub", timeout.Token);
+        using var hubB = await managerB.CreateHubContextAsync("hub", timeout.Token);
+
+        // B requests the first key, although A's manager and hub were created first.
+        var responseB = await hubB.NegotiateAsync(cancellationToken: timeout.Token);
+        Assert.False(string.IsNullOrEmpty(responseB.AccessToken));
+        Assert.Equal(("B", "/api/v1/auth/accessKey"), Assert.Single(requests));
+
+        // A can use the same cached key without another HTTP request.
+        var cachedResponseA = await hubA.NegotiateAsync(cancellationToken: timeout.Token);
+        Assert.False(string.IsNullOrEmpty(cachedResponseA.AccessToken));
+        Assert.Single(requests);
+
+        // Once the shared key expires, a refresh initiated by A must use A's proxy.
+        typeof(MicrosoftEntraAccessKey).GetField("_updateAt", BindingFlags.Instance | BindingFlags.NonPublic)
+            .SetValue(endpoint.AccessKey, DateTime.UtcNow.AddHours(-3));
+        var responseA = await hubA.NegotiateAsync(cancellationToken: timeout.Token);
+        Assert.False(string.IsNullOrEmpty(responseA.AccessToken));
+        Assert.Equal(new[] { ("B", "/api/v1/auth/accessKey"), ("A", "/api/v1/auth/accessKey") }, requests.ToArray());
+
+        await proxyA.StopAsync(timeout.Token);
+        await proxyB.StopAsync(timeout.Token);
+
+        WebApplication CreateProxy(string name)
+        {
+            var appBuilder = WebApplication.CreateBuilder();
+            appBuilder.Services.AddLogging(b => b.AddXunit(_outputHelper));
+            var app = appBuilder.Build();
+            app.Urls.Add("http://127.0.0.1:0");
+            app.Run(async context =>
+            {
+                requests.Enqueue((name, context.Request.Path));
+                await context.Response.WriteAsync("{\"KeyId\":\"kid\",\"AccessKey\":\"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\"}");
+            });
+            return app;
+        }
     }
 
     [Fact]
