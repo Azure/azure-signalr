@@ -329,20 +329,14 @@ public class DependencyInjectionExtensionFacts
                 })
                 .ConfigureServices(services => services.AddHttpClient(httpClientName).AddHttpMessageHandler(sp => new WaitInfinitelyHandler()))
                 .BuildServiceManager();
-            var requestStartTime = DateTime.UtcNow;
-            var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", default);
-            await TestCoreAsync(() => testFunc(serviceHubContext));
-        }
+            using var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", default);
+            var httpClientFactory = ((ServiceHubContextImpl)serviceHubContext).ServiceProvider.GetRequiredService<IHttpClientFactory>();
+            using var httpClient = httpClientFactory.CreateClient(httpClientName);
+            Assert.Equal(TimeSpan.FromSeconds(1), httpClient.Timeout);
 
-        static async Task TestCoreAsync(Func<Task> testAction)
-        {
-            var requestStartTime = DateTime.UtcNow;
-            await Assert.ThrowsAsync<TaskCanceledException>(testAction);
-            var elapsed = DateTime.UtcNow - requestStartTime;
-            // Don't know why, the elapsed time sometimes is shorter than 1 second, but it should be close to 1 second.
-            Assert.True(elapsed >= TimeSpan.FromSeconds(0.8));
-            // Avoid random failure
-            Assert.True(elapsed < TimeSpan.FromSeconds(5));
+            // Verify timeout cancellation independently of the runner's scheduling delays.
+            var exception = await Assert.ThrowsAsync<TaskCanceledException>(() => testFunc(serviceHubContext)).OrTimeout(TimeSpan.FromSeconds(30));
+            Assert.IsType<TimeoutException>(exception.InnerException);
         }
     }
 
