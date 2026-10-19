@@ -16,7 +16,8 @@ $archivePath = Join-Path $OutputDirectory $archiveFile
 function Read-ImageJson([string] $Path) {
     $json = & tar -xOf $archivePath $Path
     if ($LASTEXITCODE -ne 0) { throw "Could not read $Path from the saved image." }
-    ($json -join "`n") | ConvertFrom-Json
+    # OneBranch may add lowercase labels alongside Docker's canonical Labels.
+    ($json -join "`n") | ConvertFrom-Json -AsHashtable
 }
 $manifests = @(Read-ImageJson 'manifest.json')
 if ($manifests.Count -ne 1 -or @($manifests[0].RepoTags).Count -ne 1 -or
@@ -24,10 +25,11 @@ if ($manifests.Count -ne 1 -or @($manifests[0].RepoTags).Count -ne 1 -or
     throw 'Expected one saved image with one tag and a configuration digest.'
 }
 $configuration = Read-ImageJson $manifests[0].Config
+$labels = $configuration['config']['Labels']
 if ($configuration.os -cne 'linux' -or $configuration.architecture -cne 'amd64' -or
-    $configuration.config.Labels.'org.opencontainers.image.version' -cne $metadata.version -or
-    $configuration.config.Labels.'org.opencontainers.image.revision' -cne $metadata.sourceVersion -or
-    $configuration.config.Labels.'com.azure.signalr.package.sha256' -cne $metadata.packageSha256) {
+    $labels['org.opencontainers.image.version'] -cne $metadata.version -or
+    $labels['org.opencontainers.image.revision'] -cne $metadata.sourceVersion -or
+    $labels['com.azure.signalr.package.sha256'] -cne $metadata.packageSha256) {
     throw 'The saved image platform, version, source and package must match this build.'
 }
 $metadata | Add-Member -NotePropertyMembers @{

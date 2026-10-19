@@ -88,6 +88,9 @@ try {
             'com.azure.signalr.package.sha256' = $metadata.packageSha256
         } }
     }
+    # Match OneBranch archives that contain both case-sensitive JSON keys.
+    $configuration = $configuration | ConvertTo-Json -Depth 4 | ConvertFrom-Json -AsHashtable
+    $configuration.config['labels'] = @{ BaseImage = 'onebranch-test-image:123' }
     $packageMetadata = @{}
     foreach ($key in @('buildId', 'sourceVersion', 'version', 'packageFile', 'packageSha256', 'symbolsSha256')) {
         $packageMetadata[$key] = $metadata[$key]
