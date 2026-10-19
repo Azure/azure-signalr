@@ -67,6 +67,45 @@ try {
         @{ digest = "sha256:$digest" } | ConvertTo-Json
     }
     Assert-Rejected { & $verify -OciLayout test -ImageReference test:123 -TargetImage example/test:123 -OrasPath Invoke-TestOras } 'does not match the local image digest'
+
+    # OneBranch exports a Docker archive. Only accept the tested package's image.
+    $complete = Join-Path $PSScriptRoot 'Complete-EmulatorContainer.ps1'
+    $imageDirectory = Join-Path $scratch 'saved-image'
+    New-Item -ItemType Directory $imageDirectory | Out-Null
+    $configuration = @{
+        os = 'linux'
+        architecture = 'amd64'
+        config = @{ Labels = @{
+            'org.opencontainers.image.version' = $metadata.version
+            'org.opencontainers.image.revision' = $metadata.sourceVersion
+            'com.azure.signalr.package.sha256' = $metadata.packageSha256
+        } }
+    }
+    $packageMetadata = @{}
+    foreach ($key in @('buildId', 'sourceVersion', 'version', 'packageFile', 'packageSha256', 'symbolsSha256')) {
+        $packageMetadata[$key] = $metadata[$key]
+    }
+    $packageMetadata | ConvertTo-Json | Set-Content (Join-Path $scratch 'package-release.json')
+    function Save-TestImage {
+        $configPath = Join-Path $imageDirectory 'config.json'
+        $configuration | ConvertTo-Json -Depth 4 | Set-Content $configPath
+        $configFile = (Get-FileHash $configPath).Hash.ToLowerInvariant() + '.json'
+        Copy-Item $configPath (Join-Path $imageDirectory $configFile)
+        ConvertTo-Json -InputObject @(@{ Config = $configFile; RepoTags = @('onebranch.azurecr.io/signalr-emulator-build:123') }) |
+            Set-Content (Join-Path $imageDirectory 'manifest.json')
+        & tar -cf $archive -C $imageDirectory manifest.json $configFile
+        if ($LASTEXITCODE -ne 0) { throw 'Could not create test image archive.' }
+    }
+    Save-TestImage
+    & $complete -PackageDirectory $scratch -OutputDirectory $scratch
+    & $prepare -ArtifactDirectory $scratch -Action version
+    $configuration.config.Labels.'com.azure.signalr.package.sha256' = 'wrong-package'
+    Save-TestImage
+    Assert-Rejected { & $complete -PackageDirectory $scratch -OutputDirectory $scratch } 'source and package must match'
+    $configuration.config.Labels.'com.azure.signalr.package.sha256' = $metadata.packageSha256
+    $configuration.config.Labels.'org.opencontainers.image.revision' = 'wrong-commit'
+    Save-TestImage
+    Assert-Rejected { & $complete -PackageDirectory $scratch -OutputDirectory $scratch } 'source and package must match'
     Write-Host 'Release integrity checks passed.'
 }
 finally {
