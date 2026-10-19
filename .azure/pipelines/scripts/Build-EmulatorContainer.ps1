@@ -71,6 +71,6 @@ $metadata | Add-Member -NotePropertyMembers @{
     archiveSha256 = (Get-FileHash $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 $metadata | ConvertTo-Json | Set-Content (Join-Path $output 'container-release.json') -Encoding utf8NoBOM
-Copy-Item (Join-Path $PSScriptRoot 'Prepare-EmulatorRelease.ps1') $output
-Copy-Item (Join-Path $PSScriptRoot 'Verify-EmulatorContainer.ps1') $output
+Copy-Item (Join-Path $packageRoot 'Prepare-EmulatorRelease.ps1') $output
+Copy-Item (Join-Path $packageRoot 'Verify-EmulatorContainer.ps1') $output
 Write-Host "Saved tested emulator image $image."

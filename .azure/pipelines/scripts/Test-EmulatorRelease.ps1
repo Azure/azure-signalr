@@ -72,6 +72,13 @@ try {
     $complete = Join-Path $PSScriptRoot 'Complete-EmulatorContainer.ps1'
     $imageDirectory = Join-Path $scratch 'saved-image'
     New-Item -ItemType Directory $imageDirectory | Out-Null
+    $containerOutput = Join-Path $scratch 'container-artifact'
+    New-Item -ItemType Directory $containerOutput | Out-Null
+    $archive = Join-Path $containerOutput $metadata.archiveFile
+    foreach ($helper in @('Prepare-EmulatorRelease.ps1', 'Verify-EmulatorContainer.ps1')) {
+        Copy-Item (Join-Path $PSScriptRoot $helper) $scratch
+        Add-Content (Join-Path $scratch $helper) '# Artifact copy used by the release test.'
+    }
     $configuration = @{
         os = 'linux'
         architecture = 'amd64'
@@ -97,15 +104,20 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Could not create test image archive.' }
     }
     Save-TestImage
-    & $complete -PackageDirectory $scratch -OutputDirectory $scratch
-    & $prepare -ArtifactDirectory $scratch -Action version
+    & $complete -PackageDirectory $scratch -OutputDirectory $containerOutput
+    & $prepare -ArtifactDirectory $containerOutput -Action version
+    foreach ($helper in @('Prepare-EmulatorRelease.ps1', 'Verify-EmulatorContainer.ps1')) {
+        if ((Get-FileHash (Join-Path $scratch $helper)).Hash -cne (Get-FileHash (Join-Path $containerOutput $helper)).Hash) {
+            throw 'Container release helpers must preserve the package artifact bytes.'
+        }
+    }
     $configuration.config.Labels.'com.azure.signalr.package.sha256' = 'wrong-package'
     Save-TestImage
-    Assert-Rejected { & $complete -PackageDirectory $scratch -OutputDirectory $scratch } 'source and package must match'
+    Assert-Rejected { & $complete -PackageDirectory $scratch -OutputDirectory $containerOutput } 'source and package must match'
     $configuration.config.Labels.'com.azure.signalr.package.sha256' = $metadata.packageSha256
     $configuration.config.Labels.'org.opencontainers.image.revision' = 'wrong-commit'
     Save-TestImage
-    Assert-Rejected { & $complete -PackageDirectory $scratch -OutputDirectory $scratch } 'source and package must match'
+    Assert-Rejected { & $complete -PackageDirectory $scratch -OutputDirectory $containerOutput } 'source and package must match'
     Write-Host 'Release integrity checks passed.'
 }
 finally {

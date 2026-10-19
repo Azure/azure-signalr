@@ -36,6 +36,7 @@ $metadata | Add-Member -NotePropertyMembers @{
     archiveSha256 = (Get-FileHash $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 $metadata | ConvertTo-Json | Set-Content (Join-Path $OutputDirectory 'container-release.json') -Encoding utf8NoBOM
-Copy-Item (Join-Path $PSScriptRoot 'Prepare-EmulatorRelease.ps1') $OutputDirectory
-Copy-Item (Join-Path $PSScriptRoot 'Verify-EmulatorContainer.ps1') $OutputDirectory
+# Keep the signed helpers from the package artifact unchanged.
+Copy-Item (Join-Path $PackageDirectory 'Prepare-EmulatorRelease.ps1') $OutputDirectory
+Copy-Item (Join-Path $PackageDirectory 'Verify-EmulatorContainer.ps1') $OutputDirectory
 Write-Host "Recorded tested OneBranch image $($metadata.imageReference)."

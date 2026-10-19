@@ -55,3 +55,4 @@ $packageFile = "Microsoft.Azure.SignalR.Emulator.$version.nupkg"
 } | ConvertTo-Json | Set-Content (Join-Path $output 'package-release.json') -Encoding utf8NoBOM
 Copy-Item (Join-Path $repoRoot 'src/Microsoft.Azure.SignalR.Emulator/Dockerfile') $output
 Copy-Item (Join-Path $PSScriptRoot 'Prepare-EmulatorRelease.ps1') $output
+Copy-Item (Join-Path $PSScriptRoot 'Verify-EmulatorContainer.ps1') $output
