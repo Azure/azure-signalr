@@ -46,14 +46,14 @@ public class MicrosoftEntraAccessKeyTests
     [InlineData("https://a.bc:443", "https://a.bc/api/v1/auth/accessKey")]
     public void TestExpectedGetAccessKeyUrl(string endpoint, string expectedGetAccessKeyUrl)
     {
-        var key = new MicrosoftEntraAccessKey(new Uri(endpoint), new DefaultAzureCredential());
+        var key = new MicrosoftEntraAccessKey(new Uri(endpoint), new DefaultAzureCredential(), HttpClientFactory.Instance);
         Assert.Equal(expectedGetAccessKeyUrl, key.GetAccessKeyUrl);
     }
 
     [Fact]
     public async Task TestUpdateAccessKey()
     {
-        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential());
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential(), HttpClientFactory.Instance);
 
         var (kid, accessKey) = ("foo", DefaultSigningKey);
         key.UpdateAccessKey(kid, accessKey);
@@ -66,7 +66,7 @@ public class MicrosoftEntraAccessKeyTests
     [Fact]
     public async Task TestInitializeFailed()
     {
-        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential())
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential(), HttpClientFactory.Instance)
         {
             GetAccessKeyRetryInterval = TimeSpan.Zero
         };
@@ -81,7 +81,7 @@ public class MicrosoftEntraAccessKeyTests
     [Fact]
     public async Task TestNotInitailized()
     {
-        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential(delay: 10000));
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential(delay: 10000), HttpClientFactory.Instance);
         Assert.False(key.Available);
 
         var source = new CancellationTokenSource(TimeSpan.FromSeconds(1));
@@ -97,7 +97,7 @@ public class MicrosoftEntraAccessKeyTests
     [Fact]
     public async Task TestUnavailable()
     {
-        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential(delay: 10000));
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential(delay: 10000), HttpClientFactory.Instance);
         key.UpdateAccessKey("foo", "bar");
         Assert.True(key.Available);
 
@@ -118,7 +118,7 @@ public class MicrosoftEntraAccessKeyTests
     [ClassData(typeof(NotAuthorizedTestData))]
     public async Task TestUpdateAccessKeyFailedThrowsNotAuthorizedException(AzureSignalRException e, string expectedErrorMessage)
     {
-        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential() { Exception = e })
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential() { Exception = e }, HttpClientFactory.Instance)
         {
             GetAccessKeyRetryInterval = TimeSpan.Zero,
         };
@@ -182,7 +182,7 @@ public class MicrosoftEntraAccessKeyTests
     [Fact]
     public async Task TestLazyLoadAccessKeyFailed()
     {
-        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential())
+        var key = new MicrosoftEntraAccessKey(DefaultEndpoint, new TestTokenCredential(), HttpClientFactory.Instance)
         {
             GetAccessKeyRetryInterval = TimeSpan.FromSeconds(1),
         };

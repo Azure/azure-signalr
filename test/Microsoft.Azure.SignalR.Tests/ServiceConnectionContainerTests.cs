@@ -63,7 +63,7 @@ public class ServiceConnectionContainerTests
     public async Task TestServiceConnectionOffline()
     {
         var factory = new TestServiceConnectionFactory();
-        var hubServiceEndpoint = new HubServiceEndpoint("foo", null, new TestServiceEndpoint());
+        var hubServiceEndpoint = new TestHubServiceEndpoint();
 
         var container = new StrongServiceConnectionContainer(factory, 3, 3, hubServiceEndpoint, NullLogger.Instance);
 
@@ -117,7 +117,7 @@ public class ServiceConnectionContainerTests
     public async Task TestServiceConnectionStickyWrites()
     {
         var factory = new TestServiceConnectionFactory();
-        var hubServiceEndpoint = new HubServiceEndpoint("foo", null, new TestServiceEndpoint());
+        var hubServiceEndpoint = new TestHubServiceEndpoint();
 
         var container = new StrongServiceConnectionContainer(factory, 30, 30, hubServiceEndpoint, NullLogger.Instance);
 
@@ -182,7 +182,7 @@ public class ServiceConnectionContainerTests
         // with scope enabled, the messages always go through the first picked connection
         using var _ = new ClientConnectionScope();
         var factory = new TestServiceConnectionFactory();
-        var hubServiceEndpoint = new HubServiceEndpoint("foo", null, new TestServiceEndpoint());
+        var hubServiceEndpoint = new TestHubServiceEndpoint();
 
         var container = new StrongServiceConnectionContainer(factory, 30, 30, hubServiceEndpoint, NullLogger.Instance);
 

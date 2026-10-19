@@ -24,9 +24,10 @@ internal class ServiceManagerImpl : ServiceManager, IServiceManager
     private readonly RestApiProvider _restApiEndpointProvider;
     private readonly IServiceEndpointProvider _serviceEndpointProvider;
 
-    public ServiceManagerImpl(IReadOnlyCollection<ServiceDescriptor> services, IServiceProvider serviceProvider, RestClient restClient, IServiceEndpointManager endpointManager)
+    public ServiceManagerImpl(IReadOnlyCollection<ServiceDescriptor> services, IServiceProvider serviceProvider, RestClient restClient, IServiceEndpointManager endpointManager, ServiceEndpointAccessKeyStore accessKeys)
     {
-        _services = services;
+        // Hub contexts have separate DI hosts but belong to this manager's key cache and factory.
+        _services = services.Concat(new[] { ServiceDescriptor.Singleton(accessKeys) }).ToArray();
         _serviceProvider = serviceProvider;
         _restClient = restClient;
         var endpoint = endpointManager.Endpoints.Keys.First();

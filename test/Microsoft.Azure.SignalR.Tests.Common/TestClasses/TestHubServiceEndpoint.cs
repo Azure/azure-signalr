@@ -6,7 +6,7 @@ internal class TestHubServiceEndpoint(string name = null,
                                       IServiceEndpointProvider provider = null,
                                       ServiceEndpoint endpoint = null) : HubServiceEndpoint(
                                           name ?? "foo",
-                                          provider ?? new TestServiceEndpointProvider(),
+                                          provider ?? new TestServiceEndpointProvider(new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint ?? new TestServiceEndpoint())),
                                           endpoint ?? new TestServiceEndpoint())
 {
 }

@@ -81,13 +81,12 @@ internal class MicrosoftEntraAccessKey : IAccessKey
 
     public MicrosoftEntraAccessKey(Uri serverEndpoint,
                                    TokenCredential credential,
-                                   IHttpClientFactory? httpClientFactory = null)
+                                   IHttpClientFactory httpClientFactory)
     {
         var authorizeUri = serverEndpoint.Append("/api/v1/auth/accessKey");
         GetAccessKeyUrl = authorizeUri.AbsoluteUri;
         TokenCredential = credential;
-
-        _httpClientFactory = httpClientFactory ?? HttpClientFactory.Instance;
+        _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
 
         _updateTaskSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
         _updateTaskSource.TrySetResult(false);
@@ -245,7 +244,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         var request = new HttpRequestMessage(HttpMethod.Get, new Uri(GetAccessKeyUrl));
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-        var httpClient = _httpClientFactory.CreateClient(Constants.HttpClientNames.UserDefault);
+        using var httpClient = _httpClientFactory.CreateClient(Constants.HttpClientNames.MicrosoftEntraAccessKey);
 
         var response = await httpClient.SendAsync(request, ctoken);
 

@@ -22,7 +22,7 @@ internal class AccessTokenHttpMessageHandler : DelegatingHandler
     public AccessTokenHttpMessageHandler(IServiceEndpointManager serviceEndpointManager, IServerNameProvider serverNameProvider)
     {
         var serviceEndpoint = serviceEndpointManager.Endpoints.Keys.First();
-        _accessTokenGenerator = new RestApiAccessTokenGenerator(serviceEndpoint.AccessKey, serverNameProvider.GetName());
+        _accessTokenGenerator = new RestApiAccessTokenGenerator(serviceEndpointManager.GetEndpointProvider(serviceEndpoint).AccessKey, serverNameProvider.GetName());
         _audienceBaseUri = serviceEndpoint.AudienceBaseUrl;
     }
 

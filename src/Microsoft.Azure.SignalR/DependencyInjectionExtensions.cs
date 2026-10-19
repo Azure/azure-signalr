@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Net.Http;
 
 #if !NETSTANDARD2_0
 using Microsoft.AspNetCore.Hosting;
@@ -90,7 +91,14 @@ public static class AzureSignalRDependencyInjectionExtensions
 
     private static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)
     {
+        builder.Services.AddHttpClient(Constants.HttpClientNames.MicrosoftEntraAccessKey)
+            .ConfigurePrimaryHttpMessageHandler(sp => new HttpClientHandler
+            {
+                Proxy = sp.GetRequiredService<IOptions<ServiceOptions>>().Value.Proxy
+            });
+
         builder.Services
+            .AddSingleton<ServiceEndpointAccessKeyStore>()
             .PostConfigure<ServiceOptions>(o => o.Validate())
             .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManager<>))
             .AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol))

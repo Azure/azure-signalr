@@ -27,17 +27,17 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
 
     private readonly string _serverEndpoint;
 
-    private readonly IAccessKey _accessKey;
-
     private readonly string _appName;
 
     private readonly TimeSpan _accessTokenLifetime;
 
     private readonly AccessTokenAlgorithm _algorithm;
 
+    public IAccessKey AccessKey { get; }
+
     public IWebProxy Proxy { get; }
 
-    public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions options)
+    public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions options, IAccessKey accessKey)
     {
         _accessTokenLifetime = options.AccessTokenLifetime;
 
@@ -45,7 +45,7 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
         _audienceBaseUrl = endpoint.AudienceBaseUrl;
         _clientEndpoint = endpoint.ClientEndpoint.AbsoluteUri;
         _serverEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
-        _accessKey = endpoint.AccessKey;
+        AccessKey = accessKey;
         _appName = options.ApplicationName;
         _algorithm = options.AccessTokenAlgorithm;
 
@@ -56,7 +56,7 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
     {
         var audience = $"{_audienceBaseUrl}{ClientPath}";
 
-        return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
+        return AccessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
     }
 
     public string GetClientEndpoint(string hubName = null, string originalPath = null, string queryString = null)
@@ -95,11 +95,11 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
 
     public IAccessTokenProvider GetServerAccessTokenProvider(string hubName, string serverId)
     {
-        if (_accessKey is MicrosoftEntraAccessKey key)
+        if (AccessKey is MicrosoftEntraAccessKey key)
         {
             return new MicrosoftEntraTokenProvider(key);
         }
-        else if (_accessKey is AccessKey key2)
+        else if (AccessKey is AccessKey key2)
         {
             var audience = $"{_audienceBaseUrl}{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
             var claims = serverId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, serverId) } : null;

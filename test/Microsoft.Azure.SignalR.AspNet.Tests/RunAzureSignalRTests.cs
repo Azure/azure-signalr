@@ -5,10 +5,16 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+
+using Azure.Core;
 
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -23,6 +29,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Owin;
 using Microsoft.Owin.Hosting;
+
+using Moq;
 
 using Newtonsoft.Json;
 
@@ -52,6 +60,54 @@ public class RunAzureSignalRTests(ITestOutputHelper output) : VerifiableLoggedTe
     private static readonly Version VersionSupportingApplicationNamePrefix = new(1, 0, 9);
 
     private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new();
+
+    [Fact]
+    public async Task MicrosoftEntraNegotiationUsesConfiguredProxy()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        using var appDisposing = new CancellationTokenSource();
+        try
+        {
+            using var loggerFactory = new LoggerFactory();
+            var configuration = Utility.GetTestHubConfig(loggerFactory);
+            using var resolver = configuration.Resolver;
+            var applicationHttpClientFactory = new Mock<IHttpClientFactory>().Object;
+            resolver.Register(typeof(IHttpClientFactory), () => applicationHttpClientFactory);
+            var credential = new Mock<TokenCredential>();
+            credential.Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .Returns(new ValueTask<AccessToken>(new AccessToken("token", DateTimeOffset.UtcNow.AddHours(1))));
+            var endpoint = new ServiceEndpoint(new Uri("http://signalr.invalid"), credential.Object);
+            var options = new ServiceOptions
+            {
+                Endpoints = new[] { endpoint },
+                Proxy = new WebProxy($"http://127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}")
+            };
+            var builder = new TestAppBuilder();
+            builder.Properties["host.OnAppDisposing"] = appDisposing.Token;
+            DispatcherHelper.PrepareAndGetDispatcher(builder, configuration, options, AppName, loggerFactory);
+            Assert.Same(applicationHttpClientFactory, resolver.Resolve<IHttpClientFactory>());
+            var provider = resolver.Resolve<IServiceEndpointManager>().GetEndpointProvider(endpoint);
+            var tokenTask = provider.GenerateClientAccessTokenAsync("hub");
+
+            using var connection = await listener.AcceptTcpClientAsync().OrTimeout();
+            var stream = connection.GetStream();
+            using var reader = new StreamReader(stream);
+            Assert.StartsWith("GET http://signalr.invalid/api/v1/auth/accessKey ", await reader.ReadLineAsync().OrTimeout());
+            while (!string.IsNullOrEmpty(await reader.ReadLineAsync().OrTimeout()))
+            {
+            }
+            var body = "{\"KeyId\":\"kid\",\"AccessKey\":\"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\"}";
+            var response = Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n{body}");
+            await stream.WriteAsync(response, 0, response.Length).OrTimeout();
+            Assert.False(string.IsNullOrEmpty(await tokenTask.OrTimeout()));
+        }
+        finally
+        {
+            appDisposing.Cancel();
+            listener.Stop();
+        }
+    }
 
     [Fact]
     public void TestRunAzureSignalRWithDefaultOptions()

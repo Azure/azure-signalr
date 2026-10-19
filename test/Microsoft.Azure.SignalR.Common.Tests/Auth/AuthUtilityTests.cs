@@ -100,7 +100,7 @@ public class AuthUtilityTests
         public IEnumerator<object[]> GetEnumerator()
         {
             yield return new object[] { new AccessKey(SigningKey), true };
-            var key = new MicrosoftEntraAccessKey(new Uri("http://localhost"), new DefaultAzureCredential());
+            var key = new MicrosoftEntraAccessKey(new Uri("http://localhost"), new DefaultAzureCredential(), HttpClientFactory.Instance);
             key.UpdateAccessKey("foo", SigningKey);
             yield return new object[] { key, false };
         }

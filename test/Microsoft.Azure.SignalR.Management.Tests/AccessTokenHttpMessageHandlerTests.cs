@@ -28,6 +28,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var mockServiceEndpointManager = new Mock<IServiceEndpointManager>();
             var mockEndpoint = new ServiceEndpoint($"Endpoint=https://test.service.signalr.net;AccessKey={key};Version=1.0;");
             mockServiceEndpointManager.Setup(manager => manager.Endpoints).Returns(new Dictionary<ServiceEndpoint, ServiceEndpoint> { { mockEndpoint, mockEndpoint } });
+            mockServiceEndpointManager.Setup(manager => manager.GetEndpointProvider(mockEndpoint))
+                .Returns(new TestServiceEndpointProvider(new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(mockEndpoint)));
 
             var handler = new AccessTokenHttpMessageHandler(mockServiceEndpointManager.Object, Mock.Of<IServerNameProvider>(p=>p.GetName()=="servername"))
             {

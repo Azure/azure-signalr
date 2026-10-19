@@ -43,7 +43,7 @@ public class RefreshHandlerFacts
         var expiration = new DateTimeOffset(2100, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var serviceEndpoint = new ServiceEndpoint(ConnectionString.Replace("localhost", "owning-endpoint", StringComparison.Ordinal));
         var owningEndpoint = new HubServiceEndpoint(
-            nameof(TestHub), new ServiceEndpointProvider(serviceEndpoint, new ServiceOptions()), serviceEndpoint);
+            nameof(TestHub), new ServiceEndpointProvider(serviceEndpoint, new ServiceOptions(), new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(serviceEndpoint)), serviceEndpoint);
         var manager = new FakeServiceConnectionManager<TestHub>
         {
             ClaimsResult = new GetConnectionClaimsResult(

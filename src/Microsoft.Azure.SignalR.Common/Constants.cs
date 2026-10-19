@@ -159,6 +159,8 @@ internal static class Constants
 
     public static class HttpClientNames
     {
+        public const string MicrosoftEntraAccessKey = "MicrosoftEntraAccessKey";
+
         public const string Resilient = "Resilient";
 
         public const string MessageResilient = "MessageResilient";

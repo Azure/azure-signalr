@@ -502,7 +502,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
 
         public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
         {
-            return null;
+            return new TestServiceEndpointProvider(new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
         }
     }
 

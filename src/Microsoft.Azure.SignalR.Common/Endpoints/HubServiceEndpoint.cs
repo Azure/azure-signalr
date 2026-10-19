@@ -23,6 +23,10 @@ internal class HubServiceEndpoint : ServiceEndpoint
 
     public IServiceEndpointProvider Provider { get; }
 
+    internal IAccessKey AccessKey => Provider.AccessKey;
+
+    internal ServiceEndpoint EndpointConfiguration => _endpoint;
+
     public IServiceConnectionContainer? ConnectionContainer { get; set; }
 
     /// <summary>

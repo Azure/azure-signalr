@@ -27,7 +27,8 @@ internal sealed class DefaultClientInvocationManager : IClientInvocationManager
         var loggerFactory = new NullLoggerFactory();
         var serviceEndpointManager = new ServiceEndpointManager(
             new TestOptionsMonitor(),
-            loggerFactory
+            loggerFactory,
+            new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance)
         );
         Caller = new CallerClientResultsManager(hubProtocolResolver, serviceEndpointManager, new DefaultEndpointRouter());
         Router = new RoutedClientResultsManager();

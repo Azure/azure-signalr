@@ -14,6 +14,8 @@ internal class ServiceEndpointManager : ServiceEndpointManagerBase
 {
     private readonly ILogger _logger;
 
+    private readonly ServiceEndpointAccessKeyStore _accessKeys;
+
     // Store the initial ServiceOptions for generating EndpointProvider use.
     // Only Endpoints value accept hot-reload and prevent changes of unexpected modification on other configurations.
     private readonly ServiceOptions _options;
@@ -21,10 +23,12 @@ internal class ServiceEndpointManager : ServiceEndpointManagerBase
     private readonly TimeSpan _scaleTimeout;
 
     public ServiceEndpointManager(IOptionsMonitor<ServiceOptions> optionsMonitor,
-                                  ILoggerFactory loggerFactory) :
+                                  ILoggerFactory loggerFactory,
+                                  ServiceEndpointAccessKeyStore accessKeys) :
         base(optionsMonitor.CurrentValue, loggerFactory.CreateLogger<ServiceEndpointManager>())
     {
         _options = optionsMonitor.CurrentValue;
+        _accessKeys = accessKeys;
         _logger = loggerFactory?.CreateLogger<ServiceEndpointManager>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
         optionsMonitor.OnChange(OnChange);
@@ -37,7 +41,7 @@ internal class ServiceEndpointManager : ServiceEndpointManagerBase
         {
             return null;
         }
-        return new ServiceEndpointProvider(endpoint, _options);
+        return new ServiceEndpointProvider(endpoint, _options, _accessKeys.GetAccessKey(endpoint));
     }
 
     private void OnChange(ServiceOptions options)
