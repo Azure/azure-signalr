@@ -118,7 +118,9 @@ public class ServiceEndpointFacts
         Assert.Equal(serviceEndpoint.Name, cloned.Name);
         Assert.Equal(serviceEndpoint.ConnectionString, cloned.ConnectionString);
         Assert.Equal(serviceEndpoint.AudienceBaseUrl, cloned.AudienceBaseUrl);
-        Assert.Equal(serviceEndpoint.AccessKey, cloned.AccessKey);
+        Assert.Equal(DefaultKey, serviceEndpoint.AccessKeyValue);
+        Assert.Equal(serviceEndpoint.AccessKeyValue, cloned.AccessKeyValue);
+        Assert.Same(serviceEndpoint.TokenCredential, cloned.TokenCredential);
     }
 
     [Theory]
@@ -136,7 +138,8 @@ public class ServiceEndpointFacts
         Assert.Equal(port, endpoint.ClientEndpoint.Port);
         Assert.Equal(port, endpoint.ServerEndpoint.Port);
 
-        Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
+        Assert.IsType<DefaultAzureCredential>(endpoint.TokenCredential);
+        Assert.Null(endpoint.AccessKeyValue);
         Assert.Equal(expectedEndpoint, endpoint.Endpoint);
         Assert.Equal("", endpoint.Name);
         Assert.Equal(EndpointType.Primary, endpoint.EndpointType);
@@ -169,7 +172,8 @@ public class ServiceEndpointFacts
     {
         var uri = new Uri("http://localhost");
         var serviceEndpoint = new ServiceEndpoint(key, uri, new DefaultAzureCredential());
-        Assert.IsType<MicrosoftEntraAccessKey>(serviceEndpoint.AccessKey);
+        Assert.IsType<DefaultAzureCredential>(serviceEndpoint.TokenCredential);
+        Assert.Null(serviceEndpoint.AccessKeyValue);
         Assert.Equal(name, serviceEndpoint.Name);
         Assert.Equal(type, serviceEndpoint.EndpointType);
         TestCopyConstructor(serviceEndpoint);
@@ -183,7 +187,7 @@ public class ServiceEndpointFacts
         // use default endpoint
         var endpoint = new ServiceEndpoint(new Uri(DefaultServiceEndpoint), credential);
         Assert.Equal(ServiceEndpoint.BuildEndpointString(DefaultServiceEndpointUri), endpoint.Endpoint);
-        var key = Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
+        var key = Assert.IsType<MicrosoftEntraAccessKey>(new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
         Assert.Equal(DefaultServiceEndpointUri, endpoint.ServerEndpoint);
         Assert.Equal($"{DefaultServiceEndpoint}/api/v1/auth/accessKey", key.GetAccessKeyUrl, StringComparer.OrdinalIgnoreCase);
 
@@ -200,7 +204,7 @@ public class ServiceEndpointFacts
         var serverEndpoint1 = new Uri("http://serverEndpoint:123");
         endpoint = new ServiceEndpoint(new Uri(DefaultServiceEndpoint), credential, serverEndpoint: serverEndpoint1);
         Assert.Equal(ServiceEndpoint.BuildEndpointString(DefaultServiceEndpointUri), endpoint.Endpoint);
-        key = Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
+        key = Assert.IsType<MicrosoftEntraAccessKey>(new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
         Assert.Equal(serverEndpoint1, endpoint.ServerEndpoint);
         Assert.Equal("http://serverEndpoint:123/api/v1/auth/accessKey", key.GetAccessKeyUrl, StringComparer.OrdinalIgnoreCase);
 
@@ -211,7 +215,7 @@ public class ServiceEndpointFacts
             ServerEndpoint = serverEndpoint2
         };
         Assert.Equal(ServiceEndpoint.BuildEndpointString(DefaultServiceEndpointUri), endpoint.Endpoint);
-        key = Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
+        key = Assert.IsType<MicrosoftEntraAccessKey>(new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
         Assert.Equal(serverEndpoint2, endpoint.ServerEndpoint);
         Assert.Equal("http://serverEndpoint:123/path/api/v1/auth/accessKey", key.GetAccessKeyUrl, StringComparer.OrdinalIgnoreCase);
 
@@ -221,7 +225,7 @@ public class ServiceEndpointFacts
             ServerEndpoint = serverEndpoint2
         };
         Assert.Equal(ServiceEndpoint.BuildEndpointString(DefaultServiceEndpointUri), endpoint.Endpoint);
-        key = Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
+        key = Assert.IsType<MicrosoftEntraAccessKey>(new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
         Assert.Equal(serverEndpoint2, endpoint.ServerEndpoint);
         Assert.Equal("http://serverEndpoint:123/path/api/v1/auth/accessKey", key.GetAccessKeyUrl, StringComparer.OrdinalIgnoreCase);
     }
@@ -234,7 +238,7 @@ public class ServiceEndpointFacts
         // use default endpoint
         var endpoint = new ServiceEndpoint(new Uri(DefaultServiceEndpoint), credential);
         Assert.Equal(ServiceEndpoint.BuildEndpointString(DefaultServiceEndpointUri), endpoint.Endpoint);
-        Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
+        Assert.Same(credential, endpoint.TokenCredential);
         Assert.Equal(DefaultServiceEndpointUri, endpoint.ClientEndpoint);
 
         // throw if client endpoint is invalid
@@ -250,7 +254,7 @@ public class ServiceEndpointFacts
         var clientEndpoint1 = new Uri("https://clientEndpoint:123");
         endpoint = new ServiceEndpoint(new Uri(DefaultServiceEndpoint), credential, clientEndpoint: clientEndpoint1);
         Assert.Equal(ServiceEndpoint.BuildEndpointString(DefaultServiceEndpointUri), endpoint.Endpoint);
-        Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
+        Assert.Same(credential, endpoint.TokenCredential);
         Assert.Equal(clientEndpoint1, endpoint.ClientEndpoint);
 
         // use object initializer.
@@ -260,7 +264,7 @@ public class ServiceEndpointFacts
             ClientEndpoint = clientEndpoint2,
         };
         Assert.Equal(ServiceEndpoint.BuildEndpointString(DefaultServiceEndpointUri), endpoint.Endpoint);
-        Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
+        Assert.Same(credential, endpoint.TokenCredential);
         Assert.Equal(clientEndpoint2, endpoint.ClientEndpoint);
 
         // object initializer should override constructor param.
@@ -269,7 +273,7 @@ public class ServiceEndpointFacts
             ClientEndpoint = clientEndpoint2,
         };
         Assert.Equal(ServiceEndpoint.BuildEndpointString(DefaultServiceEndpointUri), endpoint.Endpoint);
-        Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
+        Assert.Same(credential, endpoint.TokenCredential);
         Assert.Equal(clientEndpoint2, endpoint.ClientEndpoint);
     }
 
@@ -288,7 +292,9 @@ public class ServiceEndpointFacts
         Assert.Equal(endpoint.EndpointType, other.EndpointType);
         Assert.Equal(endpoint.Endpoint, other.Endpoint);
         Assert.Equal(endpoint.ClientEndpoint, other.ClientEndpoint);
-        Assert.Equal(endpoint.AccessKey, other.AccessKey);
+        Assert.Equal(endpoint.ServerEndpoint, other.ServerEndpoint);
+        Assert.Equal(endpoint.AccessKeyValue, other.AccessKeyValue);
+        Assert.Same(endpoint.TokenCredential, other.TokenCredential);
     }
 
     public class EndpointEqualityTestData : IEnumerable<object[]>

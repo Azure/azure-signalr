@@ -91,7 +91,7 @@ public class InternalServiceHubContextFacts(ITestOutputHelper output) : Verifiab
                 token.ValidTo,
                 token.ValidFrom,
                 token.ValidFrom,
-                randomEndpoint.AccessKey);
+                new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(randomEndpoint));
             Assert.Equal(expectedToken, tokenString);
         }
     }

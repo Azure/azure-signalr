@@ -11,6 +11,13 @@ namespace Microsoft.Azure.SignalR.Tests.Common;
 
 internal class TestServiceEndpointProvider : IServiceEndpointProvider
 {
+    public IAccessKey AccessKey { get; }
+
+    public TestServiceEndpointProvider(IAccessKey accessKey = null)
+    {
+        AccessKey = accessKey ?? new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(new TestServiceEndpoint());
+    }
+
     public IWebProxy Proxy => throw new NotImplementedException();
 
     public Task<string> GenerateClientAccessTokenAsync(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)

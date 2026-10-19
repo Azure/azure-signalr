@@ -18,12 +18,6 @@ public class ServiceEndpoint
 
     private readonly Uri? _clientEndpoint;
 
-    private readonly TokenCredential? _tokenCredential;
-
-    private readonly object _lock = new object();
-
-    private volatile IAccessKey? _accessKey;
-
     public string? ConnectionString { get; }
 
     public EndpointType EndpointType { get; } = EndpointType.Primary;
@@ -71,24 +65,9 @@ public class ServiceEndpoint
 
     internal string AudienceBaseUrl { get; }
 
-    internal IAccessKey AccessKey
-    {
-        get
-        {
-            if (_accessKey is null)
-            {
-                if (_tokenCredential is null)
-                {
-                    throw new ArgumentNullException(nameof(_tokenCredential));
-                }
-                lock (_lock)
-                {
-                    _accessKey ??= new MicrosoftEntraAccessKey(ServerEndpoint, _tokenCredential);
-                }
-            }
-            return _accessKey;
-        }
-    }
+    internal string? AccessKeyValue { get; }
+
+    internal TokenCredential? TokenCredential { get; }
 
     // Flag to indicate an updaing endpoint needs staging
     internal virtual bool PendingReload { get; set; }
@@ -102,13 +81,6 @@ public class ServiceEndpoint
     public ServiceEndpoint(string nameWithEndpointType, string connectionString) : this(connectionString)
     {
         (Name, EndpointType) = Parse(nameWithEndpointType);
-    }
-
-    private static IAccessKey BuildAccessKey(ParsedConnectionString parsed)
-    {
-        return string.IsNullOrEmpty(parsed.AccessKey)
-            ? new MicrosoftEntraAccessKey(parsed.ServerEndpoint ?? parsed.Endpoint, parsed.TokenCredential)
-            : new AccessKey(parsed.AccessKey);
     }
 
     /// <summary>
@@ -129,7 +101,8 @@ public class ServiceEndpoint
 
         var result = ConnectionStringParser.Parse(connectionString);
 
-        _accessKey = BuildAccessKey(result);
+        AccessKeyValue = result.AccessKey;
+        TokenCredential = result.TokenCredential;
         _serviceEndpoint = result.Endpoint;
         _clientEndpoint = result.ClientEndpoint;
         _serverEndpoint = result.ServerEndpoint;
@@ -166,7 +139,7 @@ public class ServiceEndpoint
                            Uri? serverEndpoint = null,
                            Uri? clientEndpoint = null)
     {
-        _tokenCredential = credential ?? throw new ArgumentNullException(nameof(credential));
+        TokenCredential = credential ?? throw new ArgumentNullException(nameof(credential));
 
         EndpointType = endpointType;
         Name = name;
@@ -191,8 +164,8 @@ public class ServiceEndpoint
         Endpoint = other.Endpoint;
         AudienceBaseUrl = other.AudienceBaseUrl;
 
-        _accessKey = other._accessKey;
-        _tokenCredential = other._tokenCredential;
+        AccessKeyValue = other.AccessKeyValue;
+        TokenCredential = other.TokenCredential;
         _serviceEndpoint = other._serviceEndpoint;
         _clientEndpoint = other._clientEndpoint;
         _serverEndpoint = other._serverEndpoint;

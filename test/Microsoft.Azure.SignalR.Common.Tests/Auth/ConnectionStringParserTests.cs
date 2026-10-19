@@ -224,7 +224,7 @@ public class ConnectionStringParserTests
     internal void TestAzureADWithServerEndpoint(string connectionString, string expectedAuthorizeUrl)
     {
         var endpoint = new ServiceEndpoint(connectionString);
-        var key = Assert.IsType<MicrosoftEntraAccessKey>(endpoint.AccessKey);
+        var key = Assert.IsType<MicrosoftEntraAccessKey>(new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
         Assert.Equal(expectedAuthorizeUrl, key.GetAccessKeyUrl, StringComparer.OrdinalIgnoreCase);
     }
 

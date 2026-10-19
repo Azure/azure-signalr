@@ -11,6 +11,8 @@ namespace Microsoft.Azure.SignalR;
 
 internal interface IServiceEndpointProvider
 {
+    IAccessKey AccessKey { get; }
+
     Task<string> GenerateClientAccessTokenAsync(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null);
 
     string GetClientEndpoint(string hubName, string originalPath, string queryString);

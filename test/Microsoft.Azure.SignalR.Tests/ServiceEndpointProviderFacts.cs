@@ -33,16 +33,16 @@ public class ServiceEndpointProviderFacts
 
     private static readonly ServiceEndpointProvider[] EndpointProviderArray =
     {
-        new(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithoutAppName),
-        new(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName),
-        new(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithoutAppName)
+        CreateProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithoutAppName),
+        CreateProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName),
+        CreateProvider(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithoutAppName)
     };
 
     private static readonly ServiceEndpointProvider[] EndpointProviderArrayWithPrefix =
     {
-        new(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithAppName),
-        new(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithAppName),
-        new(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithAppName)
+        CreateProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithAppName),
+        CreateProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithAppName),
+        CreateProvider(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithAppName)
     };
 
     private static readonly (string path, string queryString, string expectedQuery)[] PathAndQueryArray =
@@ -113,7 +113,7 @@ public class ServiceEndpointProviderFacts
     internal async Task GenerateMultipleAccessTokenShouldBeUnique()
     {
         var count = 1000;
-        var sep = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName);
+        var sep = CreateProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName);
         var userId = Guid.NewGuid().ToString();
         var tokens = new List<string>();
         for (var i = 0; i < count; i++)
@@ -212,7 +212,7 @@ public class ServiceEndpointProviderFacts
     [InlineData(AccessTokenAlgorithm.HS512)]
     public async Task GenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
     {
-        var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+        var provider = CreateProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
         var serverToken = await provider.GetServerAccessTokenProvider("hub1", "user1").ProvideAsync();
 
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(serverToken);
@@ -225,11 +225,15 @@ public class ServiceEndpointProviderFacts
     [InlineData(AccessTokenAlgorithm.HS512)]
     public async Task GenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
     {
-        var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+        var provider = CreateProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
         var generatedToken = await provider.GenerateClientAccessTokenAsync("hub1");
 
         var token = JwtTokenHelper.JwtHandler.ReadJwtToken(generatedToken);
 
         Assert.Equal(algorithm.ToString(), token.SignatureAlgorithm);
+    }
+    private static ServiceEndpointProvider CreateProvider(ServiceEndpoint endpoint, ServiceOptions options)
+    {
+        return new ServiceEndpointProvider(endpoint, options, new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
     }
 }

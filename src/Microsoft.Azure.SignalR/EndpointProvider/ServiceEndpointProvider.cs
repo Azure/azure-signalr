@@ -26,12 +26,14 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
 
     private readonly AccessTokenAlgorithm _algorithm;
 
+    IAccessKey IServiceEndpointProvider.AccessKey => _accessKey;
+
     public IWebProxy Proxy { get; }
 
-    public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions serviceOptions)
+    public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions serviceOptions, IAccessKey accessKey)
     {
         _accessTokenLifetime = serviceOptions.AccessTokenLifetime;
-        _accessKey = endpoint.AccessKey;
+        _accessKey = accessKey;
         _appName = serviceOptions.ApplicationName;
         _algorithm = serviceOptions.AccessTokenAlgorithm;
 

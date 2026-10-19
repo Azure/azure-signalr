@@ -27,7 +27,7 @@ public class ServiceEndpointProviderTests
     [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetclient")]
     public async Task TestGenerateClientAccessToken(string connectionString, string expectedAudience)
     {
-        var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
+        var provider = CreateProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
         var clientToken = await provider.GenerateClientAccessTokenAsync(null, new Claim[]
         {
@@ -54,7 +54,7 @@ public class ServiceEndpointProviderTests
     [InlineData("Endpoint=https://abc.com;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "orig<inal.com", "?abc=%21dcf", "https://abc.com/aspnetclient?abc=%21dcf&asrs.op=orig%3Cinal.com")]
     public void TestGenerateClientEndpoint(string connectionString, string originalPath, string queryString, string expectedEndpoint)
     {
-        var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
+        var provider = CreateProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
         var clientEndpoint = provider.GetClientEndpoint(null, originalPath, queryString);
 
@@ -67,7 +67,7 @@ public class ServiceEndpointProviderTests
     [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=hub1")]
     public async Task TestGenerateServerAccessToken(string connectionString, string expectedAudience)
     {
-        var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
+        var provider = CreateProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
         var serverToken = await provider.GetServerAccessTokenProvider("hub1", "user1").ProvideAsync();
 
@@ -88,7 +88,7 @@ public class ServiceEndpointProviderTests
     [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=prefix_hub1")]
     public async Task TestGenerateServerAccessTokenWIthPrefix(string connectionString, string expectedAudience)
     {
-        var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
+        var provider = CreateProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
 
         var serverToken = await provider.GetServerAccessTokenProvider("hub1", "user1").ProvideAsync();
 
@@ -109,7 +109,7 @@ public class ServiceEndpointProviderTests
     [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=hub1")]
     public void TestGenerateServerEndpoint(string connectionString, string expectedEndpoint)
     {
-        var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
+        var provider = CreateProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
         var clientEndpoint = provider.GetServerEndpoint("hub1");
         Assert.Equal(expectedEndpoint, clientEndpoint);
     }
@@ -120,7 +120,7 @@ public class ServiceEndpointProviderTests
     [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=prefix_hub1")]
     public void TestGenerateServerEndpointWithPrefix(string connectionString, string expectedEndpoint)
     {
-        var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
+        var provider = CreateProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
         var clientEndpoint = provider.GetServerEndpoint("hub1");
         Assert.Equal(expectedEndpoint, clientEndpoint);
     }
@@ -131,7 +131,7 @@ public class ServiceEndpointProviderTests
     public async Task TestGenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
     {
         var connectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
-        var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+        var provider = CreateProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
         var serverToken = await provider.GetServerAccessTokenProvider("hub1", "user1").ProvideAsync();
 
         var handler = new JwtSecurityTokenHandler();
@@ -146,7 +146,7 @@ public class ServiceEndpointProviderTests
     public async Task TestGenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
     {
         var connectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
-        var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+        var provider = CreateProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
         var generatedToken = await provider.GenerateClientAccessTokenAsync("hub1");
 
         var handler = new JwtSecurityTokenHandler();
@@ -158,7 +158,7 @@ public class ServiceEndpointProviderTests
     [Fact(Skip = "Access token does not need to be unique")]
     public async Task GenerateMultipleAccessTokenShouldBeUnique()
     {
-        var sep = new ServiceEndpointProvider(new ServiceEndpoint(DefaultConnectionString), new ServiceOptions() { });
+        var sep = CreateProvider(new ServiceEndpoint(DefaultConnectionString), new ServiceOptions() { });
         var userId = Guid.NewGuid().ToString();
         var tokens = new List<string>();
 
@@ -171,5 +171,9 @@ public class ServiceEndpointProviderTests
 
         var distinct = tokens.Distinct();
         Assert.Equal(tokens.Count, distinct.Count());
+    }
+    private static ServiceEndpointProvider CreateProvider(ServiceEndpoint endpoint, ServiceOptions options)
+    {
+        return new ServiceEndpointProvider(endpoint, options, new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
     }
 }

@@ -93,10 +93,12 @@ internal static class DependencyInjectionExtensions
     {
         services.AddSingleton<IServiceManager, ServiceManagerImpl>();
         services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
-        var tempServices = new ServiceCollection()
+        // Include existing registrations so AddHttpClient can reuse its singleton infrastructure.
+        var tempServices = new ServiceCollection().Add(services)
             .AddSingleton<IEndpointRouter, AutoHealthCheckRouter>()
             .AddSignalR()
             .AddAzureSignalR<CascadeServiceOptionsSetup>().Services
+            .Skip(services.Count)
             .Where(service => service.ServiceType != typeof(IServiceConnectionContainer))
             .Where(service => service.ServiceType != typeof(IHostedService));
         services.Add(tempServices);

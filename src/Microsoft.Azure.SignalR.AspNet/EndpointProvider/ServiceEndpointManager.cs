@@ -9,12 +9,16 @@ internal class ServiceEndpointManager : ServiceEndpointManagerBase
 {
     private readonly ServiceOptions _options;
 
+    private readonly ServiceEndpointAccessKeyStore _accessKeys;
+
     public ServiceEndpointManager(ServiceOptions options,
-                                  ILoggerFactory loggerFactory) :
+                                  ILoggerFactory loggerFactory,
+                                  ServiceEndpointAccessKeyStore accessKeys) :
         base(options,
              loggerFactory?.CreateLogger<ServiceEndpointManager>())
     {
         _options = options;
+        _accessKeys = accessKeys;
     }
 
     public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
@@ -23,6 +27,6 @@ internal class ServiceEndpointManager : ServiceEndpointManagerBase
         {
             return null;
         }
-        return new ServiceEndpointProvider(endpoint, _options);
+        return new ServiceEndpointProvider(endpoint, _options, _accessKeys.GetAccessKey(endpoint));
     }
 }

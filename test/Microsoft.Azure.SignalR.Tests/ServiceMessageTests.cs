@@ -201,15 +201,16 @@ public class ServiceMessageTests : VerifiableLoggedTest
     public async Task TestAccessKeyRequestMessage(Type keyType)
     {
         var endpoint = MockServiceEndpoint(keyType.Name);
-        Assert.IsAssignableFrom(keyType, endpoint.AccessKey);
-        var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
+        IServiceEndpointProvider provider = new ServiceEndpointProvider(endpoint, new ServiceOptions(), new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
+        Assert.IsAssignableFrom(keyType, provider.AccessKey);
+        var hubServiceEndpoint = new HubServiceEndpoint("foo", provider, endpoint);
         var clientInvocationManager = new DefaultClientInvocationManager();
 
         var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint, clientInvocationManager: clientInvocationManager);
         _ = connection.StartAsync();
         await connection.ConnectionInitializedTask.OrTimeout(1000);
 
-        if (endpoint.AccessKey is MicrosoftEntraAccessKey)
+        if (provider.AccessKey is MicrosoftEntraAccessKey)
         {
             var message = await connection.ExpectServiceMessage<AccessKeyRequestMessage>().OrTimeout(3000);
             Assert.True(Guid.TryParse(message.Token, out _));
@@ -230,15 +231,16 @@ public class ServiceMessageTests : VerifiableLoggedTest
         var algorithm = AccessTokenAlgorithm.HS256;
 
         var endpoint = MockServiceEndpoint(keyType.Name);
-        Assert.IsAssignableFrom(keyType, endpoint.AccessKey);
-        var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
+        IServiceEndpointProvider provider = new ServiceEndpointProvider(endpoint, new ServiceOptions(), new ServiceEndpointAccessKeyStore(HttpClientFactory.Instance).GetAccessKey(endpoint));
+        Assert.IsAssignableFrom(keyType, provider.AccessKey);
+        var hubServiceEndpoint = new HubServiceEndpoint("foo", provider, endpoint);
         var clientInvocationManager = new DefaultClientInvocationManager();
 
         var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint, clientInvocationManager: clientInvocationManager);
         _ = connection.StartAsync();
         await connection.ConnectionInitializedTask.OrTimeout(1000);
 
-        switch (endpoint.AccessKey)
+        switch (provider.AccessKey)
         {
             case MicrosoftEntraAccessKey key:
                 var source = new CancellationTokenSource(3000);
@@ -253,7 +255,7 @@ public class ServiceMessageTests : VerifiableLoggedTest
         };
         await connection.WriteFromServiceAsync(message);
 
-        var clientToken = await endpoint.AccessKey.GenerateAccessTokenAsync(DefaultAudience, emptyClaims, lifetime, algorithm).OrTimeout(3000);
+        var clientToken = await provider.GenerateClientAccessTokenAsync("foo", emptyClaims, lifetime).OrTimeout(3000);
         Assert.True(TokenUtilities.TryParseIssuer(clientToken, out var issuer));
         Assert.Equal(Constants.AsrsTokenIssuer, issuer);
 

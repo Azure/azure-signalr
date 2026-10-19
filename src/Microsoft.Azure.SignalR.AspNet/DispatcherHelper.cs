@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -14,6 +15,7 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Owin.BuilderProperties;
 using Microsoft.Owin.Infrastructure;
 
 using Owin;
@@ -63,7 +65,14 @@ internal class DispatcherHelper
             configuration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
         }
 
-        var endpoint = new ServiceEndpointManager(options, loggerFactory);
+        var httpServices = new ServiceCollection()
+            .AddHttpClient(Constants.HttpClientNames.MicrosoftEntraAccessKey)
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { Proxy = options.Proxy })
+            .Services.BuildServiceProvider();
+        new AppProperties(builder.Properties).OnAppDisposing.Register(httpServices.Dispose);
+        var httpClientFactory = httpServices.GetRequiredService<IHttpClientFactory>();
+
+        var endpoint = new ServiceEndpointManager(options, loggerFactory, new ServiceEndpointAccessKeyStore(httpClientFactory));
         configuration.Resolver.Register(typeof(IServiceEndpointManager), () => endpoint);
 
         var requestIdProvider = configuration.Resolver.Resolve<IConnectionRequestIdProvider>();
