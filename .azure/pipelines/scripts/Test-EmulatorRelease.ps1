@@ -123,7 +123,7 @@ try {
     Assert-Rejected { & $complete -PackageDirectory $scratch -OutputDirectory $containerOutput } 'source and package must match'
 
     # Preview images remain test artifacts and cannot enter a production release.
-    $previewVersion = "$($metadata.version)-preview-$($metadata.buildId)"
+    $previewVersion = "$($metadata.version)-preview1-$($metadata.buildId)"
     $packageMetadata.version = $previewVersion
     $packageMetadata.packageFile = "Microsoft.Azure.SignalR.Emulator.$previewVersion.nupkg"
     $packageMetadata | ConvertTo-Json | Set-Content (Join-Path $scratch 'package-release.json')

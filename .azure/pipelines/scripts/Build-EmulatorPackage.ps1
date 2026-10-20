@@ -23,12 +23,12 @@ if ($Phase -ne 'Validate' -and (Test-Path $output) -and (Get-ChildItem $output -
     throw "Package output directory must be empty: $output"
 }
 $isFinalBuild = $ReleaseType -eq 'release'
-$versionSuffix = if ($isFinalBuild) { 'rtm' } else { "preview-$BuildId" }
+$versionSuffix = if ($isFinalBuild) { 'rtm' } else { "preview1-$BuildId" }
 $properties = "-p:BuildNumber=$BuildId;VersionSuffix=$versionSuffix;IsFinalBuild=$isFinalBuild;SignType=$SignType"
 $version = & dotnet msbuild $project -getProperty:PackageVersion $properties
 if ($LASTEXITCODE -ne 0) { throw "Unable to read emulator version: $version" }
 $version = ($version -join "`n").Trim()
-$versionPattern = if ($isFinalBuild) { '^\d+\.\d+\.\d+(?:\.\d+)?$' } else { "^\d+\.\d+\.\d+(?:\.\d+)?-preview-$BuildId`$" }
+$versionPattern = if ($isFinalBuild) { '^\d+\.\d+\.\d+(?:\.\d+)?$' } else { "^\d+\.\d+\.\d+(?:\.\d+)?-preview1-$BuildId`$" }
 if ($version -cnotmatch $versionPattern) { throw "Invalid emulator $ReleaseType version: $version" }
 
 if ($Phase -ne 'Validate') {
