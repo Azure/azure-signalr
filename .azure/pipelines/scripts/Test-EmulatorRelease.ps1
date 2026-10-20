@@ -121,6 +121,21 @@ try {
     $configuration.config.Labels.'org.opencontainers.image.revision' = 'wrong-commit'
     Save-TestImage
     Assert-Rejected { & $complete -PackageDirectory $scratch -OutputDirectory $containerOutput } 'source and package must match'
+
+    # Preview images remain test artifacts and cannot enter a production release.
+    $previewVersion = "$($metadata.version)-preview-$($metadata.buildId)"
+    $packageMetadata.version = $previewVersion
+    $packageMetadata.packageFile = "Microsoft.Azure.SignalR.Emulator.$previewVersion.nupkg"
+    $packageMetadata | ConvertTo-Json | Set-Content (Join-Path $scratch 'package-release.json')
+    $configuration.config.Labels.'org.opencontainers.image.version' = $previewVersion
+    $configuration.config.Labels.'org.opencontainers.image.revision' = $metadata.sourceVersion
+    $archive = Join-Path $containerOutput "signalr-emulator.$previewVersion.linux-amd64.tar"
+    Save-TestImage
+    & $complete -PackageDirectory $scratch -OutputDirectory $containerOutput
+    foreach ($previewAction in @('version', 'latest')) {
+        Assert-Rejected { & $prepare -ArtifactDirectory $containerOutput -Action $previewAction } 'Invalid emulator release version'
+    }
+    Assert-Rejected { & $prepare -ArtifactDirectory $scratch -Action package } 'Invalid emulator release version'
     Write-Host 'Release integrity checks passed.'
 }
 finally {

@@ -2,6 +2,7 @@
 param(
     [Parameter(Mandatory)][string] $OutputDirectory,
     [Parameter(Mandatory)][ValidatePattern('^[1-9]\d*$')][string] $BuildId,
+    [ValidateSet('preview', 'release')][string] $ReleaseType = 'preview',
     [string] $SignType = 'real',
     [ValidateSet('All', 'Build', 'Validate')][string] $Phase = 'All'
 )
@@ -21,26 +22,26 @@ $output = [IO.Path]::GetFullPath($OutputDirectory)
 if ($Phase -ne 'Validate' -and (Test-Path $output) -and (Get-ChildItem $output -Force | Select-Object -First 1)) {
     throw "Package output directory must be empty: $output"
 }
-$properties = "-p:BuildNumber=$BuildId;VersionSuffix=rtm;IsFinalBuild=true;SignType=$SignType"
+$isFinalBuild = $ReleaseType -eq 'release'
+$versionSuffix = if ($isFinalBuild) { 'rtm' } else { "preview-$BuildId" }
+$properties = "-p:BuildNumber=$BuildId;VersionSuffix=$versionSuffix;IsFinalBuild=$isFinalBuild;SignType=$SignType"
 $version = & dotnet msbuild $project -getProperty:PackageVersion $properties
 if ($LASTEXITCODE -ne 0) { throw "Unable to read emulator version: $version" }
 $version = ($version -join "`n").Trim()
-if ($version -cnotmatch '^\d+\.\d+\.\d+(?:\.\d+)?$') { throw "Invalid emulator release version: $version" }
+$versionPattern = if ($isFinalBuild) { '^\d+\.\d+\.\d+(?:\.\d+)?$' } else { "^\d+\.\d+\.\d+(?:\.\d+)?-preview-$BuildId`$" }
+if ($version -cnotmatch $versionPattern) { throw "Invalid emulator $ReleaseType version: $version" }
 
 if ($Phase -ne 'Validate') {
     Invoke-DotNet test $tests --configuration Release $properties --logger trx
 }
-# Both packages contain the binaries built and tested above. CI signs them before validation.
-foreach ($kind in @('release', 'preview')) {
-    $packageVersion = if ($kind -eq 'release') { $version } else { "$version-preview-$BuildId" }
-    $directory = Join-Path $output $kind
-    if ($Phase -ne 'Validate') {
-        Invoke-DotNet pack $project --configuration Release --no-build --no-restore --output $directory `
-            --include-symbols --include-source $properties "-p:PackageVersion=$packageVersion"
-    }
-    if ($Phase -ne 'Build') {
-        & (Join-Path $PSScriptRoot 'Test-EmulatorPackage.ps1') -PackageDirectory $directory -ExpectedVersion $packageVersion
-    }
+# CI signs the selected package before validation.
+$directory = Join-Path $output $ReleaseType
+if ($Phase -ne 'Validate') {
+    Invoke-DotNet pack $project --configuration Release --no-build --no-restore --output $directory `
+        --include-symbols --include-source $properties
+}
+if ($Phase -ne 'Build') {
+    & (Join-Path $PSScriptRoot 'Test-EmulatorPackage.ps1') -PackageDirectory $directory -ExpectedVersion $version
 }
 if ($Phase -eq 'Build') { return }
 
@@ -50,8 +51,8 @@ $packageFile = "Microsoft.Azure.SignalR.Emulator.$version.nupkg"
     sourceVersion = $env:BUILD_SOURCEVERSION
     version = $version
     packageFile = $packageFile
-    packageSha256 = (Get-FileHash (Join-Path $output "release/$packageFile") -Algorithm SHA256).Hash.ToLowerInvariant()
-    symbolsSha256 = (Get-FileHash (Join-Path $output "release/Microsoft.Azure.SignalR.Emulator.$version.symbols.nupkg") -Algorithm SHA256).Hash.ToLowerInvariant()
+    packageSha256 = (Get-FileHash (Join-Path $directory $packageFile) -Algorithm SHA256).Hash.ToLowerInvariant()
+    symbolsSha256 = (Get-FileHash (Join-Path $directory "Microsoft.Azure.SignalR.Emulator.$version.symbols.nupkg") -Algorithm SHA256).Hash.ToLowerInvariant()
 } | ConvertTo-Json | Set-Content (Join-Path $output 'package-release.json') -Encoding utf8NoBOM
 Copy-Item (Join-Path $repoRoot 'src/Microsoft.Azure.SignalR.Emulator/Dockerfile') $output
 Copy-Item (Join-Path $PSScriptRoot 'Prepare-EmulatorRelease.ps1') $output

@@ -10,7 +10,7 @@ $metadata = Get-Content (Join-Path $PackageDirectory 'package-release.json') -Ra
 if ($metadata.buildId -cne $env:BUILD_BUILDID -or $metadata.sourceVersion -cne $env:BUILD_SOURCEVERSION) {
     throw 'Container inputs must come from this exact pipeline run and source commit.'
 }
-if ($metadata.version -cnotmatch '^\d+\.\d+\.\d+(?:\.\d+)?$') { throw 'Invalid emulator release version.' }
+if ($metadata.version -cnotmatch '^\d+\.\d+\.\d+(?:\.\d+)?(?:-preview-\d+)?$') { throw 'Invalid emulator package version.' }
 $archiveFile = "signalr-emulator.$($metadata.version).linux-amd64.tar"
 $archivePath = Join-Path $OutputDirectory $archiveFile
 function Read-ImageJson([string] $Path) {
