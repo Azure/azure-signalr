@@ -27,13 +27,11 @@ else {
 if ((Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $expectedHash) {
     throw 'The release artifact does not match the bytes validated by the build stage.'
 }
-Write-Host "##vso[task.setvariable variable=emulatorReleaseVersion]$version"
 if ($Action -eq 'package') {
     $symbols = Join-Path $root "release/Microsoft.Azure.SignalR.Emulator.$version.symbols.nupkg"
     if ((Get-FileHash $symbols -Algorithm SHA256).Hash.ToLowerInvariant() -cne $metadata.symbolsSha256) {
         throw 'The symbol package does not match the bytes validated by the build stage.'
     }
-    Write-Host "##vso[task.setvariable variable=emulatorPackagePath]$root/release/*.nupkg"
     return
 }
 

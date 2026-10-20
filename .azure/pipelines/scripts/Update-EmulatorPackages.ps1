@@ -21,15 +21,15 @@ if ($Action -eq 'Expand') {
     New-Item -ItemType Directory -Path $ExpandedRoot -Force | Out-Null
 
     foreach ($package in $packages) {
-        $packageDirectory = Join-Path $ExpandedRoot $package.Name
-        [System.IO.Compression.ZipFile]::ExtractToDirectory($package.FullName, $packageDirectory)
+        $expandedPackage = Join-Path $ExpandedRoot $package.Name
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($package.FullName, $expandedPackage)
     }
 
     return
 }
 
 foreach ($package in $packages) {
-    $packageDirectory = Join-Path $ExpandedRoot $package.Name
+    $expandedPackage = Join-Path $ExpandedRoot $package.Name
     Remove-Item -LiteralPath $package.FullName -Force
-    [System.IO.Compression.ZipFile]::CreateFromDirectory($packageDirectory, $package.FullName)
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($expandedPackage, $package.FullName)
 }

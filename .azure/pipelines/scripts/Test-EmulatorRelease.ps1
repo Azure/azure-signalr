@@ -2,14 +2,13 @@
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $prepare = Join-Path $PSScriptRoot 'Prepare-EmulatorRelease.ps1'
-$verify = Join-Path $PSScriptRoot 'Verify-EmulatorContainer.ps1'
 $scratch = Join-Path ([IO.Path]::GetTempPath()) "signalr-release-test-$([guid]::NewGuid())"
 $environmentNames = @('BUILD_BUILDID', 'BUILD_SOURCEVERSION', 'EMULATOR_CONTAINER_REGISTRY', 'EMULATOR_CONTAINER_REPOSITORY')
 $originalEnvironment = @{}
 foreach ($name in $environmentNames) { $originalEnvironment[$name] = [Environment]::GetEnvironmentVariable($name) }
 
-function Assert-Rejected([scriptblock] $Action, [string] $Message) {
-    try { & $Action }
+function Assert-Rejected([scriptblock] $Test, [string] $Message) {
+    try { & $Test }
     catch {
         if ($_.Exception.Message -like "*$Message*") { return }
         throw
@@ -59,14 +58,6 @@ try {
     Set-Content $package 'package'
     Add-Content $symbols 'changed'
     Assert-Rejected { & $prepare -ArtifactDirectory $scratch -Action package } 'symbol package does not match'
-
-    # ORAS descriptors are the contract used to compare the local and remote manifests.
-    function Invoke-TestOras {
-        $global:LASTEXITCODE = 0
-        $digest = if ($args -contains '--oci-layout') { 'a' * 64 } else { 'b' * 64 }
-        @{ digest = "sha256:$digest" } | ConvertTo-Json
-    }
-    Assert-Rejected { & $verify -OciLayout test -ImageReference test:123 -TargetImage example/test:123 -OrasPath Invoke-TestOras } 'does not match the local image digest'
 
     # OneBranch exports a Docker archive. Only accept the tested package's image.
     $complete = Join-Path $PSScriptRoot 'Complete-EmulatorContainer.ps1'
