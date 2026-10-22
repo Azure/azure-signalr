@@ -49,7 +49,7 @@ internal class ServiceEndpointProvider : IServiceEndpointProvider
 
         var audience = _generator.GetClientAudience(hubName, _appName);
 
-        return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
+        return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm, proxy: Proxy);
     }
 
     public string GetClientEndpoint(string hubName, string originalPath, string queryString)

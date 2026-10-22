@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading;
@@ -27,7 +28,8 @@ internal class AccessKey : IAccessKey
                                                          IEnumerable<Claim> claims,
                                                          TimeSpan lifetime,
                                                          AccessTokenAlgorithm algorithm,
-                                                         CancellationToken ctoken = default)
+                                                         CancellationToken ctoken = default,
+                                                         IWebProxy proxy = null)
     {
         var token = AuthUtility.GenerateAccessToken(KeyBytes, Kid, audience, claims, lifetime, algorithm);
         return Task.FromResult(token);
