@@ -115,12 +115,13 @@ internal class MicrosoftEntraAccessKey : IAccessKey
                                                        IEnumerable<Claim> claims,
                                                        TimeSpan lifetime,
                                                        AccessTokenAlgorithm algorithm,
-                                                       CancellationToken ctoken = default)
+                                                       CancellationToken ctoken = default,
+                                                       IWebProxy? proxy = null)
     {
         var updateTask = Task.CompletedTask;
         if (NeedRefresh)
         {
-            updateTask = UpdateAccessKeyAsync();
+            updateTask = UpdateAccessKeyAsync(proxy);
         }
 
         if (!Available)
@@ -150,7 +151,7 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         }
     }
 
-    internal async Task UpdateAccessKeyAsync()
+    internal async Task UpdateAccessKeyAsync(IWebProxy? proxy = null)
     {
         TaskCompletionSource<bool> tcs;
         lock (_lock)
@@ -162,21 +163,21 @@ internal class MicrosoftEntraAccessKey : IAccessKey
             else
             {
                 _updateTaskSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                _ = UpdateAccessKeyInternalAsync(_updateTaskSource);
+                _ = UpdateAccessKeyInternalAsync(_updateTaskSource, proxy);
                 tcs = _updateTaskSource;
             }
         }
         await tcs.Task;
     }
 
-    private async Task UpdateAccessKeyInternalAsync(TaskCompletionSource<bool> tcs)
+    private async Task UpdateAccessKeyInternalAsync(TaskCompletionSource<bool> tcs, IWebProxy? proxy)
     {
         for (var i = 0; i < GetAccessKeyMaxRetryTimes; i++)
         {
             using var source = new CancellationTokenSource(GetAccessKeyTimeout);
             try
             {
-                await UpdateAccessKeyInternalAsync(source.Token);
+                await UpdateAccessKeyInternalAsync(source.Token, proxy);
                 tcs.TrySetResult(true);
                 return;
             }
@@ -238,14 +239,16 @@ internal class MicrosoftEntraAccessKey : IAccessKey
         };
     }
 
-    private async Task UpdateAccessKeyInternalAsync(CancellationToken ctoken)
+    private async Task UpdateAccessKeyInternalAsync(CancellationToken ctoken, IWebProxy? proxy)
     {
         var accessToken = await GetMicrosoftEntraTokenAsync(ctoken);
 
         var request = new HttpRequestMessage(HttpMethod.Get, new Uri(GetAccessKeyUrl));
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-        var httpClient = _httpClientFactory.CreateClient(Constants.HttpClientNames.UserDefault);
+        // The key is shared by endpoints and hubs; the proxy belongs to the caller initiating this refresh.
+        var httpClientFactory = proxy == null ? _httpClientFactory : HttpClientFactory.GetInstance(proxy);
+        using var httpClient = httpClientFactory.CreateClient(Constants.HttpClientNames.UserDefault);
 
         var response = await httpClient.SendAsync(request, ctoken);
 

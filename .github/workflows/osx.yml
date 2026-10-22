@@ -40,12 +40,11 @@ jobs:
       uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
       with:
         dotnet-version: ${{ matrix.dotnet-version }}
-    #  Remove it when .NET 11 is GA.
+    # Pin until .NET 11 is GA so required .NET 8 packs are available in restore feeds.
     - name: Setup .NET 11 daily SDK
       uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
       with:
-        dotnet-version: '11.0.x'
-        dotnet-quality: 'daily'
+        dotnet-version: '11.0.100-rtm.26514.118'
     - name: Display dotnet version
       run: dotnet --version
     - name: Build with dotnet
@@ -55,7 +54,7 @@ jobs:
     - name: Test
       run: dotnet test --no-build --logger trx --results-directory "TestResults-ubuntu-${{ matrix.dotnet-version }}"
     - name: Upload dotnet test results
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: dotnet-results-${{ matrix.dotnet-version }}
         path: TestResults-ubuntu-${{ matrix.dotnet-version }}
