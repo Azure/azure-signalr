@@ -143,25 +143,53 @@ public class CustomizedTimerTests(ITestOutputHelper output) : VerifiableLoggedTe
         using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
         {
             var callbackCount = 0;
+            var firstCallbackStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var secondCallbackStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var releaseFirstCallback = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var releaseSecondCallback = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             using var timer = CustomizedPingTimerFactory.CreateCustomizedPingTimer(loggerFactory.CreateLogger(
-                nameof(BasicStartStopTest)), nameof(BasicStartStopTest),
+                nameof(LongRunningCallback)), nameof(LongRunningCallback),
                 async () =>
                 {
-                    Interlocked.Increment(ref callbackCount);
-                    // long running task to make timer skip timerTicks callbacks
-                    await Task.Delay(BaseTsPlus * timerTicks);
+                    if (Interlocked.Increment(ref callbackCount) == 1)
+                    {
+                        firstCallbackStarted.TrySetResult(true);
+                        await releaseFirstCallback.Task;
+                    }
+                    else
+                    {
+                        secondCallbackStarted.TrySetResult(true);
+                        await releaseSecondCallback.Task;
+                    }
                 },
                 BaseTs, BaseTs);
 
             timer.Start();
-            await Task.Delay(BaseTsPlus * 2 * timerTicks);
-            timer.Stop();
-            Assert.Equal(2, callbackCount);
+            try
+            {
+                await firstCallbackStarted.Task.OrTimeout(TimeSpan.FromSeconds(30));
+                // Keep the first callback running across multiple timer periods; callbacks must not overlap.
+                await Task.Delay(BaseTsPlus * timerTicks);
+                Assert.Equal(1, Volatile.Read(ref callbackCount));
+                releaseFirstCallback.SetResult(true);
 
-            // extra check it really stopped
-            await Task.Delay(BaseTsPlus * 2 * timerTicks);
-            Assert.Equal(2, callbackCount);
+                await secondCallbackStarted.Task.OrTimeout(TimeSpan.FromSeconds(30));
+                // Stop while the second callback is held so another tick cannot race the assertion.
+                timer.Stop();
+                releaseSecondCallback.SetResult(true);
+                Assert.Equal(2, Volatile.Read(ref callbackCount));
+
+                // extra check it really stopped
+                await Task.Delay(BaseTsPlus * 2 * timerTicks);
+                Assert.Equal(2, Volatile.Read(ref callbackCount));
+            }
+            finally
+            {
+                timer.Stop();
+                releaseFirstCallback.TrySetResult(true);
+                releaseSecondCallback.TrySetResult(true);
+            }
         }
     }
 
