@@ -3,13 +3,16 @@
 
 using System;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
+using System.Text;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Emulator.Controllers;
 using Microsoft.Azure.SignalR.Emulator.HubEmulator;
 using Microsoft.Extensions.Configuration;
@@ -32,7 +35,17 @@ namespace Microsoft.Azure.SignalR.Emulator
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddHttpClient();
+            services.AddHttpClient(Options.DefaultName)
+                .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+                {
+                    // Match the service's UTF-8 encoding for headers containing user values.
+                    RequestHeaderEncodingSelector = (headerName, _) =>
+                        string.Equals(headerName, Constants.Headers.AsrsUserId, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(headerName, Constants.Headers.AsrsUserClaims, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(headerName, Constants.Headers.AsrsEvent, StringComparison.OrdinalIgnoreCase)
+                            ? Encoding.UTF8
+                            : null
+                });
 
             services.AddAllowAllCors();
             services.AddJwtBearerAuth(Configuration);

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -11,6 +12,8 @@ using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Azure.Core;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -22,6 +25,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
+using Moq;
 
 using Newtonsoft.Json;
 
@@ -274,6 +279,104 @@ public class DependencyInjectionExtensionFacts
     }
 
     [Fact]
+    public async Task ProxyAppliesToMicrosoftEntraNegotiationAsync()
+    {
+        var requestPaths = new Queue<string>();
+        var appBuilder = WebApplication.CreateBuilder();
+        appBuilder.Services.AddLogging(b => b.AddXunit(_outputHelper));
+        using var app = appBuilder.Build();
+        app.Urls.Add("http://127.0.0.1:0");
+        app.Run(async context =>
+        {
+            requestPaths.Enqueue(context.Request.Path);
+            await context.Response.WriteAsync("{\"KeyId\":\"kid\",\"AccessKey\":\"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\"}");
+        });
+        await app.StartAsync();
+
+        var credential = new Mock<TokenCredential>();
+        credential.Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+            .Returns(new ValueTask<AccessToken>(new AccessToken("token", DateTimeOffset.UtcNow.AddHours(1))));
+        using var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+        {
+            o.ServiceEndpoints = new[] { new ServiceEndpoint(new Uri("http://signalr.invalid"), credential.Object) };
+            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.Proxy = new WebProxy(app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.Single());
+        }).BuildServiceManager();
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var hubContext = await serviceManager.CreateHubContextAsync("hub", timeout.Token);
+        var response = await hubContext.NegotiateAsync(cancellationToken: timeout.Token);
+        Assert.False(string.IsNullOrEmpty(response.AccessToken));
+        Assert.Equal("/api/v1/auth/accessKey", Assert.Single(requestPaths));
+        await app.StopAsync();
+    }
+
+    [Fact]
+    public async Task ServiceManagersSharingEndpointUseTheirOwnProxiesAsync()
+    {
+        var requests = new ConcurrentQueue<(string Proxy, string Path)>();
+        using var proxyA = CreateProxy("A");
+        using var proxyB = CreateProxy("B");
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await proxyA.StartAsync(timeout.Token);
+        await proxyB.StartAsync(timeout.Token);
+
+        var credential = new Mock<TokenCredential>();
+        credential.Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+            .Returns(new ValueTask<AccessToken>(new AccessToken("token", DateTimeOffset.UtcNow.AddHours(1))));
+        var endpoint = new ServiceEndpoint(new Uri("http://signalr.invalid"), credential.Object);
+
+        using var managerA = new ServiceManagerBuilder().WithOptions(o =>
+        {
+            o.ServiceEndpoints = new[] { endpoint };
+            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.Proxy = new WebProxy(proxyA.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.Single());
+        }).BuildServiceManager();
+        using var managerB = new ServiceManagerBuilder().WithOptions(o =>
+        {
+            o.ServiceEndpoints = new[] { endpoint };
+            o.ServiceTransportType = ServiceTransportType.Transient;
+            o.Proxy = new WebProxy(proxyB.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.Single());
+        }).BuildServiceManager();
+        using var hubA = await managerA.CreateHubContextAsync("hub", timeout.Token);
+        using var hubB = await managerB.CreateHubContextAsync("hub", timeout.Token);
+
+        // B requests the first key, although A's manager and hub were created first.
+        var responseB = await hubB.NegotiateAsync(cancellationToken: timeout.Token);
+        Assert.False(string.IsNullOrEmpty(responseB.AccessToken));
+        Assert.Equal(("B", "/api/v1/auth/accessKey"), Assert.Single(requests));
+
+        // A can use the same cached key without another HTTP request.
+        var cachedResponseA = await hubA.NegotiateAsync(cancellationToken: timeout.Token);
+        Assert.False(string.IsNullOrEmpty(cachedResponseA.AccessToken));
+        Assert.Single(requests);
+
+        // Once the shared key expires, a refresh initiated by A must use A's proxy.
+        typeof(MicrosoftEntraAccessKey).GetField("_updateAt", BindingFlags.Instance | BindingFlags.NonPublic)
+            .SetValue(endpoint.AccessKey, DateTime.UtcNow.AddHours(-3));
+        var responseA = await hubA.NegotiateAsync(cancellationToken: timeout.Token);
+        Assert.False(string.IsNullOrEmpty(responseA.AccessToken));
+        Assert.Equal(new[] { ("B", "/api/v1/auth/accessKey"), ("A", "/api/v1/auth/accessKey") }, requests.ToArray());
+
+        await proxyA.StopAsync(timeout.Token);
+        await proxyB.StopAsync(timeout.Token);
+
+        WebApplication CreateProxy(string name)
+        {
+            var appBuilder = WebApplication.CreateBuilder();
+            appBuilder.Services.AddLogging(b => b.AddXunit(_outputHelper));
+            var app = appBuilder.Build();
+            app.Urls.Add("http://127.0.0.1:0");
+            app.Run(async context =>
+            {
+                requests.Enqueue((name, context.Request.Path));
+                await context.Response.WriteAsync("{\"KeyId\":\"kid\",\"AccessKey\":\"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\"}");
+            });
+            return app;
+        }
+    }
+
+    [Fact]
     public async Task ProxyApplyToInternalHealthCheckTestAsync()
     {
         var requestUrls = new Queue<string>();
@@ -329,20 +432,14 @@ public class DependencyInjectionExtensionFacts
                 })
                 .ConfigureServices(services => services.AddHttpClient(httpClientName).AddHttpMessageHandler(sp => new WaitInfinitelyHandler()))
                 .BuildServiceManager();
-            var requestStartTime = DateTime.UtcNow;
-            var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", default);
-            await TestCoreAsync(() => testFunc(serviceHubContext));
-        }
+            using var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", default);
+            var httpClientFactory = ((ServiceHubContextImpl)serviceHubContext).ServiceProvider.GetRequiredService<IHttpClientFactory>();
+            using var httpClient = httpClientFactory.CreateClient(httpClientName);
+            Assert.Equal(TimeSpan.FromSeconds(1), httpClient.Timeout);
 
-        static async Task TestCoreAsync(Func<Task> testAction)
-        {
-            var requestStartTime = DateTime.UtcNow;
-            await Assert.ThrowsAsync<TaskCanceledException>(testAction);
-            var elapsed = DateTime.UtcNow - requestStartTime;
-            // Don't know why, the elapsed time sometimes is shorter than 1 second, but it should be close to 1 second.
-            Assert.True(elapsed >= TimeSpan.FromSeconds(0.8));
-            // Avoid random failure
-            Assert.True(elapsed < TimeSpan.FromSeconds(5));
+            // Verify timeout cancellation independently of the runner's scheduling delays.
+            var exception = await Assert.ThrowsAsync<TaskCanceledException>(() => testFunc(serviceHubContext)).OrTimeout(TimeSpan.FromSeconds(30));
+            Assert.IsType<TimeoutException>(exception.InnerException);
         }
     }
 

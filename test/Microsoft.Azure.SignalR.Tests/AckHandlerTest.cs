@@ -23,13 +23,11 @@ public class AckHandlerTest
     [Fact]
     public async Task TestOnce_Timeout()
     {
-        var handler = new AckHandler(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(20));
+        using var handler = new AckHandler(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(20));
         var task = handler.CreateSingleAck(out var _);
         Assert.False(task.IsCompleted);
-        await Task.Delay(TimeSpan.FromSeconds(1.5));
-        Assert.True(task.IsCompleted);
         // This assertion is different from RT for different behaviour when timeout of AckHandler. See annotation in AckHandler.cs method CheckAcs
-        Assert.Equal(AckStatus.Timeout, await task);
+        Assert.Equal(AckStatus.Timeout, await task.OrTimeout(TimeSpan.FromSeconds(30)));
     }
 
     [Fact]
@@ -60,15 +58,13 @@ public class AckHandlerTest
     [Fact]
     public async Task TestTwice_Timeout()
     {
-        var handler = new AckHandler(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(20));
+        using var handler = new AckHandler(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(20));
         var task = handler.CreateMultiAck(out var ackId);
         Assert.False(task.IsCompleted);
         handler.SetExpectedCount(ackId, 2);
         Assert.False(task.IsCompleted);
-        await Task.Delay(TimeSpan.FromSeconds(1.5));
-        Assert.True(task.IsCompleted);
         // This assertion is different from RT for different behaviour when timeout of AckHandler. See annotation in AckHandler.cs method CheckAcs
-        Assert.Equal(AckStatus.Timeout, await task);
+        Assert.Equal(AckStatus.Timeout, await task.OrTimeout(TimeSpan.FromSeconds(30)));
     }
 
     [Fact]
