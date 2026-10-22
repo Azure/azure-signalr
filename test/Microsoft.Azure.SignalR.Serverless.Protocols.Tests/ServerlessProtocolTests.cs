@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 using Microsoft.AspNetCore.SignalR.Protocol;
@@ -57,6 +58,54 @@ public class ServerlessProtocolTests
                 Guid.NewGuid().ToString(), Guid.NewGuid().ToString(),
                 new object[] { Array.Empty<byte>(), new byte[] { 1, 2, 3 } }
             };
+            yield return new object[]
+            {
+                protocol,
+                Guid.NewGuid().ToString(), Guid.NewGuid().ToString(),
+                new object[]
+                {
+                    new object[]
+                    {
+                        new Dictionary<string, object>
+                        {
+                            ["nested"] = new object[] { "value", new byte[] { 1, 2, 3 }, null },
+                            ["empty"] = new Dictionary<string, object>()
+                        },
+                        Array.Empty<object>()
+                    },
+                    new Dictionary<string, object> { ["sibling"] = new object[] { 1, "value" } },
+                    "last"
+                }
+            };
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InvocationMessageRejectsNestedAllocationAmplification(bool nestedMap)
+    {
+        var bytes = new List<byte>
+        {
+            0x95, 0x01, 0x80, 0xc0, 0xa1, (byte)'t',
+            0x91,
+            0xdc, 0x00, 0x10
+        };
+        bytes.AddRange(nestedMap
+            ? new byte[] { 0xde, 0x00, 0x08 }
+            : new byte[] { 0xdc, 0x00, 0x10 });
+        bytes.AddRange(new byte[16]);
+        var payload = new ReadOnlySequence<byte>(bytes.ToArray());
+        var protocol = new MessagePackServerlessProtocol();
+
+        if (nestedMap)
+        {
+            Assert.Throws<EndOfStreamException>(() => protocol.TryParseMessage(ref payload, out _));
+        }
+        else
+        {
+            var exception = Assert.Throws<InvalidDataException>(() => protocol.TryParseMessage(ref payload, out _));
+            Assert.IsType<EndOfStreamException>(exception.InnerException);
         }
     }
 
