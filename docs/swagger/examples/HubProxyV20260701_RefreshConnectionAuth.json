@@ -1,0 +1,32 @@
+{
+  "parameters": {
+    "api-version": "2026-07-01",
+    "hub": "hub1",
+    "application": "app1",
+    "request": {
+      "connectionToken": "connection-token",
+      "expireTime": "2027-01-01T00:00:00Z",
+      "claims": [
+        {
+          "type": "role",
+          "value": "reader"
+        }
+      ]
+    }
+  },
+  "responses": {
+    "200": {
+      "body": {
+        "claims": [
+          {
+            "type": "role",
+            "value": "reader"
+          }
+        ]
+      }
+    },
+    "400": {},
+    "403": {},
+    "404": {}
+  }
+}
