@@ -126,7 +126,18 @@ try {
     foreach ($previewAction in @('version', 'latest')) {
         Assert-Rejected { & $prepare -ArtifactDirectory $containerOutput -Action $previewAction } 'Invalid emulator release version'
     }
-    Assert-Rejected { & $prepare -ArtifactDirectory $scratch -Action package } 'Invalid emulator release version'
+    # Preview NuGet packages use the same provenance and hash checks as stable packages.
+    New-Item -ItemType Directory (Join-Path $scratch 'preview') -Force | Out-Null
+    $package = Join-Path $scratch "preview/$($packageMetadata.packageFile)"
+    $symbols = Join-Path $scratch "preview/Microsoft.Azure.SignalR.Emulator.$previewVersion.symbols.nupkg"
+    Set-Content $package 'package'
+    Set-Content $symbols 'symbols'
+    & $prepare -ArtifactDirectory $scratch -Action package
+    Add-Content $package 'changed'
+    Assert-Rejected { & $prepare -ArtifactDirectory $scratch -Action package } 'does not match the bytes'
+    Set-Content $package 'package'
+    Add-Content $symbols 'changed'
+    Assert-Rejected { & $prepare -ArtifactDirectory $scratch -Action package } 'symbol package does not match'
     Write-Host 'Release integrity checks passed.'
 }
 finally {
