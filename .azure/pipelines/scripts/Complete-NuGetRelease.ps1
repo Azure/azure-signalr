@@ -98,7 +98,17 @@ else {
         }
     } | Sort-Object Version -Descending | Select-Object -First 1
     $releaseBody = "$releaseName is available on NuGet.org."
-    if ($previousTag) {
+    # GitHub generates notes for the whole repository, so list only commits to the component source.
+    $componentPath = switch ($Package) {
+        'Emulator' { 'src/Microsoft.Azure.SignalR.Emulator' }
+        'ServerlessProtocol' { 'src/Microsoft.Azure.SignalR.Serverless.Protocols' }
+    }
+    if ($previousTag -and $componentPath) {
+        $changes = & git -C $repoRoot log --format='* %s' "$($previousTag.Name)..$sourceCommit" -- $componentPath
+        if ($LASTEXITCODE -ne 0) { throw "Could not list $Package changes since $($previousTag.Name)." }
+        if ($changes) { $releaseBody += "`n`n## What's Changed`n" + ($changes -join "`n") }
+    }
+    elseif ($previousTag) {
         $body = @{ tag_name = $tag; target_commitish = $sourceCommit; previous_tag_name = $previousTag.Name } | ConvertTo-Json
         $notes = Invoke-RestMethod @api -Method Post -Uri "$repository/releases/generate-notes" -Body $body
         $releaseBody += "`n`n$($notes.body)"
