@@ -1473,10 +1473,11 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
             new(ConnectionString1, EndpointType.Primary, "1"),
             new(ConnectionString2, EndpointType.Primary, "22")
         };
-        _ = sem.TestReloadServiceEndpoints(newEndpoints, 15);
+        var removalStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        sem.OnRemove += _ => removalStarted.TrySetResult(true);
+        var reloadTask = sem.TestReloadServiceEndpoints(newEndpoints, 15);
 
         // validate container side update with news and have 3
-        await Task.Delay(100);
         hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
         Assert.Equal(3, hubEndpoints.Length);
         var expectedNames = new string[] { "1", "22", "22" };
@@ -1501,8 +1502,8 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         await Task.WhenAll(containers.Select(x => x.MockReceivedServersPing("aaa;bbb")));
         containers1 = container1.GetTestOnlineContainers();
         await Task.WhenAll(containers1.Select(x => x.MockReceivedServersPing("aaa;bbb")));
-        await hubEndpoints.Single(x => x.Name == "22" && x.EndpointType == EndpointType.Primary).ScaleTask.OrTimeout(TimeoutSec);
-        await Task.Delay(100);
+        // Removal starts only after all hubs finish adding and the negotiation store is updated.
+        await removalStarted.Task.OrTimeout(TimeoutSec);
 
         ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
         Assert.Equal(2, ngoEps.Length);
@@ -1515,8 +1516,7 @@ public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
         await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(false)));
         containers1 = container1.GetTestOnlineContainers();
         await Task.WhenAll(containers1.Select(x => x.MockReceivedStatusPing(false)));
-        await hubEndpoints.Single(x => x.Name == "22" && x.EndpointType == EndpointType.Secondary).ScaleTask.OrTimeout(TimeoutSec);
-        await Task.Delay(100);
+        await reloadTask.OrTimeout(TimeoutSec);
 
         // validate container updated as well
         hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();

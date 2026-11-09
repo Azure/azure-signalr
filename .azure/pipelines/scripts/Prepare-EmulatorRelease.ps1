@@ -13,10 +13,12 @@ if ($metadata.buildId -cne $env:BUILD_BUILDID -or $metadata.sourceVersion -cne $
     throw 'The release artifact must come from this exact pipeline run and source commit.'
 }
 $version = [string] $metadata.version
-if ($version -cnotmatch '^\d+\.\d+\.\d+(?:\.\d+)?$') { throw 'Invalid emulator release version.' }
+$versionPattern = if ($Action -eq 'package') { '^\d+\.\d+\.\d+(?:\.\d+)?(?:-preview1-\d+)?$' } else { '^\d+\.\d+\.\d+(?:\.\d+)?$' }
+if ($version -cnotmatch $versionPattern) { throw 'Invalid emulator release version.' }
 if ($Action -eq 'package') {
     if ($metadata.packageFile -cne "Microsoft.Azure.SignalR.Emulator.$version.nupkg") { throw 'Invalid package filename.' }
-    $path = Join-Path $root "release/$($metadata.packageFile)"
+    $packageDirectory = if ($version.Contains('-')) { 'preview' } else { 'release' }
+    $path = Join-Path $root "$packageDirectory/$($metadata.packageFile)"
     $expectedHash = $metadata.packageSha256
 }
 else {
@@ -28,7 +30,7 @@ if ((Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $expecte
     throw 'The release artifact does not match the bytes validated by the build stage.'
 }
 if ($Action -eq 'package') {
-    $symbols = Join-Path $root "release/Microsoft.Azure.SignalR.Emulator.$version.symbols.nupkg"
+    $symbols = Join-Path $root "$packageDirectory/Microsoft.Azure.SignalR.Emulator.$version.symbols.nupkg"
     if ((Get-FileHash $symbols -Algorithm SHA256).Hash.ToLowerInvariant() -cne $metadata.symbolsSha256) {
         throw 'The symbol package does not match the bytes validated by the build stage.'
     }
