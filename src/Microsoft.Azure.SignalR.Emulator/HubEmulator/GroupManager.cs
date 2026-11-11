@@ -65,16 +65,7 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             {
                 _expires.Remove((user, group));
             }
-            if (_userConnections.TryGetValue(user, out var conns))
-            {
-                lock (conns)
-                {
-                    foreach (var conn in conns)
-                    {
-                        _connectionGroupMap.Remove(conn.ConnectionId, group);
-                    }
-                }
-            }
+            RemoveUserConnectionsFromGroup(user, group);
         }
 
         public void RemoveUserFromAllGroups(string user)
@@ -226,7 +217,22 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
                         {
                             _expires.Remove(item);
                             _userGroupMap.Remove(item.user, item.group);
+                            RemoveUserConnectionsFromGroup(item.user, item.group);
                         }
+                    }
+                }
+            }
+        }
+
+        private void RemoveUserConnectionsFromGroup(string user, string group)
+        {
+            if (_userConnections.TryGetValue(user, out var conns))
+            {
+                lock (conns)
+                {
+                    foreach (var conn in conns)
+                    {
+                        _connectionGroupMap.Remove(conn.ConnectionId, group);
                     }
                 }
             }
