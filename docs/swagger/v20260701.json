@@ -938,6 +938,10 @@
         ],
         "summary": "Send stream message to the specific stream for the connection.",
         "operationId": "HubProxyV20241201_SendToConnectionStream",
+        "consumes": [
+          "application/json",
+          "application/octet-stream"
+        ],
         "produces": [
           "text/plain",
           "application/json",
@@ -988,6 +992,15 @@
             "description": "The version of the REST APIs.",
             "required": true,
             "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "item",
+            "description": "The stream item. For JSON, the body is the item itself, not a PayloadMessage wrapper. Binary content contains protocol-encoded stream messages.",
+            "required": true,
+            "schema": {
+              "x-nullable": true
+            }
           }
         ],
         "responses": {
@@ -2199,8 +2212,7 @@
             "reason": {
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       ]
     },
@@ -2345,8 +2357,7 @@
               "minLength": 1,
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       ]
     },
@@ -2366,8 +2377,7 @@
               "minLength": 1,
               "type": "string"
             }
-          },
-          "additionalProperties": false
+          }
         }
       ]
     },
@@ -2406,7 +2416,9 @@
           "type": "string"
         },
         "claims": {
+          "description": "Replacement claims. Omit or set to null to preserve the existing claims.",
           "type": "array",
+          "x-nullable": true,
           "items": {
             "$ref": "#/definitions/ConnectionClaim"
           }
@@ -2428,8 +2440,7 @@
             "message": {
               "$ref": "#/definitions/PayloadMessage"
             }
-          },
-          "additionalProperties": false
+          }
         }
       ]
     },
@@ -2573,6 +2584,7 @@
         "type"
       ],
       "type": "object",
+      "discriminator": "type",
       "properties": {
         "type": {
           "enum": [
@@ -2587,8 +2599,7 @@
             "modelAsString": true
           }
         }
-      },
-      "additionalProperties": false
+      }
     }
   },
   "x-ms-parameterized-host": {
