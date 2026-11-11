@@ -54,7 +54,7 @@ internal class RefreshHandler<THub> where THub : Hub
             return;
         }
 
-        var connectionToken = context.Request.Query["id"].ToString();
+        var connectionToken = context.Request.Headers["X-SignalR-Connection-Token"].ToString();
         if (string.IsNullOrEmpty(connectionToken))
         {
             await WriteErrorAsync(context, StatusCodes.Status400BadRequest, "missing_connection_token");

@@ -64,7 +64,7 @@ public class RefreshHandlerFacts
             manager);
         using var cancellation = new CancellationTokenSource();
         var context = CreateContext();
-        context.Request.QueryString = new QueryString($"?id={connectionToken}");
+        context.Request.Headers["X-SignalR-Connection-Token"] = connectionToken;
         context.RequestAborted = cancellation.Token;
         context.Features.Set(Mock.Of<IAuthenticateResultFeature>(feature =>
             feature.AuthenticateResult == AuthenticateResult.Success(new AuthenticationTicket(
@@ -115,6 +115,71 @@ public class RefreshHandlerFacts
         Assert.Equal("runtime-tenant", Assert.Single(token.Claims, claim => claim.Type == "tenant").Value);
         Assert.Equal("alice", Assert.Single(token.Claims, claim => claim.Type == "nameid").Value);
         Assert.Equal("owning-endpoint", new Uri(Assert.Single(token.Audiences)).Host);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task ProcessAsync_MissingOrEmptyConnectionTokenHeader_ReturnsBadRequestWithoutRefreshing(
+        bool includeEmptyHeader, bool includeQueryToken)
+    {
+        var callbackCalled = false;
+        var manager = new FakeServiceConnectionManager<TestHub>();
+        await using var fixture = await CreateFixtureAsync(
+            callback: _ =>
+            {
+                callbackCalled = true;
+                return Task.FromResult(true);
+            },
+            manager);
+        var context = CreateContext();
+        context.Request.Headers.Remove("X-SignalR-Connection-Token");
+        if (includeEmptyHeader)
+        {
+            context.Request.Headers["X-SignalR-Connection-Token"] = string.Empty;
+        }
+        if (includeQueryToken)
+        {
+            context.Request.QueryString = new QueryString("?id=query-connection-token");
+        }
+
+        await fixture.Handler.ProcessAsync(context);
+
+        Assert.Equal(StatusCodes.Status400BadRequest, context.Response.StatusCode);
+        Assert.Equal("missing_connection_token", await ReadErrorAsync(context));
+        Assert.Equal(0, manager.GetClaimsCallCount);
+        Assert.False(callbackCalled);
+        Assert.Equal(0, manager.RefreshCallCount);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_ConflictingQueryToken_UsesHeaderForClaimsLookupAndRefresh()
+    {
+        var callbackCalled = false;
+        var manager = new FakeServiceConnectionManager<TestHub>();
+        await using var fixture = await CreateFixtureAsync(
+            callback: _ =>
+            {
+                callbackCalled = true;
+                return Task.FromResult(true);
+            },
+            manager);
+        manager.RefreshResult = new RefreshAuthResult(
+            AckStatus.Ok, new[] { new Claim("tenant", "runtime-tenant") }, fixture.Endpoint);
+        var context = CreateContext();
+        context.Request.Headers["X-SignalR-Connection-Token"] = "header-connection-token";
+        context.Request.QueryString = new QueryString("?id=query-connection-token");
+
+        await fixture.Handler.ProcessAsync(context);
+
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+        Assert.Equal(1, manager.GetClaimsCallCount);
+        Assert.Equal("header-connection-token", manager.GetClaimsMessage.ConnectionToken);
+        Assert.True(callbackCalled);
+        Assert.Equal(1, manager.RefreshCallCount);
+        Assert.Equal("header-connection-token", manager.RefreshMessage.ConnectionToken);
     }
 
     [Fact]
@@ -309,7 +374,7 @@ public class RefreshHandlerFacts
     {
         var context = new DefaultHttpContext();
         context.Request.Method = HttpMethods.Post;
-        context.Request.QueryString = new QueryString("?id=connection-token");
+        context.Request.Headers["X-SignalR-Connection-Token"] = "connection-token";
         context.Response.Body = new MemoryStream();
         context.User = new ClaimsPrincipal(new ClaimsIdentity(
             new[] { new Claim(ClaimTypes.NameIdentifier, "alice"), new Claim("tenant", "fabrikam") },
