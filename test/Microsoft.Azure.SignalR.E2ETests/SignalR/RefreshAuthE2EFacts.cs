@@ -144,8 +144,9 @@ public class RefreshAuthE2EFacts
         using var timeout = new CancellationTokenSource(OperationTimeout);
         using var httpClient = new HttpClient();
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", RefreshedMarker);
+        httpClient.DefaultRequestHeaders.Add("X-SignalR-Connection-Token", connectionToken);
         using var response = await httpClient.PostAsync(
-            $"{serverUrl}{HubPath}/refresh?id={Uri.EscapeDataString(connectionToken)}",
+            $"{serverUrl}{HubPath}/refresh",
             content: null,
             cancellationToken: timeout.Token);
         response.EnsureSuccessStatusCode();
