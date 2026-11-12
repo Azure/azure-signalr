@@ -631,7 +631,7 @@
           {
             "in": "path",
             "name": "connectionId",
-            "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.",
+            "description": "The connection Id.",
             "required": true,
             "type": "string"
           },
