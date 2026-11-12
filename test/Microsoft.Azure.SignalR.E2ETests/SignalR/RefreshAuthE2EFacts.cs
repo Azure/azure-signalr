@@ -110,14 +110,24 @@ public class RefreshAuthE2EFacts
             var serverUrl = app.Urls.Single();
             var refreshResponse = new TaskCompletionSource<(string AccessToken, int TokenLifetimeSeconds)>(
                 TaskCreationOptions.RunContinuationsAsynchronously);
-            var appToken = InitialMarker;
+            var refreshCredential = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var refreshRequested = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var refreshed = new TaskCompletionSource<TimeSpan?>(TaskCreationOptions.RunContinuationsAsynchronously);
-            await using var connection = new HubConnectionBuilder()
+            HubConnection connection = null;
+            await using var connectionLifetime = connection = new HubConnectionBuilder()
                 .ConfigureLogging(logging => logging.AddXunit(_output)
                     .AddFilter("Microsoft.AspNetCore.SignalR.Client", LogLevel.Debug))
                 .WithUrl($"{serverUrl}{HubPath}", transport, options =>
                 {
-                    options.AccessTokenProvider = () => Task.FromResult(Volatile.Read(ref appToken));
+                    options.AccessTokenProvider = async () =>
+                    {
+                        if (connection?.State != HubConnectionState.Connected)
+                        {
+                            return InitialMarker;
+                        }
+                        refreshRequested.TrySetResult(true);
+                        return await refreshCredential.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                    };
                     options.HttpMessageHandlerFactory = handler => new RefreshResponseCaptureHandler(handler, refreshResponse);
                 })
                 .WithAuthenticationRefresh(options =>
@@ -132,14 +142,27 @@ public class RefreshAuthE2EFacts
                 return Task.CompletedTask;
             };
 
-            _output.WriteLine("Starting the client connection.");
-            await StartConnectionAsync(connection);
-            var connectionId = connection.ConnectionId;
-            Assert.False(string.IsNullOrEmpty(connectionId));
-            _output.WriteLine("Checking the initial connected user.");
-            Assert.Equal(InitialMarker, await WaitForMarkerAsync(connection, InitialMarker));
-
-            Volatile.Write(ref appToken, RefreshedMarker);
+            string connectionId;
+            try
+            {
+                _output.WriteLine("Starting the client connection.");
+                await StartConnectionAsync(connection);
+                connectionId = connection.ConnectionId;
+                Assert.False(string.IsNullOrEmpty(connectionId));
+                if (automatic)
+                {
+                    await refreshRequested.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                    Assert.False(refreshed.Task.IsCompleted);
+                    Assert.False(refreshResponse.Task.IsCompleted);
+                }
+                _output.WriteLine("Checking the initial connected user.");
+                Assert.Equal(InitialMarker, await WaitForMarkerAsync(connection, InitialMarker));
+                refreshCredential.SetResult(RefreshedMarker);
+            }
+            finally
+            {
+                refreshCredential.TrySetCanceled();
+            }
             if (!accept)
             {
                 using var timeout = new CancellationTokenSource(OperationTimeout);

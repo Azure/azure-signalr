@@ -345,11 +345,21 @@ public class RefreshAuthE2ETests
         try
         {
             await app.StartAsync().OrTimeout();
-            var appToken = initialMarker;
-            await using var connection = new HubConnectionBuilder()
+            var refreshCredential = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var refreshRequested = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            HubConnection connection = null;
+            await using var connectionLifetime = connection = new HubConnectionBuilder()
                 .WithUrl($"{app.Urls.Single()}/chat", clientTransport, options =>
                 {
-                    options.AccessTokenProvider = () => Task.FromResult(Volatile.Read(ref appToken));
+                    options.AccessTokenProvider = async () =>
+                    {
+                        if (connection?.State != HubConnectionState.Connected)
+                        {
+                            return initialMarker;
+                        }
+                        refreshRequested.TrySetResult(true);
+                        return await refreshCredential.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                    };
                     options.HttpMessageHandlerFactory = innerHandler =>
                         new RefreshedTransportCaptureHandler(
                             innerHandler, refreshedMarker, refreshedTransportStarted, refreshedTransportRequest);
@@ -365,17 +375,29 @@ public class RefreshAuthE2ETests
                 refreshed.TrySetResult(context.NewTokenLifetime);
                 return Task.CompletedTask;
             };
-            await connection.StartAsync().OrTimeout();
-            var connectionId = connection.ConnectionId;
-            Assert.False(string.IsNullOrEmpty(connectionId));
             var group = $"group-{Guid.NewGuid():N}";
-            await hubContext.Groups.AddToGroupAsync(connectionId, group).OrTimeout();
             var messages = System.Threading.Channels.Channel.CreateUnbounded<string>();
             using var subscription = connection.On<string>("message", value => messages.Writer.TryWrite(value));
-            await hubContext.Clients.Client(connectionId).SendAsync("message", "before-refresh").OrTimeout();
-            Assert.Equal("before-refresh", await messages.Reader.ReadAsync().AsTask().OrTimeout());
-
-            Volatile.Write(ref appToken, refreshedMarker);
+            string connectionId;
+            try
+            {
+                await connection.StartAsync().OrTimeout();
+                connectionId = connection.ConnectionId;
+                Assert.False(string.IsNullOrEmpty(connectionId));
+                await hubContext.Groups.AddToGroupAsync(connectionId, group).OrTimeout();
+                if (automatic)
+                {
+                    await refreshRequested.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                    Assert.False(refreshed.Task.IsCompleted);
+                }
+                await hubContext.Clients.Client(connectionId).SendAsync("message", "before-refresh").OrTimeout();
+                Assert.Equal("before-refresh", await messages.Reader.ReadAsync().AsTask().OrTimeout());
+                refreshCredential.SetResult(refreshedMarker);
+            }
+            finally
+            {
+                refreshCredential.TrySetCanceled();
+            }
             var lifetime = automatic
                 ? await refreshed.Task.WaitAsync(TimeSpan.FromSeconds(30))
                 : await connection.RefreshAuthenticationAsync().OrTimeout();

@@ -8,6 +8,7 @@
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net11.0'">
     <MicrosoftAspNetCoreSignalRClientPackageVersion>11.0.0</MicrosoftAspNetCoreSignalRClientPackageVersion>
+    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>11.0.0</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
