@@ -415,7 +415,7 @@ public class RefreshAuthE2ETests
         {
             var token = request.Headers.Authorization?.Parameter;
             var reader = new JwtSecurityTokenHandler();
-            var usesRefreshedToken = token != null && reader.CanReadToken(token)
+            var usesRefreshedToken = request.Method == HttpMethod.Get && token != null && reader.CanReadToken(token)
                 && reader.ReadJwtToken(token).Claims.Any(claim => claim.Type == MarkerClaimType && claim.Value == marker);
             if (usesRefreshedToken)
             {
