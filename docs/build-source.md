@@ -9,7 +9,8 @@ Building Azure SignalR Service SDK requires:
 
 * Latest Visual Studio (include pre-release). <https://visualstudio.com>
 * Git. <https://git-scm.org>
-* .NET SDK (Version >= 7.0.0-preview.7). <https://dotnet.microsoft.com/download/dotnet>	
+* .NET 11 SDK (version 11.0.100 or later). <https://dotnet.microsoft.com/download/dotnet/11.0>
+* .NET 8 and ASP.NET Core 8 runtimes to run the `net8.0` tests. Installing the .NET 8 SDK includes both runtimes. <https://dotnet.microsoft.com/download/dotnet/8.0>
 
 ## Clone the source code
 
