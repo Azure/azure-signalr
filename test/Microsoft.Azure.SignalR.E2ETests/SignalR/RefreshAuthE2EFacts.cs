@@ -4,8 +4,8 @@
 #if NET11_0_OR_GREATER
 using System;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text.Json;
@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.Testing.xunit;
@@ -44,9 +45,31 @@ public class RefreshAuthE2EFacts
         _output = output;
     }
 
-    [ConditionalFact]
+    [ConditionalTheory]
     [SkipIfConnectionStringNotPresent]
-    public async Task TestRefreshUpdatesConnectedUser()
+    [InlineData(HttpTransportType.WebSockets)]
+    [InlineData(HttpTransportType.ServerSentEvents)]
+    [InlineData(HttpTransportType.LongPolling)]
+    public Task TestClientRefreshUpdatesConnectedUser(HttpTransportType transport) =>
+        RunRefreshAsync(transport, automatic: false, accept: true);
+
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(HttpTransportType.WebSockets)]
+    [InlineData(HttpTransportType.ServerSentEvents)]
+    [InlineData(HttpTransportType.LongPolling)]
+    public Task TestClientAutoRefreshUpdatesConnectedUser(HttpTransportType transport) =>
+        RunRefreshAsync(transport, automatic: true, accept: true);
+
+    [ConditionalTheory]
+    [SkipIfConnectionStringNotPresent]
+    [InlineData(HttpTransportType.WebSockets)]
+    [InlineData(HttpTransportType.ServerSentEvents)]
+    [InlineData(HttpTransportType.LongPolling)]
+    public Task TestClientRejectedRefreshPreservesConnectedUser(HttpTransportType transport) =>
+        RunRefreshAsync(transport, automatic: false, accept: false);
+
+    private async Task RunRefreshAsync(HttpTransportType transport, bool automatic, bool accept)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
@@ -55,7 +78,11 @@ public class RefreshAuthE2EFacts
             .AddFilter("Microsoft.AspNetCore.SignalR", LogLevel.Debug);
         builder.Services
             .AddSignalR()
-            .AddAzureSignalR(options => options.ConnectionString = TestConfiguration.Instance.ConnectionString);
+            .AddAzureSignalR(options =>
+            {
+                options.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                options.AccessTokenLifetime = TimeSpan.FromSeconds(20);
+            });
 
         await using var app = builder.Build();
         app.Use(async (context, next) =>
@@ -70,40 +97,77 @@ public class RefreshAuthE2EFacts
             }, "TestAuth"));
             await next(context);
         });
-        app.MapHub<AuthRefreshHub>(HubPath, options => options.EnableAuthenticationRefresh = true);
+        app.MapHub<AuthRefreshHub>(HubPath, options =>
+        {
+            options.EnableAuthenticationRefresh = true;
+            options.OnAuthenticationRefresh = _ => Task.FromResult(accept);
+        });
 
         try
         {
             await app.StartAsync();
 
             var serverUrl = app.Urls.Single();
-            var tokenCapture = new ConnectionTokenCaptureHandler();
+            var refreshResponse = new TaskCompletionSource<(string AccessToken, int TokenLifetimeSeconds)>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            var appToken = InitialMarker;
+            var refreshed = new TaskCompletionSource<TimeSpan?>(TaskCreationOptions.RunContinuationsAsynchronously);
             await using var connection = new HubConnectionBuilder()
                 .ConfigureLogging(logging => logging.AddXunit(_output)
                     .AddFilter("Microsoft.AspNetCore.SignalR.Client", LogLevel.Debug))
-                .WithUrl($"{serverUrl}{HubPath}", options =>
+                .WithUrl($"{serverUrl}{HubPath}", transport, options =>
                 {
-                    options.AccessTokenProvider = () => Task.FromResult(InitialMarker);
-                    options.HttpMessageHandlerFactory = handler =>
-                    {
-                        tokenCapture.InnerHandler = handler;
-                        return tokenCapture;
-                    };
+                    options.AccessTokenProvider = () => Task.FromResult(Volatile.Read(ref appToken));
+                    options.HttpMessageHandlerFactory = handler => new RefreshResponseCaptureHandler(handler, refreshResponse);
+                })
+                .WithAuthenticationRefresh(options =>
+                {
+                    options.EnableAutoRefresh = automatic;
+                    options.RefreshBeforeExpiration = TimeSpan.FromSeconds(15);
                 })
                 .Build();
+            connection.AuthenticationRefreshed += context =>
+            {
+                refreshed.TrySetResult(context.NewTokenLifetime);
+                return Task.CompletedTask;
+            };
 
             _output.WriteLine("Starting the client connection.");
             await StartConnectionAsync(connection);
             var connectionId = connection.ConnectionId;
-            var connectionToken = tokenCapture.ConnectionToken;
-            Assert.False(string.IsNullOrEmpty(connectionToken));
+            Assert.False(string.IsNullOrEmpty(connectionId));
             _output.WriteLine("Checking the initial connected user.");
             Assert.Equal(InitialMarker, await WaitForMarkerAsync(connection, InitialMarker));
 
-            _output.WriteLine("Sending the authentication refresh request.");
-            var (accessToken, tokenLifetimeSeconds) = await RefreshAsync(serverUrl, connectionToken);
+            Volatile.Write(ref appToken, RefreshedMarker);
+            if (!accept)
+            {
+                using var timeout = new CancellationTokenSource(OperationTimeout);
+                var exception = await Assert.ThrowsAsync<HttpRequestException>(
+                    () => connection.RefreshAuthenticationAsync(timeout.Token));
+                Assert.Equal(HttpStatusCode.Forbidden, exception.StatusCode);
+                Assert.Equal(InitialMarker, await GetMarkerAsync(connection, timeout.Token));
+                Assert.Equal(HubConnectionState.Connected, connection.State);
+                Assert.Equal(connectionId, connection.ConnectionId);
+                return;
+            }
+
+            _output.WriteLine(automatic ? "Waiting for automatic authentication refresh." : "Refreshing through the client API.");
+            TimeSpan? tokenLifetime;
+            if (automatic)
+            {
+                tokenLifetime = await refreshed.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            }
+            else
+            {
+                using var timeout = new CancellationTokenSource(OperationTimeout);
+                tokenLifetime = await connection.RefreshAuthenticationAsync(timeout.Token);
+            }
+            Assert.True(tokenLifetime > TimeSpan.Zero);
+            var (accessToken, tokenLifetimeSeconds) = await refreshResponse.Task.WaitAsync(OperationTimeout);
             Assert.False(string.IsNullOrEmpty(accessToken));
             Assert.True(tokenLifetimeSeconds > 0);
+            Assert.Equal(TimeSpan.FromSeconds(tokenLifetimeSeconds), tokenLifetime);
             Assert.Contains(new JwtSecurityTokenHandler().ReadJwtToken(accessToken).Claims,
                 claim => claim.Type == MarkerClaimType && claim.Value == RefreshedMarker);
             _output.WriteLine("Checking the refreshed user on the existing connection.");
@@ -139,22 +203,6 @@ public class RefreshAuthE2EFacts
         }
     }
 
-    private static async Task<(string AccessToken, int TokenLifetimeSeconds)> RefreshAsync(string serverUrl, string connectionToken)
-    {
-        using var timeout = new CancellationTokenSource(OperationTimeout);
-        using var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", RefreshedMarker);
-        httpClient.DefaultRequestHeaders.Add("X-SignalR-Connection-Token", connectionToken);
-        using var response = await httpClient.PostAsync(
-            $"{serverUrl}{HubPath}/refresh",
-            content: null,
-            cancellationToken: timeout.Token);
-        response.EnsureSuccessStatusCode();
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(timeout.Token));
-        return (document.RootElement.GetProperty("accessToken").GetString(),
-            document.RootElement.GetProperty("tokenLifetimeSeconds").GetInt32());
-    }
-
     private static async Task<string> WaitForMarkerAsync(HubConnection connection, string expected)
     {
         using var timeout = new CancellationTokenSource(OperationTimeout);
@@ -184,9 +232,17 @@ public class RefreshAuthE2EFacts
         public string GetMarker() => Context.User?.FindFirst(MarkerClaimType)?.Value;
     }
 
-    private sealed class ConnectionTokenCaptureHandler : DelegatingHandler
+    private sealed class RefreshResponseCaptureHandler : DelegatingHandler
     {
-        public string ConnectionToken { get; private set; }
+        private readonly TaskCompletionSource<(string AccessToken, int TokenLifetimeSeconds)> _response;
+
+        public RefreshResponseCaptureHandler(
+            HttpMessageHandler innerHandler,
+            TaskCompletionSource<(string AccessToken, int TokenLifetimeSeconds)> response)
+            : base(innerHandler)
+        {
+            _response = response;
+        }
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
@@ -194,14 +250,12 @@ public class RefreshAuthE2EFacts
         {
             var response = await base.SendAsync(request, cancellationToken);
             if (response.IsSuccessStatusCode
-                && request.RequestUri?.AbsolutePath.EndsWith("/negotiate", StringComparison.OrdinalIgnoreCase) == true)
+                && request.RequestUri?.AbsolutePath.EndsWith("/refresh", StringComparison.OrdinalIgnoreCase) == true)
             {
                 var json = await response.Content.ReadAsStringAsync(cancellationToken);
                 using var document = JsonDocument.Parse(json);
-                if (document.RootElement.TryGetProperty("connectionToken", out var connectionToken))
-                {
-                    ConnectionToken = connectionToken.GetString();
-                }
+                _response.TrySetResult((document.RootElement.GetProperty("accessToken").GetString(),
+                    document.RootElement.GetProperty("tokenLifetimeSeconds").GetInt32()));
             }
 
             return response;

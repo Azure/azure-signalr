@@ -6,6 +6,10 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net11.0'">
+    <MicrosoftAspNetCoreSignalRClientPackageVersion>11.0.0</MicrosoftAspNetCoreSignalRClientPackageVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="$(MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion)" />
