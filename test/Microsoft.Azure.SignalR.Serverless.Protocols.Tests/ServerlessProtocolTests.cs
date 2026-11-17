@@ -110,6 +110,40 @@ public class ServerlessProtocolTests
     }
 
     [Theory]
+    [InlineData(false, 63, true)]
+    [InlineData(false, 64, false)]
+    [InlineData(true, 63, true)]
+    [InlineData(true, 64, false)]
+    public void InvocationMessageEnforcesMaximumArgumentNesting(bool nestedMaps, int nestedContainers, bool succeeds)
+    {
+        var bytes = new List<byte> { 0x95, 0x01, 0x80, 0xc0, 0xa1, (byte)'t', 0x91 };
+        for (var i = 0; i < nestedContainers; i++)
+        {
+            if (nestedMaps)
+            {
+                bytes.AddRange(new byte[] { 0x81, 0xa1, (byte)'x' });
+            }
+            else
+            {
+                bytes.Add(0x91);
+            }
+        }
+        bytes.Add(0xc0);
+
+        var payload = new ReadOnlySequence<byte>(bytes.ToArray());
+        var protocol = new MessagePackServerlessProtocol();
+
+        if (succeeds)
+        {
+            Assert.True(protocol.TryParseMessage(ref payload, out _));
+        }
+        else
+        {
+            Assert.Throws<InvalidDataException>(() => protocol.TryParseMessage(ref payload, out _));
+        }
+    }
+
+    [Theory]
     [MemberData(nameof(GetParameters))]
     public void InvocationMessageParseTest(string protocolName, string invocationId, string target, object[] arguments)
     {
