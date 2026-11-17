@@ -13,6 +13,8 @@ namespace Microsoft.Azure.SignalR.Serverless.Protocols;
 
 internal static class MessagePackReaderExtensions
 {
+    private const int MaximumObjectGraphDepth = 64;
+
     public static int ReadInt32(ref this MessagePackReader reader, string field)
     {
         try
@@ -61,18 +63,19 @@ internal static class MessagePackReaderExtensions
         }
     }
 
-    public static object?[] ReadArray(ref this MessagePackReader reader, string field)
+    public static object?[] ReadArray(ref this MessagePackReader reader, string field, int depth = 0)
     {
+        EnsureMaximumDepth(field, depth);
         var count = reader.ReadArrayLength(field);
-        var array = new object?[count];
+        var array = new List<object?>();
         for (var i = 0; i < count; i++)
         {
-            array[i] = reader.ReadObject($"the element at indext {i} of {field}");
+            array.Add(reader.ReadObject($"the element at indext {i} of {field}", depth + 1));
         }
-        return array;
+        return array.ToArray();
     }
 
-    public static object? ReadObject(ref this MessagePackReader reader, string field)
+    public static object? ReadObject(ref this MessagePackReader reader, string field, int depth)
     {
         switch (reader.NextMessagePackType)
         {
@@ -82,14 +85,15 @@ internal static class MessagePackReaderExtensions
             case MessagePackType.Boolean: return reader.ReadBoolean();
             case MessagePackType.Float: return reader.ReadDouble();
             case MessagePackType.String: return reader.ReadString();
-            case MessagePackType.Array: return reader.ReadArray(field);
+            case MessagePackType.Array: return reader.ReadArray(field, depth);
             case MessagePackType.Map:
+                EnsureMaximumDepth(field, depth);
                 var propertyCount = reader.ReadMapHeader();
                 var map = new Dictionary<string, object?>();
                 for (var i = 0; i < propertyCount; i++)
                 {
                     var key = reader.ReadString().ThrowWhenNull();
-                    var value = reader.ReadObject(field);
+                    var value = reader.ReadObject(field, depth + 1);
                     map[key] = value;
                 }
                 return map;
@@ -100,6 +104,14 @@ internal static class MessagePackReaderExtensions
             case MessagePackType.Unknown:
             default:
                 return null;
+        }
+    }
+
+    private static void EnsureMaximumDepth(string field, int depth)
+    {
+        if (depth >= MaximumObjectGraphDepth)
+        {
+            throw new InvalidDataException($"The maximum nesting depth of {MaximumObjectGraphDepth} was exceeded while reading '{field}'.");
         }
     }
 
