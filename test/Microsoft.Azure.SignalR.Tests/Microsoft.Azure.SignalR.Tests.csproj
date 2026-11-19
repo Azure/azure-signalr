@@ -18,6 +18,8 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="8.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="8.0.8" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="$(MicrosoftAspNetCoreTestHostPackageVersion)" />
     <PackageReference Include="Moq" Version="$(MoqPackageVersion)" />
