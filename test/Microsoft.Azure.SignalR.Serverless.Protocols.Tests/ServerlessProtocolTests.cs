@@ -110,10 +110,10 @@ public class ServerlessProtocolTests
     }
 
     [Theory]
-    [InlineData(false, 63, true)]
-    [InlineData(false, 64, false)]
-    [InlineData(true, 63, true)]
-    [InlineData(true, 64, false)]
+    [InlineData(false, 62, true)]
+    [InlineData(false, 63, false)]
+    [InlineData(true, 62, true)]
+    [InlineData(true, 63, false)]
     public void InvocationMessageEnforcesMaximumArgumentNesting(bool nestedMaps, int nestedContainers, bool succeeds)
     {
         var bytes = new List<byte> { 0x95, 0x01, 0x80, 0xc0, 0xa1, (byte)'t', 0x91 };

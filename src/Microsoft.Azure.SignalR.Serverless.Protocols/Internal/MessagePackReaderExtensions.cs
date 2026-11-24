@@ -63,7 +63,7 @@ internal static class MessagePackReaderExtensions
         }
     }
 
-    public static object?[] ReadArray(ref this MessagePackReader reader, string field, int depth = 0)
+    public static object?[] ReadArray(ref this MessagePackReader reader, string field, int depth = 1)
     {
         EnsureMaximumDepth(field, depth);
         var count = reader.ReadArrayLength(field);
